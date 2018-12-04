@@ -1,3 +1,3 @@
 module.exports = {
-    "extends": ["eslint:recommended", "airbnb"]
+    "extends": ["eslint:recommended"]
 };
