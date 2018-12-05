@@ -1,76 +1,76 @@
-import {assert, expect} from 'chai';
-import * as sinon from 'sinon';
+import {assert} from "chai";
+import * as sinon from "sinon";
 
-import Process from '../../lib/process';
-import Blockchain from '../../lib/blockchain';
+import Blockchain from "../../src/blockchain";
+import Process from "../../src/process";
 
-describe('Process', function(){
-  describe('#GetById', function(){
-    it('Should return a valid process Metadata', function(){
-      var expectedProcessMetadata = {
-        censusUrl: "",
+describe("Process", () => {
+  describe("#GetById", () => {
+    it("Should return a valid process Metadata", () => {
+      const expectedProcessMetadata: object = {
         censusRoot: "",
-        votingOptions: "",
-        startBlock: "",
+        censusUrl: "",
         endBlock: "",
-        voteEncryptionKeys: "",
+        startBlock: "",
         status: "",
-        trustedGateways: ""
+        trustedGateways: "",
+        voteEncryptionKeys: "",
+        votingOptions: "",
       };
 
-      var getProcessMetadataStub = sinon.stub(Blockchain, 'getProcessMetadata')
+      const getProcessMetadataStub = sinon.stub(Blockchain, "getProcessMetadata")
                                         .returns(expectedProcessMetadata);
-      
-      var metadata = Process.getMetadata(1);
-      
+
+      const metadata: object = Process.getMetadata(1);
+
       getProcessMetadataStub.restore();
       sinon.assert.match(metadata, expectedProcessMetadata);
     });
   }),
 
-  describe('#getOpen', function(){
-    it(''); 
+  describe("#getOpen", () => {
+    it("");
   }),
 
-  describe('#getRelays', function(){
-    it('');
+  describe("#getRelays", () => {
+    it("");
   }),
 
-  describe('#batchExists', function(){
-    it('');
+  describe("#batchExists", () => {
+    it("");
   }),
 
-  describe('#getVotingOptions', function(){
-    it('');
+  describe("#getVotingOptions", () => {
+    it("");
   }),
 
-  describe('#encryptVote', function(){
-    it('Fails on empty vote', function(){
-      var vote = '';
-      var votePublicKey = '123abcdeb';
-      assert.throws(function(){ Process.encryptVote(vote, votePublicKey)}, Error, 'Vote can\'t be empty');
+  describe("#encryptVote", () => {
+    it("Fails on empty vote", () => {
+      const vote: string = "";
+      const votePublicKey: string = "123abcdeb";
+      assert.throws(() => { Process.encryptVote(vote, votePublicKey); }, Error, "Vote can't be empty");
     }),
 
-    it('Fails on empty votePublicKey', function(){
-      var vote = 1;
-      var votePublicKey = '';
-      assert.throws(function(){ Process.encryptVote(vote, votePublicKey)}, Error, 'VotePublicKey can\'t be empty');
+    it("Fails on empty votePublicKey", () => {
+      const vote: string = "1";
+      const votePublicKey: string = "";
+      assert.throws(() => { Process.encryptVote(vote, votePublicKey); }, Error, "VotePublicKey can't be empty");
     }),
 
-    it('Result is a String', function(){
-      var vote = 1;
-      var votePublicKey = '123abcdeb';
-      var encryptedVote = Process.encryptVote(vote, votePublicKey);
+    it("Result is a String", () => {
+      const vote: string = "1";
+      const votePublicKey: string = "123abcdeb";
+      const encryptedVote: string = Process.encryptVote(vote, votePublicKey);
       assert.isString(encryptedVote);
     });
   }),
-  
-  describe('#hashEncryptedVote', function(){
-    it('');
+
+  describe("#hashEncryptedVote", () => {
+    it("");
   }),
 
-  describe('#getVotingPackage', function(){
-    it('');
+  describe("#getVotingPackage", () => {
+    it("");
   });
 
 });
