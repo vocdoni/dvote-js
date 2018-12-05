@@ -19,7 +19,9 @@
     "sinon": "^7.1.1"
   },
   "scripts": {
-    "test": "mocha"
+    "test": "mocha test/unit test/integration",
+    "test:unit": "mocha test/unit",
+    "test:integration": "mocha test/integration"
   },
   "dependencies": {}
 }

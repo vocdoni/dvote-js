@@ -2,8 +2,8 @@ var assert = require('chai').assert;
 var expect = require('chai').expect;
 var sinon = require('sinon');
 
-const Process = require('../lib/process');
-const Blockchain = require('../lib/blockchain');
+const Process = require('../../lib/process');
+const Blockchain = require('../../lib/blockchain');
 
 describe('Process', function(){
   describe('#GetById', function(){
