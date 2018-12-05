@@ -1,9 +1,8 @@
-var assert = require('chai').assert;
-var expect = require('chai').expect;
-var sinon = require('sinon');
+import {assert, expect} from 'chai';
+import * as sinon from 'sinon';
 
-const Process = require('../../lib/process');
-const Blockchain = require('../../lib/blockchain');
+import Process from '../../lib/process';
+import Blockchain from '../../lib/blockchain';
 
 describe('Process', function(){
   describe('#GetById', function(){
