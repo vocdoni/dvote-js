@@ -8,20 +8,21 @@
   "license": "GPL-3.0-or-later",
   "private": false,
   "devDependencies": {
+    "@types/chai": "^4.1.7",
+    "@types/mocha": "^5.2.5",
+    "@types/sinon": "^5.0.7",
     "chai": "^4.2.0",
-    "eslint": "^5.9.0",
-    "eslint-config-standard": "^12.0.0",
-    "eslint-plugin-import": "^2.14.0",
-    "eslint-plugin-node": "^8.0.0",
-    "eslint-plugin-promise": "^4.0.1",
-    "eslint-plugin-standard": "^4.0.0",
     "mocha": "^5.2.0",
-    "sinon": "^7.1.1"
+    "sinon": "^7.1.1",
+    "ts-node": "^7.0.1",
+    "tslint": "^5.11.0",
+    "typescript": "^3.2.1"
   },
   "scripts": {
-    "test": "mocha test/unit test/integration",
-    "test:unit": "mocha test/unit",
-    "test:integration": "mocha test/integration"
+    "build": "./node_modules/typescript/bin/tsc",
+    "ts-node": "./node_modules/ts-node/dist/bin.js",
+    "tsc": "./node_modules/typescript/bin/tsc",
+    "test": "mocha -r ts-node/register test/**/*.ts"
   },
   "dependencies": {}
 }

@@ -1,5 +1,8 @@
 # dvote-client
-Javascript client library to work with the Vocdoni core features
+Typescript client library to work with the Vocdoni core features.
 
 ## Testing
-`yarn install && yarn test`
+`npm install && npm test`
+
+## Building the JS library
+`npm install && npm run build`
