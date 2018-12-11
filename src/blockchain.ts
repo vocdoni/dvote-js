@@ -4,17 +4,17 @@ import Web3 = require("web3");
 export default class Blockchain {
     private url: string;
     private web3: Web3;
-    private votingProcessContractAbiPath: string;
+    private votingProcessContractPath: string;
     private votingProcessContractAbi: any[];
     private votingProcessContractAddress: string;
 
-    constructor(url: string, votingProcessContractAbiPath, votingProcessContractAddress) {
+    constructor(url: string, votingProcessContractPath, votingProcessContractAddress) {
         this.url = url;
         this.web3 = new Web3(new Web3.providers.HttpProvider(url));
         this.votingProcessContractAddress = votingProcessContractAddress;
 
-        this.votingProcessContractAbiPath = votingProcessContractAbiPath;
-        const parsed = JSON.parse(fs.readFileSync(__dirname + "/.." + votingProcessContractAbiPath).toString());
+        this.votingProcessContractPath = votingProcessContractPath;
+        const parsed = JSON.parse(fs.readFileSync(__dirname + "/.." + votingProcessContractPath).toString());
         this.votingProcessContractAbi = parsed.abi;
     }
 

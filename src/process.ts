@@ -3,8 +3,8 @@ import Blockchain from "./blockchain";
 export default class Process {
     private Blockchain: Blockchain;
 
-    constructor(blockchainUrl: string, votingProcessContractAbiPath: string, votingProcessContractAddress: string) {
-        this.Blockchain = new Blockchain(blockchainUrl, votingProcessContractAbiPath, votingProcessContractAddress);
+    constructor(blockchainUrl: string, votingProcessContractPath: string, votingProcessContractAddress: string) {
+        this.Blockchain = new Blockchain(blockchainUrl, votingProcessContractPath, votingProcessContractAddress);
     }
 
     public getMetadata(id: string): object {

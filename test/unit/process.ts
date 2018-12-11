@@ -7,12 +7,12 @@ import Config from "../../src/utils/config";
 
 describe("Process", () => {
   const blockchainUrl = Config.BLOCKCHAIN_URL;
-  const votingProcessContractAbiPath = Config.VOTING_PROCESS_CONTRACT_ABI_PATH;
+  const votingProcessContractPath = Config.VOTING_PROCESS_CONTRACT_PATH;
   const votingProcessContractAddress = Config.VOTING_PROCESS_CONTRACT_ADDRESS;
   let process;
 
   beforeEach(() => {
-    process = new Process(blockchainUrl, votingProcessContractAbiPath, votingProcessContractAddress);
+    process = new Process(blockchainUrl, votingProcessContractPath, votingProcessContractAddress);
   });
 
   describe("#GetById", () => {
