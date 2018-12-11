@@ -27,7 +27,9 @@
     "build": "./node_modules/typescript/bin/tsc",
     "watch": "./node_modules/typescript/bin/tsc -w -p .",
     "ts-node": "./node_modules/ts-node/dist/bin.js",
-    "test": "./node_modules/mocha/bin/mocha -r ts-node/register test/**/*.ts"
+    "test": "./node_modules/mocha/bin/mocha -r ts-node/register test/**/*.ts",
+    "test-unit": "./node_modules/mocha/bin/mocha -r ts-node/register test/unit/*.ts",
+    "test-integration": "./node_modules/mocha/bin/mocha -r ts-node/register test/integration/*.ts"
   },
   "dependencies": {
     "@types/dotenv": "^6.1.0",
