@@ -5,7 +5,7 @@
   "main": "dist/index",
   "typings": "dist/index",
   "repository": "https://github.com/vocdoni/dvote-client.git",
-  "author": "Aleix <nigeon@gmail.com>",
+  "author": "Aleix <noname@gmail.com>",
   "license": "GPL-3.0-or-later",
   "private": false,
   "devDependencies": {
@@ -27,7 +27,7 @@
     "build": "./node_modules/typescript/bin/tsc",
     "watch": "./node_modules/typescript/bin/tsc -w -p .",
     "ts-node": "./node_modules/ts-node/dist/bin.js",
-    "test": "mocha -r ts-node/register test/**/*.ts"
+    "test": "./node_modules/mocha/bin/mocha -r ts-node/register test/**/*.ts"
   },
   "dependencies": {
     "@types/dotenv": "^6.1.0",
