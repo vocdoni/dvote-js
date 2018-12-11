@@ -1,8 +1,9 @@
 {
   "name": "dvote-client",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Javascript client library to work with the Vocdoni core features",
-  "main": "index.js",
+  "main": "dist/index",
+  "typings": "dist/index",
   "repository": "https://github.com/vocdoni/dvote-client.git",
   "author": "Aleix <nigeon@gmail.com>",
   "license": "GPL-3.0-or-later",
@@ -20,9 +21,12 @@
     "typescript": "^3.2.1"
   },
   "scripts": {
+    "prepublishOnly": "npm run compile",
+    "compile": "npm run clean && npm run build",
+    "clean": "rm -fR dist",
     "build": "./node_modules/typescript/bin/tsc",
+    "watch": "./node_modules/typescript/bin/tsc -w -p .",
     "ts-node": "./node_modules/ts-node/dist/bin.js",
-    "tsc": "./node_modules/typescript/bin/tsc",
     "test": "mocha -r ts-node/register test/**/*.ts"
   },
   "dependencies": {
