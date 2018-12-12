@@ -12,10 +12,10 @@ describe("Process", () => {
   let process;
 
   beforeEach(() => {
-    const jsonParseStub = sinon.stub(JSON, "parse")
-                            .returns({});
+    const getVotingProcessAbi = sinon.stub(Blockchain.prototype, "getVotingProcessContractAbi")
+                                     .returns([{}]);
     process = new Process(blockchainUrl, votingProcessContractPath, votingProcessContractAddress);
-    jsonParseStub.restore();
+    getVotingProcessAbi.restore();
   });
 
   describe("#GetById", () => {
