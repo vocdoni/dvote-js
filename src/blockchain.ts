@@ -1,5 +1,31 @@
+import * as fs from "fs";
+import Web3 = require("web3");
+
 export default class Blockchain {
-    public static getProcessMetadata(id: number): object {
-        return {};
+    private url: string;
+    private web3: Web3;
+    private votingProcessContractPath: string;
+    private votingProcessContractAbi: any[];
+    private votingProcessContractAddress: string;
+
+    constructor(url: string, votingProcessContractPath, votingProcessContractAddress) {
+        this.url = url;
+        this.web3 = new Web3(new Web3.providers.HttpProvider(url));
+        this.votingProcessContractAddress = votingProcessContractAddress;
+
+        this.votingProcessContractPath = votingProcessContractPath;
+        this.votingProcessContractAbi = this.getVotingProcessContractAbi(votingProcessContractPath);
+    }
+
+    public async getProcessMetadata(id: string): Promise<any> {
+        const votingProcessContract = new this.web3.eth.Contract(this.votingProcessContractAbi,
+                                                                this.votingProcessContractAddress);
+        id = this.web3.utils.asciiToHex(id);
+        return await votingProcessContract.methods.getProcessMetadata(this.web3.utils.hexToBytes(id)).call();
+    }
+
+    public getVotingProcessContractAbi(votingProcessContractPath: string): any[] {
+        const parsed = JSON.parse(fs.readFileSync(__dirname + "/.." + votingProcessContractPath).toString());
+        return parsed.abi;
     }
 }
