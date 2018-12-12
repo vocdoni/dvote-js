@@ -14,8 +14,7 @@ export default class Blockchain {
         this.votingProcessContractAddress = votingProcessContractAddress;
 
         this.votingProcessContractPath = votingProcessContractPath;
-        const parsed = JSON.parse(fs.readFileSync(__dirname + "/.." + votingProcessContractPath).toString());
-        this.votingProcessContractAbi = parsed.abi;
+        this.votingProcessContractAbi = this.getVotingProcessContractAbi(votingProcessContractPath);
     }
 
     public async getProcessMetadata(id: string): Promise<any> {
@@ -23,5 +22,10 @@ export default class Blockchain {
                                                                 this.votingProcessContractAddress);
         id = this.web3.utils.asciiToHex(id);
         return await votingProcessContract.methods.getProcessMetadata(this.web3.utils.hexToBytes(id)).call();
+    }
+
+    public getVotingProcessContractAbi(votingProcessContractPath: string): any[] {
+        const parsed = JSON.parse(fs.readFileSync(__dirname + "/.." + votingProcessContractPath).toString());
+        return parsed.abi;
     }
 }
