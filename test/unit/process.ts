@@ -1,3 +1,4 @@
+import * as nodeassert from "assert";
 import {assert} from "chai";
 import * as sinon from "sinon";
 
@@ -19,11 +20,11 @@ describe("Process", () => {
 
     describe("#GetById", () => {
         it("Should not accept an invalid id", () => {
-            assert.throws(() => { process.getMetadata(""); }, Error, "ID can't be empty");
+            nodeassert.rejects(process.getMetadata(""), "Empty ID should fail");
         });
 
         it("Should return a valid process Metadata", async () => {
-            const expectedProcessMetadata: object = {
+            const expectedProcessMetadata = {
                 censusRoot: "",
                 censusUrl: "",
                 endBlock: "",
