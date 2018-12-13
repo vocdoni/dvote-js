@@ -23,13 +23,26 @@ export default class Blockchain {
     }
 
     public async getProcessMetadata(processId: string): Promise<any> {
-        processId = this.web3.utils.asciiToHex(processId);
-        const processIdBytes: number[] = this.web3.utils.hexToBytes(processId);
-        return await this.votingProcessContract.methods.getProcessMetadata(processIdBytes).call();
+        processId = this.web3.utils.fromAscii(processId);
+        return await this.votingProcessContract.methods.getProcessMetadata(processId).call();
     }
 
-    public async createProcess(metadata: object, organizerAddress: string): Promise<string> {
-        return await this.votingProcessContract.methods.create(metadata).call({from: organizerAddress});
+    public async createProcess(metadata: any, organizerAddress: string): Promise<any> {
+        return await this.votingProcessContract.methods
+            .createProcess( metadata.name,
+                            metadata.startBlock,
+                            metadata.endBlock,
+                            metadata.censusMerkleRoot,
+                            metadata.question,
+                            metadata.votingOptions,
+                            metadata.voteEncryptionPublicKey)
+            .send({from: organizerAddress, gas: 999999});
+    }
+
+    public async getProcessId(name: string, organizerAddress: string): Promise<string> {
+        const processId = await this.votingProcessContract.methods.getProcessId(organizerAddress, name)
+                                                                  .call({from: organizerAddress});
+        return this.web3.utils.toAscii(processId);
     }
 
     public getVotingProcessContractAbi(votingProcessContractPath: string): any[] {
