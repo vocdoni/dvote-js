@@ -3,12 +3,11 @@ import * as sinon from "sinon";
 
 import Blockchain from "../../src/blockchain";
 import Process from "../../src/process";
-import Config from "../../src/utils/config";
 
 describe("Process", () => {
-    const blockchainUrl: string = Config.BLOCKCHAIN_URL;
-    const votingProcessContractPath: string = Config.VOTING_PROCESS_CONTRACT_PATH;
-    const votingProcessContractAddress: string = Config.VOTING_PROCESS_CONTRACT_ADDRESS;
+    const blockchainUrl: string = "http://localhost:8545";
+    const votingProcessContractPath: string = "/contracts/VotingProcess.json";
+    const votingProcessContractAddress: string = "0xd8c3d0B72DFbE3adbe0fd9295c9fe083ff896684";
     let process: Process;
 
     beforeEach(() => {
