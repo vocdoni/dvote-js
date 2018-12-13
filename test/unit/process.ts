@@ -23,7 +23,7 @@ describe("Process", () => {
         });
 
         it("Should return a valid process Metadata", async () => {
-            const expectedProcessMetadata: object = {
+            const expectedProcessMetadata = {
                 censusRoot: "",
                 censusUrl: "",
                 endBlock: "",
