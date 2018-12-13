@@ -1,13 +1,12 @@
 import {assert} from "chai";
 import Web3 = require("web3");
-import Config from "../../src/utils/config";
 
 import Process from "../../src/process";
 
 describe("Voting Process", () => {
-  const blockchainUrl: string = Config.BLOCKCHAIN_URL;
-  const votingProcessContractPath: string = Config.VOTING_PROCESS_CONTRACT_PATH;
-  const votingProcessContractAddress: string = Config.VOTING_PROCESS_CONTRACT_ADDRESS;
+  const blockchainUrl: string = "http://localhost:8545";
+  const votingProcessContractPath: string = "/contracts/VotingProcess.json";
+  const votingProcessContractAddress: string = "0xd8c3d0B72DFbE3adbe0fd9295c9fe083ff896684";
   let process: Process;
   const inputProcessMetadata: object = {
     censusMerkleRoot: "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
@@ -32,8 +31,6 @@ describe("Voting Process", () => {
     it("Creates a new process", async () => {
       const organizerAddress: string = "0x000000"; // TODO: A valid account with some Eth!
       createdProcessId = await process.create(inputProcessMetadata, organizerAddress);
-      // TODO: Can we return the id on creation?
-      // TODO: Can we validate that id?
     });
 
     it("Metadata is stored correctly", async () => {
