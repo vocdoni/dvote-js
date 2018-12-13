@@ -7,6 +7,12 @@ export default class Process {
         this.Blockchain = new Blockchain(blockchainUrl, votingProcessContractPath, votingProcessContractAddress);
     }
 
+    public async create(metadata: object, organizerAddress: string): Promise<string> {
+        // TODO: Some input validation
+
+        return await this.Blockchain.createProcess(metadata, organizerAddress);
+    }
+
     public getMetadata(id: string): object {
         if (id.length === 0) {
             throw Error("ID can't be empty");

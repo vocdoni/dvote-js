@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import Web3 = require("web3");
+import Contract from "web3/eth/contract";
 
 export default class Blockchain {
     private url: string;
@@ -7,6 +8,7 @@ export default class Blockchain {
     private votingProcessContractPath: string;
     private votingProcessContractAbi: any[];
     private votingProcessContractAddress: string;
+    private votingProcessContract: Contract;
 
     constructor(url: string, votingProcessContractPath, votingProcessContractAddress) {
         this.url = url;
@@ -15,13 +17,19 @@ export default class Blockchain {
 
         this.votingProcessContractPath = votingProcessContractPath;
         this.votingProcessContractAbi = this.getVotingProcessContractAbi(votingProcessContractPath);
+
+        this.votingProcessContract = new this.web3.eth.Contract(this.votingProcessContractAbi,
+                                                                this.votingProcessContractAddress);
     }
 
-    public async getProcessMetadata(id: string): Promise<any> {
-        const votingProcessContract = new this.web3.eth.Contract(this.votingProcessContractAbi,
-                                                                this.votingProcessContractAddress);
-        id = this.web3.utils.asciiToHex(id);
-        return await votingProcessContract.methods.getProcessMetadata(this.web3.utils.hexToBytes(id)).call();
+    public async getProcessMetadata(processId: string): Promise<any> {
+        processId = this.web3.utils.asciiToHex(processId);
+        const processIdBytes: number[] = this.web3.utils.hexToBytes(processId);
+        return await this.votingProcessContract.methods.getProcessMetadata(processIdBytes).call();
+    }
+
+    public async createProcess(metadata: object, organizerAddress: string): Promise<string> {
+        return await this.votingProcessContract.methods.create(metadata).call({from: organizerAddress});
     }
 
     public getVotingProcessContractAbi(votingProcessContractPath: string): any[] {
