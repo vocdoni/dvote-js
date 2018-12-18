@@ -49,4 +49,14 @@ export default class Blockchain {
         const parsed = JSON.parse(fs.readFileSync(__dirname + "/.." + votingProcessContractPath).toString());
         return parsed.abi;
     }
+
+    public async getProcessesIdByOrganizer(organizerAddress: string): Promise<any> {
+        const processes = await this.votingProcessContract.methods.getProcessesIdByOrganizer(organizerAddress).call();
+        const parsed = [];
+        for (const p of processes) {
+            parsed.push(this.web3.utils.toAscii(p));
+        }
+
+        return parsed;
+    }
 }

@@ -25,6 +25,17 @@ export default class Process {
         return await this.Blockchain.getProcessId(name, organizerAddress);
     }
 
+    public async getProcessesByOrganizer(organizerAddress: string): Promise<any> {
+        const processesId = await this.Blockchain.getProcessesIdByOrganizer(organizerAddress);
+
+        const promises = [];
+        for (const pid of processesId) {
+            promises.push(this.Blockchain.getProcessMetadata(pid));
+        }
+
+        return await Promise.all(promises);
+    }
+
     public encryptVote(vote: string, votePublicKey: string): string {
         if (vote.length === 0) {
             throw Error("Vote can't be empty");
