@@ -6,8 +6,9 @@ import Process from "../../src/process";
 describe("Voting Process", () => {
     const blockchainUrl: string = "http://localhost:8545";
     const votingProcessContractPath: string = "/contracts/VotingProcess.json";
-    const votingProcessContractAddress: string = "0xc04Ef528486477c3351D9aEFf0B0852786ad8F58";
-    const votingProcessOrganzerAddress: string = "0xcfa7023c3e1ace99f008abbc19aec28f150e8816";
+    const votingProcessContractAddress: string = "0x1faf6ef088c2cd328c722eae15f690fe594f4cc5";
+    const votingProcessOrganizerAddress: string = "0x4f0e20f8d2ef3cc32fb3f0c0a96e419748dc4476";
+    const votingProcessOrganizerAddress2: string = "0x4fc7a3f2ef6cdb7bea6bcf6db80bbb54c4c961ae";
 
     let process: Process;
     const inputProcessMetadata = {
@@ -31,8 +32,8 @@ describe("Voting Process", () => {
         });
 
         it("Creates a new process and verify metadata is stored correctly", async () => {
-            await process.create(inputProcessMetadata, votingProcessOrganzerAddress);
-            processId = await process.getId(inputProcessMetadata.name, votingProcessOrganzerAddress);
+            await process.create(inputProcessMetadata, votingProcessOrganizerAddress);
+            processId = await process.getId(inputProcessMetadata.name, votingProcessOrganizerAddress);
             assert.isString(processId, "ProcessId is a string");
 
             const metadata = await process.getMetadata(processId);
@@ -61,6 +62,26 @@ describe("Voting Process", () => {
             assert.equal(metadata.voteEncryptionPublicKey,
                         inputProcessMetadata.voteEncryptionPublicKey,
                         "The voteEncryptionPublicKey should match the input");
+        });
+
+        it("Creates a some more processes and checks they are listed correctly", async () => {
+            let p = Object.assign({}, inputProcessMetadata);
+            p.name += "_2";
+            await process.create(p, votingProcessOrganizerAddress);
+
+            p = Object.assign({}, inputProcessMetadata);
+            p.name += "_3";
+            await process.create(p, votingProcessOrganizerAddress);
+
+            p = Object.assign({}, inputProcessMetadata);
+            p.name += "_other";
+            await process.create(p, votingProcessOrganizerAddress2);
+
+            const processes = await process.getProcessesByOrganizer(votingProcessOrganizerAddress);
+
+            assert.equal(processes.length, 3, "We have 3 processes for the test organitzation");
+            assert.equal(processes[1].name, "This is a process name_2", "2nd process name should end with _2");
+            assert.equal(processes[2].name, "This is a process name_3", "3rd process name should end with _3");
         });
     });
 });
