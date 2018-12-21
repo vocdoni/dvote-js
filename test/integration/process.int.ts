@@ -1,7 +1,7 @@
 import {assert} from "chai";
 import Web3 = require("web3");
 
-import Process from "../../src/process";
+import * as dvote from "../../src";
 
 describe("Voting Process", () => {
     const blockchainUrl: string = "http://localhost:8545";
@@ -10,7 +10,7 @@ describe("Voting Process", () => {
     const votingProcessOrganizerAddress: string = "0x4f0e20f8d2ef3cc32fb3f0c0a96e419748dc4476";
     const votingProcessOrganizerAddress2: string = "0x4fc7a3f2ef6cdb7bea6bcf6db80bbb54c4c961ae";
 
-    let process: Process;
+    let process: dvote.Process;
     const inputProcessMetadata = {
         censusMerkleRoot: "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
         endBlock: 1,
@@ -28,7 +28,7 @@ describe("Voting Process", () => {
         let processId: string;
 
         before(() => {
-            process = new Process(blockchainUrl, votingProcessContractPath, votingProcessContractAddress);
+            process = new dvote.Process(blockchainUrl, votingProcessContractPath, votingProcessContractAddress);
         });
 
         it("Creates a new process and verify metadata is stored correctly", async () => {
