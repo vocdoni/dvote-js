@@ -1,5 +1,4 @@
 import {assert} from "chai";
-import Web3 = require("web3");
 
 describe("Array", () =>  {
     describe("#indexOf()", () =>  {

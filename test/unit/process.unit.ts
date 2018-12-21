@@ -2,19 +2,18 @@ import * as nodeassert from "assert";
 import {assert} from "chai";
 import * as sinon from "sinon";
 
-import Blockchain from "../../src/blockchain";
-import Process from "../../src/process";
+import * as dvote from "../../src";
 
 describe("Process", () => {
     const blockchainUrl: string = "http://localhost:8545";
     const votingProcessContractPath: string = "/contracts/VotingProcess.json";
     const votingProcessContractAddress: string = "0xd8c3d0B72DFbE3adbe0fd9295c9fe083ff896684";
-    let process: Process;
+    let process: dvote.Process;
 
     beforeEach(() => {
-        const getVotingProcessAbi = sinon.stub(Blockchain.prototype, "getVotingProcessContractAbi")
+        const getVotingProcessAbi = sinon.stub(dvote.Blockchain.prototype, "getVotingProcessContractAbi")
                                          .returns([{}]);
-        process = new Process(blockchainUrl, votingProcessContractPath, votingProcessContractAddress);
+        process = new dvote.Process(blockchainUrl, votingProcessContractPath, votingProcessContractAddress);
         getVotingProcessAbi.restore();
     });
 
@@ -35,7 +34,7 @@ describe("Process", () => {
                 votingOptions: "",
             };
 
-            const getProcessMetadataStub = sinon.stub(Blockchain.prototype, "getProcessMetadata")
+            const getProcessMetadataStub = sinon.stub(dvote.Blockchain.prototype, "getProcessMetadata")
                                                 .resolves(expectedProcessMetadata);
 
             const metadata: object = await process.getMetadata("identifier");
@@ -43,14 +42,6 @@ describe("Process", () => {
             getProcessMetadataStub.restore();
             sinon.assert.match(metadata, expectedProcessMetadata);
         });
-    }),
-
-    describe("#getOpen", () => {
-        it("");
-    }),
-
-    describe("#getRelays", () => {
-        it("");
     }),
 
     describe("#batchExists", () => {
