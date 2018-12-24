@@ -6,9 +6,9 @@ import * as dvote from "../../src";
 describe("Voting Process", () => {
     const blockchainUrl: string = "http://localhost:8545";
     const votingProcessContractPath: string = "/contracts/VotingProcess.json";
-    const votingProcessContractAddress: string = "0x1faf6ef088c2cd328c722eae15f690fe594f4cc5";
-    const votingProcessOrganizerAddress: string = "0x4f0e20f8d2ef3cc32fb3f0c0a96e419748dc4476";
-    const votingProcessOrganizerAddress2: string = "0x4fc7a3f2ef6cdb7bea6bcf6db80bbb54c4c961ae";
+    const votingProcessContractAddress: string = "0x55D90B083f694b6e6E7d9800687600f44708Cc59";
+    const votingProcessOrganizerAddress: string = "0x29fff43288136a7348b99efb1f99e92c53a306f1";
+    const votingProcessOrganizerAddress2: string = "0x3d23f56b06fbb9c7ef399a86bbe21cf09a7a19bf";
 
     let process: dvote.Process;
     const inputProcessMetadata = {
@@ -33,6 +33,7 @@ describe("Voting Process", () => {
 
         it("Creates a new process and verify metadata is stored correctly", async () => {
             await process.create(inputProcessMetadata, votingProcessOrganizerAddress);
+
             processId = await process.getId(inputProcessMetadata.name, votingProcessOrganizerAddress);
             assert.isString(processId, "ProcessId is a string");
 
@@ -64,7 +65,7 @@ describe("Voting Process", () => {
                         "The voteEncryptionPublicKey should match the input");
         });
 
-        it("Creates a some more processes and checks they are listed correctly", async () => {
+        it("Creates some more processes and checks they are listed correctly", async () => {
             let p = Object.assign({}, inputProcessMetadata);
             p.name += "_2";
             await process.create(p, votingProcessOrganizerAddress);
@@ -77,11 +78,12 @@ describe("Voting Process", () => {
             p.name += "_other";
             await process.create(p, votingProcessOrganizerAddress2);
 
-            const processes = await process.getProcessesByOrganizer(votingProcessOrganizerAddress);
+            const organizerProcesses = await process.getProcessesIdsByOrganizer(votingProcessOrganizerAddress);
+            assert.equal(organizerProcesses.length, 3, "We have 3 processes for the test organitzation");
 
-            assert.equal(processes.length, 3, "We have 3 processes for the test organitzation");
-            assert.equal(processes[1].name, "This is a process name_2", "2nd process name should end with _2");
-            assert.equal(processes[2].name, "This is a process name_3", "3rd process name should end with _3");
+            const processesDetails = await process.getMultipleMetadata(organizerProcesses);
+            assert.equal(processesDetails[1].name, "This is a process name_2", "2nd process name should end with _2");
+            assert.equal(processesDetails[2].name, "This is a process name_3", "3rd process name should end with _3");
         });
     });
 });
