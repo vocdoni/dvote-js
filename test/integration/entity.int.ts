@@ -6,9 +6,8 @@ import * as dvote from "../../src";
 describe("Voting Entities", () => {
     const blockchainUrl: string = "http://localhost:8545";
     const votingEntityContractPath: string = "/contracts/VotingEntity.json";
-    const votingEntityContractAddress: string = "0xDC4B53bcb5C9dFfd65a7d301087b0d208f7d6F41";
-    const votingEntityOrganizerAddress: string = "0x8ebdd1f6d4f415a8577a7b2d610991f9678731a0";
-    const votingEntityOrganizerAddress2: string = "0x945cab676cbf56f98f2a98a36dcbefd7b9e01e0d";
+    const votingEntityContractAddress: string = "0x8Cb2dF65E5D8ebb2F23D3aABB9402CcCdD096f2D";
+    const votingEntityOrganizerAddress: string = "0x29fff43288136a7348b99efb1f99e92c53a306f1";
 
     let entity: dvote.Entity;
     const inputEntity = {

@@ -4,11 +4,11 @@ import Contract from "web3/eth/contract";
 
 export default class Blockchain {
     private url: string;
-    private web3: Web3;
     private contractPath: string;
     private contractAbi: any[];
     private contractAddress: string;
     private contract: Contract;
+    private web3: Web3;
 
     constructor(url: string, contractPath, contractAddress) {
         this.url = url;
@@ -21,51 +21,17 @@ export default class Blockchain {
         this.contract = new this.web3.eth.Contract(this.contractAbi, this.contractAddress);
     }
 
-    public async getProcessMetadata(processId: string): Promise<any> {
-        processId = this.web3.utils.fromAscii(processId);
-        return await this.contract.methods.getProcessMetadata(processId).call();
-    }
-
-    public async createProcess(metadata: any, organizerAddress: string): Promise<any> {
-        return await this.contract.methods
-            .createProcess( metadata.name,
-                            metadata.startBlock,
-                            metadata.endBlock,
-                            metadata.censusMerkleRoot,
-                            metadata.question,
-                            metadata.votingOptions,
-                            metadata.voteEncryptionPublicKey)
-            .send({from: organizerAddress, gas: 999999});
-    }
-
-    public async getProcessId(name: string, organizerAddress: string): Promise<string> {
-        const processId = await this.contract.methods.getProcessId(organizerAddress, name)
-                                                                  .call({from: organizerAddress});
-        return this.web3.utils.toAscii(processId);
-    }
-
     public getContractAbi(contractPath: string): any[] {
         const parsed = JSON.parse(fs.readFileSync(__dirname + "/../.." + contractPath).toString());
         return parsed.abi;
     }
 
-    public async getProcessesIdByOrganizer(organizerAddress: string): Promise<any> {
-        const processes = await this.contract.methods.getProcessesIdByOrganizer(organizerAddress).call();
-        const parsed = [];
-        for (const p of processes) {
-            parsed.push(this.web3.utils.toAscii(p));
+    public async exec(method: string, params?: any[], options?: any) {
+        let callOrSend = "call";
+        if (options != null && options.type === "send") {
+            callOrSend = "send";
         }
 
-        return parsed;
-    }
-
-    public async createEntity(metadata: any, organizerAddress: string): Promise<any> {
-        return await this.contract.methods
-            .createEntity( metadata.name )
-            .send({from: organizerAddress, gas: 999999});
-    }
-
-    public async getEntity(address: string): Promise<any> {
-        return await this.contract.methods.getEntity(address).call();
+        return await this.contract.methods[method](...params)[callOrSend](options);
     }
 }
