@@ -7,10 +7,17 @@ export default class Process {
         this.Blockchain = new Blockchain(blockchainUrl, votingProcessContractPath, votingProcessContractAddress);
     }
 
-    public async create(metadata: object, organizerAddress: string): Promise<string> {
+    public async create(metadata: any, organizerAddress: string): Promise<string> {
         // TODO: Some input validation
-
-        return await this.Blockchain.createProcess(metadata, organizerAddress);
+        return await this.Blockchain.exec("createProcess",
+                                            [metadata.name,
+                                            metadata.startBlock,
+                                            metadata.endBlock,
+                                            metadata.censusMerkleRoot,
+                                            metadata.question,
+                                            metadata.votingOptions,
+                                            metadata.voteEncryptionPublicKey],
+                                            {type: "send", from: organizerAddress, gas: 999999});
     }
 
     public async getMetadata(id: string): Promise<any> {
@@ -18,19 +25,22 @@ export default class Process {
             throw Error("ID can't be empty");
         }
 
-        return await this.Blockchain.getProcessMetadata(id);
+        return await this.Blockchain.exec("getProcessMetadata", [id]);
     }
 
     public async getId(name: string, organizerAddress: string): Promise<string> {
-        return await this.Blockchain.getProcessId(name, organizerAddress);
+        const processId = await this.Blockchain.exec("getProcessId", [organizerAddress, name]);
+        return processId;
     }
 
-    public async getProcessesByOrganizer(organizerAddress: string): Promise<any> {
-        const processesId = await this.Blockchain.getProcessesIdByOrganizer(organizerAddress);
+    public async getProcessesIdsByOrganizer(organizerAddress: string): Promise<any> {
+        return await this.Blockchain.exec("getProcessesIdByOrganizer", [organizerAddress]);
+    }
 
+    public async getMultipleMetadata(processesId) {
         const promises = [];
         for (const pid of processesId) {
-            promises.push(this.Blockchain.getProcessMetadata(pid));
+            promises.push(this.getMetadata(pid));
         }
 
         return await Promise.all(promises);

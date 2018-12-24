@@ -7,10 +7,12 @@ export default class Entity {
         this.Blockchain = new Blockchain(blockchainUrl, contractPath, contractAddress);
     }
 
-    public async create(metadata: object, organizerAddress: string): Promise<string> {
+    public async create(metadata: any, organizerAddress: string): Promise<string> {
         // TODO: Some input validation
 
-        return await this.Blockchain.createEntity(metadata, organizerAddress);
+        return await this.Blockchain.exec("createEntity",
+                                            [metadata.name],
+                                            {type: "send", from: organizerAddress, gas: 999999});
     }
 
     public async get(address: string): Promise<any> {
@@ -18,7 +20,7 @@ export default class Entity {
             throw Error("Address can't be empty");
         }
 
-        return await this.Blockchain.getEntity(address);
+        return await this.Blockchain.exec("getEntity", [address], {type: "call"});
     }
 
 }

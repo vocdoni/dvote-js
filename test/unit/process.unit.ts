@@ -34,7 +34,7 @@ describe("Process", () => {
                 votingOptions: "",
             };
 
-            const getProcessMetadataStub = sinon.stub(dvote.Blockchain.prototype, "getProcessMetadata")
+            const getProcessMetadataStub = sinon.stub(dvote.Process.prototype, "getMetadata")
                                                 .resolves(expectedProcessMetadata);
 
             const metadata: object = await process.getMetadata("identifier");
