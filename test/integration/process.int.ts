@@ -6,9 +6,9 @@ import * as dvote from "../../src";
 describe("Voting Process", () => {
     const blockchainUrl: string = "http://localhost:8545";
     const votingProcessContractPath: string = "/contracts/VotingProcess.json";
-    const votingProcessContractAddress: string = "0x1faf6ef088c2cd328c722eae15f690fe594f4cc5";
-    const votingProcessOrganizerAddress: string = "0x4f0e20f8d2ef3cc32fb3f0c0a96e419748dc4476";
-    const votingProcessOrganizerAddress2: string = "0x4fc7a3f2ef6cdb7bea6bcf6db80bbb54c4c961ae";
+    const votingProcessContractAddress: string = "0xFA58bE2299dDB9e9F7815f84E02153C58D254537";
+    const votingProcessOrganizerAddress: string = "0x8ebdd1f6d4f415a8577a7b2d610991f9678731a0";
+    const votingProcessOrganizerAddress2: string = "0x945cab676cbf56f98f2a98a36dcbefd7b9e01e0d";
 
     let process: dvote.Process;
     const inputProcessMetadata = {
