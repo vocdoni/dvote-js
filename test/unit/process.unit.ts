@@ -11,7 +11,7 @@ describe("Process", () => {
     let process: dvote.Process;
 
     beforeEach(() => {
-        const getVotingProcessAbi = sinon.stub(dvote.Blockchain.prototype, "getVotingProcessContractAbi")
+        const getVotingProcessAbi = sinon.stub(dvote.Blockchain.prototype, "getContractAbi")
                                          .returns([{}]);
         process = new dvote.Process(blockchainUrl, votingProcessContractPath, votingProcessContractAddress);
         getVotingProcessAbi.restore();
@@ -34,7 +34,7 @@ describe("Process", () => {
                 votingOptions: "",
             };
 
-            const getProcessMetadataStub = sinon.stub(dvote.Blockchain.prototype, "getProcessMetadata")
+            const getProcessMetadataStub = sinon.stub(dvote.Process.prototype, "getMetadata")
                                                 .resolves(expectedProcessMetadata);
 
             const metadata: object = await process.getMetadata("identifier");
