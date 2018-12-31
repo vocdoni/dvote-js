@@ -3,8 +3,8 @@ import Blockchain from "./blockchain";
 export default class Entity {
     private Blockchain: Blockchain;
 
-    constructor(blockchainUrl: string, contractPath: string, contractAddress: string) {
-        this.Blockchain = new Blockchain(blockchainUrl, contractPath, contractAddress);
+    constructor(blockchainUrl: string, contractAddress: string) {
+        this.Blockchain = new Blockchain(blockchainUrl, contractAddress);
     }
 
     public async create(metadata: any, organizerAddress: string): Promise<string> {

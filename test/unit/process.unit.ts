@@ -6,14 +6,13 @@ import * as dvote from "../../src";
 
 describe("Process", () => {
     const blockchainUrl: string = "http://localhost:8545";
-    const votingProcessContractPath: string = "/contracts/VotingProcess.json";
     const votingProcessContractAddress: string = "0xd8c3d0B72DFbE3adbe0fd9295c9fe083ff896684";
     let process: dvote.Process;
 
     beforeEach(() => {
         const getVotingProcessAbi = sinon.stub(dvote.Blockchain.prototype, "getContractAbi")
                                          .returns([{}]);
-        process = new dvote.Process(blockchainUrl, votingProcessContractPath, votingProcessContractAddress);
+        process = new dvote.Process(blockchainUrl, votingProcessContractAddress);
         getVotingProcessAbi.restore();
     });
 

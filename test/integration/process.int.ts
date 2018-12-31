@@ -5,7 +5,6 @@ import * as dvote from "../../src";
 
 describe("Voting Process", () => {
     const blockchainUrl: string = "http://localhost:8545";
-    const votingProcessContractPath: string = "/contracts/VotingProcess.json";
     const votingProcessContractAddress: string = "0x55D90B083f694b6e6E7d9800687600f44708Cc59";
     const votingProcessOrganizerAddress: string = "0x29fff43288136a7348b99efb1f99e92c53a306f1";
     const votingProcessOrganizerAddress2: string = "0x3d23f56b06fbb9c7ef399a86bbe21cf09a7a19bf";
@@ -28,7 +27,7 @@ describe("Voting Process", () => {
         let processId: string;
 
         before(() => {
-            process = new dvote.Process(blockchainUrl, votingProcessContractPath, votingProcessContractAddress);
+            process = new dvote.Process(blockchainUrl, votingProcessContractAddress);
         });
 
         it("Creates a new process and verify metadata is stored correctly", async () => {
