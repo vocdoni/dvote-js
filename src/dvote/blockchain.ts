@@ -20,11 +20,6 @@ export default class Blockchain {
         this.contract = new this.web3.eth.Contract(this.contractAbi, this.contractAddress);
     }
 
-    public getContractAbi(contractPath: string): any[] {
-        const parsed = JSON.parse(fs.readFileSync(__dirname + "/../.." + contractPath).toString());
-        return parsed.abi;
-    }
-
     public async exec(method: string, params?: any[], options?: any) {
         let callOrSend = "call";
         if (options != null && options.type === "send") {
