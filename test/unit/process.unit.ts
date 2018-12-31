@@ -10,10 +10,7 @@ describe("Process", () => {
     let process: dvote.Process;
 
     beforeEach(() => {
-        const getVotingProcessAbi = sinon.stub(dvote.Blockchain.prototype, "getContractAbi")
-                                         .returns([{}]);
         process = new dvote.Process(blockchainUrl, votingProcessContractAddress);
-        getVotingProcessAbi.restore();
     });
 
     describe("#GetById", () => {
