@@ -1,4 +1,4 @@
-import {assert} from "chai";
+import { assert } from "chai";
 import Web3 = require("web3");
 
 import * as dvote from "../../src";
@@ -11,7 +11,9 @@ describe("Voting Process", () => {
 
     let process: dvote.Process;
     const inputProcessMetadata = {
+        censusFranchiseProofUrl: "http://vocdoni.io/getFranchiseProof",
         censusMerkleRoot: "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        censusRequestUrl: "http://vocdoni.io/requesCensus",
         endBlock: 1,
         name: "This is a process name",
         question: "Blue pill or red pill?",
@@ -20,7 +22,7 @@ describe("Voting Process", () => {
         voteEncryptionPublicKey: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         votesBatch1: "0x1111111111111111111111111111111111111111111111111111111111111111",
         votingOptions: ["0x0000000000000000000000000000000000000000000000000000000000000000",
-                        "0x1111111111111111111111111111111111111111111111111111111111111111"],
+            "0x1111111111111111111111111111111111111111111111111111111111111111"],
     };
 
     describe("Creates and checks voting process creation", () => {
@@ -39,29 +41,35 @@ describe("Voting Process", () => {
             const metadata = await process.getMetadata(processId);
 
             assert.equal(metadata.name,
-                        inputProcessMetadata.name,
-                        "The name should match the input");
+                inputProcessMetadata.name,
+                "The name should match the input");
             assert.equal(metadata.startBlock,
-                        inputProcessMetadata.startBlock.valueOf(),
-                        "The startBlock should match the input");
+                inputProcessMetadata.startBlock.valueOf(),
+                "The startBlock should match the input");
             assert.equal(metadata.endBlock,
-                        inputProcessMetadata.endBlock.valueOf(),
-                        "The endBlock should match the input");
+                inputProcessMetadata.endBlock.valueOf(),
+                "The endBlock should match the input");
             assert.equal(metadata.censusMerkleRoot,
-                        inputProcessMetadata.censusMerkleRoot,
-                        "The censusMerkleRoot should match the input");
+                inputProcessMetadata.censusMerkleRoot,
+                "The censusMerkleRoot should match the input");
+            assert.equal(metadata.censusFranchiseProofUrl,
+                inputProcessMetadata.censusFranchiseProofUrl,
+                "The censusFranchiseProofUrl should match the input");
+            assert.equal(metadata.censusRequestUrl,
+                inputProcessMetadata.censusRequestUrl,
+                "The censusRequestUrl should match the input");
             assert.equal(metadata.question,
-                        inputProcessMetadata.question,
-                        "The question should match the input");
+                inputProcessMetadata.question,
+                "The question should match the input");
             assert.equal(metadata.votingOptions[0],
-                        inputProcessMetadata.votingOptions[0],
-                        "The votingOptions[0] should match the input");
+                inputProcessMetadata.votingOptions[0],
+                "The votingOptions[0] should match the input");
             assert.equal(metadata.votingOptions[1],
-                        inputProcessMetadata.votingOptions[1],
-                        "The votingOptions[1] should match the input");
+                inputProcessMetadata.votingOptions[1],
+                "The votingOptions[1] should match the input");
             assert.equal(metadata.voteEncryptionPublicKey,
-                        inputProcessMetadata.voteEncryptionPublicKey,
-                        "The voteEncryptionPublicKey should match the input");
+                inputProcessMetadata.voteEncryptionPublicKey,
+                "The voteEncryptionPublicKey should match the input");
         });
 
         it("Creates some more processes and checks they are listed correctly", async () => {
