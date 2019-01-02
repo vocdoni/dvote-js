@@ -5,7 +5,6 @@ import Contract from "web3/eth/contract";
 
 export default class Blockchain {
     private url: string;
-    // private contractPath: string;
     private contractAbi: any[];
     private contractAddress: string;
     private contract: Contract;
