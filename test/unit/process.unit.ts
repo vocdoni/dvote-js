@@ -52,13 +52,17 @@ describe("Process", () => {
             it("Fails on empty vote", () => {
                 const vote: string = "";
                 const votePublicKey: string = "123abcdeb";
-                assert.throws(() => { process.encryptVote(vote, votePublicKey); }, Error, "Vote can't be empty");
+                assert.throws(() => {
+                    process.encryptVote(vote, votePublicKey);
+                }, Error, "Vote can't be empty");
             }),
 
                 it("Fails on empty votePublicKey", () => {
                     const vote: string = "1";
                     const votePublicKey: string = "";
-                    assert.throws(() => { process.encryptVote(vote, votePublicKey); }, Error, "VotePublicKey can't be empty");
+                    assert.throws(() => {
+                        process.encryptVote(vote, votePublicKey);
+                    }, Error, "VotePublicKey can't be empty");
                 }),
 
                 it("Result is a String", () => {
