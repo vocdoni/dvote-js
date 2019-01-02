@@ -24,17 +24,18 @@ describe("Voting Process", () => {
             "0x1111111111111111111111111111111111111111111111111111111111111111"],
     };
 
-    describe("Creates and checks voting process creation", async () => {
-        const accounts = await web3Personal.getAccounts();
-        const organizer1 = accounts[0];
-        const organizer2 = accounts[1];
-
-        return;
+    describe("Creates and checks voting process creation", () => {
+        let accounts = [];
+        let organizer1 = null;
+        let organizer2 = null;
 
         let processId: string;
 
-        before(() => {
+        before(async () => {
             process = new dvote.Process(blockchainUrl, votingProcessContractAddress);
+            accounts = await web3Personal.getAccounts();
+            organizer1 = accounts[0];
+            organizer2 = accounts[1];
         });
 
         it("Creates a new process and verify metadata is stored correctly", async () => {
