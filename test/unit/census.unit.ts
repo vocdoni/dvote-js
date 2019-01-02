@@ -18,20 +18,31 @@ describe("Census", () => {
         it("");
     }),
 
-    describe("#getFranchiseProofUrl()", () => {
-        it("");
-    });
+        describe("#getFranchiseProofUrl()", () => {
+            it("");
+        });
 
     describe("#getCensusProof()", () => {
 
+        const expectedProof: MerkleProof = new MerkleProof(["0xroot", "0xsibling1", "0xsibling2", "0xleaf"]);
+
         it("Result is a String", async () => {
-                const franchiseProofUrl: string = "http://vocdoni.io/getFranchiseProof";
-                const votePublicKey: string = "123abcdeb";
-                const censusProof: MerkleProof = await census.getProof(votePublicKey, franchiseProofUrl);
-                assert.isNotEmpty(censusProof.root, "Merkle proof needs a root");
-                assert.isAtLeast(censusProof.siblings.length, 1, "Merkle proof needs at least one sibling");
-                assert.isNotEmpty(censusProof.siblings, "Merkle proof needs siblings");
-                assert.isNotEmpty(censusProof.leaf, "Merkle proof needs leaf");
+            const franchiseProofUrl: string = "http://vocdoni.io/getFranchiseProof";
+            const votePublicKey: string = "123abcdeb";
+            const getFranchiseProof = sinon.stub(dvote.Census.prototype, "getProof")
+                .resolves(expectedProof);
+
+            const proof: object = await census.getProof(votePublicKey, franchiseProofUrl);
+
+            getFranchiseProof.restore();
+            sinon.assert.match(proof, expectedProof);
+
+            /*const censusProof: MerkleProof = await census.getProof(votePublicKey, franchiseProofUrl);
+            assert.isNotEmpty(censusProof.root, "Merkle proof needs a root");
+            assert.isAtLeast(censusProof.siblings.length, 1, "Merkle proof needs at least one sibling");
+            assert.isNotEmpty(censusProof.siblings, "Merkle proof needs siblings");
+            assert.isNotEmpty(censusProof.leaf, "Merkle proof needs leaf");
+            */
         });
     });
 
