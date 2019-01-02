@@ -10,24 +10,31 @@ export default class Process {
     public async create(metadata: any, organizerAddress: string): Promise<string> {
         // TODO: Some input validation
         return await this.Blockchain.exec("createProcess",
-                                            [metadata.name,
-                                            metadata.startBlock,
-                                            metadata.endBlock,
-                                            metadata.censusMerkleRoot,
-                                            metadata.censusFranchiseProofUrl,
-                                            metadata.censusRequestUrl,
-                                            metadata.question,
-                                            metadata.votingOptions,
-                                            metadata.voteEncryptionPublicKey],
-                                            {type: "send", from: organizerAddress, gas: 999999});
+            [metadata.name,
+            metadata.startBlock,
+            metadata.endBlock,
+            metadata.censusMerkleRoot,
+            metadata.censusFranchiseProofUrl,
+            metadata.censusRequestUrl,
+            metadata.question,
+            metadata.votingOptions,
+            metadata.voteEncryptionPublicKey],
+            { type: "send", from: organizerAddress, gas: 999999 });
     }
 
     public async getMetadata(id: string): Promise<any> {
-        if (id.length === 0) {
-            throw Error("ID can't be empty");
-        }
-
-        return await this.Blockchain.exec("getProcessMetadata", [id]);
+        return new Promise((resolve, reject) => {
+            if (id.length === 0) {
+                reject("ID can't be empty");
+            }
+            this.Blockchain.exec("getProcessMetadata", [id])
+                .then((result) => {
+                    resolve(result);
+                })
+                .catch((err) => {
+                    reject(err);
+                });
+        });
     }
 
     public async getId(name: string, organizerAddress: string): Promise<string> {
