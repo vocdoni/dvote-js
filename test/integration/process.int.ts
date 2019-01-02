@@ -1,13 +1,12 @@
 import { assert } from "chai";
 import Web3 = require("web3");
-
+import Web3Personal = require("web3-eth-personal");
 import * as dvote from "../../src";
 
 describe("Voting Process", () => {
     const blockchainUrl: string = "http://localhost:8545";
+    const web3Personal = new Web3Personal(blockchainUrl);
     const votingProcessContractAddress: string = "0x55D90B083f694b6e6E7d9800687600f44708Cc59";
-    const votingProcessOrganizerAddress: string = "0x29fff43288136a7348b99efb1f99e92c53a306f1";
-    const votingProcessOrganizerAddress2: string = "0x3d23f56b06fbb9c7ef399a86bbe21cf09a7a19bf";
 
     let process: dvote.Process;
     const inputProcessMetadata = {
@@ -25,7 +24,13 @@ describe("Voting Process", () => {
             "0x1111111111111111111111111111111111111111111111111111111111111111"],
     };
 
-    describe("Creates and checks voting process creation", () => {
+    describe("Creates and checks voting process creation", async () => {
+        const accounts = await web3Personal.getAccounts();
+        const organizer1 = accounts[0];
+        const organizer2 = accounts[1];
+
+        return;
+
         let processId: string;
 
         before(() => {
@@ -33,9 +38,9 @@ describe("Voting Process", () => {
         });
 
         it("Creates a new process and verify metadata is stored correctly", async () => {
-            await process.create(inputProcessMetadata, votingProcessOrganizerAddress);
+            await process.create(inputProcessMetadata, organizer1);
 
-            processId = await process.getId(inputProcessMetadata.name, votingProcessOrganizerAddress);
+            processId = await process.getId(inputProcessMetadata.name, organizer1);
             assert.isString(processId, "ProcessId is a string");
 
             const metadata = await process.getMetadata(processId);
@@ -75,17 +80,17 @@ describe("Voting Process", () => {
         it("Creates some more processes and checks they are listed correctly", async () => {
             let p = Object.assign({}, inputProcessMetadata);
             p.name += "_2";
-            await process.create(p, votingProcessOrganizerAddress);
+            await process.create(p, organizer1);
 
             p = Object.assign({}, inputProcessMetadata);
             p.name += "_3";
-            await process.create(p, votingProcessOrganizerAddress);
+            await process.create(p, organizer1);
 
             p = Object.assign({}, inputProcessMetadata);
             p.name += "_other";
-            await process.create(p, votingProcessOrganizerAddress2);
+            await process.create(p, organizer2);
 
-            const organizerProcesses = await process.getProcessesIdsByOrganizer(votingProcessOrganizerAddress);
+            const organizerProcesses = await process.getProcessesIdsByOrganizer(organizer1);
             assert.equal(organizerProcesses.length, 3, "We have 3 processes for the test organitzation");
 
             const processesDetails = await process.getMultipleMetadata(organizerProcesses);
