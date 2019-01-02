@@ -28,7 +28,10 @@ describe("Census", () => {
                 const franchiseProofUrl: string = "http://vocdoni.io/getFranchiseProof";
                 const votePublicKey: string = "123abcdeb";
                 const censusProof: MerkleProof = await census.getProof(votePublicKey, franchiseProofUrl);
-                assert.isArray(censusProof);
+                assert.isNotEmpty(censusProof.root, "Merkle proof needs a root");
+                assert.isAtLeast(censusProof.siblings.length, 1, "Merkle proof needs at least one sibling");
+                assert.isNotEmpty(censusProof.siblings, "Merkle proof needs siblings");
+                assert.isNotEmpty(censusProof.leaf, "Merkle proof needs leaf");
         });
     });
 
