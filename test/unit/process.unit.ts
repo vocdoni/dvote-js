@@ -15,7 +15,6 @@ describe("Process", () => {
     describe("#GetById", () => {
         it("Should not accept an invalid id", () => {
             nodeassert.rejects(process.getMetadata(""), "Empty ID should fail");
-            // assert.isRejected(process.getMetadata(""), "Empty ID should fail");
         });
 
         it("Should return a valid process Metadata", async () => {
