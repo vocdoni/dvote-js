@@ -1,10 +1,11 @@
+import DvoteContracts = require("dvote-smart-contracts");
 import Blockchain from "./blockchain";
 
 export default class Entity {
     private Blockchain: Blockchain;
 
     constructor(blockchainUrl: string, contractAddress: string) {
-        this.Blockchain = new Blockchain(blockchainUrl, contractAddress);
+        this.Blockchain = new Blockchain(blockchainUrl, contractAddress, DvoteContracts.VotingEntity.abi);
     }
 
     public async create(metadata: any, organizerAddress: string): Promise<string> {
