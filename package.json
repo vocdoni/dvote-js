@@ -12,7 +12,6 @@
     "@types/chai": "^4.1.7",
     "@types/mocha": "^5.2.5",
     "@types/sinon": "^5.0.7",
-    "@types/web3": "^1.0.12",
     "chai": "^4.2.0",
     "mocha": "^5.2.0",
     "sinon": "^7.1.1",
