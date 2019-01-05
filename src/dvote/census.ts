@@ -1,3 +1,4 @@
+import DvoteContracts = require("dvote-smart-contracts");
 import HttpRequest = require("request-promise");
 import Blockchain from "./blockchain";
 import MerkleProof from "./merkleProof";
@@ -6,8 +7,8 @@ export default class Census {
 
     private Blockchain: Blockchain;
 
-    constructor(blockchainUrl: string, contractAddress: string) {
-        this.Blockchain = new Blockchain(blockchainUrl, contractAddress);
+    constructor(blockchainUrl: string, votingProcessContractAddress: string) {
+        this.Blockchain = new Blockchain(blockchainUrl, votingProcessContractAddress, DvoteContracts.VotingProcess.abi);
     }
 
     public async getFranchiseProofUrl(id: string): Promise<string> {
