@@ -11,6 +11,7 @@
   "devDependencies": {
     "@types/chai": "^4.1.7",
     "@types/mocha": "^5.2.5",
+    "@types/request": "^2.48.1",
     "@types/sinon": "^5.0.7",
     "chai": "^4.2.0",
     "mocha": "^5.2.0",
@@ -31,7 +32,6 @@
     "test-integration": "./node_modules/mocha/bin/mocha -r ts-node/register test/integration/*.ts"
   },
   "dependencies": {
-    "@types/request": "^2.48.1",
     "dvote-smart-contracts": "0.0.3",
     "request": "^2.88.0",
     "request-promise": "^4.2.2",
