@@ -17,7 +17,7 @@ describe("Voting Process", () => {
         censusMerkleRoot: "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
         censusRequestUrl: "http://vocdoni.io/requesCensus",
         endBlock: 1,
-        name: "This is a process name" + Math.random(),
+        name: "This is a process name",
         question: "Blue pill or red pill?",
         startBlock: 0,
         voteEncryptionPrivateKey: "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
