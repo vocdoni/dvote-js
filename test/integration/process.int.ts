@@ -3,10 +3,13 @@ import Web3 = require("web3");
 import Web3Personal = require("web3-eth-personal");
 import * as dvote from "../../src";
 
+import DvoteSmartContracts = require("dvote-smart-contracts");
+import { deployContract } from "../testUtils";
+
 describe("Voting Process", () => {
     const blockchainUrl: string = "http://localhost:8545";
     const web3Personal = new Web3Personal(blockchainUrl);
-    const votingProcessContractAddress: string = "0x7eD941e0CdA80121B80737BEC9F4a227F7484076";
+    let votingProcessContractAddress: string = null;
 
     let process: dvote.Process;
     const inputProcessMetadata = {
@@ -14,7 +17,7 @@ describe("Voting Process", () => {
         censusMerkleRoot: "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
         censusRequestUrl: "http://vocdoni.io/requesCensus",
         endBlock: 1,
-        name: "This is a process name" + Math.random(),
+        name: "This is a process name",
         question: "Blue pill or red pill?",
         startBlock: 0,
         voteEncryptionPrivateKey: "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
@@ -23,6 +26,24 @@ describe("Voting Process", () => {
         votingOptions: ["0x0000000000000000000000000000000000000000000000000000000000000000",
             "0x1111111111111111111111111111111111111111111111111111111111111111"],
     };
+
+    it("Should deploy a new VotingProcess contract", async () => {
+
+        const accounts = await web3Personal.getAccounts();
+
+        votingProcessContractAddress = await deployContract(
+            new Web3(new Web3.providers.HttpProvider(blockchainUrl)),
+            DvoteSmartContracts.VotingProcess.abi,
+            DvoteSmartContracts.VotingProcess.bytecode,
+            accounts[0],
+            2600000,
+            Web3.utils.toWei("1.2", "Gwei"),
+            );
+
+        process = new dvote.Process(blockchainUrl, votingProcessContractAddress);
+
+        assert.isString(votingProcessContractAddress);
+    });
 
     describe("Creates and checks voting process creation", () => {
         let accounts = [];
