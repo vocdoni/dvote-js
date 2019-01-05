@@ -6,6 +6,9 @@ import * as dvote from "../../src";
 
 import Web3 = require("web3");
 import Web3Personal = require("web3-eth-personal");
+
+import { deployContract } from "../testUtils";
+
 describe("#Unit Process", () => {
     const blockchainUrl: string = "http://localhost:8545";
     const web3: Web3 = new Web3(new Web3.providers.HttpProvider(blockchainUrl));
@@ -18,22 +21,16 @@ describe("#Unit Process", () => {
         it("Should deploy a new VotingProcess contract", async () => {
 
             const accounts = await web3Personal.getAccounts();
-            const organizer1 = accounts[0];
-            const deployGasCost = 2600000;
-            const deployGasPrice = web3.utils.toWei("1.2", "Gwei");
 
-            const contract = new web3.eth.Contract(DvoteSmartContracts.VotingProcess.abi);
-            const deployTransaction = await contract.deploy({
-                data: DvoteSmartContracts.VotingProcess.bytecode,
-            });
+            votingProcessContractAddress = await deployContract(
+                web3,
+                DvoteSmartContracts.VotingProcess.abi,
+                DvoteSmartContracts.VotingProcess.bytecode,
+                accounts[0],
+                2600000,
+                web3.utils.toWei("1.2", "Gwei"),
+                );
 
-            const instance = await deployTransaction.send({
-                from: organizer1,
-                gas: deployGasCost,
-                gasPrice: deployGasPrice,
-            });
-
-            votingProcessContractAddress = instance.options.address;
             process = new dvote.Process(blockchainUrl, votingProcessContractAddress);
 
             assert.isString(votingProcessContractAddress);
