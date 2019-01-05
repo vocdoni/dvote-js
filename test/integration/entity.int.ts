@@ -1,14 +1,16 @@
 import { assert } from "chai";
+import DvoteSmartContracts = require("dvote-smart-contracts");
 import Web3 = require("web3");
 import Web3Personal = require("web3-eth-personal");
 
 import * as dvote from "../../src";
+import { deployContract } from "../testUtils";
 
 describe("Voting Entities", () => {
     const blockchainUrl: string = "http://localhost:8545";
     const web3Personal = new Web3Personal(blockchainUrl);
 
-    const votingEntityContractAddress: string = "0x1EC35A3150d562403a27A66D3906205Bef4728d0";
+    let votingEntityContractAddress: string = null;
 
     let accounts = [];
     let organizer1 = null;
@@ -23,6 +25,16 @@ describe("Voting Entities", () => {
         accounts = await web3Personal.getAccounts();
         organizer1 = accounts[0];
         organizer2 = accounts[1];
+
+        votingEntityContractAddress = await deployContract(
+            new Web3(new Web3.providers.HttpProvider(blockchainUrl)),
+            DvoteSmartContracts.VotingEntity.abi,
+            DvoteSmartContracts.VotingEntity.bytecode,
+            accounts[0],
+            650000,
+            Web3.utils.toWei("1.2", "Gwei"),
+            );
+
     });
 
     describe("Creates and checks voting entity creation", () => {
