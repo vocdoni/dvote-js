@@ -7,11 +7,11 @@ import DvoteSmartContracts = require("dvote-smart-contracts");
 import { deployContract } from "../testUtils";
 
 describe("Voting Process", () => {
-    const blockchainUrl: string = "http://localhost:8545";
+    const blockchainUrl: string = process.env.BLOCKCHAIN_URL;
     const web3Personal = new Web3Personal(blockchainUrl);
     let votingProcessContractAddress: string = null;
 
-    let process: dvote.Process;
+    let votingProcess: dvote.Process;
     const inputProcessMetadata = {
         censusFranchiseProofUrl: "http://vocdoni.io/getFranchiseProof",
         censusMerkleRoot: "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
@@ -40,7 +40,7 @@ describe("Voting Process", () => {
             Web3.utils.toWei("1.2", "Gwei"),
             );
 
-        process = new dvote.Process(blockchainUrl, votingProcessContractAddress);
+        votingProcess = new dvote.Process(blockchainUrl, votingProcessContractAddress);
 
         assert.isString(votingProcessContractAddress);
     });
@@ -53,19 +53,19 @@ describe("Voting Process", () => {
         let processId: string;
 
         before(async () => {
-            process = new dvote.Process(blockchainUrl, votingProcessContractAddress);
+            votingProcess = new dvote.Process(blockchainUrl, votingProcessContractAddress);
             accounts = await web3Personal.getAccounts();
             organizer1 = accounts[0];
             organizer2 = accounts[1];
         });
 
         it("Creates a new process and verify metadata is stored correctly", async () => {
-            await process.create(inputProcessMetadata, organizer1);
+            await votingProcess.create(inputProcessMetadata, organizer1);
 
-            processId = await process.getId(inputProcessMetadata.name, organizer1);
+            processId = await votingProcess.getId(inputProcessMetadata.name, organizer1);
             assert.isString(processId, "ProcessId is a string");
 
-            const metadata = await process.getMetadata(processId);
+            const metadata = await votingProcess.getMetadata(processId);
 
             assert.equal(metadata.name,
                 inputProcessMetadata.name,
@@ -76,16 +76,6 @@ describe("Voting Process", () => {
             assert.equal(metadata.endBlock,
                 inputProcessMetadata.endBlock.valueOf(),
                 "The endBlock should match the input");
-            /*assert.equal(metadata.censusMerkleRoot,
-                inputProcessMetadata.censusMerkleRoot,
-                "The censusMerkleRoot should match the input");
-            assert.equal(metadata.censusFranchiseProofUrl,
-                inputProcessMetadata.censusFranchiseProofUrl,
-                "The censusFranchiseProofUrl should match the input");
-            assert.equal(metadata.censusRequestUrl,
-                inputProcessMetadata.censusRequestUrl,
-                "The censusRequestUrl should match the input");
-                */
             assert.equal(metadata.question,
                 inputProcessMetadata.question,
                 "The question should match the input");
@@ -103,20 +93,20 @@ describe("Voting Process", () => {
         it("Creates some more processes and checks they are listed correctly", async () => {
             let p = Object.assign({}, inputProcessMetadata);
             p.name += "_2";
-            await process.create(p, organizer1);
+            await votingProcess.create(p, organizer1);
 
             p = Object.assign({}, inputProcessMetadata);
             p.name += "_3";
-            await process.create(p, organizer1);
+            await votingProcess.create(p, organizer1);
 
             p = Object.assign({}, inputProcessMetadata);
             p.name += "_other";
-            await process.create(p, organizer2);
+            await votingProcess.create(p, organizer2);
 
-            const organizerProcesses = await process.getProcessesIdsByOrganizer(organizer1);
+            const organizerProcesses = await votingProcess.getProcessesIdsByOrganizer(organizer1);
             assert.equal(organizerProcesses.length, 3, "We have 3 processes for the test organitzation");
 
-            const processesDetails = await process.getMultipleMetadata(organizerProcesses);
+            const processesDetails = await votingProcess.getMultipleMetadata(organizerProcesses);
             assert.equal(processesDetails[1].name, "This is a process name_2", "2nd process name should end with _2");
             assert.equal(processesDetails[2].name, "This is a process name_3", "3rd process name should end with _3");
         });

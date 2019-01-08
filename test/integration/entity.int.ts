@@ -7,7 +7,7 @@ import * as dvote from "../../src";
 import { deployContract } from "../testUtils";
 
 describe("Voting Entities", () => {
-    const blockchainUrl: string = "http://localhost:8545";
+    const blockchainUrl: string = process.env.BLOCKCHAIN_URL;
     const web3Personal = new Web3Personal(blockchainUrl);
 
     let votingEntityContractAddress: string = null;
