@@ -1,19 +1,9 @@
-import * as nodeassert from "assert";
 import { assert } from "chai";
-import DvoteSmartContracts = require("dvote-smart-contracts");
 import * as sinon from "sinon";
 import * as dvote from "../../src";
 
-import Web3 = require("web3");
-import Web3Personal = require("web3-eth-personal");
-
-import { deployContract } from "../testUtils";
-
 describe("#Unit Process", () => {
     const blockchainUrl: string = process.env.BLOCKCHAIN_URL;
-    const web3: Web3 = new Web3(new Web3.providers.HttpProvider(blockchainUrl));
-    const web3Personal = new Web3Personal(blockchainUrl);
-    // let votingProcessContractAddress: string = null;
     let votingProcess: dvote.Process;
 
     describe("#GetById", () => {
