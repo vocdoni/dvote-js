@@ -10,37 +10,18 @@ import Web3Personal = require("web3-eth-personal");
 import { deployContract } from "../testUtils";
 
 describe("#Unit Process", () => {
-    const blockchainUrl: string = "http://localhost:8545";
+    const blockchainUrl: string = process.env.BLOCKCHAIN_URL;
     const web3: Web3 = new Web3(new Web3.providers.HttpProvider(blockchainUrl));
     const web3Personal = new Web3Personal(blockchainUrl);
-    let votingProcessContractAddress: string = null;
-    let process: dvote.Process;
+    // let votingProcessContractAddress: string = null;
+    let votingProcess: dvote.Process;
 
     describe("#GetById", () => {
-
-        it("Should deploy a new VotingProcess contract", async () => {
-
-            const accounts = await web3Personal.getAccounts();
-
-            votingProcessContractAddress = await deployContract(
-                web3,
-                DvoteSmartContracts.VotingProcess.abi,
-                DvoteSmartContracts.VotingProcess.bytecode,
-                accounts[0],
-                2600000,
-                web3.utils.toWei("1.2", "Gwei"),
-                );
-
-            process = new dvote.Process(blockchainUrl, votingProcessContractAddress);
-
-            assert.isString(votingProcessContractAddress);
-        });
-
-        it("Should not accept an invalid id", () => {
-            nodeassert.rejects(process.getMetadata(""), "Empty ID should fail");
-        });
-
         it("Should return a valid process Metadata", async () => {
+            const contractStub = sinon.stub(dvote.Blockchain.prototype, "getContract").returns(false);
+            votingProcess = new dvote.Process(blockchainUrl, "nowhere");
+            contractStub.restore();
+
             const expectedProcessMetadata = {
                 censusRoot: "",
                 censusUrl: "",
@@ -53,9 +34,9 @@ describe("#Unit Process", () => {
             };
 
             const getProcessMetadataStub = sinon.stub(dvote.Process.prototype, "getMetadata")
-                .resolves(expectedProcessMetadata);
+                                                .resolves(expectedProcessMetadata);
 
-            const metadata: object = await process.getMetadata("identifier");
+            const metadata: object = await votingProcess.getMetadata("identifier");
 
             getProcessMetadataStub.restore();
             sinon.assert.match(metadata, expectedProcessMetadata);
@@ -75,7 +56,7 @@ describe("#Unit Process", () => {
                 const vote: string = "";
                 const votePublicKey: string = "123abcdeb";
                 assert.throws(() => {
-                    process.encryptVote(vote, votePublicKey);
+                    votingProcess.encryptVote(vote, votePublicKey);
                 }, Error, "Vote can't be empty");
             }),
 
@@ -83,14 +64,14 @@ describe("#Unit Process", () => {
                     const vote: string = "1";
                     const votePublicKey: string = "";
                     assert.throws(() => {
-                        process.encryptVote(vote, votePublicKey);
+                        votingProcess.encryptVote(vote, votePublicKey);
                     }, Error, "VotePublicKey can't be empty");
                 }),
 
                 it("Result is a String", () => {
                     const vote: string = "1";
                     const votePublicKey: string = "123abcdeb";
-                    const encryptedVote: string = process.encryptVote(vote, votePublicKey);
+                    const encryptedVote: string = votingProcess.encryptVote(vote, votePublicKey);
                     assert.isString(encryptedVote);
                 });
         }),

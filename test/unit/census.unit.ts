@@ -6,7 +6,7 @@ import * as dvote from "../../src";
 import MerkleProof from "../../src/dvote/merkleProof";
 
 describe("Census", () => {
-    const blockchainUrl: string = "http://localhost:8545";
+    const blockchainUrl: string = process.env.BLOCKCHAIN_URL;
     const votingProcessContractAddress: string = "0xd8c3d0B72DFbE3adbe0fd9295c9fe083ff896684";
     let census: dvote.Census;
 
