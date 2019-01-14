@@ -18,9 +18,9 @@ describe("Census", () => {
         it("");
     }),
 
-        describe("#getFranchiseProofUrl()", () => {
-            it("");
-        });
+    describe("#getFranchiseProofUrl()", () => {
+        it("");
+    });
 
     describe("#getCensusProof()", () => {
 
