@@ -11,15 +11,12 @@ export default class Census {
         this.Blockchain = new Blockchain(blockchainUrl, votingProcessContractAddress, DvoteContracts.VotingProcess.abi);
     }
 
-    public async getFranchiseProofUrl(id: string): Promise<string> {
-
+    public async getMetadata(id: string): Promise<string> {
         if (id.length === 0) {
             throw Error("ID can't be empty");
         }
 
-        const censusMetadata = await this.Blockchain.exec("getCensusMetadata", [id]);
-
-        return censusMetadata.censusFranchiseProofUrl;
+        return await this.Blockchain.exec("getCensusMetadata", [id]);
     }
 
     public async getProof(votePublicKey: string, franchiseProofUrl: string): Promise<MerkleProof> {
@@ -48,13 +45,4 @@ export default class Census {
         });
 
     }
-
-    public async get(address: string): Promise<any> {
-        if (address.length === 0) {
-            throw Error("Address can't be empty");
-        }
-
-        return await this.Blockchain.exec("getEntity", [address], { type: "call" });
-    }
-
 }
