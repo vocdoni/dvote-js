@@ -32,7 +32,7 @@ describe("Voting Entities", () => {
             DvoteSmartContracts.VotingEntity.abi,
             DvoteSmartContracts.VotingEntity.bytecode,
             accounts[0],
-            650000,
+            3500000,
             Web3.utils.toWei("1.2", "Gwei"),
             );
 
