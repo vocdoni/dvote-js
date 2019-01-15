@@ -18,6 +18,7 @@ describe("Voting Entities", () => {
 
     let entity: dvote.Entity;
     const inputEntity = {
+        censusRequestUrl: "http://vocdoni.io/requestCenus",
         name: "This is an Entity name",
     };
 
@@ -43,7 +44,7 @@ describe("Voting Entities", () => {
             entity = new dvote.Entity(blockchainUrl, votingEntityContractAddress);
         });
 
-        it("Creates a new process and verify metadata is stored correctly", async () => {
+        it("Creates a new entity and verify metadata is stored correctly", async () => {
             await entity.create(inputEntity, organizer1);
             const metadata = await entity.get(organizer1);
 

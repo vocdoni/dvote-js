@@ -9,10 +9,8 @@ export default class Entity {
     }
 
     public async create(metadata: any, organizerAddress: string): Promise<string> {
-        // TODO: Some input validation
-
         return await this.Blockchain.exec("createEntity",
-                                            [metadata.name],
+                                            [metadata.name, metadata.censusRequestUrl],
                                             {type: "send", from: organizerAddress, gas: 999999});
     }
 
