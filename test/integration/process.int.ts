@@ -106,9 +106,15 @@ describe("Voting Process", () => {
             const organizerProcesses = await votingProcess.getProcessesIdsByOrganizer(organizer1);
             assert.equal(organizerProcesses.length, 3, "We have 3 processes for the test organitzation");
 
+            // We get the first one manually, just in case
+            const process0Details = await votingProcess.getMetadata(organizerProcesses[0]);
+            assert.equal(process0Details.name, inputProcessMetadata.name, "1st process name should end normally");
+
+            // Testing the rest
             const processesDetails = await votingProcess.getMultipleMetadata(organizerProcesses);
             assert.equal(processesDetails[1].name, "This is a process name_2", "2nd process name should end with _2");
             assert.equal(processesDetails[2].name, "This is a process name_3", "3rd process name should end with _3");
+
         });
     });
 });
