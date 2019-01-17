@@ -27,14 +27,15 @@
     "build": "./node_modules/typescript/bin/tsc",
     "watch": "./node_modules/typescript/bin/tsc -w -p .",
     "ts-node": "./node_modules/ts-node/dist/bin.js",
-    "test": "BLOCKCHAIN_URL='http://localhost:8545' ./node_modules/mocha/bin/mocha -r ts-node/register test/**/*.ts",
+    "test": "BLOCKCHAIN_URL='http://localhost:8545' CENSUS_SERVICE_URL='http://localhost:1500' ./node_modules/mocha/bin/mocha -r ts-node/register test/**/*.ts",
     "test-unit": "./node_modules/mocha/bin/mocha -r ts-node/register test/unit/*.ts",
-    "test-integration": "BLOCKCHAIN_URL='http://localhost:8545' ./node_modules/mocha/bin/mocha -r ts-node/register test/integration/*.ts"
+    "test-integration": "BLOCKCHAIN_URL='http://localhost:8545' CENSUS_SERVICE_URL='http://localhost:1500' ./node_modules/mocha/bin/mocha -r ts-node/register test/integration/*.ts",
+    "testintest": "BLOCKCHAIN_URL='http://node.testnet.vocdoni.io:8545' CENSUS_SERVICE_URL='http://census.vocdoni.io' ./node_modules/mocha/bin/mocha -r ts-node/register test/**/*.ts"
   },
   "dependencies": {
+    "axios": "^0.18.0",
     "dvote-smart-contracts": "0.0.5",
     "request": "^2.88.0",
-    "request-promise": "^4.2.2",
     "web3": "^1.0.0-beta.37",
     "web3-eth-personal": "^1.0.0-beta.37"
   },

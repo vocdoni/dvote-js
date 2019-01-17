@@ -1,14 +1,17 @@
 import DvoteContracts = require("dvote-smart-contracts");
-import HttpRequest = require("request-promise");
 import Blockchain from "./blockchain";
 import MerkleProof from "./merkleProof";
+
+import Axios from "axios";
 
 export default class Census {
 
     private Blockchain: Blockchain;
+    private CensusServiceUrl: string;
 
-    constructor(blockchainUrl: string, votingProcessContractAddress: string) {
+    constructor(blockchainUrl: string, votingProcessContractAddress: string, censusServiceUrl: string) {
         this.Blockchain = new Blockchain(blockchainUrl, votingProcessContractAddress, DvoteContracts.VotingProcess.abi);
+        this.CensusServiceUrl = censusServiceUrl;
     }
 
     public async getMetadata(id: string): Promise<string> {
@@ -19,30 +22,40 @@ export default class Census {
         return await this.Blockchain.exec("getCensusMetadata", [id]);
     }
 
-    public async getProof(votePublicKey: string, franchiseProofUrl: string): Promise<MerkleProof> {
-        if (votePublicKey.length === 0) {
-            throw Error("votePublicKey can't be empty");
+    public async getProof(votingPublicKey: string, censusId: string, franchiseProofUrl?: string): Promise<MerkleProof> {
+        if (votingPublicKey.length === 0
+            || censusId.length === 0) {
+            throw Error("Neither votePublicKey nor censusId can be empty");
         }
 
-        if (franchiseProofUrl.length === 0) {
-            throw Error("franchiseProofUrl can't be empty");
+        if (!franchiseProofUrl) {
+            franchiseProofUrl = this.CensusServiceUrl + "/genProof";
         }
 
-        return new Promise((resolve, reject) => {
-            const options = {
-                json: true,
-                uri: franchiseProofUrl,
-            };
+        const data = { claimData: votingPublicKey, processId: censusId };
+        const response = await Axios.post(franchiseProofUrl, data);
+        return new MerkleProof(response.data.response);
+    }
 
-            HttpRequest(options)
-                .then((proof: string[]) => {
-                    resolve(new MerkleProof(proof));
-                })
-                .catch((err) => {
-                    // API call failed...
-                    resolve(new MerkleProof([]));
-                });
-        });
+    public async addClaim(votingPublicKey: string, censusId: string) {
+        if (votingPublicKey.length === 0
+            || censusId.length === 0) {
+            throw Error("Neither votePublicKey nor censusId can be empty");
+        }
 
+        const data = { claimData: votingPublicKey, processId: censusId };
+        const response = await Axios.post(this.CensusServiceUrl + "/addClaim", data);
+        return (response.data.error === false);
+    }
+
+    public async checkProof(votingPublicKey: string, censusId: string, proof: string) {
+        if (votingPublicKey.length === 0
+            || censusId.length === 0) {
+            throw Error("Neither votePublicKey nor censusId can be empty");
+        }
+
+        const data = { claimData: votingPublicKey, processId: censusId, proofData: proof };
+        const response = await Axios.post(this.CensusServiceUrl + "/checkProof", data);
+        return (response.data.response === "valid");
     }
 }
