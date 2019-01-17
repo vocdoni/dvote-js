@@ -14,7 +14,6 @@ describe("Voting Entities", () => {
 
     let accounts = [];
     let organizer1 = null;
-    let organizer2 = null;
 
     let entity: dvote.Entity;
     const inputEntity = {
@@ -25,7 +24,6 @@ describe("Voting Entities", () => {
     before(async () => {
         accounts = await web3Personal.getAccounts();
         organizer1 = accounts[0];
-        organizer2 = accounts[1];
 
         votingEntityContractAddress = await deployContract(
             new Web3(new Web3.providers.HttpProvider(blockchainUrl)),
@@ -49,6 +47,11 @@ describe("Voting Entities", () => {
             const metadata = await entity.get(organizer1);
 
             assert.equal(metadata.name, inputEntity.name, "The name should match the input");
+            assert.equal(
+                metadata.censusRequestUrl,
+                inputEntity.censusRequestUrl,
+                "The censusUrl should match the input",
+            );
         });
     });
 });
