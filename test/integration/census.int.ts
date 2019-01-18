@@ -48,6 +48,11 @@ describe("Census", () => {
             const response = await census.checkProof(accounts[0], censusId, proof.raw);
             assert.isTrue(response, "A valid response verifies Public Key is in Census");
         });
+
+        it("Should get the Root of the census", async () => {
+            const response = await census.getRoot(censusId);
+            assert.isString(response, "Census Root should be a string");
+        });
     });
 
 });

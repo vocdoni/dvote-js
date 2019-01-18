@@ -32,7 +32,7 @@ export default class Census {
             franchiseProofUrl = this.CensusServiceUrl + "/genProof";
         }
 
-        const data = { claimData: votingPublicKey, processId: censusId };
+        const data = { claimData: votingPublicKey, censusId };
         const response = await Axios.post(franchiseProofUrl, data);
         return new MerkleProof(response.data.response);
     }
@@ -43,7 +43,7 @@ export default class Census {
             throw Error("Neither votePublicKey nor censusId can be empty");
         }
 
-        const data = { claimData: votingPublicKey, processId: censusId };
+        const data = { claimData: votingPublicKey, censusId };
         const response = await Axios.post(this.CensusServiceUrl + "/addClaim", data);
         return (response.data.error === false);
     }
@@ -54,8 +54,18 @@ export default class Census {
             throw Error("Neither votePublicKey nor censusId can be empty");
         }
 
-        const data = { claimData: votingPublicKey, processId: censusId, proofData: proof };
+        const data = { claimData: votingPublicKey, censusId, proofData: proof };
         const response = await Axios.post(this.CensusServiceUrl + "/checkProof", data);
         return (response.data.response === "valid");
+    }
+
+    public async getRoot(censusId: string) {
+        if (censusId.length === 0) {
+            throw Error("CensusId can't be empty");
+        }
+
+        const data = { censusId };
+        const response = await Axios.post(this.CensusServiceUrl + "/getRoot", data);
+        return response.data.response;
     }
 }
