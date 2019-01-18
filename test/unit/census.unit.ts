@@ -13,8 +13,8 @@ describe("Census", () => {
     });
 
     describe("getCensusProof()", () => {
-
-        const expectedProof: MerkleProof = new MerkleProof(["0xroot", "0xsibling1", "0xsibling2", "0xleaf"]);
+        const eProof = "0x0000000000000000000000000000000000000000000000000000000000000007bfa73b7252009f76767ece75da9b5224014ee9c63b63262169e5b989f02930f252f3ca2aaf635ec2ae4452f6a65be7bca72678287a8bb08ad4babfcccd76c2fef1aac7675261bf6d12c746fb7907beea6d1f1635af93ba931eec0c6a747ecc37";
+        const expectedProof: MerkleProof = new MerkleProof(eProof);
 
         it("Result is a String", async () => {
             const franchiseProofUrl: string = "http://vocdoni.io/getFranchiseProof";
