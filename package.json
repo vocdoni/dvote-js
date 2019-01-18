@@ -1,6 +1,6 @@
 {
   "name": "dvote-client",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Javascript client library to work with the Vocdoni core features",
   "main": "dist/index",
   "typings": "dist/index",
@@ -18,7 +18,7 @@
     "sinon": "^7.2.2",
     "ts-node": "^7.0.1",
     "tslint": "^5.12.1",
-    "typescript": "^3.2.2"
+    "typescript": "^3.2.4"
   },
   "scripts": {
     "prepublishOnly": "npm run compile",
