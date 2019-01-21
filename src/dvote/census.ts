@@ -3,14 +3,18 @@ import Blockchain from "./blockchain";
 import MerkleProof from "./merkleProof";
 
 import Axios from "axios";
+import * as tweetnacl from "tweetnacl";
 
 export default class Census {
 
     private Blockchain: Blockchain;
     private CensusServiceUrl: string;
 
-    constructor(blockchainUrl: string, votingProcessContractAddress: string, censusServiceUrl: string) {
+    public initBlockchain(blockchainUrl: string, votingProcessContractAddress: string) {
         this.Blockchain = new Blockchain(blockchainUrl, votingProcessContractAddress, DvoteContracts.VotingProcess.abi);
+    }
+
+    public initCensusService(censusServiceUrl: string) {
         this.CensusServiceUrl = censusServiceUrl;
     }
 
@@ -37,14 +41,18 @@ export default class Census {
         return new MerkleProof(response.data.response);
     }
 
-    public async addClaim(votingPublicKey: string, censusId: string) {
+    public async addClaim(votingPublicKey: string, censusId: string, privateKey: string) {
         if (votingPublicKey.length === 0
             || censusId.length === 0) {
             throw Error("Neither votePublicKey nor censusId can be empty");
         }
 
-        const data = { claimData: votingPublicKey, censusId };
+        const timeStamp: string = Math.floor(new Date().getTime() / 1000).toString();
+        const data = { claimData: votingPublicKey, censusId, timeStamp, signature: "" };
+        data.signature = this.sign(data, privateKey);
+
         const response = await Axios.post(this.CensusServiceUrl + "/addClaim", data);
+
         return (response.data.error === false);
     }
 
@@ -67,5 +75,11 @@ export default class Census {
         const data = { censusId };
         const response = await Axios.post(this.CensusServiceUrl + "/getRoot", data);
         return response.data.response;
+    }
+
+    public sign(data: any, privateKey: string): string {
+        const message: string = data.censusId + data.claimData + data.timeStamp;
+        const signed: Uint8Array = tweetnacl.sign(Buffer.from(message), Buffer.from(privateKey, "hex"));
+        return Buffer.from(signed).toString("hex").slice(0, 128);
     }
 }
