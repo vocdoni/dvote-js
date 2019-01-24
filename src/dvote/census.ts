@@ -83,6 +83,12 @@ export default class Census {
         return response.data.response;
     }
 
+    public async dump(censusId: string): Promise<string[]> {
+        const data = { censusId };
+        const response = await Axios.post(this.CensusServiceUrl + "/dump", data);
+        return JSON.parse(response.data.response);
+    }
+
     private sign(data: any, privateKey: string): string {
         const message: string = data.censusId + data.claimData + data.timeStamp;
         const signed: Uint8Array = tweetnacl.sign(Buffer.from(message), Buffer.from(privateKey, "hex"));

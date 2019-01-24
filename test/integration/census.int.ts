@@ -58,6 +58,9 @@ describe("Census", () => {
 
             const res = await census.addClaim(accounts[0], snapshotCensusId, censusPrivateKey);
             assert.isFalse(res);
+
+            const dump = await census.dump(censusId);
+            assert.isArray(dump);
         });
 
     });
