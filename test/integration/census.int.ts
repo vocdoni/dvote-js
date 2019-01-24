@@ -45,6 +45,21 @@ describe("Census", () => {
             const response = await census.getRoot(censusId);
             assert.isString(response, "Census Root should be a string");
         });
+
+        it("Should take a snapshot of the census, get the proof but not add new claim to this censusID", async () => {
+            const snapshotCensusId = await census.snapshot(censusId);
+            assert.isString(snapshotCensusId, "snapshotCensusId provided by snapshot should be a string");
+
+            proof = await census.getProof(accounts[0], snapshotCensusId);
+            assert.isString(proof.raw, "Raw proof should be a string");
+
+            const response = await census.checkProof(accounts[0], snapshotCensusId, proof.raw);
+            assert.isTrue(response, "A valid response verifies Public Key is in Census");
+
+            const res = await census.addClaim(accounts[0], snapshotCensusId, censusPrivateKey);
+            assert.isFalse(res);
+        });
+
     });
 
 });

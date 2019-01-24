@@ -41,7 +41,7 @@ export default class Census {
         return new MerkleProof(response.data.response);
     }
 
-    public async addClaim(votingPublicKey: string, censusId: string, privateKey: string) {
+    public async addClaim(votingPublicKey: string, censusId: string, privateKey: string): Promise<boolean> {
         if (votingPublicKey.length === 0
             || censusId.length === 0) {
             throw Error("Neither votePublicKey nor censusId can be empty");
@@ -56,7 +56,7 @@ export default class Census {
         return (response.data.error === false);
     }
 
-    public async checkProof(votingPublicKey: string, censusId: string, proof: string) {
+    public async checkProof(votingPublicKey: string, censusId: string, proof: string): Promise<boolean> {
         if (votingPublicKey.length === 0
             || censusId.length === 0) {
             throw Error("Neither votePublicKey nor censusId can be empty");
@@ -67,7 +67,7 @@ export default class Census {
         return (response.data.response === "valid");
     }
 
-    public async getRoot(censusId: string) {
+    public async getRoot(censusId: string): Promise<string> {
         if (censusId.length === 0) {
             throw Error("CensusId can't be empty");
         }
@@ -77,7 +77,13 @@ export default class Census {
         return response.data.response;
     }
 
-    public sign(data: any, privateKey: string): string {
+    public async snapshot(censusId: string): Promise<string> {
+        const data = { censusId };
+        const response = await Axios.post(this.CensusServiceUrl + "/snapshot", data);
+        return response.data.response;
+    }
+
+    private sign(data: any, privateKey: string): string {
         const message: string = data.censusId + data.claimData + data.timeStamp;
         const signed: Uint8Array = tweetnacl.sign(Buffer.from(message), Buffer.from(privateKey, "hex"));
         return Buffer.from(signed).toString("hex").slice(0, 128);
