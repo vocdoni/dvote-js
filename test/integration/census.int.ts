@@ -1,6 +1,7 @@
 import { assert } from "chai";
 import Web3Personal = require("web3-eth-personal");
 import * as dvote from "../../src";
+import * as sinon from "sinon";
 import MerkleProof from "../../src/dvote/merkleProof";
 
 import Config from "../../src/dvote/utils/config";
@@ -31,6 +32,17 @@ describe("Census", () => {
             assert.isTrue(response);
         });
 
+        it("Should not be able to add a mal-signed claim to the census", async () => {
+            const censusSignStub = sinon.stub(dvote.Census.prototype, "sign")
+                                        .returns("this_is_not_a_correct_signature");
+
+            const response = await census.addClaim(accounts[0], censusId, censusPrivateKey);
+
+            censusSignStub.restore();
+
+            assert.isFalse(response);
+        });
+
         it("Should get the proof from the census", async () => {
             proof = await census.getProof(accounts[0], censusId);
             assert.isString(proof.raw, "Raw proof should be a string");
@@ -47,7 +59,7 @@ describe("Census", () => {
         });
 
         it("Should take a snapshot of the census, get the proof but not add new claim to this censusID", async () => {
-            const snapshotCensusId = await census.snapshot(censusId);
+            const snapshotCensusId = await census.snapshot(censusId, censusPrivateKey);
             assert.isString(snapshotCensusId, "snapshotCensusId provided by snapshot should be a string");
 
             proof = await census.getProof(accounts[0], snapshotCensusId);
@@ -56,8 +68,8 @@ describe("Census", () => {
             const response = await census.checkProof(accounts[0], snapshotCensusId, proof.raw);
             assert.isTrue(response, "A valid response verifies Public Key is in Census");
 
-            const res = await census.addClaim(accounts[0], snapshotCensusId, censusPrivateKey);
-            assert.isFalse(res);
+            const res = await census.addClaim(accounts[1], snapshotCensusId, censusPrivateKey);
+            assert.isFalse(res, "Shouldn't be able to add a Claim in a snapshoted census");
 
             const dump = await census.dump(censusId);
             assert.isArray(dump);
