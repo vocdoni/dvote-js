@@ -13,7 +13,7 @@ describe("Voting Process", () => {
 
     let votingProcess: dvote.Process;
     const inputProcessMetadata = {
-        censusFranchiseProofUrl: "http://vocdoni.io/getFranchiseProof",
+        censusProofUrl: "http://vocdoni.io/getCensusProof",
         censusMerkleRoot: "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
         censusRequestUrl: "http://vocdoni.io/requesCensus",
         endBlock: 1,

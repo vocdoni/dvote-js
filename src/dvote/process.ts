@@ -15,7 +15,7 @@ export default class Process {
             metadata.startBlock,
             metadata.endBlock,
             metadata.censusMerkleRoot,
-            metadata.censusFranchiseProofUrl,
+            metadata.censusProofUrl,
             metadata.censusRequestUrl,
             metadata.question,
             metadata.votingOptions,
