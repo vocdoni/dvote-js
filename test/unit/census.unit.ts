@@ -16,13 +16,13 @@ describe("Census", () => {
         const expectedProof: MerkleProof = new MerkleProof(eProof);
 
         it("Result is a String", async () => {
-            const franchiseProofUrl: string = "http://vocdoni.io/getFranchiseProof";
+            const censusProofUrl: string = "http://vocdoni.io/getFranchiseProof";
             const votePublicKey: string = "123abcdeb";
             const censusId: string = "test";
             const getFranchiseProof = sinon.stub(dvote.Census.prototype, "getProof")
                                            .resolves(expectedProof);
 
-            const proof: object = await census.getProof(votePublicKey, censusId, franchiseProofUrl);
+            const proof: object = await census.getProof(votePublicKey, censusId, censusProofUrl);
 
             getFranchiseProof.restore();
             sinon.assert.match(proof, expectedProof);

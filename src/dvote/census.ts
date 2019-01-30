@@ -26,18 +26,18 @@ export default class Census {
         return await this.Blockchain.exec("getCensusMetadata", [id]);
     }
 
-    public async getProof(votingPublicKey: string, censusId: string, franchiseProofUrl?: string): Promise<MerkleProof> {
+    public async getProof(votingPublicKey: string, censusId: string, censusProofUrl?: string): Promise<MerkleProof> {
         if (votingPublicKey.length === 0
             || censusId.length === 0) {
             throw Error("Neither votePublicKey nor censusId can be empty");
         }
 
-        if (!franchiseProofUrl) {
-            franchiseProofUrl = this.CensusServiceUrl + "/genProof";
+        if (!censusProofUrl) {
+            censusProofUrl = this.CensusServiceUrl + "/genProof";
         }
 
         const data = { claimData: votingPublicKey, censusId };
-        const response = await Axios.post(franchiseProofUrl, data);
+        const response = await Axios.post(censusProofUrl, data);
         return new MerkleProof(response.data.response);
     }
 
