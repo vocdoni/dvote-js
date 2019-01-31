@@ -20,12 +20,12 @@ export default class Blockchain {
         this.contract = Blockchain.getContract(this.contractAbi, this.contractAddress);
     }
 
-    public async exec(method: string, params?: any[], options?: any): Promise<any> {
+    public exec(method: string, params?: any[], options?: any): Promise<any> {
         let callOrSend = "call";
         if (options != null && options.type === "send") {
             callOrSend = "send";
         }
 
-        return await this.contract.methods[method](...params)[callOrSend](options);
+        return this.contract.methods[method](...params)[callOrSend](options);
     }
 }
