@@ -31,13 +31,14 @@
     "test": "./node_modules/mocha/bin/mocha -r ts-node/register test/**/*.ts",
     "test-unit": "./node_modules/mocha/bin/mocha -r ts-node/register test/unit/*.ts",
     "test-integration": "./node_modules/mocha/bin/mocha -r ts-node/register test/integration/*.ts",
-    "testintest": "NODE_ENV='test' ./node_modules/mocha/bin/mocha -r ts-node/register test/**/*.ts"
+    "testintest": "NODE_ENV='test' ./node_modules/mocha/bin/mocha --timeout 5000 -r ts-node/register test/**/*.ts"
   },
   "dependencies": {
     "axios": "^0.18.0",
     "dotenv": "^6.2.0",
     "dvote-smart-contracts": "0.0.6",
     "request": "^2.88.0",
+    "truffle-hdwallet-provider": "^1.0.3",
     "tweetnacl": "^1.0.0",
     "web3": "^1.0.0-beta.37"
   },
