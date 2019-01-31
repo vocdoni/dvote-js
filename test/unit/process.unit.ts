@@ -8,7 +8,7 @@ describe("#Unit Process", () => {
 
     describe("#GetById", () => {
         it("Should return a valid process Metadata", async () => {
-            const contractStub = sinon.stub(dvote.Blockchain, "getContract").returns(false);
+            const contractStub = sinon.stub(dvote.Blockchain.prototype, "getContract").returns(false);
             votingProcess = new dvote.Process(blockchainUrl, "nowhere");
             contractStub.restore();
 
