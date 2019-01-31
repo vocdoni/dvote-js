@@ -2,14 +2,28 @@ import { assert } from "chai";
 import Web3 = require("web3");
 import * as dvote from "../../src";
 
+const HDWalletProvider = require("truffle-hdwallet-provider");
+
 import DvoteSmartContracts = require("dvote-smart-contracts");
 import { deployContract } from "../testUtils";
 
 describe("Voting Process", () => {
+
+
+    
+    
+    
+    
+    const mnemonic = "perfect kite link property simple eight welcome spring enforce universe barely cargo"
     const blockchainUrl: string = process.env.BLOCKCHAIN_URL;
+    const httpProvider = new HDWalletProvider(mnemonic, blockchainUrl);    
+    const web3 = new Web3(httpProvider);
+    
+   
     let votingProcessContractAddress: string = null;
 
-    let web3 = new Web3(new Web3.providers.HttpProvider(blockchainUrl));
+    //const httpProvider = new Web3.providers.HttpProvider(blockchainUrl)
+    //const web3 = new HDWalletProvider(httpProvider, mnemonic);
 
     let votingProcess: dvote.Process;
     const inputProcessMetadata = {
