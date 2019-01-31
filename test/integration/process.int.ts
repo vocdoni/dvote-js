@@ -9,21 +9,12 @@ import { deployContract } from "../testUtils";
 
 describe("Voting Process", () => {
 
-
-    
-    
-    
-    
     const mnemonic = "perfect kite link property simple eight welcome spring enforce universe barely cargo"
     const blockchainUrl: string = process.env.BLOCKCHAIN_URL;
-    const httpProvider = new HDWalletProvider(mnemonic, blockchainUrl);    
+    const httpProvider = new HDWalletProvider(mnemonic, blockchainUrl, 0, 10);    
     const web3 = new Web3(httpProvider);
     
-   
     let votingProcessContractAddress: string = null;
-
-    //const httpProvider = new Web3.providers.HttpProvider(blockchainUrl)
-    //const web3 = new HDWalletProvider(httpProvider, mnemonic);
 
     let votingProcess: dvote.Process;
     const inputProcessMetadata = {
@@ -45,6 +36,8 @@ describe("Voting Process", () => {
 
         const accounts = await web3.eth.getAccounts();
 
+        console.log("accojnts", accounts)
+
         votingProcessContractAddress = await deployContract(
             web3,
             DvoteSmartContracts.VotingProcess.abi,
@@ -54,7 +47,7 @@ describe("Voting Process", () => {
             Web3.utils.toWei("1.2", "Gwei"),
             );
 
-        votingProcess = new dvote.Process(blockchainUrl, votingProcessContractAddress);
+        votingProcess = new dvote.Process(web3, votingProcessContractAddress);
 
         assert.isString(votingProcessContractAddress);
     });
@@ -67,8 +60,8 @@ describe("Voting Process", () => {
         let processId: string;
 
         before(async () => {
-            votingProcess = new dvote.Process(blockchainUrl, votingProcessContractAddress);
-            accounts = await web3.eth.getAccounts();
+            votingProcess = new dvote.Process(web3, votingProcessContractAddress);
+            const accounts = await web3.eth.getAccounts();
             organizer1 = accounts[0];
             organizer2 = accounts[1];
         });
