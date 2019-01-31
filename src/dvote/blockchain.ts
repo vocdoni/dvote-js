@@ -7,15 +7,15 @@ export default class Blockchain {
     private contract: Web3.eth.Contract;
     private web3: Web3;
 
-    constructor(url: string, contractAddress: string, contractAbi: any[]) {
-        this.url = url;
-        this.web3 = new Web3(new Web3.providers.HttpProvider(url));
+    constructor(web3Provider: any, contractAddress: string,  contractAbi: any[]) {
+        
+        this.web3 = new Web3(web3Provider);
         this.contractAddress = contractAddress;
         this.contractAbi = contractAbi;
-
+        
         this.contract = this.getContract(this.contractAbi, this.contractAddress);
     }
-
+    
     public getContract(contractAbi: any[], contractAddress: string) {
         return new this.web3.eth.Contract(contractAbi, contractAddress);
     }

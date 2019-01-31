@@ -1,5 +1,5 @@
 import { assert } from "chai";
-import Web3Personal = require("web3-eth-personal");
+import Web3 = require("web3");
 import * as dvote from "../../src";
 import * as sinon from "sinon";
 import MerkleProof from "../../src/dvote/merkleProof";
@@ -7,10 +7,12 @@ import MerkleProof from "../../src/dvote/merkleProof";
 import Config from "../../src/dvote/utils/config";
 
 describe("Census", () => {
+
     const blockchainUrl: string = Config.BLOCKCHAIN_URL;
+    const web3 = new Web3(new Web3.providers.HttpProvider(blockchainUrl));
+    
     const censusServiceUrl: string = Config.CENSUS_SERVICE_URL;
     const censusPrivateKey: string = Config.CENSUS_PRIVATE_KEY;
-    const web3Personal = new Web3Personal(blockchainUrl);
 
     let accounts = [];
 
@@ -18,7 +20,7 @@ describe("Census", () => {
     const censusId = "test_" + Math.floor(Math.random() * 1000000000);
 
     before(async () => {
-        accounts = await web3Personal.getAccounts();
+        accounts = await web3.eth.getAccounts();
 
         census = new dvote.Census();
         census.initCensusService(censusServiceUrl);
