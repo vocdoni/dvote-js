@@ -4,7 +4,7 @@ import Blockchain from "./blockchain";
 interface IEntity {
     address?: string;
     name: string;
-    publicKey: string;
+    exists: boolean;
     censusRequestUrl: string;
 }
 
@@ -32,7 +32,7 @@ export default class Entity {
     }
 
     public async getAll(): Promise<IEntity[]> {
-        const addresses: string[] = await this.Blockchain.exec("entitiesIndex", [], { type: "call" });
+        const addresses: string[] = await this.Blockchain.exec("getEntityIds", [], { type: "call" });
 
         // Warning: this can become inefficient with many entities
         return Promise.all(addresses.map((addr: string) => this.get(addr)));
