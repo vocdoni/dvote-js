@@ -18,12 +18,12 @@ export default class Census {
         this.CensusServiceUrl = censusServiceUrl;
     }
 
-    public async getMetadata(id: string): Promise<string> {
+    public getMetadata(id: string): Promise<string> {
         if (id.length === 0) {
-            throw Error("ID can't be empty");
+            return Promise.reject(new Error("ID can't be empty"));
         }
 
-        return await this.Blockchain.exec("getCensusMetadata", [id]);
+        return this.Blockchain.exec("getCensusMetadata", [id]);
     }
 
     public async getProof(votingPublicKey: string, censusId: string, censusProofUrl?: string): Promise<MerkleProof> {
