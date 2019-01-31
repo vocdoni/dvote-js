@@ -11,8 +11,8 @@ interface IEntity {
 export default class Entity {
     private Blockchain: Blockchain;
 
-    constructor(blockchainUrl: string, contractAddress: string) {
-        this.Blockchain = new Blockchain(blockchainUrl, contractAddress, DvoteContracts.VotingEntity.abi);
+    constructor(web3: any, contractAddress: string) {
+        this.Blockchain = new Blockchain(web3, contractAddress, DvoteContracts.VotingEntity.abi);
     }
 
     public create(metadata: any, organizerAddress: string): Promise<string> {

@@ -1,16 +1,22 @@
 import { assert } from "chai";
-import Web3Personal = require("web3-eth-personal");
+import Web3 = require("web3");
 import * as dvote from "../../src";
 import * as sinon from "sinon";
 import MerkleProof from "../../src/dvote/merkleProof";
 
 import Config from "../../src/dvote/utils/config";
+const HDWalletProvider = require("truffle-hdwallet-provider");
+
 
 describe("Census", () => {
+
+    const mnemonic: string = Config.MNEMONIC
     const blockchainUrl: string = Config.BLOCKCHAIN_URL;
+    const httpProvider = new HDWalletProvider(mnemonic, blockchainUrl, 0, 10);    
+    const web3 = new Web3(httpProvider); 
+    
     const censusServiceUrl: string = Config.CENSUS_SERVICE_URL;
     const censusPrivateKey: string = Config.CENSUS_PRIVATE_KEY;
-    const web3Personal = new Web3Personal(blockchainUrl);
 
     let accounts = [];
 
@@ -18,7 +24,7 @@ describe("Census", () => {
     const censusId = "test_" + Math.floor(Math.random() * 1000000000);
 
     before(async () => {
-        accounts = await web3Personal.getAccounts();
+        accounts = await web3.eth.getAccounts();
 
         census = new dvote.Census();
         census.initCensusService(censusServiceUrl);
