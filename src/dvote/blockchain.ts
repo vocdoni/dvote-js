@@ -1,6 +1,10 @@
 import Web3 = require("web3");
 
 export default class Blockchain {
+    public static getContract(contractAbi: any[], contractAddress: string) {
+        return new Web3.eth.Contract(contractAbi, contractAddress);
+    }
+
     private url: string;
     private contractAbi: any[];
     private contractAddress: string;
@@ -13,14 +17,10 @@ export default class Blockchain {
         this.contractAddress = contractAddress;
         this.contractAbi = contractAbi;
 
-        this.contract = this.getContract(this.contractAbi, this.contractAddress);
+        this.contract = Blockchain.getContract(this.contractAbi, this.contractAddress);
     }
 
-    public getContract(contractAbi: any[], contractAddress: string) {
-        return new this.web3.eth.Contract(contractAbi, contractAddress);
-    }
-
-    public async exec(method: string, params?: any[], options?: any) {
+    public async exec(method: string, params?: any[], options?: any): Promise<any> {
         let callOrSend = "call";
         if (options != null && options.type === "send") {
             callOrSend = "send";
