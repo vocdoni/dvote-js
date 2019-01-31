@@ -9,7 +9,7 @@ import { deployContract } from "../testUtils";
 
 describe("Voting Process", () => {
 
-    const mnemonic = "perfect kite link property simple eight welcome spring enforce universe barely cargo"
+    const mnemonic = process.env.MNEMONIC
     const blockchainUrl: string = process.env.BLOCKCHAIN_URL;
     const httpProvider = new HDWalletProvider(mnemonic, blockchainUrl, 0, 10);    
     const web3 = new Web3(httpProvider);
@@ -35,8 +35,6 @@ describe("Voting Process", () => {
     it("Should deploy a new VotingProcess contract", async () => {
 
         const accounts = await web3.eth.getAccounts();
-
-        console.log("accojnts", accounts)
 
         votingProcessContractAddress = await deployContract(
             web3,
