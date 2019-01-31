@@ -39,8 +39,7 @@
     "dvote-smart-contracts": "0.0.6",
     "request": "^2.88.0",
     "tweetnacl": "^1.0.0",
-    "web3": "^1.0.0-beta.37",
-    "web3-eth-personal": "^1.0.0-beta.37"
+    "web3": "^1.0.0-beta.37"
   },
   "postinstall": "rm -f node_modules/web3/index.d.ts"
 }
