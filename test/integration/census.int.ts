@@ -5,11 +5,15 @@ import * as sinon from "sinon";
 import MerkleProof from "../../src/dvote/merkleProof";
 
 import Config from "../../src/dvote/utils/config";
+const HDWalletProvider = require("truffle-hdwallet-provider");
+
 
 describe("Census", () => {
 
+    const mnemonic: string = Config.MNEMONIC
     const blockchainUrl: string = Config.BLOCKCHAIN_URL;
-    const web3 = new Web3(new Web3.providers.HttpProvider(blockchainUrl));
+    const httpProvider = new HDWalletProvider(mnemonic, blockchainUrl, 0, 10);    
+    const web3 = new Web3(httpProvider); 
     
     const censusServiceUrl: string = Config.CENSUS_SERVICE_URL;
     const censusPrivateKey: string = Config.CENSUS_PRIVATE_KEY;
