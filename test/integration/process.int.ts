@@ -1,6 +1,5 @@
 import { assert } from "chai";
 import Web3 = require("web3");
-import Web3Personal = require("web3-eth-personal");
 import * as dvote from "../../src";
 
 import DvoteSmartContracts = require("dvote-smart-contracts");
@@ -8,8 +7,9 @@ import { deployContract } from "../testUtils";
 
 describe("Voting Process", () => {
     const blockchainUrl: string = process.env.BLOCKCHAIN_URL;
-    const web3Personal = new Web3Personal(blockchainUrl);
     let votingProcessContractAddress: string = null;
+
+    let web3 = new Web3(new Web3.providers.HttpProvider(blockchainUrl));
 
     let votingProcess: dvote.Process;
     const inputProcessMetadata = {
@@ -29,10 +29,10 @@ describe("Voting Process", () => {
 
     it("Should deploy a new VotingProcess contract", async () => {
 
-        const accounts = await web3Personal.getAccounts();
+        const accounts = await web3.eth.getAccounts();
 
         votingProcessContractAddress = await deployContract(
-            new Web3(new Web3.providers.HttpProvider(blockchainUrl)),
+            web3,
             DvoteSmartContracts.VotingProcess.abi,
             DvoteSmartContracts.VotingProcess.bytecode,
             accounts[0],
@@ -54,7 +54,7 @@ describe("Voting Process", () => {
 
         before(async () => {
             votingProcess = new dvote.Process(blockchainUrl, votingProcessContractAddress);
-            accounts = await web3Personal.getAccounts();
+            accounts = await web3.eth.getAccounts();
             organizer1 = accounts[0];
             organizer2 = accounts[1];
         });
