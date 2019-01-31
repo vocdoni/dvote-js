@@ -52,6 +52,14 @@ describe("Voting Entities", () => {
                 inputEntity.censusRequestUrl,
                 "The censusUrl should match the input",
             );
+
+            const entities = await entity.getAll()
+            assert.equal(entities.length, 1, "There should be only one entity");
+            assert.equal(typeof entities[0].address, "string", "Entities should have an address");
+            assert.equal(typeof entities[0].name, "string", "Entities should have a name");
+            assert.equal(typeof entities[0].censusRequestUrl, "string", "Entities should have a censusRequestUrl");
+            assert.equal(typeof entities[0].exists, "boolean", "Entities should exist");
+            assert(entities[0].address.match(/^0x[0-9A-Fa-f]{40}$/), "ID's should be an ethereum address");
         });
     });
 });
