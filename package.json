@@ -31,7 +31,7 @@
     "test": "./node_modules/mocha/bin/mocha -r ts-node/register test/**/*.ts",
     "test-unit": "./node_modules/mocha/bin/mocha -r ts-node/register test/unit/*.ts",
     "test-integration": "./node_modules/mocha/bin/mocha -r ts-node/register test/integration/*.ts",
-    "testintest": "NODE_ENV='test' ./node_modules/mocha/bin/mocha --timeout 5000 -r ts-node/register test/**/*.ts"
+    "testintest": "NODE_ENV='test' ./node_modules/mocha/bin/mocha --timeout 20000 -r ts-node/register test/**/*.ts"
   },
   "dependencies": {
     "axios": "^0.18.0",
