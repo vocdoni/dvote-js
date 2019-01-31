@@ -1,6 +1,13 @@
 import DvoteContracts = require("dvote-smart-contracts");
 import Blockchain from "./blockchain";
 
+interface IEntity {
+    address?: string;
+    name: string;
+    publicKey: string;
+    censusRequestUrl: string;
+}
+
 export default class Entity {
     private Blockchain: Blockchain;
 
@@ -14,20 +21,20 @@ export default class Entity {
             { type: "send", from: organizerAddress, gas: 999999 });
     }
 
-    public get(address: string): Promise<any> {
+    public async get(address: string): Promise<IEntity> {
         if (address.length === 0) {
             throw Error("Address can't be empty");
         }
 
-        return this.Blockchain.exec("getEntity", [address], { type: "call" });
+        const entity: IEntity = await this.Blockchain.exec("getEntity", [address], { type: "call" });
+        entity.address = address;
+        return entity;
     }
 
-    public async getAll(): Promise<any[]> {
-        const addresses = await this.Blockchain.exec("entitiesIndex", [], { type: "call" });
+    public async getAll(): Promise<IEntity[]> {
+        const addresses: string[] = await this.Blockchain.exec("entitiesIndex", [], { type: "call" });
 
         // Warning: this can become inefficient with many entities
-        return Promise.all(addresses.map((address: string) => {
-            return this.Blockchain.exec("getEntity", [address], { type: "call" });
-        }));
+        return Promise.all(addresses.map((addr: string) => this.get(addr)));
     }
 }
