@@ -1,6 +1,6 @@
 {
   "name": "dvote-client",
-  "version": "0.0.9",
+  "version": "0.0.13",
   "description": "Javascript client library to work with the Vocdoni core features",
   "main": "dist/index",
   "typings": "dist/index",
@@ -36,7 +36,7 @@
   "dependencies": {
     "axios": "^0.18.0",
     "dotenv": "^6.2.0",
-    "dvote-smart-contracts": "0.0.6",
+    "dvote-smart-contracts": "0.0.7",
     "request": "^2.88.0",
     "truffle-hdwallet-provider": "^1.0.3",
     "tweetnacl": "^1.0.0",

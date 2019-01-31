@@ -20,12 +20,12 @@ export default class Blockchain {
         return new this.web3.eth.Contract(contractAbi, contractAddress);
     }
 
-    public async exec(method: string, params?: any[], options?: any) {
+    public exec(method: string, params?: any[], options?: any): Promise<any> {
         let callOrSend = "call";
         if (options != null && options.type === "send") {
             callOrSend = "send";
         }
 
-        return await this.contract.methods[method](...params)[callOrSend](options);
+        return this.contract.methods[method](...params)[callOrSend](options);
     }
 }
