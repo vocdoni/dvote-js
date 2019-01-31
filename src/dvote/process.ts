@@ -4,8 +4,8 @@ import Blockchain from "./blockchain";
 export default class Process {
     private Blockchain: Blockchain;
 
-    constructor(blockchainUrl: string, votingProcessContractAddress: string) {
-        this.Blockchain = new Blockchain(blockchainUrl, votingProcessContractAddress, DvoteContracts.VotingProcess.abi);
+    constructor(web3: any, votingProcessContractAddress: string) {
+        this.Blockchain = new Blockchain(web3, votingProcessContractAddress, DvoteContracts.VotingProcess.abi);
     }
 
     public create(metadata: any, organizerAddress: string): Promise<string> {

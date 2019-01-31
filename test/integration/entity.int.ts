@@ -1,14 +1,18 @@
 import { assert } from "chai";
 import DvoteSmartContracts = require("dvote-smart-contracts");
 import Web3 = require("web3");
-import Web3Personal = require("web3-eth-personal");
+
+const HDWalletProvider = require("truffle-hdwallet-provider");
 
 import * as dvote from "../../src";
 import { deployContract } from "../testUtils";
 
 describe("Voting Entities", () => {
+
+    const mnemonic = process.env.MNEMONIC
     const blockchainUrl: string = process.env.BLOCKCHAIN_URL;
-    const web3Personal = new Web3Personal(blockchainUrl);
+    const httpProvider = new HDWalletProvider(mnemonic, blockchainUrl, 0, 10);    
+    const web3 = new Web3(httpProvider);
 
     let votingEntityContractAddress: string = null;
 
@@ -22,11 +26,11 @@ describe("Voting Entities", () => {
     };
 
     before(async () => {
-        accounts = await web3Personal.getAccounts();
+        accounts = await web3.eth.getAccounts();
         organizer1 = accounts[0];
 
         votingEntityContractAddress = await deployContract(
-            new Web3(new Web3.providers.HttpProvider(blockchainUrl)),
+            web3,
             DvoteSmartContracts.VotingEntity.abi,
             DvoteSmartContracts.VotingEntity.bytecode,
             accounts[0],
@@ -39,7 +43,7 @@ describe("Voting Entities", () => {
     describe("Creates and checks voting entity creation", () => {
 
         before(() => {
-            entity = new dvote.Entity(blockchainUrl, votingEntityContractAddress);
+            entity = new dvote.Entity(web3, votingEntityContractAddress);
         });
 
         it("Creates a new entity and verify metadata is stored correctly", async () => {

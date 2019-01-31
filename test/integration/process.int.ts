@@ -1,14 +1,19 @@
 import { assert } from "chai";
 import Web3 = require("web3");
-import Web3Personal = require("web3-eth-personal");
 import * as dvote from "../../src";
+
+const HDWalletProvider = require("truffle-hdwallet-provider");
 
 import DvoteSmartContracts = require("dvote-smart-contracts");
 import { deployContract } from "../testUtils";
 
 describe("Voting Process", () => {
+
+    const mnemonic = process.env.MNEMONIC
     const blockchainUrl: string = process.env.BLOCKCHAIN_URL;
-    const web3Personal = new Web3Personal(blockchainUrl);
+    const httpProvider = new HDWalletProvider(mnemonic, blockchainUrl, 0, 10);    
+    const web3 = new Web3(httpProvider);
+    
     let votingProcessContractAddress: string = null;
 
     let votingProcess: dvote.Process;
@@ -29,10 +34,10 @@ describe("Voting Process", () => {
 
     it("Should deploy a new VotingProcess contract", async () => {
 
-        const accounts = await web3Personal.getAccounts();
+        const accounts = await web3.eth.getAccounts();
 
         votingProcessContractAddress = await deployContract(
-            new Web3(new Web3.providers.HttpProvider(blockchainUrl)),
+            web3,
             DvoteSmartContracts.VotingProcess.abi,
             DvoteSmartContracts.VotingProcess.bytecode,
             accounts[0],
@@ -40,7 +45,7 @@ describe("Voting Process", () => {
             Web3.utils.toWei("1.2", "Gwei"),
             );
 
-        votingProcess = new dvote.Process(blockchainUrl, votingProcessContractAddress);
+        votingProcess = new dvote.Process(web3, votingProcessContractAddress);
 
         assert.isString(votingProcessContractAddress);
     });
@@ -53,8 +58,8 @@ describe("Voting Process", () => {
         let processId: string;
 
         before(async () => {
-            votingProcess = new dvote.Process(blockchainUrl, votingProcessContractAddress);
-            accounts = await web3Personal.getAccounts();
+            votingProcess = new dvote.Process(web3, votingProcessContractAddress);
+            const accounts = await web3.eth.getAccounts();
             organizer1 = accounts[0];
             organizer2 = accounts[1];
         });
