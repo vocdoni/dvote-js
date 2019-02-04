@@ -10,8 +10,8 @@ export default class Census {
     private Blockchain: Blockchain;
     private CensusServiceUrl: string;
 
-    public initBlockchain(web3: any, votingProcessContractAddress: string) {
-        this.Blockchain = new Blockchain(web3, votingProcessContractAddress, DvoteContracts.VotingProcess.abi);
+    public initBlockchain(web3Provider: any, votingProcessContractAddress: string) {
+        this.Blockchain = new Blockchain(web3Provider, votingProcessContractAddress, DvoteContracts.VotingProcess.abi);
     }
 
     public initCensusService(censusServiceUrl: string) {
