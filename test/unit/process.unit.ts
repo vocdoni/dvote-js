@@ -48,7 +48,7 @@ describe("#Unit Process", () => {
                 const votePublicKey: string = "123abcdeb";
                 assert.throws(() => {
                     votingProcess.encryptVote(vote, votePublicKey);
-                }, Error, "Vote can't be empty");
+                }, Error, "Vote is required");
             }),
 
                 it("Fails on empty votePublicKey", () => {
@@ -56,7 +56,7 @@ describe("#Unit Process", () => {
                     const votePublicKey: string = "";
                     assert.throws(() => {
                         votingProcess.encryptVote(vote, votePublicKey);
-                    }, Error, "VotePublicKey can't be empty");
+                    }, Error, "VotePublicKey is required");
                 }),
 
                 it("Result is a String", () => {
