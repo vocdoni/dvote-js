@@ -1,14 +1,12 @@
 import Web3 = require("web3");
 
 export default class Blockchain {
-    private url: string;
     private contractAbi: any[];
     private contractAddress: string;
     private contract: Web3.eth.Contract;
     private web3: Web3;
 
     constructor(web3Provider: any, contractAddress: string,  contractAbi: any[]) {
-        
         this.web3 = new Web3(web3Provider);
         this.contractAddress = contractAddress;
         this.contractAbi = contractAbi;

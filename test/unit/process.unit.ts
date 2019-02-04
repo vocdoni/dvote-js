@@ -1,9 +1,10 @@
 import { assert } from "chai";
+import config from "../config";
 import * as sinon from "sinon";
 import * as dvote from "../../src";
 
 describe("#Unit Process", () => {
-    const blockchainUrl: string = process.env.BLOCKCHAIN_URL;
+    const blockchainUrl: string = config.BLOCKCHAIN_URL;
     let votingProcess: dvote.Process;
 
     describe("#GetById", () => {
@@ -24,7 +25,7 @@ describe("#Unit Process", () => {
             };
 
             const getProcessMetadataStub = sinon.stub(dvote.Process.prototype, "getMetadata")
-                                                .resolves(expectedProcessMetadata);
+                .resolves(expectedProcessMetadata);
 
             const metadata: object = await votingProcess.getMetadata("identifier");
 
