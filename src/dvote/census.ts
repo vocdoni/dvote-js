@@ -10,10 +10,41 @@ interface ICensusMetadata {
     censusProofUrl: string
 }
 
+interface IPayload {
+    censusId: string
+    claimData: string
+    timeStamp: string
+    signature: string
+}
+
 export default class Census {
+    // STATIC METHODS
+
+    public static async getProof(voterPublicKey: string, censusId: string, censusProofUrl: string): Promise<MerkleProof> {
+        if (!voterPublicKey) throw new Error("voterPublicKey is required")
+        else if (!censusId) throw new Error("censusId is required")
+        else if (!censusProofUrl) throw new Error("censusProofUrl is required")
+
+        const data = { claimData: voterPublicKey, censusId };
+        const response = await Axios.post(censusProofUrl, data);
+        return new MerkleProof(response.data.response);
+    }
+
+    public static sign(data: IPayload, privateKey: string): string {
+        if (!data) throw new Error("data is required")
+        else if (!privateKey) throw new Error("privateKey is required")
+
+        const message: string = data.censusId + data.claimData + data.timeStamp;
+        const signed: Uint8Array = tweetnacl.sign(Buffer.from(message), Buffer.from(privateKey, "hex"));
+        return Buffer.from(signed).toString("hex").slice(0, 128);
+    }
+
+    // INTENRAL VARIABLES
 
     private ProcessInstance: Blockchain;
     private CensusServiceUrl: string;
+
+    // INTENRAL METHODS
 
     public initBlockchain(web3Provider: any, votingProcessContractAddress: string) {
         this.ProcessInstance = new Blockchain(web3Provider, votingProcessContractAddress, DvoteContracts.VotingProcess.abi);
@@ -31,51 +62,39 @@ export default class Census {
         return this.ProcessInstance.exec("getCensusMetadata", [censusId]);
     }
 
-    public async getProof(votingPublicKey: string, censusId: string, censusProofUrl?: string): Promise<MerkleProof> {
-        if (votingPublicKey.length === 0
-            || censusId.length === 0) {
-            throw Error("Neither votePublicKey nor censusId can be empty");
-        }
+    public async getProof(voterPublicKey: string, censusId: string): Promise<MerkleProof> {
+        if (!voterPublicKey) throw new Error("voterPublicKey is required")
+        else if (!censusId) throw new Error("censusId is required")
 
-        if (!censusProofUrl) {
-            censusProofUrl = this.CensusServiceUrl + "/genProof";
-        }
-
-        const data = { claimData: votingPublicKey, censusId };
-        const response = await Axios.post(censusProofUrl, data);
+        const data = { claimData: voterPublicKey, censusId };
+        const response = await Axios.post(this.CensusServiceUrl, data);
         return new MerkleProof(response.data.response);
     }
 
-    public async addClaim(votingPublicKey: string, censusId: string, privateKey: string): Promise<boolean> {
-        if (votingPublicKey.length === 0
-            || censusId.length === 0) {
-            throw Error("Neither votePublicKey nor censusId can be empty");
-        }
+    public async addClaim(voterPublicKey: string, censusId: string, privateKey: string): Promise<boolean> {
+        if (!voterPublicKey) throw new Error("voterPublicKey is required")
+        else if (!censusId) throw new Error("censusId is required")
 
         const timeStamp: string = Math.floor(new Date().getTime() / 1000).toString();
-        const data = { claimData: votingPublicKey, censusId, timeStamp, signature: "" };
-        data.signature = this.sign(data, privateKey);
+        const data: IPayload = { claimData: voterPublicKey, censusId, timeStamp, signature: "" };
+        data.signature = Census.sign(data, privateKey);
 
         const response = await Axios.post(this.CensusServiceUrl + "/addClaim", data);
 
         return (response.data.error === false);
     }
 
-    public async checkProof(votingPublicKey: string, censusId: string, proof: string): Promise<boolean> {
-        if (votingPublicKey.length === 0
-            || censusId.length === 0) {
-            throw Error("Neither votePublicKey nor censusId can be empty");
-        }
+    public async checkProof(voterPublicKey: string, censusId: string, proof: string): Promise<boolean> {
+        if (!voterPublicKey) throw new Error("voterPublicKey is required")
+        else if (!censusId) throw new Error("censusId is required")
 
-        const data = { claimData: votingPublicKey, censusId, proofData: proof };
+        const data = { claimData: voterPublicKey, censusId, proofData: proof };
         const response = await Axios.post(this.CensusServiceUrl + "/checkProof", data);
         return (response.data.response === "valid");
     }
 
     public async getRoot(censusId: string): Promise<string> {
-        if (censusId.length === 0) {
-            throw Error("CensusId can't be empty");
-        }
+        if (!censusId) throw new Error("censusId is required")
 
         const data = { censusId };
         const response = await Axios.post(this.CensusServiceUrl + "/getRoot", data);
@@ -83,23 +102,22 @@ export default class Census {
     }
 
     public async snapshot(censusId: string, privateKey: string): Promise<string> {
+        if (!censusId) throw new Error("censusId is required")
+        else if (!privateKey) throw new Error("privateKey is required")
+        
         const timeStamp: string = Math.floor(new Date().getTime() / 1000).toString();
         const data = { censusId, claimData: "", timeStamp, signature: "" };
-        data.signature = this.sign(data, privateKey);
+        data.signature = Census.sign(data, privateKey);
 
         const response = await Axios.post(this.CensusServiceUrl + "/snapshot", data);
         return response.data.response;
     }
 
     public async dump(censusId: string): Promise<string[]> {
+        if (!censusId) throw new Error("censusId is required")
+
         const data = { censusId };
         const response = await Axios.post(this.CensusServiceUrl + "/dump", data);
         return JSON.parse(response.data.response);
-    }
-
-    public sign(data: any, privateKey: string): string {
-        const message: string = data.censusId + data.claimData + data.timeStamp;
-        const signed: Uint8Array = tweetnacl.sign(Buffer.from(message), Buffer.from(privateKey, "hex"));
-        return Buffer.from(signed).toString("hex").slice(0, 128);
     }
 }
