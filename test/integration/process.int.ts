@@ -19,9 +19,9 @@ describe("Voting Process", () => {
 
     let votingProcess: dvote.Process;
     const inputProcessMetadata = {
-        censusProofUrl: "http://vocdoni.io/getCensusProof",
+        censusProofUrl: "http://census.testnet.vocdoni.io/getCensusProof",
         censusMerkleRoot: "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-        censusRequestUrl: "http://vocdoni.io/requesCensus",
+        censusRequestUrl: "http://organizer.testnet.vocdoni.io/census-register",
         endBlock: 1,
         name: "This is a process name",
         question: "Blue pill or red pill?",
