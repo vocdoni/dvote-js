@@ -5,25 +5,30 @@ import MerkleProof from "./merkleProof";
 import Axios from "axios";
 import * as tweetnacl from "tweetnacl";
 
+interface ICensusMetadata {
+    censusMerkleRoot: string
+    censusProofUrl: string
+}
+
 export default class Census {
 
-    private Blockchain: Blockchain;
+    private ProcessInstance: Blockchain;
     private CensusServiceUrl: string;
 
     public initBlockchain(web3Provider: any, votingProcessContractAddress: string) {
-        this.Blockchain = new Blockchain(web3Provider, votingProcessContractAddress, DvoteContracts.VotingProcess.abi);
+        this.ProcessInstance = new Blockchain(web3Provider, votingProcessContractAddress, DvoteContracts.VotingProcess.abi);
     }
 
     public initCensusService(censusServiceUrl: string) {
         this.CensusServiceUrl = censusServiceUrl;
     }
 
-    public getMetadata(id: string): Promise<string> {
-        if (id.length === 0) {
+    public getMetadata(censusId: string): Promise<ICensusMetadata> {
+        if (censusId.length === 0) {
             return Promise.reject(new Error("ID can't be empty"));
         }
 
-        return this.Blockchain.exec("getCensusMetadata", [id]);
+        return this.ProcessInstance.exec("getCensusMetadata", [censusId]);
     }
 
     public async getProof(votingPublicKey: string, censusId: string, censusProofUrl?: string): Promise<MerkleProof> {
