@@ -54,12 +54,12 @@ export default class Census {
         this.CensusServiceUrl = censusServiceUrl;
     }
 
-    public getMetadata(censusId: string): Promise<ICensusMetadata> {
-        if (censusId.length === 0) {
-            return Promise.reject(new Error("ID can't be empty"));
+    public getMetadata(processId: string): Promise<ICensusMetadata> {
+        if (processId.length === 0) {
+            return Promise.reject(new Error("processId is required"));
         }
 
-        return this.ProcessInstance.exec("getCensusMetadata", [censusId]);
+        return this.ProcessInstance.exec("getCensusMetadata", [processId]);
     }
 
     public async getProof(voterPublicKey: string, censusId: string): Promise<MerkleProof> {

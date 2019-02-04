@@ -2,6 +2,7 @@ import DvoteContracts = require("dvote-smart-contracts");
 import Blockchain from "./blockchain";
 
 interface IProcessMetadata {
+    id: string
     name: string
     startBlock: number
     endBlock: number
@@ -59,11 +60,14 @@ export default class Process {
             { type: "send", from: organizerAddress, gas: 999999 });
     }
 
-    public getMetadata(id: string): Promise<IProcessMetadata> {
-        if (id.length === 0) {
-            return Promise.reject("ID can't be empty");
-        }
-        return this.ProcessInstance.exec("getProcessMetadata", [id]);
+    public getMetadata(processId: string): Promise<IProcessMetadata> {
+        if (!processId) return Promise.reject("processId is required");
+
+        return this.ProcessInstance.exec("getProcessMetadata", [processId]).then((meta: IProcessMetadata) => {
+            // Append the processId to itself
+            meta.id = processId;
+            return meta;
+        });
     }
 
     public getId(name: string, organizerAddress: string): Promise<string> {
@@ -84,14 +88,10 @@ export default class Process {
     }
 
     public encryptVote(vote: string, votePublicKey: string): string {
-        if (vote.length === 0) {
-            throw Error("Vote can't be empty");
-        }
+        if (!vote) throw Error("Vote is required");
+        else if (!votePublicKey) throw Error("VotePublicKey is required");
 
-        if (votePublicKey.length === 0) {
-            throw Error("VotePublicKey can't be empty");
-        }
-
+        // TODO:
         return "";
     }
 }
