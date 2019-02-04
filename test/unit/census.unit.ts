@@ -1,9 +1,10 @@
 import * as sinon from "sinon";
+import config from "../config";
 import * as dvote from "../../src";
 import MerkleProof from "../../src/dvote/merkleProof";
 
 describe("Census", () => {
-    const censusServiceUrl: string = process.env.CENSUS_SERVICE_URL;
+    const censusServiceUrl: string = config.CENSUS_SERVICE_URL;
     let census: dvote.Census;
 
     beforeEach(() => {

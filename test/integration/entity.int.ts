@@ -1,4 +1,5 @@
 import { assert } from "chai";
+import config from "../config";
 import DvoteSmartContracts = require("dvote-smart-contracts");
 import Web3 = require("web3");
 
@@ -9,8 +10,8 @@ import { deployContract } from "../testUtils";
 
 describe("Voting Entities", () => {
 
-    const mnemonic = process.env.MNEMONIC
-    const blockchainUrl: string = process.env.BLOCKCHAIN_URL;
+    const mnemonic = config.MNEMONIC
+    const blockchainUrl: string = config.BLOCKCHAIN_URL;
     const httpProvider = new HDWalletProvider(mnemonic, blockchainUrl, 0, 10);    
     const web3 = new Web3(httpProvider);
 

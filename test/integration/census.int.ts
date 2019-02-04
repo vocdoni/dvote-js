@@ -4,7 +4,7 @@ import * as dvote from "../../src";
 import * as sinon from "sinon";
 import MerkleProof from "../../src/dvote/merkleProof";
 
-import Config from "../../src/dvote/utils/config";
+import Config from "../config";
 const HDWalletProvider = require("truffle-hdwallet-provider");
 
 

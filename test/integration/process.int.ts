@@ -1,4 +1,5 @@
 import { assert } from "chai";
+import config from "../config";
 import Web3 = require("web3");
 import * as dvote from "../../src";
 
@@ -9,11 +10,11 @@ import { deployContract } from "../testUtils";
 
 describe("Voting Process", () => {
 
-    const mnemonic = process.env.MNEMONIC
-    const blockchainUrl: string = process.env.BLOCKCHAIN_URL;
-    const httpProvider = new HDWalletProvider(mnemonic, blockchainUrl, 0, 10);    
+    const mnemonic = config.MNEMONIC
+    const blockchainUrl: string = config.BLOCKCHAIN_URL;
+    const httpProvider = new HDWalletProvider(mnemonic, blockchainUrl, 0, 10);
     const web3 = new Web3(httpProvider);
-    
+
     let votingProcessContractAddress: string = null;
 
     let votingProcess: dvote.Process;
@@ -43,7 +44,7 @@ describe("Voting Process", () => {
             accounts[0],
             2600000,
             Web3.utils.toWei("1.2", "Gwei"),
-            );
+        );
 
         votingProcess = new dvote.Process(web3, votingProcessContractAddress);
 
