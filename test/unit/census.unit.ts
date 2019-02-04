@@ -1,14 +1,14 @@
 import * as sinon from "sinon";
 import config from "../config";
-import * as dvote from "../../src";
+import {Census} from "../../src";
 import MerkleProof from "../../src/dvote/merkleProof";
 
 describe("Census", () => {
     const censusServiceUrl: string = config.CENSUS_SERVICE_URL;
-    let census: dvote.Census;
+    let census: Census;
 
     beforeEach(() => {
-        census = new dvote.Census();
+        census = new Census();
         census.initCensusService(censusServiceUrl);
     });
 
@@ -20,10 +20,10 @@ describe("Census", () => {
             const censusProofUrl: string = "http://vocdoni.io/getFranchiseProof";
             const votePublicKey: string = "123abcdeb";
             const censusId: string = "test";
-            const getFranchiseProof = sinon.stub(dvote.Census.prototype, "getProof")
+            const getFranchiseProof = sinon.stub(Census, "getProof")
                                            .resolves(expectedProof);
 
-            const proof: object = await census.getProof(votePublicKey, censusId, censusProofUrl);
+            const proof: object = await Census.getProof(votePublicKey, censusId, censusProofUrl);
 
             getFranchiseProof.restore();
             sinon.assert.match(proof, expectedProof);

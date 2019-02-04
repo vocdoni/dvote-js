@@ -1,6 +1,6 @@
 import { assert } from "chai";
 import Web3 = require("web3");
-import * as dvote from "../../src";
+import { Census } from "../../src";
 import * as sinon from "sinon";
 import MerkleProof from "../../src/dvote/merkleProof";
 
@@ -12,21 +12,21 @@ describe("Census", () => {
 
     const mnemonic: string = Config.MNEMONIC
     const blockchainUrl: string = Config.BLOCKCHAIN_URL;
-    const httpProvider = new HDWalletProvider(mnemonic, blockchainUrl, 0, 10);    
-    const web3 = new Web3(httpProvider); 
-    
+    const httpProvider = new HDWalletProvider(mnemonic, blockchainUrl, 0, 10);
+    const web3 = new Web3(httpProvider);
+
     const censusServiceUrl: string = Config.CENSUS_SERVICE_URL;
     const censusPrivateKey: string = Config.CENSUS_PRIVATE_KEY;
 
     let accounts = [];
 
-    let census: dvote.Census;
+    let census: Census;
     const censusId = "test_" + Math.floor(Math.random() * 1000000000);
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
 
-        census = new dvote.Census();
+        census = new Census();
         census.initCensusService(censusServiceUrl);
     });
 
@@ -39,8 +39,8 @@ describe("Census", () => {
         });
 
         it("Should not be able to add a mal-signed claim to the census", async () => {
-            const censusSignStub = sinon.stub(dvote.Census.prototype, "sign")
-                                        .returns("this_is_not_a_correct_signature");
+            const censusSignStub = sinon.stub(Census, "sign")
+                .returns("this_is_not_a_correct_signature");
 
             const response = await census.addClaim(accounts[0], censusId, censusPrivateKey);
 
@@ -51,6 +51,9 @@ describe("Census", () => {
 
         it("Should get the proof from the census", async () => {
             proof = await census.getProof(accounts[0], censusId);
+            assert.isString(proof.raw, "Raw proof should be a string");
+
+            proof = await Census.getProof(accounts[0], censusId, censusServiceUrl);
             assert.isString(proof.raw, "Raw proof should be a string");
         });
 
