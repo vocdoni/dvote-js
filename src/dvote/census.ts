@@ -39,6 +39,15 @@ export default class Census {
         return Buffer.from(signed).toString("hex").slice(0, 128);
     }
 
+    public static getCensusIdFromAddress(address: string) {
+        if (address.match(/^0x/)) {
+            return address.substr(2);
+        }
+        else {
+            return address;
+        }
+    }
+
     // INTENRAL VARIABLES
 
     private ProcessInstance: Blockchain;
@@ -66,6 +75,8 @@ export default class Census {
         if (!voterPublicKey) throw new Error("voterPublicKey is required")
         else if (!censusId) throw new Error("censusId is required")
 
+        censusId = Census.getCensusIdFromAddress(censusId);
+
         const data = { claimData: voterPublicKey, censusId };
         const response = await Axios.post(this.CensusServiceUrl, data);
         return new MerkleProof(response.data.response);
@@ -74,6 +85,8 @@ export default class Census {
     public async addClaim(voterPublicKey: string, censusId: string, privateKey: string): Promise<boolean> {
         if (!voterPublicKey) throw new Error("voterPublicKey is required")
         else if (!censusId) throw new Error("censusId is required")
+
+        censusId = Census.getCensusIdFromAddress(censusId);
 
         const timeStamp: string = Math.floor(new Date().getTime() / 1000).toString();
         const data: IPayload = { claimData: voterPublicKey, censusId, timeStamp, signature: "" };
@@ -88,6 +101,8 @@ export default class Census {
         if (!voterPublicKey) throw new Error("voterPublicKey is required")
         else if (!censusId) throw new Error("censusId is required")
 
+        censusId = Census.getCensusIdFromAddress(censusId);
+
         const data = { claimData: voterPublicKey, censusId, proofData: proof };
         const response = await Axios.post(this.CensusServiceUrl + "/checkProof", data);
         return (response.data.response === "valid");
@@ -95,6 +110,8 @@ export default class Census {
 
     public async getRoot(censusId: string): Promise<string> {
         if (!censusId) throw new Error("censusId is required")
+
+        censusId = Census.getCensusIdFromAddress(censusId);
 
         const data = { censusId };
         const response = await Axios.post(this.CensusServiceUrl + "/getRoot", data);
@@ -104,7 +121,9 @@ export default class Census {
     public async snapshot(censusId: string, privateKey: string): Promise<string> {
         if (!censusId) throw new Error("censusId is required")
         else if (!privateKey) throw new Error("privateKey is required")
-        
+
+        censusId = Census.getCensusIdFromAddress(censusId);
+
         const timeStamp: string = Math.floor(new Date().getTime() / 1000).toString();
         const data = { censusId, claimData: "", timeStamp, signature: "" };
         data.signature = Census.sign(data, privateKey);
@@ -115,6 +134,8 @@ export default class Census {
 
     public async dump(censusId: string): Promise<string[]> {
         if (!censusId) throw new Error("censusId is required")
+
+        censusId = Census.getCensusIdFromAddress(censusId);
 
         const data = { censusId };
         const response = await Axios.post(this.CensusServiceUrl + "/dump", data);
