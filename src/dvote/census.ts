@@ -121,12 +121,15 @@ export default class Census {
     public async snapshot(censusId: string, privateKey: string): Promise<string> {
         if (!censusId) throw new Error("censusId is required")
         else if (!privateKey) throw new Error("privateKey is required")
-
+        
         censusId = Census.getCensusIdFromAddress(censusId);
-
+        
         const timeStamp: string = Math.floor(new Date().getTime() / 1000).toString();
         const data = { censusId, claimData: "", timeStamp, signature: "" };
-        data.signature = Census.sign(data, privateKey);
+        
+        // TODO: USE SIGNATURE
+        // data.signature = Census.sign(data, privateKey);
+        data.signature = ""
 
         const response = await Axios.post(this.CensusServiceUrl + "/snapshot", data);
         return response.data.response;

@@ -1,6 +1,6 @@
 {
   "name": "dvote-client",
-  "version": "0.0.19",
+  "version": "0.0.20",
   "description": "Javascript client library to work with the Vocdoni core features",
   "main": "dist/index",
   "typings": "dist/index",
