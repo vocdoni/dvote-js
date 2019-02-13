@@ -1,6 +1,6 @@
-import Web3 from "web3"
+import Web3 = require("web3");
 
-export class Utils {
+export default class Utils {
 
     public static stringToBytes32 = (str: string): string => {
         const hex = Web3.utils.asciiToHex(str)
