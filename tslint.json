@@ -6,7 +6,7 @@
     "jsRules": {},
     "rules": {
         "indent": [true, "spaces", 4],
-        "semicolon": false
+        "semicolon": [false, "always"]
     },
     "rulesDirectory": []
 }
