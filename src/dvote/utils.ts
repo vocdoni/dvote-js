@@ -8,6 +8,11 @@ export default class Utils {
         return bytes32
     }
 
+    public static bytes32ToString = (bytes32: string): string => {
+        const str = Web3.utils.hexToUtf8(bytes32)
+        return str
+    }
+
     public static stringFitsInBytes32 = (str: string): boolean => {
 
         const hex = Web3.utils.asciiToHex(str)
@@ -17,7 +22,7 @@ export default class Utils {
     public static hexFitsInBytes32 = (hex: string): boolean => {
         // Assumes presiding "0x"
         const size = hex.length
-        const fits  = size <= 66
+        const fits = size <= 66
         return fits
     }
 }
