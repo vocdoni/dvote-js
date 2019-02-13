@@ -4,13 +4,15 @@ import { Utils } from "../../src";
 describe("Utils", () => {
     it("#String to Bytes32 convertion", () => {
 
-        const str: string = "Yes";
-        const expectedBytes32: string = "0x5965730000000000000000000000000000000000000000000000000000000000";
+        const strYes: string = "Yes";
+        const bytes32Yes: string = "0x5965730000000000000000000000000000000000000000000000000000000000";
 
-        const bytes32 = Utils.stringToBytes32(str)
-
-        assert.equal(bytes32, expectedBytes32)
+        const bytes32 = Utils.stringToBytes32(strYes)
+        assert.equal(bytes32, bytes32Yes)
         assert.lengthOf(bytes32, 66)
+
+        const str = Utils.bytes32ToString(bytes32Yes)
+        assert.equal(str, strYes)
 
         const expectedPrefix = "0x"
         const prefix = bytes32.substring(0, 2)
