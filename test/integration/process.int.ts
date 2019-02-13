@@ -29,8 +29,7 @@ describe("Voting Process", () => {
         voteEncryptionPrivateKey: "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
         voteEncryptionPublicKey: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         votesBatch1: "0x1111111111111111111111111111111111111111111111111111111111111111",
-        votingOptions: ["0x0000000000000000000000000000000000000000000000000000000000000000",
-            "0x1111111111111111111111111111111111111111111111111111111111111111"],
+        votingOptions: ["Yep", "Nope", "Maybe"],
     };
 
     it("Should deploy a new VotingProcess contract", async () => {
