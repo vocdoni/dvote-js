@@ -1,5 +1,6 @@
 import DvoteContracts = require("dvote-smart-contracts");
 import Blockchain from "./blockchain";
+import Utils from "./utils";
 
 interface IProcessMetadata {
     id: string
@@ -11,39 +12,76 @@ interface IProcessMetadata {
     voteEncryptionPublicKey: string
 }
 
+interface ICreateProcessMetadata {
+    name: string
+    startBlock: number
+    endBlock: number
+    censusMerkleRoot: string
+    censusProofUrl: string
+    censusRequestUrl: string
+    question: string
+    votingOptions: string[]
+    voteEncryptionPublicKey: string
+}
+
+interface IGetProcessMetadata {
+
+    name: string,
+    startBlock: number,
+    endBlock: number,
+    question: string,
+    votingOptions: string[],
+    voteEncryptionPublicKey: string
+}
+
 export default class Process {
     private ProcessInstance: Blockchain;
 
     constructor(web3Provider: any, votingProcessContractAddress: string) {
-        this.ProcessInstance = new Blockchain(web3Provider, votingProcessContractAddress, DvoteContracts.VotingProcess.abi);
+        this.ProcessInstance = new Blockchain(
+            web3Provider, votingProcessContractAddress, DvoteContracts.VotingProcess.abi);
     }
 
-    public create(metadata: any, organizerAddress: string): Promise<string> {
+    public create(metadata: ICreateProcessMetadata, organizerAddress: string): Promise<string> {
         if (!metadata.name) {
             return Promise.reject(new Error("Invalid process name"))
         }
-        else if (!metadata.question) {
+
+        if (!metadata.question) {
             return Promise.reject(new Error("Invalid process question"))
         }
-        else if (typeof metadata.startBlock !== "number") {
+
+        if (typeof metadata.startBlock !== "number") {
             return Promise.reject(new Error("Invalid process startBlock"))
         }
-        else if (typeof metadata.endBlock !== "number") {
+
+        if (typeof metadata.endBlock !== "number") {
             return Promise.reject(new Error("Invalid process endBlock"))
         }
-        else if (metadata.startBlock >= metadata.endBlock) {
+
+        if (metadata.startBlock >= metadata.endBlock) {
             return Promise.reject(new Error("The process endBlock must be greater than the startBlock"))
         }
-        else if (!metadata.censusMerkleRoot) {
+
+        if (!metadata.censusMerkleRoot) {
             return Promise.reject(new Error("Invalid process censusMerkleRoot"))
         }
-        else if (!metadata.censusProofUrl) {
+
+        if (!metadata.censusProofUrl) {
             return Promise.reject(new Error("Invalid process censusProofUrl"))
         }
-        else if (!metadata.votingOptions || metadata.votingOptions.length < 1) {
+
+        if (!metadata.votingOptions || metadata.votingOptions.length < 1) {
             return Promise.reject(new Error("Invalid votingOptions"))
         }
-        else if (!metadata.voteEncryptionPublicKey) {
+
+        for (const votingOption of metadata.votingOptions) {
+            if (!Utils.stringToBytes32(votingOption)) {
+                return Promise.reject(new Error("VotingOption is too long. Should fit into a Bytes32"))
+            }
+        }
+
+        if (!metadata.voteEncryptionPublicKey) {
             return Promise.reject(new Error("Invalid process voteEncryptionPublicKey"))
         }
 
@@ -55,18 +93,31 @@ export default class Process {
             metadata.censusProofUrl,
             metadata.censusRequestUrl,
             metadata.question,
-            metadata.votingOptions,
+            metadata.votingOptions.map((votingOption) => Utils.stringToBytes32(votingOption)),
             metadata.voteEncryptionPublicKey],
             { type: "send", from: organizerAddress, gas: 999999 });
     }
 
     public getMetadata(processId: string): Promise<IProcessMetadata> {
-        if (!processId) return Promise.reject("processId is required");
+        if (!processId) {
+            return Promise.reject("processId is required");
+        }
 
-        return this.ProcessInstance.exec("getProcessMetadata", [processId]).then((meta: IProcessMetadata) => {
-            // Append the processId to itself
-            meta.id = processId;
-            return meta;
+        return this.ProcessInstance.exec("getProcessMetadata", [processId]).then((meta: IGetProcessMetadata) => {
+            const stringVotingOptions = meta.votingOptions.map((bytes32VotingOption) =>
+                Utils.bytes32ToString(bytes32VotingOption))
+
+            const newMeta: IProcessMetadata = {
+                endBlock: meta.endBlock,
+                id: processId,
+                name: meta.name,
+                question: meta.question,
+                startBlock: meta.startBlock,
+                voteEncryptionPublicKey: meta.voteEncryptionPublicKey,
+                votingOptions: stringVotingOptions,
+            }
+
+            return newMeta;
         });
     }
 
@@ -79,7 +130,7 @@ export default class Process {
     }
 
     public getMultipleMetadata(processesId: string[]): Promise<IProcessMetadata[]> {
-        const promises: Promise<IProcessMetadata>[] = [];
+        const promises: Array<Promise<IProcessMetadata>> = [];
         for (const pid of processesId) {
             promises.push(this.getMetadata(pid));
         }
@@ -88,8 +139,12 @@ export default class Process {
     }
 
     public encryptVote(vote: string, votePublicKey: string): string {
-        if (!vote) throw Error("Vote is required");
-        else if (!votePublicKey) throw Error("VotePublicKey is required");
+        if (!vote) {
+            throw Error("Vote is required");
+        }
+        if (!votePublicKey) {
+            throw Error("VotePublicKey is required");
+        }
 
         // TODO:
         return "";
