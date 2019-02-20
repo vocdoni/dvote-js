@@ -1,9 +1,9 @@
 import DvoteContracts = require("dvote-smart-contracts")
+// import Web3 = require("web3");
 import Blockchain from "./blockchain"
 import MerkleProof from "./merkleProof"
 
 import Axios from "axios"
-import * as tweetnacl from "tweetnacl"
 
 interface ICensusMetadata {
     censusMerkleRoot: string
@@ -38,37 +38,35 @@ export default class Census {
         return new MerkleProof(response.data.response)
     }
 
-    public static sign(data: ISignPayload, privateKey: string): string {
+    public static sign(data: ISignPayload, web3Provider: any): string {
         if (!data) throw new Error("data is required")
-        else if (!privateKey) throw new Error("privateKey is required")
+        else if (!web3Provider) throw new Error("A web3Provider is required")
 
         const timeStamp: string = Math.floor(new Date().getTime() / 1000).toString()
 
-        const payload: string = data.method + data.censusId +
-            (data.rootHash || "") + (data.claimData || "") + timeStamp
+        const payload: string = data.method + data.censusId + (data.rootHash || "") + (data.claimData || "") + timeStamp
 
         // TODO:  Refactor to be NodeJS independent
-        const signature: Uint8Array = tweetnacl.sign(Buffer.from(payload), Buffer.from(privateKey, "hex"))
-        return Buffer.from(signature).toString("hex").slice(0, 128)
-    }
 
-    public static getCensusIdFromAddress(address: string) {
-        if (address.match(/^0x/)) {
-            return address.substr(2)
-        }
-        else {
-            return address
-        }
+        // TODO: Implement payload signature using web3
+
+        // const web3 = new Web3(web3Provider)
+        // const signature: string = web3.eth.personal.sign(payload, web3Provider.getAddress())
+        // return signature
+
+        return ""
     }
 
     // INTENRAL VARIABLES
 
+    private web3Provider: any
     private ProcessInstance: Blockchain
     private CensusServiceUrl: string
 
     // INTENRAL METHODS
 
     public initBlockchain(web3Provider: any, votingProcessContractAddress: string) {
+        this.web3Provider = web3Provider
         this.ProcessInstance = new Blockchain(web3Provider, votingProcessContractAddress, DvoteContracts.VotingProcess.abi)
     }
 
@@ -76,6 +74,7 @@ export default class Census {
         this.CensusServiceUrl = censusServiceUrl
     }
 
+    // TODO: Refactor into the Process Class
     public getMetadata(processId: string): Promise<ICensusMetadata> {
         if (processId.length === 0) {
             return Promise.reject(new Error("processId is required"))
@@ -88,22 +87,18 @@ export default class Census {
         if (!voterPublicKey) throw new Error("voterPublicKey is required")
         else if (!censusId) throw new Error("censusId is required")
 
-        censusId = Census.getCensusIdFromAddress(censusId)
-
-        const payload = { claimData: voterPublicKey, censusId }
+        const payload: ICensusRequestPayload = { method: "genProof", claimData: voterPublicKey, censusId }
         const response = await Axios.post(this.CensusServiceUrl, payload)
-
+        
         if (!response.data || !response.data.response) throw new Error("Invalid response")
         return new MerkleProof(response.data.response)
     }
 
     // TODO: Refactor (privateKey should not be the mechanism => web3.eth.personal.sign() instead)
-    public async addClaim(voterPublicKey: string, censusId: string, privateKey: string): Promise<boolean> {
+    public async addClaim(voterPublicKey: string, censusId: string): Promise<boolean> {
         if (!voterPublicKey) throw new Error("voterPublicKey is required")
         else if (!censusId) throw new Error("censusId is required")
-        else if (!privateKey) throw new Error("privateKey is still required")
-
-        censusId = Census.getCensusIdFromAddress(censusId)
+        else if (!this.web3Provider) throw new Error("A web3Provider is needed")
 
         const signablePayload: ISignPayload = {
             method: "addClaim",
@@ -111,7 +106,7 @@ export default class Census {
             censusId
         }
 
-        const signature = Census.sign(signablePayload, privateKey)
+        const signature = Census.sign(signablePayload, this.web3Provider)
 
         const payload: ICensusRequestPayload = {
             method: "addClaim",
@@ -130,8 +125,6 @@ export default class Census {
         if (!voterPublicKey) throw new Error("voterPublicKey is required")
         else if (!censusId) throw new Error("censusId is required")
 
-        censusId = Census.getCensusIdFromAddress(censusId)
-
         const payload: ICensusRequestPayload = { method: "checkProof", claimData: voterPublicKey, censusId, proofData: proof }
         const response = await Axios.post(this.CensusServiceUrl, payload)
 
@@ -140,8 +133,6 @@ export default class Census {
 
     public async getRoot(censusId: string): Promise<string> {
         if (!censusId) throw new Error("censusId is required")
-
-        censusId = Census.getCensusIdFromAddress(censusId)
 
         const payload: ICensusRequestPayload = { method: "getRoot", censusId }
         const response = await Axios.post(this.CensusServiceUrl, payload)
@@ -152,20 +143,19 @@ export default class Census {
     }
 
     // TODO: Refactor (privateKey should not be the mechanism => web3.eth.personal.sign() instead)
-    public async dump(censusId: string, privateKey: string): Promise<string[]> {
+    public async dump(censusId: string): Promise<string[]> {
         if (!censusId) throw new Error("censusId is required")
-        else if (!privateKey) throw new Error("privateKey is still required")
-
-        censusId = Census.getCensusIdFromAddress(censusId)
+        else if (!this.web3Provider) throw new Error("A web3Provider is required")
 
         const signablePayload: ISignPayload = { method: "dump", censusId }
-        const signature = Census.sign(signablePayload, privateKey)
+        const signature = Census.sign(signablePayload, this.web3Provider)
 
         const payload: ICensusRequestPayload = { method: "dump", censusId, signature }
         const response = await Axios.post(this.CensusServiceUrl, payload)
 
         if (!response.data) throw new Error("Invalid response")
         else if (response.data.error) throw new Error(response.data.response)
+
         return JSON.parse(response.data.response)
     }
 }
