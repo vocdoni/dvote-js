@@ -1,6 +1,6 @@
 {
   "name": "dvote-client",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "description": "Javascript client library to work with the Vocdoni core features",
   "main": "dist/index",
   "typings": "dist/index",
@@ -29,9 +29,9 @@
     "watch": "./node_modules/typescript/bin/tsc -w -p .",
     "ts-node": "./node_modules/ts-node/dist/bin.js",
     "test": "./node_modules/mocha/bin/mocha -r ts-node/register test/**/*.ts",
-    "test-unit": "./node_modules/mocha/bin/mocha -r ts-node/register test/unit/*.ts",
-    "test-integration": "./node_modules/mocha/bin/mocha -r ts-node/register test/integration/*.ts",
-    "testintest": "NODE_ENV='test' ./node_modules/mocha/bin/mocha --timeout 20000 -r ts-node/register test/**/*.ts"
+    "test:unit": "./node_modules/mocha/bin/mocha -r ts-node/register test/unit/*.ts",
+    "test:integration": "./node_modules/mocha/bin/mocha -r ts-node/register test/integration/*.ts",
+    "test:remote": "NODE_ENV='test' ./node_modules/mocha/bin/mocha --timeout 20000 -r ts-node/register test/**/*.ts"
   },
   "dependencies": {
     "axios": "^0.18.0",

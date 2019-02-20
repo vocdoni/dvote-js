@@ -21,7 +21,7 @@ describe("Census", () => {
     let accounts = [];
 
     let census: Census;
-    const censusId = "test_" + Math.floor(Math.random() * 1000000000);
+    const censusId = "test-census"
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
@@ -67,21 +67,19 @@ describe("Census", () => {
             assert.isString(response, "Census Root should be a string");
         });
 
-        it("Should take a snapshot of the census, get the proof but not add new claim to this censusID", async () => {
-            const snapshotCensusId = await census.snapshot(censusId, censusPrivateKey);
-            assert.isString(snapshotCensusId, "snapshotCensusId provided by snapshot should be a string");
+        it("Should be able to dump the census", async () => {
+            throw new Error("TODO: Complete the test case")
+            // proof = await census.getProof(accounts[0], censusId);
+            // assert.isString(proof.raw, "Raw proof should be a string");
 
-            proof = await census.getProof(accounts[0], snapshotCensusId);
-            assert.isString(proof.raw, "Raw proof should be a string");
+            // const response = await census.checkProof(accounts[0], censusId, proof.raw);
+            // assert.isTrue(response, "A valid response verifies Public Key is in Census");
 
-            const response = await census.checkProof(accounts[0], snapshotCensusId, proof.raw);
-            assert.isTrue(response, "A valid response verifies Public Key is in Census");
+            // const res = await census.addClaim(accounts[1], censusId, censusPrivateKey);
+            // assert.isFalse(res, "Shouldn't be able to add a Claim in a snapshoted census");
 
-            const res = await census.addClaim(accounts[1], snapshotCensusId, censusPrivateKey);
-            assert.isFalse(res, "Shouldn't be able to add a Claim in a snapshoted census");
-
-            const dump = await census.dump(censusId);
-            assert.isArray(dump);
+            // const dump = await census.dump(censusId, censusPrivateKey);
+            // assert.isArray(dump);
         });
 
     });
