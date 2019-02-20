@@ -22,8 +22,7 @@ describe("Voting Entities", () => {
 
     let entity: dvote.Entity;
     const inputEntity = {
-        // TODO: Refactor into censusUrl
-        censusRequestUrl: "https://census.testnet.vocdoni.io/",
+        censusRequestUrl: "https://organization.testnet.vocdoni.io/census-register",
         name: "The Voting Organization",
     };
 

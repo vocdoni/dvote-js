@@ -1,4 +1,5 @@
 export default {
+    // BLOCKCHAIN_URL: "https://nou.network/web3",
     BLOCKCHAIN_URL: "http://node.testnet.vocdoni.io:8545",
     CENSUS_ID: "testnet",
     CENSUS_SERVICE_URL: "https://census.testnet.vocdoni.io",
