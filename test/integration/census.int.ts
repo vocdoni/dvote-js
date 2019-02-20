@@ -15,13 +15,13 @@ describe("Census", () => {
     const httpProvider = new HDWalletProvider(mnemonic, blockchainUrl, 0, 10);
     const web3 = new Web3(httpProvider);
 
+    const censusId = Config.CENSUS_ID
     const censusServiceUrl: string = Config.CENSUS_SERVICE_URL;
     // const censusPrivateKey: string = Config.CENSUS_PRIVATE_KEY;
 
     let accounts = [];
 
     let census: Census;
-    const censusId = "testcensus"
 
     before(async () => {
         accounts = await web3.eth.getAccounts();

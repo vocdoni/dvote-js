@@ -19,17 +19,17 @@ describe("Voting Process", () => {
 
     let votingProcess: dvote.Process;
     const inputProcessMetadata = {
-        censusProofUrl: "http://census.testnet.vocdoni.io/getCensusProof",
+        censusProofUrl: "https://census.testnet.vocdoni.io/",
         censusMerkleRoot: "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
         censusRequestUrl: "http://organizer.testnet.vocdoni.io/census-register",
-        endBlock: 1,
-        name: "This is a process name",
-        question: "Blue pill or red pill?",
+        name: "Global Science Poll",
+        question: "Who's the boss of bosses?",
         startBlock: 0,
+        endBlock: 100,
         voteEncryptionPrivateKey: "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
         voteEncryptionPublicKey: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         votesBatch1: "0x1111111111111111111111111111111111111111111111111111111111111111",
-        votingOptions: ["Yep", "Nope", "Maybe"],
+        votingOptions: ["Isaac Newton", "Albert Einstein", "Nikola Tesla", "Alan Turing"],
     };
 
     it("Should deploy a new VotingProcess contract", async () => {
@@ -48,6 +48,7 @@ describe("Voting Process", () => {
         votingProcess = new dvote.Process(web3, votingProcessContractAddress);
 
         assert.isString(votingProcessContractAddress);
+        console.log("Process contract deployed to:", votingProcessContractAddress)
     });
 
     describe("Creates and checks voting process creation", () => {

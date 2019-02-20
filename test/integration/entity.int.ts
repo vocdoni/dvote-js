@@ -12,7 +12,7 @@ describe("Voting Entities", () => {
 
     const mnemonic = config.MNEMONIC
     const blockchainUrl: string = config.BLOCKCHAIN_URL;
-    const httpProvider = new HDWalletProvider(mnemonic, blockchainUrl, 0, 10);    
+    const httpProvider = new HDWalletProvider(mnemonic, blockchainUrl, 0, 10);
     const web3 = new Web3(httpProvider);
 
     let votingEntityContractAddress: string = null;
@@ -22,8 +22,9 @@ describe("Voting Entities", () => {
 
     let entity: dvote.Entity;
     const inputEntity = {
-        censusRequestUrl: "http://vocdoni.io/requestCenus",
-        name: "This is an Entity name",
+        // TODO: Refactor into censusUrl
+        censusRequestUrl: "https://census.testnet.vocdoni.io/",
+        name: "The Voting Organization",
     };
 
     before(async () => {
@@ -37,8 +38,9 @@ describe("Voting Entities", () => {
             accounts[0],
             3500000,
             Web3.utils.toWei("1.2", "Gwei"),
-            );
+        );
 
+        console.log("Entity contract deployed to:", votingEntityContractAddress)
     });
 
     describe("Creates and checks voting entity creation", () => {
@@ -59,7 +61,7 @@ describe("Voting Entities", () => {
             );
 
             const entities = await entity.getAll()
-            assert.equal(entities.length, 1, "There should be only one entity");
+            assert.equal(entities.length, 1, "There should only be one entity");
             assert.equal(typeof entities[0].address, "string", "Entities should have an address");
             assert.equal(typeof entities[0].name, "string", "Entities should have a name");
             assert.equal(typeof entities[0].censusRequestUrl, "string", "Entities should have a censusRequestUrl");
