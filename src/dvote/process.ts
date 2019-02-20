@@ -25,7 +25,6 @@ interface ICreateProcessMetadata {
 }
 
 interface IGetProcessMetadata {
-
     name: string,
     startBlock: number,
     endBlock: number,
