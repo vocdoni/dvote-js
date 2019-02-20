@@ -16,34 +16,36 @@ describe("Census", () => {
     const web3 = new Web3(httpProvider);
 
     const censusServiceUrl: string = Config.CENSUS_SERVICE_URL;
-    const censusPrivateKey: string = Config.CENSUS_PRIVATE_KEY;
+    // const censusPrivateKey: string = Config.CENSUS_PRIVATE_KEY;
 
     let accounts = [];
 
     let census: Census;
-    const censusId = "test-census"
+    const censusId = "testcensus"
 
     before(async () => {
         accounts = await web3.eth.getAccounts();
 
         census = new Census();
         census.initCensusService(censusServiceUrl);
+        census.initBlockchain(httpProvider, "0x1f2a8869E9C64699B10D81D7f9d398A6A570ea7F")
     });
 
     describe("Should be able to add a public key to a census and verify it's inside using the proof", () => {
         let proof: MerkleProof = null;
 
         it("Should add the claim to the census", async () => {
-            const response = await census.addClaim(accounts[0], censusId, censusPrivateKey);
+            const response = await census.addClaim(accounts[0], censusId);
             assert.isTrue(response);
         });
 
-        it("Should not be able to add a mal-signed claim to the census", async () => {
+        it("Should not be able to perform protected operations without a valid signature", async () => {
+            throw new Error("Signature functionality is still unimplemented")
+
             const censusSignStub = sinon.stub(Census, "sign")
                 .returns("this_is_not_a_correct_signature");
 
-            const response = await census.addClaim(accounts[0], censusId, censusPrivateKey);
-
+            const response = await census.addClaim(accounts[0], censusId);
             censusSignStub.restore();
 
             assert.isFalse(response);
@@ -68,18 +70,13 @@ describe("Census", () => {
         });
 
         it("Should be able to dump the census", async () => {
-            throw new Error("TODO: Complete the test case")
-            // proof = await census.getProof(accounts[0], censusId);
-            // assert.isString(proof.raw, "Raw proof should be a string");
+            await census.addClaim(accounts[0], censusId);
+            await census.addClaim(accounts[1], censusId);
 
-            // const response = await census.checkProof(accounts[0], censusId, proof.raw);
-            // assert.isTrue(response, "A valid response verifies Public Key is in Census");
-
-            // const res = await census.addClaim(accounts[1], censusId, censusPrivateKey);
-            // assert.isFalse(res, "Shouldn't be able to add a Claim in a snapshoted census");
-
-            // const dump = await census.dump(censusId, censusPrivateKey);
-            // assert.isArray(dump);
+            const dump = await census.dump(censusId);
+            assert.isArray(dump);
+            assert(dump.indexOf(accounts[0]) >= 0, `${accounts[0]} should be part of ${JSON.stringify(dump)}`)
+            assert(dump.indexOf(accounts[1]) >= 0, `${accounts[0]} should be part of ${JSON.stringify(dump)}`)
         });
 
     });

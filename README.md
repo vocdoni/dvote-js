@@ -40,7 +40,8 @@ Run a census service on your local computer:
 ```
 git clone https://github.com/vocdoni/go-dvote.git
 cd cmd/censushttp
-go run censushttp.go 1500 <PUBLIC_KEY>
+go run censushttp.go 1500 testcensus    # accept any signature
+go run censushttp.go 1500 testcensus:<PUBLIC_KEY>
 ```
 
 Then in another tab:

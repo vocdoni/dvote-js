@@ -39,7 +39,6 @@
     "dvote-smart-contracts": "0.0.7",
     "request": "^2.88.0",
     "truffle-hdwallet-provider": "^1.0.3",
-    "tweetnacl": "^1.0.0",
     "web3": "1.0.0-beta.37"
   },
   "postinstall": "rm -f node_modules/web3/index.d.ts"
