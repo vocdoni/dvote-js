@@ -6,7 +6,7 @@ import Web3 = require("web3");
 const HDWalletProvider = require("truffle-hdwallet-provider");
 
 import * as dvote from "../../src";
-import { deployContract } from "../testUtils";
+import { deployContract } from "../../util";
 
 describe("Voting Entities", () => {
 
