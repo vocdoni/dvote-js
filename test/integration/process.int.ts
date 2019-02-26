@@ -6,7 +6,7 @@ import * as dvote from "../../src";
 const HDWalletProvider = require("truffle-hdwallet-provider");
 
 import DvoteSmartContracts = require("dvote-smart-contracts");
-import { deployContract } from "../testUtils";
+import { deployContract } from "../../util";
 
 describe("Voting Process", () => {
 
