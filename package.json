@@ -1,11 +1,11 @@
 {
-  "name": "dvote-client",
+  "name": "dvote-js",
   "version": "0.0.22",
-  "description": "Javascript client library to work with the Vocdoni core features",
+  "description": "Javascript/Typescript library to interact with Vocdoni voting processes",
   "main": "dist/index",
   "typings": "dist/index",
-  "repository": "https://github.com/vocdoni/dvote-client.git",
-  "author": "Aleix <aleix@vocdoni.io>",
+  "repository": "https://github.com/vocdoni/dvote-js.git",
+  "author": "Vocdoni <root@vocdoni.io>",
   "license": "GPL-3.0-or-later",
   "private": false,
   "devDependencies": {
