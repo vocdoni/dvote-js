@@ -1,4 +1,4 @@
-enum TextPurpose {
+export enum TextPurpose {
     entityName = "entity-name",
     languages = "languages",
     meta = "meta",
@@ -12,10 +12,9 @@ enum TextPurpose {
 
 const keyPrefix = "vnd.vocdoni"
 
-export default class EntityKeysUtil {
+export class KeysUtil {
 
-    public get(purpose: TextPurpose, attribute?: string) {
+    public make(purpose: TextPurpose, attribute: string = "") {
         return keyPrefix + purpose + attribute
     }
-
 }
