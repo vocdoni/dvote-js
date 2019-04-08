@@ -1,6 +1,7 @@
 import DvoteContracts = require("dvote-smart-contracts")
 import EntityResolver from "./entityResolver"
 import Utils from "./utils"
+import { TextPurpose, KeysUtil } from "./entityKeysUtil"
 
 interface IEntityReference {
     entityId: string
@@ -22,6 +23,11 @@ export default class EntityMetadata {
             web3Provider,
             this.resolverAddress,
             DvoteContracts.EntityResolver.abi)
+    }
+
+    public setEntityName(value: string, fromAddress: string) {
+        const key = KeysUtil.make(TextPurpose.entityName)
+        return this.entityResolver.setText(this.entityId, key, value, fromAddress)
     }
 
 }
