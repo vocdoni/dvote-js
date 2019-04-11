@@ -8,5 +8,10 @@
         "indent": [true, "spaces", 4],
         "semicolon": [false, "always"]
     },
-    "rulesDirectory": []
+    "rulesDirectory": [],
+    "linterOptions": {
+        "exclude": [
+            "node_modules/**"
+        ]
+    }
 }
