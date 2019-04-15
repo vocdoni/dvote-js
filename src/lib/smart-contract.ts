@@ -81,6 +81,7 @@ export default class SmartContract {
 
     attach(address: string): Contract {
         this.contractInstance = new Contract(address, this.abi, this.provider)
+        if (this.wallet) this.contractInstance = this.contractInstance.connect(this.wallet)
 
         return this.contractInstance
     }
