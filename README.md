@@ -175,6 +175,8 @@ Simply run `npm run test`. It is an alias for `npm run test:unit` and `npm run t
 - Unit testing will start an internal Ganache provider and launch transactions to it
 - Integration testing is still a WIP
 
+### Builders
+
 In order to avoid tedious and repetitive testing code, you can check out the `test/builders` folder. Entity and Process builders deploy a new instance and create an Entity/Process with default values. These default values can be overridden with one-liners, if needed:
 
 ```javascript
@@ -201,6 +203,24 @@ Note: This is still under heavy development.
 
 When adding new test suites, don't forget to add a call to `addCompletionHooks()`. Otherwise, the NodeJS process will keep up indefinitely when testing. 
 
+### Simulating future timestamps
+
+If you need a transaction to happen in a future timestamp, use `test/eth-utils > increaseTimestamp()` instead of forcing the code to wait. 
+
+### Testing accounts
+
+Use `test/eth-utils > getAccounts()` to retrieve a list of 10 funded accounts with the following data schema:
+
+```javascript
+{
+    privateKey: "...",
+    address: "0x...",
+    provider: <ethers-js-provider>,
+    wallet: <ethers-js-wallet>
+}
+```
+
+These accounts are connected to an in-memory Ganache RPC node.
 
 <!--
 ### Census
