@@ -121,6 +121,28 @@ console.log("value=", value)
 
 ```
 
+## Components
+
+```javascript
+const { EntityResolver, VotingProcess, Gateway } = require("dvote-js")
+```
+
+### Entity Resolver
+
+Mainly used to query the metadata of an Entity on a ENS resolver, but also used to set and update its values.
+
+`EntityResolver` provides a contract factory so that instances can be deployed or attached to. But it also provides utility functions to compute `entityId`'s or fetch JSON metadata.
+
+### Voting Process
+
+Mainly used to query the metadata of a voting process within the contract instance. Also used to create votes, publish batches and get the encryption keys.
+
+`VotingProcess` provides a contract factory so that instances can be deployed or attached to. But it also provides utility functions to compute the `processId` or fetch JSON metadata as well.
+
+### Gateway
+
+Provides utility functions to fetch data from remote nodes in a decentralized network using gateways and send messages as well. 
+
 ## Example usage
 
 
