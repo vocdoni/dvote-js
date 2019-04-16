@@ -73,18 +73,16 @@ export default class EntityResolver extends SmartContract {
      * Fetch the JSON metadata for the given entityAddress using the given gateway
      * @param entityAddress 
      * @param gatewayIp 
-     * @param gatewayPort 
      */
-    public async getJsonMetadata(entityAddress: string, gatewayIp: string, gatewayPort: number): Promise<string> {
+    public async getJsonMetadata(entityAddress: string, gatewayIp: string): Promise<string> {
         if (!entityAddress) throw new Error("Invalid entityAddress")
         else if (!gatewayIp) throw new Error("Invalid gateway IP")
-        else if (!gatewayPort) throw new Error("Invalid gateway port")
 
         const entityId = EntityResolver.getEntityId(entityAddress)
         const metadataContentUri = await this.contractInstance.text(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI)
         if (!metadataContentUri) throw new Error("The given entity has no metadata defined yet")
 
-        const gw = new Gateway(gatewayIp, gatewayPort)
+        const gw = new Gateway(gatewayIp)
         return gw.fetchFile(metadataContentUri)
     }
 }
