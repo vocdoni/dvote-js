@@ -36,6 +36,24 @@ export default class VotingProcess extends SmartContract {
         return utils.keccak256(entityAddress + processIndexBytes)
     }
 
+    /**
+     * Compute the derived public key given a processId
+     * @param publicKey 
+     * @param processId 
+     */
+    public static derivePublicKey(publicKey: string, processId: string): string {
+        throw new Error("unimplemented")
+    }
+
+    /**
+     * Compute the derived private key given a processId
+     * @param publicKey 
+     * @param processId 
+     */
+    public static derivePrivateKey(privateKey: string, processId: string): string {
+        throw new Error("unimplemented")
+    }
+
     // METHODS
 
     /**
@@ -68,17 +86,86 @@ export default class VotingProcess extends SmartContract {
      * Fetch the JSON metadata for the given processId using the given gateway
      * @param processId 
      * @param gatewayIp 
-     * @param gatewayPort 
      */
-    public async getJsonMetadata(processId: string, gatewayIp: string, gatewayPort: number): Promise<string> {
+    public async getJsonMetadata(processId: string, gatewayIp: string): Promise<string> {
         if (!processId) throw new Error("Invalid processId")
         else if (!gatewayIp) throw new Error("Invalid gateway IP")
-        else if (!gatewayPort) throw new Error("Invalid gateway port")
+        else if (!this.contractInstance) throw new Error("You need to attach to a contract or deploy a new one before invoking this operation")
 
         const data: VotingProcessData = await this.contractInstance.get(processId)
         if (!data || !data.metadataContentUri) throw new Error("The given entity has no metadata defined yet")
 
-        const gw = new Gateway(gatewayIp, gatewayPort)
+        const gw = new Gateway(gatewayIp)
         return gw.fetchFile(data.metadataContentUri)
     }
+
+    /**
+     * Fetch the modulus group of the given process census using the given gateway
+     * @param processId 
+     * @param modulusGroup
+     * @param gatewayIp 
+     */
+    public async getLrsRing(processId: string, modulusGroup: number, gatewayIp: string): Promise<string> {
+        const metadata = await this.getJsonMetadata(processId, gatewayIp)
+
+        // TODO: Check that the vote type == LRS
+        // TODO:
+
+        throw new Error("unimplemented")
+    }
+
+    /**
+     * Fetch the modulus group of the given process census using the given gateway
+     * @param processId 
+     * @param address
+     * @param gatewayIp 
+     */
+    public async getMerkleProof(processId: string, address: number, gatewayIp: string): Promise<string> {
+        const metadata = await this.getJsonMetadata(processId, gatewayIp)
+
+        // TODO: Check that the vote type == ZK Snarks
+        // TODO:
+
+        throw new Error("unimplemented")
+    }
+
+    /**
+     * Submit the vote envelope to a Gateway
+     * @param voteEnvelope
+     * @param processId 
+     * @param gatewayIp 
+     * @param relayAddress
+     */
+    public async submitVoteEnvelope(voteEnvelope, processId: string, type: VoteType, gatewayIp: string, relayAddress: string): Promise<boolean> {
+
+        const payload: VoteEnvelope = {
+            method: "submitVoteEnvelope",
+            type,
+            processId,
+            content: voteEnvelope,
+            relayAddr: relayAddress
+        }
+
+        // TODO: Encrypt vote envelope with the public key of the Relay
+        // TODO: 
+
+        throw new Error("unimplemented")
+    }
+
+    // Get Vote Status
+
+    // Package Vote (LRS)
+    // Package Vote (ZK)
+}
+
+
+// TYPES
+
+export type VoteType = "lrs" | "zk-snarks"
+export type VoteEnvelope = {
+    method: "submitVoteEnvelope",
+    type: VoteType,
+    processId: string,
+    content: string,  // Encrypted Vote package
+    relayAddr: string
 }

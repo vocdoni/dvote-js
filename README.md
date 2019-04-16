@@ -11,7 +11,7 @@ The library is built on top of [Ethers.js](https://docs.ethers.io/ethers.js/html
 npm install ethers
 ```
 
-To interact with the blockchain, we need a [Provider](https://docs.ethers.io/ethers.js/html/api-providers.html). In order to send transaction we need a [Wallet](https://docs.ethers.io/ethers.js/html/api-wallet.html) to sign them as well. 
+To interact with the blockchain, we need a [Provider](https://docs.ethers.io/ethers.js/html/api-providers.html). In order to send transactions we need a [Wallet](https://docs.ethers.io/ethers.js/html/api-wallet.html) to sign them as well. 
 
 ### Blockchain read-only interactions
 
@@ -141,7 +141,7 @@ Mainly used to query the metadata of a voting process within the contract instan
 
 ### Gateway
 
-Provides utility functions to fetch data from remote nodes in a decentralized network using gateways and send messages as well. 
+Provides utility functions to fetch data from decentralized filesystems, sending messages and adding files to Swarm/IPFS. 
 
 ## Example usage
 
@@ -227,7 +227,9 @@ When adding new test suites, don't forget to add a call to `addCompletionHooks()
 
 ### Simulating future timestamps
 
-If you need a transaction to happen in a future timestamp, use `test/eth-utils > increaseTimestamp()` instead of forcing the code to wait. 
+If you need a transaction to happen in a future timestamp, use `test/eth-utils > increaseTimestamp()` instead of forcing your code to wait. 
+
+Be aware that from this point, if you use `Date.now()` on the Javascript side, values will not match the timestamp of the blockchain. So make sure to call `getBlockNumber()` and `getBlock(<num>) > timestamp`.
 
 ### Testing accounts
 

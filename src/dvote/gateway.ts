@@ -17,19 +17,15 @@ export default class Gateway {
 
     // internal variables
     gatewayIp: IPAddress
-    gatewayPort: number
 
     /**
      * Create a Gateway object, bound to work with the given IP address and port
      * @param gatewayIp 
-     * @param gatewayPort 
      */
-    constructor(gatewayIp: IPAddress, gatewayPort: number) {
+    constructor(gatewayIp: IPAddress) {
         if (!gatewayIp || !gatewayIp.match(ipv4v6Pattern)) throw new Error("Invalid Gateway IP address")
-        else if (!gatewayPort) throw new Error("Invalid port number")
 
         this.gatewayIp = gatewayIp
-        this.gatewayPort = gatewayPort
     }
 
     /**
