@@ -1,20 +1,206 @@
-[![Build Status](https://travis-ci.com/vocdoni/dvote-client.svg?branch=master)](https://travis-ci.com/vocdoni/dvote-client)
+# DVote JS
+Formerly known as dvote-client, this library aims to provide utility classes and methods to invoke decentralized operations within a voting process. It covers the typical functionality of Client applications, as well as the Process Manager or the Census Manager.
 
-# DVote Client
-Typescript client library to work with the Vocdoni core features.
+The intended functionality is to interact with a public Ethereum blockchain, to fetch data from a decentralized filesystem, to enforce data schema validity, to prepare vote packages and using decentralized messaging networks through Gateways or Relays.
 
-## Components
+## Getting started
 
-The library provides convenience classes and methods to access the various components of a DVote process.
+The library is built on top of [Ethers.js](https://docs.ethers.io/ethers.js/html/), which is fully compatible with Web3.
 
-### Entity
+```sh
+npm install ethers
+```
 
-Any Ethereum account can create an Entity, which may create voting processes.
+To interact with the blockchain, we need a [Provider](https://docs.ethers.io/ethers.js/html/api-providers.html). In order to send transaction we need a [Wallet](https://docs.ethers.io/ethers.js/html/api-wallet.html) to sign them as well. 
 
-### Process
+### Blockchain read-only interactions
 
-A voting process.
+Start by defining a provider:
 
+```javascript
+const ethers = require("ethers")   // NodeJS
+import { ethers } from "ethers"    // ES6 Browser
+
+// standard
+const provider = ethers.getDefaultProvider('homestead') // mainnet
+
+// other alternatives
+const altProvider = new ethers.providers.EtherscanProvider('ropsten')
+
+// using custom ones
+const currentProvider1 = new web3.providers.HttpProvider('http://localhost:8545')
+const web3Provider1 = new ethers.providers.Web3Provider(currentProvider1)
+
+const currentProvider2 = new web3.providers.JsonRpcProvider('http://localhost:8545')
+const web3Provider2 = new ethers.providers.Web3Provider(currentProvider2)
+```
+
+[More information](https://docs.ethers.io/ethers.js/html/api-providers.html#connecting-to-ethereum)
+
+Next, initialize a **contract factory** and use it to attach to an instance.
+
+```javascript
+const { EntityResolver } = require("dvote-js")
+
+// using an explicit provider like the above
+const EntityResolverFactory = new EntityResolver({ provider })
+// or using a URL
+const EntityResolverFactory2 = new EntityResolver({ providerUrl: "http://localhost:8545" })
+
+// attaching to an existing contract instance
+const resolverContractAddress = "0x0123456789012345678901234567890123456789"
+const resolverInstance = EntityResolverFactory.attach(resolverContractAddress)
+
+// calling data from the blockchain
+const entityId = EntityResolver.getEntityId(myEntityAddress)
+const value = await resolverInstance.text(entityId, "key-name")
+console.log("value=", value)
+
+```
+
+### Blockchain transcations
+
+To send signed transactions to the blockchain, you need a funded account.
+
+DVoteJS uses an [Ethers.js wallet](https://docs.ethers.io/ethers.js/html/api-wallet.html) internally. You can simply attach to MetaMask/Mist/Parity when available and you can also provide your private key or a mnemonic on local environments (NodeJS).
+
+[More information](https://docs.ethers.io/ethers.js/html/api-wallet.html)
+
+#### MetaMask, Mist or Parity
+
+On a Web3 enabled browsers, the provider can be simply borrowed from `window.web3.currentProvider`. The wallet is automatically available. 
+
+```javascript
+import ethers from "ethers"
+import { EntityResolver } from "dvote-js"
+
+const myProvider = new ethers.providers.Web3Provider(web3.currentProvider)
+
+const EntityResolverFactory = new EntityResolver({ web3Provider: myProvider })
+
+// By passing 'web3Provider', DVoteJS will automatically attach to the 
+// signing mechanisms provided by MetaMask, Mist or Parity
+
+```
+
+#### NodeJS or local environments
+
+Otherwise, you need to provide a private key or a mnemonic seed phrase (with an optional derivation path).
+
+```javascript
+const { EntityResolver } = require("dvote-js")
+
+// using a private key
+const EntityResolverFactory = new EntityResolver({ provider, privateKey: "...." })
+// using a mnemonic (mnemonicPath is optional)
+const EntityResolverFactory = new EntityResolver({ provider, mnemonic: "...", mnemonicPath: "m/44'/60'/0'/0/3" })
+
+```
+
+#### Sending actual transactions
+
+Now, in both cases you have connected contract factories that can attach to any contract and eventually send signed transcations.
+
+```javascript
+// ...
+
+const myWallet = EntityResolverFactory.wallet
+const myEntityAddress = await myWallet.getAddress()
+const entityId = EntityResolver.getEntityId(myEntityAddress) // used to query the Entity resolver
+
+// deploying a contract
+const resolverInstance = await EntityResolverFactory.deploy()
+
+// sending a transaction
+const tx = await resolverInstance.setText(entityId, "another-key-name", "My official entity")
+await tx.wait()
+
+// calling the new data from the blockchain
+const value = await resolverInstance.text(entityId, "another-key-name")
+console.log("value=", value)
+
+```
+
+
+## Development
+
+Simply run `npm run test`. It is an alias for `npm run test:unit` and `npm run test:integration`.
+
+- Unit testing will start an internal Ganache provider and launch transactions to it
+- Integration testing is still a WIP
+
+In order to avoid tedious and repetitive testing code, you can check out the `test/builders` folder. Entity and Process builders deploy a new instance and create an Entity/Process with default values. These default values can be overridden with one-liners, if needed:
+
+```javascript
+const EntityBuilder = require("./test/builders/entity-resolver")
+const VoteBuilder = require("./test/builders/voting-process")
+
+const contractInstance1 = await new EntityBuilder().build()
+const contractInstance2 = await new VotingProcessBuilder().build()
+
+const contractInstance3 = await new EntityBuilder()
+    .withName("Another name")
+    .build()
+
+const contractInstance4 = await new VotingProcessBuilder()
+    .withEntityResolver("0x0123456789012345678901234567890123456789")
+    .withVotingPublicKey("...")
+    .build(3)  // create 3 voting processess within the new contract
+
+```
+
+
+Note: This is still under heavy development.
+
+## Example usage
+
+
+```javascript
+const { EntityResolver, VotingProcess } = require("dvote-js")
+
+// using an explicit provider like the above
+const EntityResolverFactory = new EntityResolver({ provider })
+// or using a URL
+const VotingProcessFactory = new VotingProcess({ providerUrl: "http://localhost:8545" })
+
+// attaching to an existing contract instance
+const resolverContractAddress = "0x0123456789012345678901234567890123456789"
+const resolverInstance = EntityResolverFactory.attach(resolverContractAddress)
+
+// calling data from the blockchain
+const entityId = EntityResolver.getEntityId(myEntityAddress)
+const value = await resolverInstance.text(entityId, "key-name")
+console.log("value=", value)
+
+// attaching to another instance
+const votingProcessAddress = "0x1234567890123456789012345678901234567890"
+const votingProcessInstance = VotingProcessFactory.attach(vProcessAddress)
+
+// calling more data
+const processNumber = 10  // incremental counter
+const pocessId = VotingProcess.getProcessId(entityId, processNumber)
+const processData = await votingProcessInstance.get(processId)
+
+const {
+    entityResolver, 
+    entityAddress, 
+    processName, 
+    metadataContentUri, 
+    startTime, 
+    endTime,
+    voteEncryptionPublicKey, 
+    canceled
+} = processData 
+
+console.log("Voting process name:", processName)
+
+```
+
+
+Full API details coming soon.
+
+
+<!--
 ### Census
 
 A custom made service, intended to provide the tools to join a census, get a census proof, etc.
@@ -54,9 +240,4 @@ npm test
 ## Building the JS library
 `npm install && npm run build`
 
-## Breaking changes
-
-* Version `0.0.22`
-    * The `snapshot()` method of `Census` has been removed. Use `getRoot()` and `dump()` instead
-    * The `dump()` method of `Census` now requires a second parameter with the private key to sign (this may change very soon)
-    * Test suites are now invoked like `npm run test`, `npm run test:unit`, `npm run test:integration` and `npm run test:remote` 
+-->
