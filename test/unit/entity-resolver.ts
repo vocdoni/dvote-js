@@ -7,7 +7,7 @@ import { EntityResolverInstance } from "dvote-solidity"
 
 
 import EntityResolver, { TextRecordKeys } from "../../src/dvote/entity-resolver"
-import EntityBuilder, { DEFAULT_NAME } from "../builders/entity"
+import EntityBuilder, { DEFAULT_NAME } from "../builders/entity-resolver"
 
 let accounts: TestAccount[]
 let baseAccount: TestAccount

@@ -2,7 +2,7 @@ import VotingProcess from "../../src/dvote/voting-process"
 import { Contract } from "ethers"
 import { VotingProcessInstance } from "dvote-solidity"
 import { getAccounts, TestAccount } from "../eth-util"
-import EntityBuilder from "./entity"
+import EntityBuilder from "./entity-resolver"
 
 // DEFAULT VALUES
 export const DEFAULT_NAME = "Voting Process name"
