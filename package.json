@@ -22,7 +22,8 @@
   "dependencies": {
     "axios": "^0.18.0",
     "dvote-solidity": "^0.1.4",
-    "ethers": "^4.0.27"
+    "ethers": "^4.0.27",
+    "universal-parse-url": "^1.0.2"
   },
   "devDependencies": {
     "@types/chai": "^4.1.7",

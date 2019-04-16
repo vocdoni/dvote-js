@@ -1,6 +1,8 @@
 import { providers, utils, Contract } from "ethers"
 import { VotingProcess as VotingProcessContractDefinition } from "dvote-solidity"
+import { VotingProcessData } from "dvote-solidity/build/types"
 import SmartContract from "../lib/smart-contract"
+import Gateway from "./gateway"
 
 const { abi, bytecode } = VotingProcessContractDefinition
 
@@ -20,24 +22,7 @@ type VotingProcessConstructorParams = {
  * The class extends the behavior of the SmartContract base class
  */
 export default class VotingProcess extends SmartContract {
-    constructor(params: VotingProcessConstructorParams) {
-        if (!params) throw new Error("Invalid parameters")
-
-        const { web3Provider, providerUrl, provider, privateKey, mnemonic, mnemonicPath } = params
-
-        super({
-            abi,
-            bytecode,
-
-            web3Provider,
-            providerUrl,
-            provider,
-
-            privateKey,
-            mnemonic,
-            mnemonicPath
-        })
-    }
+    // STATIC FUNCTIONS
 
     /**
      * Compute the ID of a process off-chain
@@ -49,5 +34,51 @@ export default class VotingProcess extends SmartContract {
         const processIndexBytes = hexStr.slice(-64)
 
         return utils.keccak256(entityAddress + processIndexBytes)
+    }
+
+    // METHODS
+
+    /**
+     * Creates a contract factory to deploy or attach to VotingProcess instances
+     * @param params 
+     */
+    constructor(params: VotingProcessConstructorParams) {
+        if (!params) throw new Error("Invalid parameters")
+
+        const { web3Provider, providerUrl, provider, privateKey, mnemonic, mnemonicPath } = params
+
+        super({
+            // mandatory
+            abi,
+            bytecode,
+
+            // one of
+            web3Provider,
+            providerUrl,
+            provider,
+
+            // optional for read-only
+            privateKey,
+            mnemonic,
+            mnemonicPath
+        })
+    }
+
+    /**
+     * Fetch the JSON metadata for the given processId using the given gateway
+     * @param processId 
+     * @param gatewayIp 
+     * @param gatewayPort 
+     */
+    public async getJsonMetadata(processId: string, gatewayIp: string, gatewayPort: number): Promise<string> {
+        if (!processId) throw new Error("Invalid processId")
+        else if (!gatewayIp) throw new Error("Invalid gateway IP")
+        else if (!gatewayPort) throw new Error("Invalid gateway port")
+
+        const data: VotingProcessData = await this.contractInstance.get(processId)
+        if (!data || !data.metadataContentUri) throw new Error("The given entity has no metadata defined yet")
+
+        const gw = new Gateway(gatewayIp, gatewayPort)
+        return gw.fetchFile(data.metadataContentUri)
     }
 }
