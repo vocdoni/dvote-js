@@ -20,7 +20,6 @@
     "test:remote": "NODE_ENV='test' ./node_modules/.bin/mocha --timeout 20000 -r ts-node/register test/**/*.ts"
   },
   "dependencies": {
-    "axios": "^0.18.0",
     "dvote-solidity": "^0.1.4",
     "ethers": "^4.0.27",
     "universal-parse-url": "^1.0.2",

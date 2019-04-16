@@ -85,17 +85,17 @@ export default class VotingProcess extends SmartContract {
     /**
      * Fetch the JSON metadata for the given processId using the given gateway
      * @param processId 
-     * @param gatewayIp 
+     * @param gatewayUri 
      */
-    public async getJsonMetadata(processId: string, gatewayIp: string): Promise<string> {
+    public async getJsonMetadata(processId: string, gatewayUri: string): Promise<string> {
         if (!processId) throw new Error("Invalid processId")
-        else if (!gatewayIp) throw new Error("Invalid gateway IP")
+        else if (!gatewayUri) throw new Error("Invalid gateway IP")
         else if (!this.contractInstance) throw new Error("You need to attach to a contract or deploy a new one before invoking this operation")
 
         const data: VotingProcessData = await this.contractInstance.get(processId)
         if (!data || !data.metadataContentUri) throw new Error("The given entity has no metadata defined yet")
 
-        const gw = new Gateway(gatewayIp)
+        const gw = new Gateway(gatewayUri)
         return gw.fetchFile(data.metadataContentUri)
     }
 
@@ -103,10 +103,10 @@ export default class VotingProcess extends SmartContract {
      * Fetch the modulus group of the given process census using the given gateway
      * @param processId 
      * @param modulusGroup
-     * @param gatewayIp 
+     * @param gatewayUri 
      */
-    public async getLrsRing(processId: string, modulusGroup: number, gatewayIp: string): Promise<string> {
-        const metadata = await this.getJsonMetadata(processId, gatewayIp)
+    public async getLrsRing(processId: string, modulusGroup: number, gatewayUri: string): Promise<string> {
+        const metadata = await this.getJsonMetadata(processId, gatewayUri)
 
         // TODO: Check that the vote type == LRS
         // TODO:
@@ -118,10 +118,10 @@ export default class VotingProcess extends SmartContract {
      * Fetch the modulus group of the given process census using the given gateway
      * @param processId 
      * @param address
-     * @param gatewayIp 
+     * @param gatewayUri 
      */
-    public async getMerkleProof(processId: string, address: number, gatewayIp: string): Promise<string> {
-        const metadata = await this.getJsonMetadata(processId, gatewayIp)
+    public async getMerkleProof(processId: string, address: number, gatewayUri: string): Promise<string> {
+        const metadata = await this.getJsonMetadata(processId, gatewayUri)
 
         // TODO: Check that the vote type == ZK Snarks
         // TODO:
@@ -133,17 +133,23 @@ export default class VotingProcess extends SmartContract {
      * Submit the vote envelope to a Gateway
      * @param voteEnvelope
      * @param processId 
-     * @param gatewayIp 
+     * @param gatewayUri 
      * @param relayAddress
      */
-    public async submitVoteEnvelope(voteEnvelope, processId: string, type: VoteType, gatewayIp: string, relayAddress: string): Promise<boolean> {
+    public async submitVoteEnvelope(voteEnvelope: VoteEnvelopeLRS | VoteEnvelopeZK, processId: string, gatewayUri: string, relayAddress: string): Promise<boolean> {
 
-        const payload: VoteEnvelope = {
+        if (voteEnvelope.type == "lrs-envelope") {
+
+        }
+        else { // zk-snarks-envelope
+
+        }
+
+        const payload: SubmitEnvelopeRequestPayload = {
             method: "submitVoteEnvelope",
-            type,
             processId,
-            content: voteEnvelope,
-            relayAddr: relayAddress
+            content: JSON.stringify(voteEnvelope), // TODO:
+            relayAddress
         }
 
         // TODO: Encrypt vote envelope with the public key of the Relay
@@ -161,11 +167,22 @@ export default class VotingProcess extends SmartContract {
 
 // TYPES
 
-export type VoteType = "lrs" | "zk-snarks"
-export type VoteEnvelope = {
+export type VotePackageLRS = {
+    type: "lrs-package"
+}
+export type VotePackageZK = {
+    type: "zk-snarks-package"
+}
+export type VoteEnvelopeLRS = {
+    type: "lrs-envelope"
+}
+export type VoteEnvelopeZK = {
+    type: "zk-snarks-envelope"
+}
+
+export type SubmitEnvelopeRequestPayload = {
     method: "submitVoteEnvelope",
-    type: VoteType,
     processId: string,
     content: string,  // Encrypted Vote package
-    relayAddr: string
+    relayAddress: string
 }
