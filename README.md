@@ -121,37 +121,6 @@ console.log("value=", value)
 
 ```
 
-
-## Development
-
-Simply run `npm run test`. It is an alias for `npm run test:unit` and `npm run test:integration`.
-
-- Unit testing will start an internal Ganache provider and launch transactions to it
-- Integration testing is still a WIP
-
-In order to avoid tedious and repetitive testing code, you can check out the `test/builders` folder. Entity and Process builders deploy a new instance and create an Entity/Process with default values. These default values can be overridden with one-liners, if needed:
-
-```javascript
-const EntityBuilder = require("./test/builders/entity-resolver")
-const VoteBuilder = require("./test/builders/voting-process")
-
-const contractInstance1 = await new EntityBuilder().build()
-const contractInstance2 = await new VotingProcessBuilder().build()
-
-const contractInstance3 = await new EntityBuilder()
-    .withName("Another name")
-    .build()
-
-const contractInstance4 = await new VotingProcessBuilder()
-    .withEntityResolver("0x0123456789012345678901234567890123456789")
-    .withVotingPublicKey("...")
-    .build(3)  // create 3 voting processess within the new contract
-
-```
-
-
-Note: This is still under heavy development.
-
 ## Example usage
 
 
@@ -196,8 +165,41 @@ console.log("Voting process name:", processName)
 
 ```
 
+Full API details coming soon. You can have a look at `test/unit/entity-resolver` and `test/unit/voting-process` meanwhile.
 
-Full API details coming soon.
+
+## Development
+
+Simply run `npm run test`. It is an alias for `npm run test:unit` and `npm run test:integration`.
+
+- Unit testing will start an internal Ganache provider and launch transactions to it
+- Integration testing is still a WIP
+
+In order to avoid tedious and repetitive testing code, you can check out the `test/builders` folder. Entity and Process builders deploy a new instance and create an Entity/Process with default values. These default values can be overridden with one-liners, if needed:
+
+```javascript
+const EntityBuilder = require("./test/builders/entity-resolver")
+const VoteBuilder = require("./test/builders/voting-process")
+
+const contractInstance1 = await new EntityBuilder().build()
+const contractInstance2 = await new VotingProcessBuilder().build()
+
+const contractInstance3 = await new EntityBuilder()
+    .withName("Another name")
+    .build()
+
+const contractInstance4 = await new VotingProcessBuilder()
+    .withEntityResolver("0x0123456789012345678901234567890123456789")
+    .withVotingPublicKey("...")
+    .build(3)  // create 3 voting processess within the new contract
+
+```
+
+Note: This is still under heavy development.
+
+### Mocha
+
+When adding new test suites, don't forget to add a call to `addCompletionHooks()`. Otherwise, the NodeJS process will keep up indefinitely when testing. 
 
 
 <!--
