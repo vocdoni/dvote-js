@@ -186,27 +186,44 @@ export default class VotingProcess extends SmartContract {
         }).then(strData => JSON.parse(strData))
     }
 
+    /**
+     * Fetches the vote batch of a given processId
+     * @param processId 
+     * @param gatewayUri 
+     * @param batchNumber
+     */
+    public async fetchVoteBatch(processId: string, gatewayUri: string, batchNumber: number): Promise<string> {
+        if (!this.contractInstance) throw new Error("Please, attach to an instance or deploy one")
+
+        const contentUri = await this.contractInstance.getBatch(processId, batchNumber)
+        if (!contentUri) throw new Error("A vote batch with the given number does not exist on process " + processId)
+
+        // Ensure we are connected to the right Gateway
+        if (!this.gateway) this.gateway = new Gateway(gatewayUri)
+        else if (this.gateway.getUri() != gatewayUri) await this.gateway.setGatewayUri(gatewayUri)
+
+        return this.gateway.fetchFile(contentUri)
+    }
+
     // COMPUTATION METHODS
 
-    public packageVote(type: "lrs" | "zk-snarks", ): VoteEnvelopeLRS | VoteEnvelopeZK {
-        if (type == "lrs") {
-            return this.packageLrsVote()
+    public packageVote(votePkg: VotePackageLRS | VotePackageZK, relayPublicKey: string): VoteEnvelopeLRS | VoteEnvelopeZK {
+        if (votePkg.type == "lrs-package") {
+            return this.packageLrsVote(votePkg, relayPublicKey)
         }
-        else if (type == "zk-snarks") {
-            return this.packageZkVote()
+        else if (votePkg.type == "zk-snarks-package") {
+            return this.packageZkVote(votePkg, relayPublicKey)
         }
         throw new Error("Unsupported vote type")
     }
 
-    private packageLrsVote(package: VotePackageLRS, relayPublicKey: string): VoteEnvelopeLRS {
+    private packageLrsVote(votePkg: VotePackageLRS, relayPublicKey: string): VoteEnvelopeLRS {
         throw new Error("unimplemented")
     }
 
-    private packageZkVote(package: VotePackageZK, relayPublicKey: string): VoteEnvelopeLRS {
+    private packageZkVote(votePkg: VotePackageZK, relayPublicKey: string): VoteEnvelopeLRS {
         throw new Error("unimplemented")
     }
-
-    // TODO: Fetch vote batch
 }
 
 

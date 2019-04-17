@@ -5,7 +5,7 @@
 
 import WebSocket from "ws"
 import { parseURL } from 'universal-parse-url'
-import { Wallet, utils } from "ethers"
+import { Wallet, utils, providers } from "ethers"
 
 type GatewayMethod = "fetchFile" | "addFile" | "getVotingRing" | "submitVoteEnvelope" | "getVoteStatus"
 
@@ -29,8 +29,7 @@ interface RequestParameters {
 
 /** What is actually sent by sendMessage() to the Gateway */
 type MessageRequestContent = {
-    requestId: string,
-    method: GatewayMethod
+    requestId: string
 } & RequestParameters
 
 /** Data structure of the request list */
@@ -52,39 +51,39 @@ const uriPattern = /^([a-z][a-z0-9+.-]+):(\/\/([^@]+@)?([a-z0-9.\-_~]+)(:\d+)?)?
 export default class Gateway {
 
     // Internal variables
-    private gatewayUri: string = null
+    private gatewayWsUri: string = null
     private webSocket: WebSocket = null
     private requestList: WsRequest[] = []  // keep track of the active requests
     private connectionPromise: Promise<void> = null   // let sendMessage wait of the socket is still not open
 
     /**
      * Create a Gateway object, bound to work with the given URI
-     * @param gatewayUri A WebSocket URI endpoint
+     * @param gatewayWsUri A WebSocket URI endpoint
      */
-    constructor(gatewayUri: string) {
-        this.setGatewayUri(gatewayUri)
+    constructor(gatewayWsUri: string) {
+        this.setGatewayUri(gatewayWsUri)
     }
 
     /**
      * Set or update the Gateway's web socket URI
-     * @param gatewayUri 
+     * @param gatewayWsUri 
      * @returns Promise that resolves when the socket is open
      */
-    public setGatewayUri(gatewayUri: string): Promise<void> {
-        if (!gatewayUri || !gatewayUri.match(uriPattern)) throw new Error("Invalid Gateway URI")
+    public setGatewayUri(gatewayWsUri: string): Promise<void> {
+        if (!gatewayWsUri || !gatewayWsUri.match(uriPattern)) throw new Error("Invalid Gateway URI")
 
-        const url = parseURL(gatewayUri)
+        const url = parseURL(gatewayWsUri)
         if (url.protocol != "ws:" && url.protocol != "wss:") throw new Error("Unsupported gateway protocol: " + url.protocol)
 
         // Close any previous web socket that might be open
-        if (this.webSocket && this.gatewayUri != gatewayUri) {
+        if (this.webSocket && this.gatewayWsUri != gatewayWsUri) {
             if (typeof this.webSocket.close == "function") this.webSocket.close()
             this.webSocket = null
-            this.gatewayUri = null
+            this.gatewayWsUri = null
         }
 
         // Set up the web socket
-        const ws = new WebSocket(this.gatewayUri)
+        const ws = new WebSocket(this.gatewayWsUri)
 
         // Keep a promise so that calls to sendMessage coming before the socket is open
         // wait until the promise is resolved
@@ -92,7 +91,7 @@ export default class Gateway {
             ws.on('open', () => {
                 // the socket is ready
                 this.webSocket = ws
-                this.gatewayUri = gatewayUri
+                this.gatewayWsUri = gatewayWsUri
 
                 ws.on('message', data => this.gotWebSocketMessage(data))
                 this.connectionPromise = null
@@ -108,7 +107,7 @@ export default class Gateway {
      * Get the current URI of the Gateway
      */
     public getUri(): string {
-        return this.gatewayUri
+        return this.gatewayWsUri
     }
 
     // INTERNAL METHODS
@@ -260,6 +259,15 @@ export default class Gateway {
             return msg.response[0]
         })
     }
-}
 
-// TODO: web3Provider
+    // WEB3 PROVIDER
+
+    public getEthereumProvider(protocol = "https://"): providers.JsonRpcProvider {
+        const url = parseURL(this.gatewayWsUri)
+        if (url.host) throw new Error("Empty gateway host: " + url.host)
+
+        const providerUrl = protocol + url.host + url.pathname + url.search + url.hash
+
+        return new providers.JsonRpcProvider(providerUrl)
+    }
+}
