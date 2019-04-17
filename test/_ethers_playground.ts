@@ -12,8 +12,8 @@ const { abi: votingProcessAbi, bytecode: votingProcessByteCode } = require("../b
 
 async function main() {
 
-    // local blockchain with prefinded accounts
-    const provider = new ethers.providers.Web3Provider(ganache.provider({
+	// local blockchain with prefinded accounts
+	const provider = new ethers.providers.Web3Provider(ganache.provider({
 		mnemonic: config.MNEMONIC
 	}))
 	// const provider = new ethers.providers.JsonRpcProvider(config.GATEWAY_URL)
@@ -47,7 +47,30 @@ async function main() {
 	const processId = await processInstance2.getProcessId(address, 0)
 	console.log("PROCESS ID", processId)
 
+	testPublicKey()
+
 	console.log("DONE")
+}
+
+function testPublicKey() {
+	// https://docs.ethers.io/ethers.js/html/api-advanced.html#cryptographic-operations
+	const privateKey = ethers.Wallet.fromMnemonic(config.MNEMONIC).privateKey
+	const signingKey = new ethers.utils.SigningKey(privateKey);
+
+	let compressedPublicKey = ethers.utils.computePublicKey(signingKey.publicKey, true);
+	let uncompressedPublicKey = ethers.utils.computePublicKey(signingKey.publicKey, false);
+
+	console.log("Compressed public key:", compressedPublicKey);
+	// "0x026655feed4d214c261e0a6b554395596f1f1476a77d999560e5a8df9b8a1a3515"
+
+	console.log("Uncompressed public key:", uncompressedPublicKey);
+	// "0x046655feed4d214c261e0a6b554395596f1f1476a77d999560e5a8df9b8a1a35" +
+	//   "15217e88dd05e938efdd71b2cce322bf01da96cd42087b236e8f5043157a9c068e"
+
+	let address = ethers.utils.computeAddress(signingKey.publicKey);
+
+	console.log('Address: ' + address);
+	// "Address: 0x14791697260E4c9A71f18484C9f997B308e59325"
 }
 
 main()
