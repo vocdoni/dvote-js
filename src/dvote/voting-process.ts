@@ -22,6 +22,8 @@ type VotingProcessConstructorParams = {
  * The class extends the behavior of the SmartContract base class
  */
 export default class VotingProcess extends SmartContract {
+    gateway: Gateway = null
+
     // STATIC FUNCTIONS
 
     /**
@@ -47,7 +49,7 @@ export default class VotingProcess extends SmartContract {
 
     /**
      * Compute the derived private key given a processId
-     * @param publicKey 
+     * @param privateKey 
      * @param processId 
      */
     public static derivePrivateKey(privateKey: string, processId: string): string {
@@ -60,25 +62,21 @@ export default class VotingProcess extends SmartContract {
      * Creates a contract factory to deploy or attach to VotingProcess instances
      * @param params 
      */
-    constructor(params: VotingProcessConstructorParams) {
-        if (!params) throw new Error("Invalid parameters")
-
-        const { web3Provider, providerUrl, provider, privateKey, mnemonic, mnemonicPath } = params
-
+    constructor(params: VotingProcessConstructorParams = {}) {
         super({
             // mandatory
             abi,
             bytecode,
 
             // one of
-            web3Provider,
-            providerUrl,
-            provider,
+            web3Provider: params.web3Provider,
+            providerUrl: params.providerUrl,
+            provider: params.provider,
 
             // optional for read-only
-            privateKey,
-            mnemonic,
-            mnemonicPath
+            privateKey: params.privateKey,
+            mnemonic: params.mnemonic,
+            mnemonicPath: params.mnemonicPath
         })
     }
 
@@ -95,23 +93,11 @@ export default class VotingProcess extends SmartContract {
         const data: VotingProcessData = await this.contractInstance.get(processId)
         if (!data || !data.metadataContentUri) throw new Error("The given entity has no metadata defined yet")
 
-        const gw = new Gateway(gatewayUri)
-        return gw.fetchFile(data.metadataContentUri)
-    }
+        // Ensure we are connected to the right Gateway
+        if (!this.gateway) this.gateway = new Gateway(gatewayUri)
+        else if (this.gateway.getUri() != gatewayUri) await this.gateway.setGatewayUri(gatewayUri)
 
-    /**
-     * Fetch the modulus group of the given process census using the given gateway
-     * @param processId 
-     * @param modulusGroup
-     * @param gatewayUri 
-     */
-    public async getLrsRing(processId: string, modulusGroup: number, gatewayUri: string): Promise<string> {
-        const metadata = await this.getJsonMetadata(processId, gatewayUri)
-
-        // TODO: Check that the vote type == LRS
-        // TODO:
-
-        throw new Error("unimplemented")
+        return this.gateway.fetchFile(data.metadataContentUri)
     }
 
     /**
@@ -123,10 +109,30 @@ export default class VotingProcess extends SmartContract {
     public async getMerkleProof(processId: string, address: number, gatewayUri: string): Promise<string> {
         const metadata = await this.getJsonMetadata(processId, gatewayUri)
 
+        // TODO: Use the CensusService Object
+
         // TODO: Check that the vote type == ZK Snarks
         // TODO:
 
         throw new Error("unimplemented")
+    }
+
+    /**
+     * Fetch the modulus group of the given process census using the given gateway
+     * @param processId 
+     * @param gatewayUri 
+     * @param publicKeyModulus
+     */
+    public async getVotingRing(processId: string, gatewayUri: string, publicKeyModulus: number): Promise<boolean> {
+        // Ensure we are connected to the right Gateway
+        if (!this.gateway) this.gateway = new Gateway(gatewayUri)
+        else if (this.gateway.getUri() != gatewayUri) await this.gateway.setGatewayUri(gatewayUri)
+
+        return this.gateway.request({
+            method: "getVotingRing",
+            processId,
+            publicKeyModulus
+        }).then(strData => JSON.parse(strData))
     }
 
     /**
@@ -137,6 +143,7 @@ export default class VotingProcess extends SmartContract {
      * @param relayAddress
      */
     public async submitVoteEnvelope(voteEnvelope: VoteEnvelopeLRS | VoteEnvelopeZK, processId: string, gatewayUri: string, relayAddress: string): Promise<boolean> {
+        throw new Error("unimplemented")
 
         if (voteEnvelope.type == "lrs-envelope") {
 
@@ -145,23 +152,61 @@ export default class VotingProcess extends SmartContract {
 
         }
 
-        const payload: SubmitEnvelopeRequestPayload = {
+        // TODO: Encode in base64
+        // TODO: Encrypt vote envelope with the public key of the Relay
+        const encryptedEnvelope = JSON.stringify(voteEnvelope)
+
+        // Ensure we are connected to the right Gateway
+        if (!this.gateway) this.gateway = new Gateway(gatewayUri)
+        else if (this.gateway.getUri() != gatewayUri) await this.gateway.setGatewayUri(gatewayUri)
+
+        return this.gateway.request({
             method: "submitVoteEnvelope",
             processId,
-            content: JSON.stringify(voteEnvelope), // TODO:
+            encryptedEnvelope,
             relayAddress
+        }).then(strData => JSON.parse(strData))
+    }
+
+    /**
+     * 
+     * @param processId 
+     * @param gatewayUri 
+     * @param nullifier
+     */
+    public async getVoteStatus(processId: string, gatewayUri: string, nullifier: string): Promise<boolean> {
+        // Ensure we are connected to the right Gateway
+        if (!this.gateway) this.gateway = new Gateway(gatewayUri)
+        else if (this.gateway.getUri() != gatewayUri) await this.gateway.setGatewayUri(gatewayUri)
+
+        return this.gateway.request({
+            method: "getVoteStatus",
+            processId,
+            nullifier
+        }).then(strData => JSON.parse(strData))
+    }
+
+    // COMPUTATION METHODS
+
+    public packageVote(type: "lrs" | "zk-snarks", ): VoteEnvelopeLRS | VoteEnvelopeZK {
+        if (type == "lrs") {
+            return this.packageLrsVote()
         }
+        else if (type == "zk-snarks") {
+            return this.packageZkVote()
+        }
+        throw new Error("Unsupported vote type")
+    }
 
-        // TODO: Encrypt vote envelope with the public key of the Relay
-        // TODO: 
-
+    private packageLrsVote(package: VotePackageLRS, relayPublicKey: string): VoteEnvelopeLRS {
         throw new Error("unimplemented")
     }
 
-    // Get Vote Status
+    private packageZkVote(package: VotePackageZK, relayPublicKey: string): VoteEnvelopeLRS {
+        throw new Error("unimplemented")
+    }
 
-    // Package Vote (LRS)
-    // Package Vote (ZK)
+    // TODO: Fetch vote batch
 }
 
 
@@ -178,11 +223,4 @@ export type VoteEnvelopeLRS = {
 }
 export type VoteEnvelopeZK = {
     type: "zk-snarks-envelope"
-}
-
-export type SubmitEnvelopeRequestPayload = {
-    method: "submitVoteEnvelope",
-    processId: string,
-    content: string,  // Encrypted Vote package
-    relayAddress: string
 }
