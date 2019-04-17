@@ -7,59 +7,131 @@ import WebSocket from "ws"
 import { parseURL } from 'universal-parse-url'
 import { Wallet, utils } from "ethers"
 
+type GatewayMethod = "fetchFile" | "addFile" | "getVotingRing" | "submitVoteEnvelope" | "getVoteStatus"
+
+/** Parameters sent by the function caller */
+interface RequestParameters {
+    method: GatewayMethod,
+
+    type?: string,
+    processId?: string,
+    publicKeyModulus?: number,
+    uri?: string,
+    content?: string,
+    relayAddress?: string,
+    encryptedEnvelope?: string,
+    nullifier?: string,
+
+    // signature (unconfirmed)
+    address?: string,
+    signature?: string
+}
+
+/** What is actually sent by sendMessage() to the Gateway */
+type MessageRequestContent = {
+    requestId: string,
+    method: GatewayMethod
+} & RequestParameters
+
+/** Data structure of the request list */
 type WsRequest = {
-    id: number
+    id: string                           // used to track requests and responses
     resolve: (response: any) => void
     reject: (error: Error) => void,
     timeout: any
+}
+
+/** Data structure of JSON responses from the Gateway */
+type GatewayResponse = {
+    error: boolean,
+    response: string[]
 }
 
 const uriPattern = /^([a-z][a-z0-9+.-]+):(\/\/([^@]+@)?([a-z0-9.\-_~]+)(:\d+)?)?((?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])*)*|(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+)*)?(\?(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?(\#(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?$/i
 
 export default class Gateway {
 
-    // internal variables
-    gatewayUri: string = null
-    webSocket: WebSocket = null
-    requestList: WsRequest[] = []  // keep track of the active requests
-    requestCounter: number = 0     // to assign unique request id's
+    // Internal variables
+    private gatewayUri: string = null
+    private webSocket: WebSocket = null
+    private requestList: WsRequest[] = []  // keep track of the active requests
+    private connectionPromise: Promise<void> = null   // let sendMessage wait of the socket is still not open
 
     /**
      * Create a Gateway object, bound to work with the given URI
      * @param gatewayUri A WebSocket URI endpoint
      */
     constructor(gatewayUri: string) {
+        this.setGatewayUri(gatewayUri)
+    }
+
+    /**
+     * Set or update the Gateway's web socket URI
+     * @param gatewayUri 
+     * @returns Promise that resolves when the socket is open
+     */
+    public setGatewayUri(gatewayUri: string): Promise<void> {
         if (!gatewayUri || !gatewayUri.match(uriPattern)) throw new Error("Invalid Gateway URI")
 
         const url = parseURL(gatewayUri)
         if (url.protocol != "ws:" && url.protocol != "wss:") throw new Error("Unsupported gateway protocol: " + url.protocol)
 
-        this.gatewayUri = gatewayUri
+        // Close any previous web socket that might be open
+        if (this.webSocket && this.gatewayUri != gatewayUri) {
+            if (typeof this.webSocket.close == "function") this.webSocket.close()
+            this.webSocket = null
+            this.gatewayUri = null
+        }
 
         // Set up the web socket
         const ws = new WebSocket(this.gatewayUri)
 
-        ws.on('open', () => {
-            // the socket is ready
-            this.webSocket = ws
+        // Keep a promise so that calls to sendMessage coming before the socket is open
+        // wait until the promise is resolved
+        this.connectionPromise = new Promise((resolve) => {
+            ws.on('open', () => {
+                // the socket is ready
+                this.webSocket = ws
+                this.gatewayUri = gatewayUri
 
-            ws.on('message', data => this.gotWebSocketMessage(data))
+                ws.on('message', data => this.gotWebSocketMessage(data))
+                this.connectionPromise = null
+                resolve()
+            })
         })
+        // if the caller of this function awaits this promise, 
+        // an eventual call in sendMessage will not need to
+        return this.connectionPromise
     }
 
     /**
+     * Get the current URI of the Gateway
+     */
+    public getUri(): string {
+        return this.gatewayUri
+    }
+
+    // INTERNAL METHODS
+
+    /**
      * Send a WS message and add an entry to track its response
-     * @param data JSON object to send. "requestId" will be appended on it
+     * @param params JSON object to send.
      * @param timeout Amount of seconds to wait before failing. (default: 30)
      */
-    private sendMessage(data, timeout: number = 30): Promise<string> {
+    private async sendMessage(params: RequestParameters, timeout: number = 30): Promise<string> {
         if (!this.webSocket) return Promise.reject(new Error("The gateway connection is not yet available"))
-        else if (typeof data != "object") return Promise.reject(new Error("The payload should be a javascript object"))
+        else if (typeof params != "object") return Promise.reject(new Error("The payload should be a javascript object"))
+
+        const requestId = utils.keccak256(String(Date.now()))
+        const content: MessageRequestContent = Object.assign({}, params, { requestId })
+
+        if (this.connectionPromise) {
+            // wait until the socket is open
+            // useful if the GW object has just been initialized
+            await this.connectionPromise
+        }
 
         return new Promise((resolve, reject) => {
-            const requestId = this.requestCounter
-            this.requestCounter++
-
             this.requestList.push({
                 id: requestId,
                 resolve,
@@ -71,10 +143,7 @@ export default class Gateway {
                 }, timeout * 1000)
             })
 
-            // appending the request ID
-            data.requestId = requestId
-
-            this.webSocket.send(JSON.stringify(data))
+            this.webSocket.send(JSON.stringify(content))
         })
     }
 
@@ -92,13 +161,14 @@ export default class Gateway {
             throw err
         }
 
-        if(!response || !response.requestId) return console.error("Invalid WS response:", response)
+        if (!response || !response.requestId) return console.error("Invalid WS response:", response)
 
         const request = this.requestList.find(r => r.id == response.requestId)
         if (!request) return // it may have timed out
 
         clearTimeout(request.timeout)
         delete request.reject
+        delete request.timeout
 
         // remove from the list
         this.requestList = this.requestList.filter(r => r.id != response.requestId)
@@ -107,51 +177,89 @@ export default class Gateway {
         delete request.resolve
     }
 
-    // PUBLIC METHODS
+    // PUBLIC FILE METHODS
 
     /**
-     * Fetch static data from the given Content URI
+     * Fetch static data from the given Content URI. 
+     * 
+     * See https://vocdoni.io/docs/#/architecture/components/gateway?id=file-api
+     * 
      * @param contentUri
+     * @returns base64 encoded string
      */
-    public async fetchFile(contentUri: string): Promise<string> {
-        if (!contentUri) throw new Error("Invalid Content URI")
+    public fetchFile(contentUri: string): Promise<string> {
+        if (!contentUri) return Promise.reject(new Error("Invalid Content URI"))
 
-        // https://github.com/websockets/ws#usage-examples
-        // TODO: Integrate with https://vocdoni.io/docs/#/architecture/components/gateway?id=file-api
+        // See https://vocdoni.io/docs/#/architecture/components/gateway?id=file-api
 
+        const params: RequestParameters = {
+            method: "fetchFile",
+            uri: contentUri
+        }
 
-        // TODO: DECODE base 64
+        return this.sendMessage(params).then(response => {
+            const msg: GatewayResponse = JSON.parse(response)
+            if (msg.error) throw new Error("The data could not be fethed")
+            else if (msg.response) throw new Error("The data could not be fethed")
 
-        throw new Error("unimplemented")
+            return msg.response[0]
+        })
     }
 
     /**
-     * Fetch static data from the given Content URI
-     * @param contentUri
+     * Upload static data to decentralized P2P filesystems. 
+     * 
+     * See https://vocdoni.io/docs/#/architecture/components/gateway?id=add-file
+     * 
+     * @param payload Base64 encoded data
+     * @param type What type of P2P protocol should be used
+     * @param wallet An Ethers.js wallet capable of signing the payload
      * @return The content URI of the newly added file
      */
-    public async addFile(payload: string, type: "swarm" | "ipfs", wallet: Wallet): Promise<ContentURI> {
-        if (!payload) throw new Error("Empty payload")
-        else if (!type) throw new Error("Empty type")
+    public async addFile(base64Payload: string, fsType: "swarm" | "ipfs", wallet: Wallet): Promise<string> {
+        if (!base64Payload) throw new Error("Empty payload")
+        else if (!fsType) throw new Error("Empty type")
         else if (!wallet) throw new Error("Empty wallet")
 
         const address = await wallet.getAddress()
-        const signature = await wallet.sign({ data: payload })
+        const signature = await wallet.sign({ data: base64Payload })
 
-        // https://github.com/websockets/ws#usage-examples
-        // TODO: Integrate with https://vocdoni.io/docs/#/architecture/components/gateway?id=add-file
+        const params: RequestParameters = {
+            method: "addFile",
+            type: fsType,
+            content: base64Payload,
+            address,
+            signature
+        }
 
-        // TODO: Encode base 64
-        throw new Error("unimplemented")
+        return this.sendMessage(params).then(response => {
+            const msg: GatewayResponse = JSON.parse(response)
+            if (msg.error) throw new Error("The data could not be fethed")
+            else if (msg.response) throw new Error("The data could not be fethed")
+
+            return msg.response[0]
+        })
     }
 
-    // SPECIFIC OPERATION HANDLERS
+    // GENERIC MESSAGING
 
-    // TODO: Get Voting Ring
-    // TODO: Submit Vote Envelope
-    // TODO: Get Vote Status
-    // TODO: Fetch File
-    // TODO: Add File
+    /**
+     * Send a message to the Gateway using WS. Used by specific operations that need
+     * the messaging capabilities. 
+     * See http://vocdoni.io/docs/#/architecture/components/gateway?id=vote-api
+     * 
+     * @param params RequestParameters of the request
+     * @return The content URI of the newly added file
+     */
+    public async request(params: RequestParameters): Promise<string> {
+        return this.sendMessage(params).then(response => {
+            const msg: GatewayResponse = JSON.parse(response)
+            if (msg.error) throw new Error("There was an error while handling the request")
+            else if (msg.response) throw new Error("There was an error while handling the request")
 
-    // TODO: web3Provider
+            return msg.response[0]
+        })
+    }
 }
+
+// TODO: web3Provider
