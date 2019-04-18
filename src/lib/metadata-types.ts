@@ -1,11 +1,11 @@
 type ProtocolVersion = "1.0"
 type HexString = string
-type ContractAddress = HexString
-type PublicKey = HexString
+type ContractAddress = HexString     // e.g. 0x1234567890123456789012345678901234567890
+type PublicKey = HexString           // Uncompressed ECDSA public key
 type PrivateKey = HexString
 type ProcessId = HexString           // Hash of the organizer's address and the nonce of the process
 
-type LocalizedText = {
+type MultiLanguageText = {
     [lang: string]: string           // Indexed by language  { en: "Hello", fr: "Salut", ... }
 }
 
@@ -23,8 +23,8 @@ export interface EntityMetadata {
     version: ProtocolVersion,             // Protocol version
     languages: string[],                  // Two character language code (en, fr, it, ...)
     "entity-name": string,
-    "entity-description": LocalizedText,
-    "voting-contract": ContractAddress,   // e.g. 0x1234567890123456789012345678901234567890
+    "entity-description": MultiLanguageText,
+    "voting-contract": ContractAddress,
     "gateway-update": {
         timeout: number,                  // milliseconds after which a Gateway is marked as down
         topic: string,                    // Topic used for the messaging protocol (e.g. "vocdoni-gateway-update")
@@ -35,8 +35,7 @@ export interface EntityMetadata {
         ended: ProcessId[]
     },
     "news-feed": {
-        en: ContentURI,
-        fr: ContentURI
+        [lang: string]: ContentURI   // Indexed by language  { en: <content-uri>, fr: <content-uri>, ... }
     },
     avatar: ContentURI,
 
@@ -53,8 +52,8 @@ export interface EntityMetadata {
 }
 
 interface GatewayBootNode {
-    update: MessagingURI,
-    fetch: URL
+    update: MessagingURI,         // Where Gateways should report their status updates
+    fetch: URL                    // Where to fetch the Bootnode Gateways
 }
 
 interface RelayData {
@@ -67,7 +66,7 @@ type EntityCustomAction = EntityBaseAction & (EntityBrowserAction | EntityImageU
 // The common fields of any action
 interface EntityBaseAction {
     // Localized Call To Action to appear on the app
-    name: LocalizedText,
+    name: MultiLanguageText,
 }
 
 // Opening an interactive web browser
@@ -114,7 +113,7 @@ type ImageUploadSource = {
     name: string,                            // Arbitrary name to identify the data when the JSON is posted
     orientation?: "portrait" | "landscape",  // Optional when type == "gallery"
     overlay?: "face" | "id-card-front",
-    caption?: LocalizedText
+    caption?: MultiLanguageText
 }
 
 
@@ -123,3 +122,7 @@ type ImageUploadSource = {
 ///////////////////////////////////////////////////////////////////////////////
 
 // More info: http://vocdoni.io/docs/#/architecture/components/process?id=process-metadata-json
+
+export interface VotingProcessMetadata {
+
+}
