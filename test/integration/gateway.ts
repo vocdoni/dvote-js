@@ -23,6 +23,7 @@ describe("Gateway", () => {
         it("Should send messages")
         it("Should reply with responses")
         it("Should provide the results that match the corresponding message request")
+        it("Should provide an encrypted channel to communicate with clients")
     })
 
     describe("Web3 provider", () => {
