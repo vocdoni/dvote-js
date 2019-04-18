@@ -419,4 +419,25 @@ describe("Voting Process", () => {
 
     })
 
+    describe("Census keys derivation", () => {
+        it("Should derive a keypair with a processId")
+        it("Should be able to sign with a derived private key")
+        it("Should produce valid signatures that match with the derived public key")
+    })
+
+    describe("Linkable Ring Signatures", () => {
+        it("Should produce a ring signature using a private key and a ring of public keys")
+        it("Should allow to verify that a valid signature is within a public key ring")
+        it("Should deny the validity of a signature produced by key that don't belong to the given ring")
+        it("Should link two signatures that have been issued with the same key pair")
+        it("Should not link two signatures that have been issued with different key pairs")
+        it("Should bundle a Vote Package into a valid Vote Envelope that only the chosen relay can decrypt")
+    })
+
+    describe("ZK Snarks", () => {
+        it("Should produce a valid ZK proof if the user is eligible to vote in an election")
+        it("Should allow to verify that a ZK proof is valid")
+        it("Should bundle a Vote Package into a valid Vote Envelope that only the chosen relay can decrypt")
+    })
+
 })
