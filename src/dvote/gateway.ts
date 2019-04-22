@@ -3,7 +3,7 @@
 // This component is meant to be a simple communication wrapper.
 // It should be agnostic to any logic invoving an Entity or a Voting Process.
 
-import WebSocket from "ws"
+import * as WebSocket from "ws"
 import { parseURL } from 'universal-parse-url'
 import { Wallet, utils, providers } from "ethers"
 
