@@ -27,8 +27,8 @@ export default class Census {
 
 		throw new Error("unimplemented")
 
-		return this.gateway.request({
-			// method: "addClaim"
-		}).then(strData => JSON.parse(strData))
+		// return this.gateway.request({
+		// 	// method: "addClaim",
+		// }).then(strData => JSON.parse(strData))
 	}
 }
