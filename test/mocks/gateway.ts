@@ -2,9 +2,9 @@ import * as WebSocket from "ws"
 
 type ConstructorParams = {
     port: number,
-    interactionList: InteractionMock[]
+    responseList: GatewayResponse[]
 }
-type GatewayResponse = {
+export type GatewayResponse = {
     error: boolean,
     response: string[],
     requestId?: string
@@ -24,7 +24,12 @@ export class GatewayMock {
 
     constructor(params: ConstructorParams) {
         this.socketServer = new WebSocket.Server({ port: params.port || 8000 })
-        this.interactionList = params.interactionList
+        this.interactionList = params.responseList.map(response => {
+            return {
+                actual: null,             // no requests received yet
+                responseData: response
+            }
+        })
 
         this.socketServer.on('connection', socket => {
             this.activeSocket = socket
