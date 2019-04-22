@@ -83,7 +83,7 @@ export default class Gateway {
         }
 
         // Set up the web socket
-        const ws = new WebSocket(this.gatewayWsUri)
+        const ws = new WebSocket(gatewayWsUri)
 
         // Keep a promise so that calls to sendMessage coming before the socket is open
         // wait until the promise is resolved
@@ -117,11 +117,10 @@ export default class Gateway {
      * @param params JSON object to send.
      * @param timeout Amount of seconds to wait before failing. (default: 30)
      */
-    private async sendMessage(params: RequestParameters, timeout: number = 30): Promise<string> {
-        if (!this.webSocket) return Promise.reject(new Error("The gateway connection is not yet available"))
-        else if (typeof params != "object") return Promise.reject(new Error("The payload should be a javascript object"))
+    private async sendMessage(params: RequestParameters, timeout: number = 30): Promise<GatewayResponse> {
+        if (typeof params != "object") return Promise.reject(new Error("The payload should be a javascript object"))
 
-        const requestId = utils.keccak256(String(Date.now()))
+        const requestId = utils.keccak256('0x' + Date.now().toString(16))
         const content: MessageRequestContent = Object.assign({}, params, { requestId })
 
         if (this.connectionPromise) {
@@ -129,6 +128,7 @@ export default class Gateway {
             // useful if the GW object has just been initialized
             await this.connectionPromise
         }
+        if (!this.webSocket) return Promise.reject(new Error("The gateway connection is not yet available"))
 
         return new Promise((resolve, reject) => {
             this.requestList.push({
@@ -150,9 +150,10 @@ export default class Gateway {
      * Handle incoming WS messages and link them to their original request
      * @param data 
      */
-    private gotWebSocketMessage(data: string) {
+    private gotWebSocketMessage(data: WebSocket.Data) {
         let response
         try {
+            if (typeof data != "string") data = data.toString()
             response = JSON.parse(data)
         }
         catch (err) {
@@ -196,12 +197,11 @@ export default class Gateway {
             uri: contentUri
         }
 
-        return this.sendMessage(params).then(response => {
-            const msg: GatewayResponse = JSON.parse(response)
-            if (msg.error) throw new Error("The data could not be fethed")
-            else if (msg.response) throw new Error("The data could not be fethed")
+        return this.sendMessage(params).then(message => {
+            if (message.error) throw new Error("The data could not be fethed")
+            else if (!message.response) throw new Error("The data could not be fethed")
 
-            return msg.response[0]
+            return message.response[0]
         })
     }
 
@@ -221,7 +221,7 @@ export default class Gateway {
         else if (!wallet) throw new Error("Empty wallet")
 
         const address = await wallet.getAddress()
-        const signature = await wallet.sign({ data: base64Payload })
+        const signature = await wallet.signMessage(base64Payload)
 
         const params: RequestParameters = {
             method: "addFile",
@@ -231,12 +231,11 @@ export default class Gateway {
             signature
         }
 
-        return this.sendMessage(params).then(response => {
-            const msg: GatewayResponse = JSON.parse(response)
-            if (msg.error) throw new Error("The data could not be fethed")
-            else if (msg.response) throw new Error("The data could not be fethed")
+        return this.sendMessage(params).then(message => {
+            if (message.error) throw new Error("The data could not be fethed")
+            else if (!message.response) throw new Error("The data could not be fethed")
 
-            return msg.response[0]
+            return message.response[0]
         })
     }
 
@@ -251,12 +250,11 @@ export default class Gateway {
      * @return The content URI of the newly added file
      */
     public async request(params: RequestParameters): Promise<string> {
-        return this.sendMessage(params).then(response => {
-            const msg: GatewayResponse = JSON.parse(response)
-            if (msg.error) throw new Error("There was an error while handling the request")
-            else if (msg.response) throw new Error("There was an error while handling the request")
+        return this.sendMessage(params).then(message => {
+            if (message.error) throw new Error("There was an error while handling the request")
+            else if (message.response) throw new Error("There was an error while handling the request")
 
-            return msg.response[0]
+            return message.response[0]
         })
     }
 
