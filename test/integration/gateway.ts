@@ -1,9 +1,10 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
-import { getAccounts, TestAccount } from "../eth-util"
+import { getAccounts, TestAccount, mnemonic } from "../eth-util"
 import { Gateway } from "../../src"
 import { GatewayMock, InteractionMock, GatewayResponse } from "../mocks/gateway"
+import { server as ganacheRpcServer } from "ganache-core"
 
 const port = 8000
 const gatewayUrl = `ws://localhost:${port}`
@@ -224,8 +225,29 @@ describe("Gateway", () => {
 
             await gatewayServer.stop()
         })
-        it("Should unpin an old file")
-        it("Should enforce authenticated upload requests")
+        it("Should request to unpin an old file")
+        it("Should list the currently pinned files")
+        it("Should enforce authenticated upload requests", async () => {
+            const base64File = "ZGVjZW50cmFsaXplZA=="
+
+            // Gateway (server)
+            const gatewayServer = new GatewayMock({ port, responseList: [] })
+
+            // Client
+            try {
+                const gw = new Gateway(gatewayUrl)
+                await new Promise(resolve => setTimeout(resolve, 10))
+                await gw.addFile(base64File, "swarm", null)
+                throw new Error("Should have thrown an error but didn't")
+            }
+            catch (err) {
+                expect(err.message).to.equal("Invalid wallet")
+            }
+
+            expect(gatewayServer.interactionCount).to.equal(0)
+
+            await gatewayServer.stop()
+        })
         it("Should enforce authenticated unpin requests")
     })
 
@@ -281,15 +303,55 @@ describe("Gateway", () => {
 
             await gatewayServer.stop()
         })
-        it("Should unpin an old file")
-        it("Should enforce authenticated upload requests")
+        it("Should request to unpin an old file")
+        it("Should list the currently pinned files")
+        it("Should enforce authenticated upload requests", async () => {
+            const base64File = "ZGVjZW50cmFsaXplZA=="
+
+            // Gateway (server)
+            const gatewayServer = new GatewayMock({ port, responseList: [] })
+
+            // Client
+            try {
+                const gw = new Gateway(gatewayUrl)
+                await new Promise(resolve => setTimeout(resolve, 10))
+                await gw.addFile(base64File, "ipfs", null)
+                throw new Error("Should have thrown an error but didn't")
+            }
+            catch (err) {
+                expect(err.message).to.equal("Invalid wallet")
+            }
+
+            expect(gatewayServer.interactionCount).to.equal(0)
+
+            await gatewayServer.stop()
+        })
         it("Should enforce authenticated unpin requests")
     })
 
     describe("Web3 provider", () => {
-        it("Should provide a Web3 JSON RPC endpoint to interact with the blockchain")
-        it("Should allow to call contract data")
-        it("Should allow to send signed transactions from a funded account")
+        it("Should provide a Web3 JSON RPC provider to interact with the blockchain", async () => {
+            // Web socket server
+            const webSocketServer = new GatewayMock({ port, responseList: [] })
+
+            // Web3 node
+            const rpcServer = ganacheRpcServer()
+            const info: any = await new Promise(resolve => rpcServer.listen(8545, (err, info) => resolve(info)))
+
+            expect(Object.keys(info.personal_accounts).length).to.be.approximately(10, 9)
+            expect(Object.keys(info.personal_accounts)[0]).to.match(/^0x[0-9a-fA-F]{40}$/)
+
+            const addr = Object.keys(info.personal_accounts)[0]
+
+            const gw = new Gateway(gatewayUrl)
+            const gwProvider = await gw.getEthereumProvider()
+            const balance = await gwProvider.getBalance(addr)
+
+            expect(balance.toHexString()).to.match(/^0x[0-9a-fA-F]{10,}$/)
+
+            webSocketServer.stop()
+            rpcServer.close()
+        })
     })
 
 })

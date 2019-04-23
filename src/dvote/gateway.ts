@@ -46,6 +46,12 @@ type GatewayResponse = {
     response: string[]
 }
 
+type EthereumProviderParams = {
+    uri?: string,
+    protocol?: "https" | "http" | "wss" | "ws",
+    port?: number
+}
+
 const uriPattern = /^([a-z][a-z0-9+.-]+):(\/\/([^@]+@)?([a-z0-9.\-_~]+)(:\d+)?)?((?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])*)*|(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+)*)?(\?(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?(\#(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?$/i
 
 export default class Gateway {
@@ -220,7 +226,7 @@ export default class Gateway {
     public async addFile(base64Payload: string, fsType: "swarm" | "ipfs", wallet: Wallet): Promise<string> {
         if (!base64Payload) throw new Error("Empty payload")
         else if (!fsType) throw new Error("Empty type")
-        else if (!wallet) throw new Error("Empty wallet")
+        else if (!wallet) throw new Error("Invalid wallet")
 
         const address = await wallet.getAddress()
         const signature = await wallet.signMessage(base64Payload)
@@ -264,12 +270,43 @@ export default class Gateway {
 
     // WEB3 PROVIDER
 
-    public getEthereumProvider(protocol = "https://"): providers.JsonRpcProvider {
-        const url = parseURL(this.gatewayWsUri)
-        if (url.host) throw new Error("Empty gateway host: " + url.host)
+    /**
+     * Returns an Ethereum JSON RPC provider pointing to the Gateway. Parts of the URI can be overridden
+     * @param params By default, will return an http client on port 8545 with the current hostname, pathname, search and hash. 
+     *      "protocol" and "port" can be overriden. 
+     *      Entering a "uri" will ignore any other value of the current web socket URI and return a decoupled RPC client
+     */
+    public async getEthereumProvider(params: EthereumProviderParams = { protocol: "http", port: 8545 }): Promise<providers.JsonRpcProvider> {
+        if (params.uri) {
+            return new providers.JsonRpcProvider(params.uri)
+        }
 
-        const providerUrl = protocol + url.host + url.pathname + url.search + url.hash
+        if (this.connectionPromise) {
+            // wait until the socket is open
+            // useful if the GW object has just been initialized
+            await this.connectionPromise
+        }
 
-        return new providers.JsonRpcProvider(providerUrl)
+        const currentUri = parseURL(this.gatewayWsUri)
+        if (!currentUri.host) throw new Error("Empty current gateway host: " + currentUri.host)
+
+        let providerUri = ""
+        switch (params && params.protocol) {
+            case "http": providerUri = "http://"; break
+            case "https": providerUri = "https://"; break
+            case "ws": providerUri = "ws://"; break
+            case "wss": providerUri = "wss://"; break
+            default: providerUri = "http://"; break
+        }
+        if (params && params.port) {
+            providerUri += currentUri.hostname + ":" + params.port
+        }
+        else {
+            providerUri += currentUri.hostname + ":8545"
+        }
+
+        providerUri += currentUri.pathname + currentUri.search + currentUri.hash
+
+        return new providers.JsonRpcProvider(providerUri)
     }
 }

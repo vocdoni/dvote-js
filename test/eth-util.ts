@@ -1,7 +1,7 @@
 import { ethers } from "ethers"
 import { provider } from "ganache-cli"
 
-const mnemonic = "myth like bonus scare over problem client lizard pioneer submit female collect"
+export const mnemonic = "myth like bonus scare over problem client lizard pioneer submit female collect"
 
 const localProvider = new ethers.providers.Web3Provider(provider({
     time: new Date(),
