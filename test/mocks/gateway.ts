@@ -37,7 +37,7 @@ export class GatewayMock {
         })
     }
 
-    gotRequest(requestData: string) {
+    private gotRequest(requestData: string) {
         // console.log("[GATEWAY REQ]", requestData)
         const idx = this.interactionCount
         if (idx >= this.interactionList.length) throw new Error("The Gateway received more transactions than it should: " + (this.interactionCount + 1))
@@ -56,8 +56,14 @@ export class GatewayMock {
         this.interactionCount++
     }
 
-    stop() {
+    public stop(): Promise<void> {
         if (!this.socketServer) throw new Error("Socket server not started")
-        this.socketServer.close()
+
+        return new Promise((resolve, reject) => {
+            this.socketServer.close(err => {
+                if (err) reject(err)
+                else resolve()
+            })
+        })
     }
 }
