@@ -106,7 +106,9 @@ export default class Gateway {
     /**
      * Get the current URI of the Gateway
      */
-    public getUri(): string {
+    public async getUri(): Promise<string> {
+        if (this.connectionPromise) await this.connectionPromise
+
         return this.gatewayWsUri
     }
 
@@ -251,8 +253,10 @@ export default class Gateway {
      */
     public async request(params: RequestParameters): Promise<string> {
         return this.sendMessage(params).then(message => {
-            if (message.error) throw new Error("There was an error while handling the request")
-            else if (message.response) throw new Error("There was an error while handling the request")
+            if (!message.response) throw new Error("There was an error while handling the request")
+            else if (message.error) {
+                throw new Error(message.response && message.response[0] || "There was an error while handling the request")
+            }
 
             return message.response[0]
         })

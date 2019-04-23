@@ -24,14 +24,152 @@ describe("Gateway", () => {
     })
 
     describe("Lifecycle", () => {
-        it("Should create a Gateway instance")
-        it("Should update the gateway's URI and point to the new location")
+        it("Should create a Gateway instance", async () => {
+            const gatewayServer = new GatewayMock({ port, responseList: [] })
+
+            expect(() => {
+                const gw1 = new Gateway("")
+            }).to.throw
+
+            const gw2 = new Gateway(gatewayUrl)
+            expect(await gw2.getUri()).to.equal(gatewayUrl)
+
+            await gatewayServer.stop()
+        })
+        it("Should update the gateway's URI and point to the new location", async () => {
+            const gatewayServer1 = new GatewayMock({ port, responseList: [{ error: false, response: ["OK"] }] })
+            expect(gatewayServer1.interactionCount).to.equal(0)
+            const gwClient = new Gateway(gatewayUrl)
+            expect(await gwClient.getUri()).to.equal(gatewayUrl)
+            await gwClient.request({ method: "getVoteStatus", processId: "1234", nullifier: "2345" })
+
+            await gatewayServer1.stop()
+
+            const port2 = 9000
+            const gatewayUrl2 = `ws://127.0.0.1:${port2}`
+
+            const gatewayServer2 = new GatewayMock({ port: port2, responseList: [{ error: false, response: ["OK2"] }] })
+            expect(gatewayServer2.interactionCount).to.equal(0)
+            await gwClient.setGatewayUri(gatewayUrl2)
+            expect(await gwClient.getUri()).to.equal(gatewayUrl2)
+            await gwClient.request({ method: "getVoteStatus", processId: "5678", nullifier: "6789" })
+
+            await gatewayServer2.stop()
+
+            expect(gatewayServer1.interactionCount).to.equal(1)
+            expect(gatewayServer2.interactionCount).to.equal(1)
+        })
     })
 
     describe("WebSocket requests", () => {
-        it("Should send messages and provide responses")
-        it("Should provide the results that match the corresponding message request")
+        it("Should send messages and provide responses in the right order", async () => {
+            const gatewayServer = new GatewayMock({
+                port,
+                responseList: [
+                    { error: false, response: ["OK 1"] },
+                    { error: false, response: ["OK 2"] },
+                    { error: false, response: ["OK 3"] },
+                    { error: false, response: ["OK 4"] },
+                    { error: false, response: ["OK 5"] },
+                ]
+            })
+            const gwClient = new Gateway(gatewayUrl)
+
+            const response1 = await gwClient.request({ method: "getVoteStatus", processId: "1234", nullifier: "2345" })
+            const response2 = await gwClient.request({ method: "getVoteStatus", processId: "3456", nullifier: "4567" })
+            const response3 = await gwClient.request({ method: "getVoteStatus", processId: "5678", nullifier: "6789" })
+            const response4 = await gwClient.request({ method: "fetchFile", uri: "12345" })
+            const response5 = await gwClient.request({ method: "fetchFile", uri: "67890" })
+
+            expect(response1).to.equal("OK 1")
+            expect(response2).to.equal("OK 2")
+            expect(response3).to.equal("OK 3")
+            expect(response4).to.equal("OK 4")
+            expect(response5).to.equal("OK 5")
+            expect(gatewayServer.interactionCount).to.equal(5)
+            expect(gatewayServer.interactionList[0].actual.method).to.equal("getVoteStatus")
+            expect(gatewayServer.interactionList[0].actual.processId).to.equal("1234")
+            expect(gatewayServer.interactionList[0].actual.nullifier).to.equal("2345")
+            expect(gatewayServer.interactionList[1].actual.method).to.equal("getVoteStatus")
+            expect(gatewayServer.interactionList[1].actual.processId).to.equal("3456")
+            expect(gatewayServer.interactionList[1].actual.nullifier).to.equal("4567")
+            expect(gatewayServer.interactionList[2].actual.method).to.equal("getVoteStatus")
+            expect(gatewayServer.interactionList[2].actual.processId).to.equal("5678")
+            expect(gatewayServer.interactionList[2].actual.nullifier).to.equal("6789")
+            expect(gatewayServer.interactionList[3].actual.method).to.equal("fetchFile")
+            expect(gatewayServer.interactionList[3].actual.uri).to.equal("12345")
+            expect(gatewayServer.interactionList[4].actual.method).to.equal("fetchFile")
+            expect(gatewayServer.interactionList[4].actual.uri).to.equal("67890")
+
+            await gatewayServer.stop()
+        })
         it("Should provide an encrypted channel to communicate with clients")
+        it("Should report errors and throw them as an error", async () => {
+            const gatewayServer = new GatewayMock({
+                port,
+                responseList: [
+                    { error: true, response: ["ERROR 1"] },
+                    { error: true, response: ["ERROR 2"] },
+                    { error: true, response: ["ERROR 3"] },
+                    { error: true, response: ["ERROR 4"] },
+                    { error: true, response: ["ERROR 5"] },
+                ]
+            })
+            const gwClient = new Gateway(gatewayUrl)
+
+            try {
+                await gwClient.request({ method: "getVoteStatus", processId: "1234", nullifier: "2345" })
+                throw new Error("Request did not fail")
+            }
+            catch (err) {
+                expect(err.message).to.equal("ERROR 1")
+            }
+            try {
+                await gwClient.request({ method: "getVoteStatus", processId: "3456", nullifier: "4567" })
+                throw new Error("Request did not fail")
+            }
+            catch (err) {
+                expect(err.message).to.equal("ERROR 2")
+            }
+            try {
+                await gwClient.request({ method: "getVoteStatus", processId: "5678", nullifier: "6789" })
+                throw new Error("Request did not fail")
+            }
+            catch (err) {
+                expect(err.message).to.equal("ERROR 3")
+            }
+            try {
+                await gwClient.request({ method: "fetchFile", uri: "12345" })
+                throw new Error("Request did not fail")
+            }
+            catch (err) {
+                expect(err.message).to.equal("ERROR 4")
+            }
+            try {
+                await gwClient.request({ method: "fetchFile", uri: "67890" })
+                throw new Error("Request did not fail")
+            }
+            catch (err) {
+                expect(err.message).to.equal("ERROR 5")
+            }
+
+            expect(gatewayServer.interactionCount).to.equal(5)
+            expect(gatewayServer.interactionList[0].actual.method).to.equal("getVoteStatus")
+            expect(gatewayServer.interactionList[0].actual.processId).to.equal("1234")
+            expect(gatewayServer.interactionList[0].actual.nullifier).to.equal("2345")
+            expect(gatewayServer.interactionList[1].actual.method).to.equal("getVoteStatus")
+            expect(gatewayServer.interactionList[1].actual.processId).to.equal("3456")
+            expect(gatewayServer.interactionList[1].actual.nullifier).to.equal("4567")
+            expect(gatewayServer.interactionList[2].actual.method).to.equal("getVoteStatus")
+            expect(gatewayServer.interactionList[2].actual.processId).to.equal("5678")
+            expect(gatewayServer.interactionList[2].actual.nullifier).to.equal("6789")
+            expect(gatewayServer.interactionList[3].actual.method).to.equal("fetchFile")
+            expect(gatewayServer.interactionList[3].actual.uri).to.equal("12345")
+            expect(gatewayServer.interactionList[4].actual.method).to.equal("fetchFile")
+            expect(gatewayServer.interactionList[4].actual.uri).to.equal("67890")
+
+            await gatewayServer.stop()
+        })
     })
 
     describe("Swarm", () => {
@@ -57,7 +195,7 @@ describe("Gateway", () => {
             expect(result1.length).to.be.ok
             expect(result1).to.equal("bzz://1234")
 
-            gatewayServer.stop()
+            await gatewayServer.stop()
         })
         it("Should retrieve a pinned file", async () => {
             const base64File = "dm9jZG9uaQ=="
@@ -84,7 +222,7 @@ describe("Gateway", () => {
             expect(gatewayServer.interactionList[1].actual.uri).to.equal(result1)
             expect(gatewayServer.interactionList[1].actual.requestId).to.match(/^0x[0-9a-fA-F]{64}$/)
 
-            gatewayServer.stop()
+            await gatewayServer.stop()
         })
         it("Should unpin an old file")
         it("Should enforce authenticated upload requests")
@@ -114,7 +252,7 @@ describe("Gateway", () => {
             expect(result1.length).to.be.ok
             expect(result1).to.equal("ipfs://ipfs/1234")
 
-            gatewayServer.stop()
+            await gatewayServer.stop()
         })
         it("Should retrieve a pinned file", async () => {
             const base64File = "ZGVjZW50cmFsaXplZA=="
@@ -141,7 +279,7 @@ describe("Gateway", () => {
             expect(gatewayServer.interactionList[1].actual.uri).to.equal(result1)
             expect(gatewayServer.interactionList[1].actual.requestId).to.match(/^0x[0-9a-fA-F]{64}$/)
 
-            gatewayServer.stop()
+            await gatewayServer.stop()
         })
         it("Should unpin an old file")
         it("Should enforce authenticated upload requests")
