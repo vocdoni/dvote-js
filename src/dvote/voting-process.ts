@@ -95,7 +95,7 @@ export default class VotingProcess extends SmartContract {
 
         // Ensure we are connected to the right Gateway
         if (!this.gateway) this.gateway = new Gateway(gatewayUri)
-        else if (this.gateway.getUri() != gatewayUri) await this.gateway.setGatewayUri(gatewayUri)
+        else if (await this.gateway.getUri() != gatewayUri) await this.gateway.setGatewayUri(gatewayUri)
 
         return this.gateway.fetchFile(data.metadataContentUri)
     }
@@ -126,7 +126,7 @@ export default class VotingProcess extends SmartContract {
     public async getVotingRing(processId: string, gatewayUri: string, publicKeyModulus: number): Promise<boolean> {
         // Ensure we are connected to the right Gateway
         if (!this.gateway) this.gateway = new Gateway(gatewayUri)
-        else if (this.gateway.getUri() != gatewayUri) await this.gateway.setGatewayUri(gatewayUri)
+        else if (await this.gateway.getUri() != gatewayUri) await this.gateway.setGatewayUri(gatewayUri)
 
         return this.gateway.request({
             method: "getVotingRing",
@@ -158,7 +158,7 @@ export default class VotingProcess extends SmartContract {
 
         // Ensure we are connected to the right Gateway
         if (!this.gateway) this.gateway = new Gateway(gatewayUri)
-        else if (this.gateway.getUri() != gatewayUri) await this.gateway.setGatewayUri(gatewayUri)
+        else if (await this.gateway.getUri() != gatewayUri) await this.gateway.setGatewayUri(gatewayUri)
 
         return this.gateway.request({
             method: "submitVoteEnvelope",
@@ -177,7 +177,7 @@ export default class VotingProcess extends SmartContract {
     public async getVoteStatus(processId: string, gatewayUri: string, nullifier: string): Promise<boolean> {
         // Ensure we are connected to the right Gateway
         if (!this.gateway) this.gateway = new Gateway(gatewayUri)
-        else if (this.gateway.getUri() != gatewayUri) await this.gateway.setGatewayUri(gatewayUri)
+        else if (await this.gateway.getUri() != gatewayUri) await this.gateway.setGatewayUri(gatewayUri)
 
         return this.gateway.request({
             method: "getVoteStatus",
@@ -200,7 +200,7 @@ export default class VotingProcess extends SmartContract {
 
         // Ensure we are connected to the right Gateway
         if (!this.gateway) this.gateway = new Gateway(gatewayUri)
-        else if (this.gateway.getUri() != gatewayUri) await this.gateway.setGatewayUri(gatewayUri)
+        else if (await this.gateway.getUri() != gatewayUri) await this.gateway.setGatewayUri(gatewayUri)
 
         return this.gateway.fetchFile(contentUri)
     }
