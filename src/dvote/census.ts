@@ -23,7 +23,7 @@ export default class Census {
 
 		// Ensure we are connected to the right Gateway
 		if (!this.gateway) this.gateway = new Gateway(gatewayUri)
-		else if (this.gateway.getUri() != gatewayUri) await this.gateway.setGatewayUri(gatewayUri)
+		else if (await this.gateway.getUri() != gatewayUri) await this.gateway.setGatewayUri(gatewayUri)
 
 		throw new Error("unimplemented")
 
