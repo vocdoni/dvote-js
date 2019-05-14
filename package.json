@@ -9,7 +9,7 @@
   "license": "GPL-3.0-or-later",
   "private": false,
   "scripts": {
-    "prepublishOnly": "npm run compile",
+    "prepublishOnly": "npm run build",
     "clean": "rm -fR dist",
     "build": "npm run clean && ./node_modules/.bin/tsc",
     "watch": "./node_modules/.bin/tsc -w -p .",
