@@ -68,7 +68,7 @@ DVoteJS uses an [Ethers.js wallet](https://docs.ethers.io/ethers.js/html/api-wal
 
 #### MetaMask, Mist or Parity
 
-On a Web3 enabled browsers, the provider can be simply borrowed from `window.web3.currentProvider`. The wallet is automatically available. 
+On Web3 enabled browsers, the provider can be simply borrowed from `window.web3.currentProvider`. The wallet is automatically available. 
 
 ```javascript
 import ethers from "ethers"
@@ -78,7 +78,7 @@ const myProvider = new ethers.providers.Web3Provider(web3.currentProvider)
 
 const EntityResolverFactory = new EntityResolver({ web3Provider: myProvider })
 
-// By passing 'web3Provider', DVoteJS will automatically attach to the 
+// By passing 'currentProvider', DVoteJS will automatically attach to the 
 // signing mechanisms provided by MetaMask, Mist or Parity
 
 ```
