@@ -189,6 +189,9 @@ console.log("Voting process name:", processName)
 
 Full API details coming soon. You can have a look at `test/unit/entity-resolver` and `test/unit/voting-process` meanwhile.
 
+## Example
+
+Check out `example/index.js`.
 
 ## Development
 
