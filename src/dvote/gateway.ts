@@ -6,31 +6,38 @@
 import * as WebSocket from "ws"
 import { parseURL } from 'universal-parse-url'
 import { Wallet, utils, providers } from "ethers"
+import { rejects } from "assert";
 
 type GatewayMethod = "fetchFile" | "addFile" | "getVotingRing" | "submitVoteEnvelope" | "getVoteStatus"
 
 /** Parameters sent by the function caller */
 interface RequestParameters {
+    // Common
     method: GatewayMethod,
+    timestamp?: number,
 
-    type?: string,
+    // Voting
     processId?: string,
     publicKeyModulus?: number,
-    uri?: string,
-    content?: string,
     relayAddress?: string,
     encryptedEnvelope?: string,
     nullifier?: string,
 
-    // signature (unconfirmed)
-    address?: string,
-    signature?: string
+    // Fetch file
+    uri?: string,  // Content URI
+
+    // Add file
+    type?: string,   // storage type (ipfs/swarm)
+    name?: string,   // name of the file
+    content?: string,  // base64 file content
 }
 
 /** What is actually sent by sendMessage() to the Gateway */
 type MessageRequestContent = {
-    requestId: string
-} & RequestParameters
+    id: string,
+    request: RequestParameters,
+    signature?: string
+}
 
 /** Data structure of the request list */
 type WsRequest = {
@@ -42,8 +49,12 @@ type WsRequest = {
 
 /** Data structure of JSON responses from the Gateway */
 type GatewayResponse = {
-    error: boolean,
-    response: string[]
+    id: string,
+    error?: {
+        requestId: string,
+        message: string
+    },
+    response?: any
 }
 
 type EthereumProviderParams = {
@@ -93,7 +104,7 @@ export default class Gateway {
 
         // Keep a promise so that calls to sendMessage coming before the socket is open
         // wait until the promise is resolved
-        this.connectionPromise = new Promise((resolve) => {
+        this.connectionPromise = new Promise((resolve, reject) => {
             ws.on('open', () => {
                 // the socket is ready
                 this.webSocket = ws
@@ -103,6 +114,8 @@ export default class Gateway {
                 this.connectionPromise = null
                 resolve()
             })
+            ws.on("error", (err) => reject(err))
+            ws.on("close", () => reject(new Error("Connection closed")))
         })
         // if the caller of this function awaits this promise, 
         // an eventual call in sendMessage will not need to
@@ -122,14 +135,59 @@ export default class Gateway {
 
     /**
      * Send a WS message and add an entry to track its response
-     * @param params JSON object to send.
-     * @param timeout Amount of seconds to wait before failing. (default: 30)
+     * @param requestBody Parameters of the request to send
+     * @param timeout Timeout in seconds to wait before failing (default: 50)
      */
-    private async sendMessage(params: RequestParameters, timeout: number = 30): Promise<GatewayResponse> {
-        if (typeof params != "object") return Promise.reject(new Error("The payload should be a javascript object"))
+    private async sendMessage(requestBody: RequestParameters, timeout: number = 50): Promise<GatewayResponse> {
+        if (typeof requestBody != "object") return Promise.reject(new Error("The payload should be a javascript object"))
 
-        const requestId = utils.keccak256('0x' + Date.now().toString(16))
-        const content: MessageRequestContent = Object.assign({}, params, { requestId })
+        const requestId = utils.keccak256('0x' + Date.now().toString(16)).substr(2)
+        const content: MessageRequestContent = {
+            id: requestId,
+            request: requestBody
+        }
+
+        if (this.connectionPromise) {
+            // wait until the socket is open
+            // useful if the GW object has just been initialized
+            await this.connectionPromise
+        }
+        if (!this.webSocket) return Promise.reject(new Error("The gateway connection is not yet available"))
+
+        return new Promise((resolve, reject) => {
+            this.requestList.push({
+                id: requestId,
+                resolve,
+                reject,
+                timeout: setTimeout(() => {
+                    reject(new Error("Request timed out"))
+                    // remove from the list
+                    this.requestList = this.requestList.filter(r => r.id != requestId)
+                }, timeout * 1000)
+            })
+
+            this.webSocket.send(JSON.stringify(content))
+        })
+    }
+
+    /**
+     * Send a WS message and add an entry to track its response
+     * @param requestBody Parameters of the request to send
+     * @param wallet The wallet to use for signing
+     * @param timeout Timeout in seconds to wait before failing (default: 50)
+     */
+    private async sendSignedMessage(requestBody: RequestParameters, wallet: Wallet, timeout: number = 50): Promise<GatewayResponse> {
+        if (typeof requestBody != "object") return Promise.reject(new Error("The payload should be a javascript object"))
+        if (typeof wallet != "object") return Promise.reject(new Error("The wallet is required"))
+
+        const requestId = utils.keccak256('0x' + Date.now().toString(16)).substr(2)
+        const signature = await this.signRequestBody(requestBody, wallet)
+
+        const content: MessageRequestContent = {
+            id: requestId,
+            request: requestBody,
+            signature
+        }
 
         if (this.connectionPromise) {
             // wait until the socket is open
@@ -169,17 +227,20 @@ export default class Gateway {
             throw err
         }
 
-        if (!response || !response.requestId) return console.error("Invalid WS response:", response)
+        if (!response || !response.id) return console.error("Invalid WS response:", response)
 
-        const request = this.requestList.find(r => r.id == response.requestId)
+        const request = this.requestList.find(r => r.id == response.id)
         if (!request) return // it may have timed out
+
+        // TODO: CHECK THE SIGNATURE OF THE RESPONSE
+        console.warn("TO DO: CHECK THE SIGNATURE OF THE RESPONSE")
 
         clearTimeout(request.timeout)
         delete request.reject
         delete request.timeout
 
         // remove from the list
-        this.requestList = this.requestList.filter(r => r.id != response.requestId)
+        this.requestList = this.requestList.filter(r => r.id != response.id)
 
         request.resolve(response)
         delete request.resolve
@@ -206,10 +267,13 @@ export default class Gateway {
         }
 
         return this.sendMessage(params).then(message => {
-            if (message.error) throw new Error("The data could not be fethed")
-            else if (!message.response) throw new Error("The data could not be fethed")
+            if (message.error) {
+                if (message.error.message) throw new Error(message.error.message)
+                else throw new Error("The data could not be fetched")
+            }
+            else if (!message.response || !message.response.content) throw new Error("The data could not be fetched")
 
-            return message.response[0]
+            return message.response.content
         })
     }
 
@@ -223,27 +287,26 @@ export default class Gateway {
      * @param wallet An Ethers.js wallet capable of signing the payload
      * @return The content URI of the newly added file
      */
-    public async addFile(base64Payload: string, fsType: "swarm" | "ipfs", wallet: Wallet): Promise<string> {
+    public async addFile(base64Payload: string, name: string, fsType: "swarm" | "ipfs", wallet: Wallet): Promise<any> {
         if (!base64Payload) throw new Error("Empty payload")
         else if (!fsType) throw new Error("Empty type")
-        else if (!wallet) throw new Error("Invalid wallet")
 
-        const address = await wallet.getAddress()
-        const signature = await wallet.signMessage(base64Payload)
-
-        const params: RequestParameters = {
+        const requestBody: RequestParameters = {
             method: "addFile",
             type: fsType,
+            name,
             content: base64Payload,
-            address,
-            signature
+            timestamp: Date.now()
         }
 
-        return this.sendMessage(params).then(message => {
-            if (message.error) throw new Error("The data could not be fethed")
-            else if (!message.response) throw new Error("The data could not be fethed")
+        return this.sendSignedMessage(requestBody, wallet).then(message => {
+            if (message.error) {
+                if (message.error.message) throw new Error(message.error.message)
+                else throw new Error("The data could not be uploaded")
+            }
+            else if (!message.response || !message.response.uri) throw new Error("The data could not be uploaded")
 
-            return message.response[0]
+            return message.response.uri
         })
     }
 
@@ -257,14 +320,17 @@ export default class Gateway {
      * @param params RequestParameters of the request
      * @return The content URI of the newly added file
      */
-    public async request(params: RequestParameters): Promise<string> {
+    public async request(params: RequestParameters): Promise<any> {
         return this.sendMessage(params).then(message => {
-            if (!message.response) throw new Error("There was an error while handling the request")
+            if (message.error) {
+                if (message.error.message) throw new Error(message.error.message)
+                else throw new Error("There was an error while handling the request")
+            }
             else if (message.error) {
                 throw new Error(message.response && message.response[0] || "There was an error while handling the request")
             }
 
-            return message.response[0]
+            return message.response
         })
     }
 
@@ -308,5 +374,26 @@ export default class Gateway {
         providerUri += currentUri.pathname + currentUri.search + currentUri.hash
 
         return new providers.JsonRpcProvider(providerUri)
+    }
+
+    /**
+     * Closes the WS connection if it is currently active
+     */
+    public close() {
+        if (!this.webSocket || !this.webSocket.close) return
+        this.webSocket.close()
+    }
+
+    private signRequestBody(request: RequestParameters, wallet: Wallet): Promise<string> {
+        if (!wallet) throw new Error("Invalid wallet")
+
+        // Ensure ordered key names
+        request = Object.keys(request).sort().reduce((prev, cur) => {
+            prev[cur] = request[cur]
+            return prev
+        }, {} as RequestParameters)
+
+        const msg = JSON.stringify(request)
+        return wallet.signMessage(msg)
     }
 }
