@@ -143,23 +143,22 @@ export default class Gateway {
             this.gatewayWsUri = null
         }
 
-        // Set up the web socket
-        const ws = new WebSocket(gatewayWsUri)
-
         // Keep a promise so that calls to sendMessage coming before the socket is open
         // wait until the promise is resolved
         this.connectionPromise = new Promise((resolve, reject) => {
-            ws.on('open', () => {
+            // Set up the web socket
+            const ws = new WebSocket(gatewayWsUri)
+            ws.onopen = () => {
                 // the socket is ready
                 this.webSocket = ws
                 this.gatewayWsUri = gatewayWsUri
 
-                ws.on('message', data => this.gotWebSocketMessage(data))
+                ws.onmessage = msg => this.gotWebSocketMessage(msg.data)
                 this.connectionPromise = null
                 resolve()
-            })
-            ws.on("error", (err) => reject(err))
-            ws.on("close", () => reject(new Error("Connection closed")))
+            }
+            ws.onerror = (err) => reject(err)
+            ws.onclose = () => reject(new Error("Connection closed"))
         })
         // if the caller of this function awaits this promise, 
         // an eventual call in sendMessage will not need to
