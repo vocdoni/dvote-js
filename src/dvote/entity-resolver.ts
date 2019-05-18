@@ -97,10 +97,8 @@ export const TextRecordKeys = {
     GATEWAYS_UPDATE_CONFIG: "vnd.vocdoni.gateway-update",
     ACTIVE_PROCESS_IDS: "vnd.vocdoni.process-ids.active",
     ENDED_PROCESS_IDS: "vnd.vocdoni.process-ids.ended",
-    NEWS_FEED_CONTENT_URI: "vnd.vocdoni.news-feed.en",
-    // ___: "vnd.vocdoni.news-feed.fr",
-    DESCRIPTION: "vnd.vocdoni.entity-description.en",
-    // ___: "vnd.vocdoni.entity-description.fr",
+    NEWS_FEED_URI_PREFIX: "vnd.vocdoni.news-feed.", // + lang
+    DESCRIPTION_PREFIX: "vnd.vocdoni.entity-description.", // + lang
     AVATAR_CONTENT_URI: "vnd.vocdoni.avatar",
 }
 
