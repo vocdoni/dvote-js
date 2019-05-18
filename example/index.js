@@ -1,9 +1,12 @@
-const { EntityResolver } = require("..") // require("dvote-js")
+const { EntityResolver, Gateway } = require("..") // require("dvote-js")
+const { Wallet } = require("ethers")
 
 const MNEMONIC = ""
-const PROVIDER_URL = "http://..."
-const resolverContractAddress = "0x..."
-const myEntityAddress = "0x..."
+const GATEWAY_WS_URI = ""
+const GATEWAY_PROVIDER_URI = ""
+// const PROVIDER_URL = ""
+const resolverContractAddress = ""
+const myEntityAddress = ""
 
 async function registerEntity() {
     console.log("Attaching to", resolverContractAddress)
@@ -45,6 +48,17 @@ async function registerEntity() {
     // show stored values
     console.log("\nDone!\n")
 
+    // ensure to disconnect if using WS
+    if (resolverInstance.provider.polling) resolverInstance.provider.polling = false
+}
+
+async function readEntity() {
+    console.log("Attaching to", resolverContractAddress)
+
+    const EntityResolverFactory = new EntityResolver({ providerUrl: PROVIDER_URL, mnemonic: MNEMONIC })
+    const resolverInstance = EntityResolverFactory.attach(resolverContractAddress)
+    const entityId = EntityResolver.getEntityId(myEntityAddress)
+
     console.log("vnd.vocdoni.entity-name =", await resolverInstance.text(entityId, "vnd.vocdoni.entity-name"));
     console.log("vnd.vocdoni.languages =", await resolverInstance.text(entityId, "vnd.vocdoni.languages"));
     console.log("vnd.vocdoni.meta =", await resolverInstance.text(entityId, "vnd.vocdoni.meta"));
@@ -57,10 +71,47 @@ async function registerEntity() {
     console.log("vnd.vocdoni.entity-description.en =", await resolverInstance.text(entityId, "vnd.vocdoni.entity-description.en"));
     console.log("vnd.vocdoni.entity-description.fr =", await resolverInstance.text(entityId, "vnd.vocdoni.entity-description.fr"));
     console.log("vnd.vocdoni.avatar =", await resolverInstance.text(entityId, "vnd.vocdoni.avatar"));
+
+    // ensure to disconnect if using WS
+    if (resolverInstance.provider.polling) resolverInstance.provider.polling = false
+}
+
+async function fetchRemoteFile() {
+    const wallet = Wallet.fromMnemonic(MNEMONIC)
+
+    const gw = new Gateway(GATEWAY_WS_URI)
+
+    const result = await gw.addFile("SGVsbG8gVm9jZG9uaQo=", "hello.txt", "ipfs", wallet)
+    console.log("ORIGIN", result)
+
+    // const data = await gw.fetchFile("QmYJWvsxyABqd5mnyKbwr7KCFs2uotBGDEwerSYyjtKS7M") // hello
+    const data = await gw.fetchFile("QmXGXxhh84PxoKTwFUofSE3RcuPpJjs56aTbxPMzLS6Cha")
+    // const data = await gw.fetchFile("ipfs://QmXGXxhh84PxoKTwFUofSE3RcuPpJjs56aTbxPMzLS6Cha")
+    // const data = await gw.fetchFile("ipfs://QmXGXxhh84PxoKTwFUofSE3RcuPpJjs56aTbxPMzLS6Cha")
+    console.log("DATA", data)
+
+    gw.disconnect()
+}
+
+async function fetchBlockchainData() {
+    const provider = Gateway.ethereumProvider(GATEWAY_PROVIDER_URI)
+
+    const EntityResolverFactory = new EntityResolver({ provider })
+    const resolverInstance = EntityResolverFactory.attach(resolverContractAddress)
+
+    const entityId = EntityResolver.getEntityId(myEntityAddress)
+    console.log("Entity ID", entityId)
+
+    console.log("vnd.vocdoni.entity-name =", await resolverInstance.text(entityId, "vnd.vocdoni.entity-name"));
+    console.log("vnd.vocdoni.languages =", await resolverInstance.text(entityId, "vnd.vocdoni.languages"));
+    console.log("vnd.vocdoni.meta =", await resolverInstance.text(entityId, "vnd.vocdoni.meta"));
 }
 
 async function main() {
-    await registerEntity()
+    // await registerEntity()
+    // await readEntity()
+    // await fetchRemoteFile()
+    await fetchBlockchainData()
 }
 
 main()

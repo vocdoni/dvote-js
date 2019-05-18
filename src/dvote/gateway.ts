@@ -81,6 +81,50 @@ export default class Gateway {
         this.setGatewayUri(gatewayWsUri)
     }
 
+    // WEB3 PROVIDER
+
+    /**
+     * Returns an Ethereum JSON RPC provider pointing to the Gateway
+     * @param uri The URI of the endpoint
+     */
+    public static ethereumProvider(uri: string): providers.JsonRpcProvider {
+        if (!uri) throw new Error("Invalid URI")
+
+        return new providers.JsonRpcProvider(uri)
+    }
+
+    /**
+     * Returns an Ethereum JSON RPC provider pointing to the Gateway. Parts of the original URI can be overridden
+     * @param params By default, will return an http client on port 8545 with the current hostname, pathname, search and hash. 
+     *      "protocol" and "port" can be overriden. 
+     *      Entering a "uri" will ignore any other value of the current web socket URI and return a decoupled RPC client
+     */
+    public static ethereumProviderFromGateway(gateway: Gateway, params: EthereumProviderParams = { protocol: "ws", port: 8545 }): providers.JsonRpcProvider {
+        if (!gateway) throw new Error("Invalid gateway provided")
+
+        const currentUri = parseURL(gateway.gatewayWsUri)
+        if (!currentUri.host) throw new Error("Empty gateway host: " + currentUri.host)
+
+        let providerUri = ""
+        switch (params && params.protocol) {
+            case "http": providerUri = "http://"; break
+            case "https": providerUri = "https://"; break
+            case "ws": providerUri = "ws://"; break
+            case "wss": providerUri = "wss://"; break
+            default: providerUri = "ws://"; break
+        }
+        if (params && params.port) {
+            providerUri += currentUri.hostname + ":" + params.port
+        }
+        else {
+            providerUri += currentUri.hostname + ":8545"
+        }
+
+        providerUri += currentUri.pathname + currentUri.search + currentUri.hash
+
+        return new providers.JsonRpcProvider(providerUri)
+    }
+
     /**
      * Set or update the Gateway's web socket URI
      * @param gatewayWsUri 
@@ -334,52 +378,10 @@ export default class Gateway {
         })
     }
 
-    // WEB3 PROVIDER
-
-    /**
-     * Returns an Ethereum JSON RPC provider pointing to the Gateway. Parts of the URI can be overridden
-     * @param params By default, will return an http client on port 8545 with the current hostname, pathname, search and hash. 
-     *      "protocol" and "port" can be overriden. 
-     *      Entering a "uri" will ignore any other value of the current web socket URI and return a decoupled RPC client
-     */
-    public async getEthereumProvider(params: EthereumProviderParams = { protocol: "http", port: 8545 }): Promise<providers.JsonRpcProvider> {
-        if (params.uri) {
-            return new providers.JsonRpcProvider(params.uri)
-        }
-
-        if (this.connectionPromise) {
-            // wait until the socket is open
-            // useful if the GW object has just been initialized
-            await this.connectionPromise
-        }
-
-        const currentUri = parseURL(this.gatewayWsUri)
-        if (!currentUri.host) throw new Error("Empty current gateway host: " + currentUri.host)
-
-        let providerUri = ""
-        switch (params && params.protocol) {
-            case "http": providerUri = "http://"; break
-            case "https": providerUri = "https://"; break
-            case "ws": providerUri = "ws://"; break
-            case "wss": providerUri = "wss://"; break
-            default: providerUri = "http://"; break
-        }
-        if (params && params.port) {
-            providerUri += currentUri.hostname + ":" + params.port
-        }
-        else {
-            providerUri += currentUri.hostname + ":8545"
-        }
-
-        providerUri += currentUri.pathname + currentUri.search + currentUri.hash
-
-        return new providers.JsonRpcProvider(providerUri)
-    }
-
     /**
      * Closes the WS connection if it is currently active
      */
-    public close() {
+    public disconnect() {
         if (!this.webSocket || !this.webSocket.close) return
         this.webSocket.close()
     }

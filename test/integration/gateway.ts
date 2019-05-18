@@ -183,7 +183,7 @@ describe("Gateway", () => {
 
             // Client
             const gw = new Gateway(gatewayUrl)
-            const result1 = await gw.addFile(base64File, "swarm", baseAccount.wallet)
+            const result1 = await gw.addFile(base64File, "my-file", "swarm", baseAccount.wallet)
 
             expect(gatewayServer.interactionCount).to.equal(1)
             expect(gatewayServer.interactionList[0].actual.method).to.equal("addFile")
@@ -210,7 +210,7 @@ describe("Gateway", () => {
 
             // Client
             const gw = new Gateway(gatewayUrl)
-            const result1 = await gw.addFile(base64File, "swarm", baseAccount.wallet)
+            const result1 = await gw.addFile(base64File, "my-file", "swarm", baseAccount.wallet)
             expect(result1).to.equal("bzz://2345")
 
             expect(gatewayServer.interactionCount).to.equal(1)
@@ -237,7 +237,7 @@ describe("Gateway", () => {
             try {
                 const gw = new Gateway(gatewayUrl)
                 await new Promise(resolve => setTimeout(resolve, 10))
-                await gw.addFile(base64File, "swarm", null)
+                await gw.addFile(base64File, "my-file", "swarm", null)
                 throw new Error("Should have thrown an error but didn't")
             }
             catch (err) {
@@ -261,7 +261,7 @@ describe("Gateway", () => {
 
             // Client
             const gw = new Gateway(gatewayUrl)
-            const result1 = await gw.addFile(base64File, "ipfs", baseAccount.wallet)
+            const result1 = await gw.addFile(base64File, "my-file", "ipfs", baseAccount.wallet)
 
             expect(gatewayServer.interactionCount).to.equal(1)
             expect(gatewayServer.interactionList[0].actual.method).to.equal("addFile")
@@ -288,7 +288,7 @@ describe("Gateway", () => {
 
             // Client
             const gw = new Gateway(gatewayUrl)
-            const result1 = await gw.addFile(base64File, "ipfs", baseAccount.wallet)
+            const result1 = await gw.addFile(base64File, "my-file", "ipfs", baseAccount.wallet)
             expect(result1).to.equal("ipfs://ipfs/2345")
 
             expect(gatewayServer.interactionCount).to.equal(1)
@@ -315,7 +315,7 @@ describe("Gateway", () => {
             try {
                 const gw = new Gateway(gatewayUrl)
                 await new Promise(resolve => setTimeout(resolve, 10))
-                await gw.addFile(base64File, "ipfs", null)
+                await gw.addFile(base64File, "my-file", "ipfs", baseAccount.wallet)
                 throw new Error("Should have thrown an error but didn't")
             }
             catch (err) {
@@ -344,7 +344,7 @@ describe("Gateway", () => {
             const addr = Object.keys(info.personal_accounts)[0]
 
             const gw = new Gateway(gatewayUrl)
-            const gwProvider = await gw.getEthereumProvider()
+            const gwProvider = await Gateway.ethereumProviderFromGateway(gw)
             const balance = await gwProvider.getBalance(addr)
 
             expect(balance.toHexString()).to.match(/^0x[0-9a-fA-F]{10,}$/)
