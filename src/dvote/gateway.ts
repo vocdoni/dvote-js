@@ -153,7 +153,25 @@ export default class Gateway {
                 this.webSocket = ws
                 this.gatewayWsUri = gatewayWsUri
 
-                ws.onmessage = msg => this.gotWebSocketMessage(msg.data)
+                ws.onmessage = msg => {
+                    // Detect behavior on Browser/NodeJS
+                    if (!msg || !msg.data) throw new Error("Invalid response message")
+
+                    if (msg.data instanceof Buffer || msg.data instanceof Uint8Array) {
+                        this.gotWebSocketMessage(msg.data.toString())
+                    }
+                    else if (typeof Blob != "undefined" && msg.data instanceof Blob) {
+                        const reader = new FileReader()
+                        reader.onload = () => {
+                            this.gotWebSocketMessage(reader.result as string)
+                        }
+                        reader.readAsText(msg.data) // JSON
+                    }
+                    else {
+                        // this.gotWebSocketMessage(msg.data.toString())
+                        console.error("Unsupported response", msg.data)
+                    }
+                }
                 this.connectionPromise = null
                 resolve()
             }
@@ -257,13 +275,12 @@ export default class Gateway {
 
     /**
      * Handle incoming WS messages and link them to their original request
-     * @param data 
+     * @param strResponse JSON response contents
      */
-    private gotWebSocketMessage(data: WebSocket.Data) {
+    private gotWebSocketMessage(strResponse: string) {
         let response
         try {
-            if (typeof data != "string") data = data.toString()
-            response = JSON.parse(data)
+            response = JSON.parse(strResponse)
         }
         catch (err) {
             console.error("JSON parsing error:", err)
