@@ -6,7 +6,7 @@
 import * as WebSocket from "ws"
 import { parseURL } from 'universal-parse-url'
 import { Wallet, utils, providers } from "ethers"
-import { rejects } from "assert";
+import { Buffer } from 'buffer'
 
 type GatewayMethod = "fetchFile" | "addFile" | "getVotingRing" | "submitVoteEnvelope" | "getVoteStatus"
 
@@ -300,7 +300,7 @@ export default class Gateway {
      * @param contentUri
      * @returns base64 encoded string
      */
-    public fetchFile(contentUri: string): Promise<string> {
+    public fetchFile(contentUri: string): Promise<Buffer> {
         if (!contentUri) return Promise.reject(new Error("Invalid Content URI"))
 
         // See https://vocdoni.io/docs/#/architecture/components/gateway?id=file-api
@@ -317,7 +317,7 @@ export default class Gateway {
             }
             else if (!message.response || !message.response.content) throw new Error("The data could not be fetched")
 
-            return message.response.content
+            return Buffer.from(message.response.content, "base64")
         })
     }
 
@@ -326,20 +326,20 @@ export default class Gateway {
      * 
      * See https://vocdoni.io/docs/#/architecture/components/gateway?id=add-file
      * 
-     * @param payload Base64 encoded data
+     * @param buffer Uint8Array with the file contents
      * @param type What type of P2P protocol should be used
      * @param wallet An Ethers.js wallet capable of signing the payload
-     * @return The content URI of the newly added file
+     * @return The URI of the newly added file
      */
-    public async addFile(base64Payload: string, name: string, fsType: "swarm" | "ipfs", wallet: Wallet): Promise<any> {
-        if (!base64Payload) throw new Error("Empty payload")
+    public async addFile(buffer: Uint8Array, name: string, fsType: "swarm" | "ipfs", wallet: Wallet): Promise<string> {
+        if (!buffer) throw new Error("Empty payload")
         else if (!fsType) throw new Error("Empty type")
 
         const requestBody: RequestParameters = {
             method: "addFile",
             type: fsType,
             name,
-            content: base64Payload,
+            content: Buffer.from(buffer).toString("base64"),
             timestamp: Date.now()
         }
 

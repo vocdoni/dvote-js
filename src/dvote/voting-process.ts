@@ -97,7 +97,9 @@ export default class VotingProcess extends SmartContract {
         if (!this.gateway) this.gateway = new Gateway(gatewayUri)
         else if (await this.gateway.getUri() != gatewayUri) await this.gateway.setGatewayUri(gatewayUri)
 
-        return this.gateway.fetchFile(data.metadataContentUri)
+        const jsonBuffer = await this.gateway.fetchFile(data.metadataContentUri)
+        this.gateway.disconnect()
+        return jsonBuffer.toString()
     }
 
     /**
@@ -202,7 +204,8 @@ export default class VotingProcess extends SmartContract {
         if (!this.gateway) this.gateway = new Gateway(gatewayUri)
         else if (await this.gateway.getUri() != gatewayUri) await this.gateway.setGatewayUri(gatewayUri)
 
-        return this.gateway.fetchFile(contentUri)
+        const jsonBuffer = await this.gateway.fetchFile(contentUri)
+        return jsonBuffer.toString("base64")
     }
 
     // COMPUTATION METHODS
