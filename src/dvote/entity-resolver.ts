@@ -72,7 +72,7 @@ export default class EntityResolver extends SmartContract {
     /**
      * Fetch the JSON metadata for the given entityAddress using the given gateway
      * @param entityAddress 
-     * @param gatewayUri 
+     * @param gatewayUri URI of a Vocdoni Gateway to fetch the data from
      */
     public async getJsonMetadata(entityAddress: string, gatewayUri: string): Promise<string> {
         if (!entityAddress) throw new Error("Invalid entityAddress")
@@ -83,7 +83,9 @@ export default class EntityResolver extends SmartContract {
         if (!metadataContentUri) throw new Error("The given entity has no metadata defined yet")
 
         const gw = new Gateway(gatewayUri)
-        return gw.fetchFile(metadataContentUri)
+        const jsonBuffer = await gw.fetchFile(metadataContentUri)
+        gw.disconnect()
+        return jsonBuffer.toString()
     }
 }
 

@@ -5,6 +5,7 @@ import { getAccounts, TestAccount, mnemonic } from "../eth-util"
 import { Gateway } from "../../src"
 import { GatewayMock, InteractionMock, GatewayResponse } from "../mocks/gateway"
 import { server as ganacheRpcServer } from "ganache-core"
+import { Buffer } from "buffer"
 
 const port = 8000
 const gatewayUrl = `ws://localhost:${port}`
@@ -175,7 +176,8 @@ describe("Gateway", () => {
 
     describe("Swarm", () => {
         it("Should upload a file", async () => {
-            const base64File = "dm9jZG9uaQ=="
+            const fileContent = "GOOD MORNING"
+            const buffData = Buffer.from(fileContent)
 
             // Gateway (server)
             const responseList: GatewayResponse[] = [{ error: false, response: ["bzz://1234"] }]
@@ -183,12 +185,12 @@ describe("Gateway", () => {
 
             // Client
             const gw = new Gateway(gatewayUrl)
-            const result1 = await gw.addFile(base64File, "my-file", "swarm", baseAccount.wallet)
+            const result1 = await gw.addFile(buffData, "my-file.txt", "swarm", baseAccount.wallet)
 
             expect(gatewayServer.interactionCount).to.equal(1)
             expect(gatewayServer.interactionList[0].actual.method).to.equal("addFile")
             expect(gatewayServer.interactionList[0].actual.type).to.equal("swarm")
-            expect(gatewayServer.interactionList[0].actual.content).to.equal(base64File)
+            expect(gatewayServer.interactionList[0].actual.content).to.equal(buffData)
             expect(gatewayServer.interactionList[0].actual.address).to.equal(baseAccount.address)
             expect(gatewayServer.interactionList[0].actual.requestId).to.match(/^0x[0-9a-fA-F]{64}$/)
             expect(gatewayServer.interactionList[0].actual.signature).to.match(/^0x[0-9a-fA-F]{100,}$/)
@@ -199,24 +201,25 @@ describe("Gateway", () => {
             await gatewayServer.stop()
         })
         it("Should retrieve a pinned file", async () => {
-            const base64File = "dm9jZG9uaQ=="
+            const fileContent = "HELLO WORLD"
+            const buffData = Buffer.from(fileContent)
 
             // Gateway (server)
             const responseList: GatewayResponse[] = [
                 { error: false, response: ["bzz://2345"] },
-                { error: false, response: [base64File] }
+                { error: false, response: [buffData.toString("base64")] }
             ]
             const gatewayServer = new GatewayMock({ port, responseList })
 
             // Client
             const gw = new Gateway(gatewayUrl)
-            const result1 = await gw.addFile(base64File, "my-file", "swarm", baseAccount.wallet)
+            const result1 = await gw.addFile(buffData, "my-file.txt", "swarm", baseAccount.wallet)
             expect(result1).to.equal("bzz://2345")
 
             expect(gatewayServer.interactionCount).to.equal(1)
 
-            const result2 = await gw.fetchFile(result1)
-            expect(result2).to.equal(base64File)
+            const result2 = (await gw.fetchFile(result1)).toString("base64")
+            expect(result2).to.equal(buffData)
 
             expect(gatewayServer.interactionCount).to.equal(2)
             expect(gatewayServer.interactionList[1].actual.method).to.equal("fetchFile")
@@ -228,7 +231,8 @@ describe("Gateway", () => {
         it("Should request to unpin an old file")
         it("Should list the currently pinned files")
         it("Should enforce authenticated upload requests", async () => {
-            const base64File = "ZGVjZW50cmFsaXplZA=="
+            const fileContent = "HI THERE"
+            const buffData = Buffer.from(fileContent)
 
             // Gateway (server)
             const gatewayServer = new GatewayMock({ port, responseList: [] })
@@ -237,7 +241,7 @@ describe("Gateway", () => {
             try {
                 const gw = new Gateway(gatewayUrl)
                 await new Promise(resolve => setTimeout(resolve, 10))
-                await gw.addFile(base64File, "my-file", "swarm", null)
+                await gw.addFile(buffData, "my-file.txt", "swarm", null)
                 throw new Error("Should have thrown an error but didn't")
             }
             catch (err) {
@@ -253,7 +257,8 @@ describe("Gateway", () => {
 
     describe("IPFS", () => {
         it("Should upload a file", async () => {
-            const base64File = "ZGVjZW50cmFsaXplZA=="
+            const fileContent = "HI THERE"
+            const buffData = Buffer.from(fileContent)
 
             // Gateway (server)
             const responseList: GatewayResponse[] = [{ error: false, response: ["ipfs://ipfs/1234"] }]
@@ -261,12 +266,12 @@ describe("Gateway", () => {
 
             // Client
             const gw = new Gateway(gatewayUrl)
-            const result1 = await gw.addFile(base64File, "my-file", "ipfs", baseAccount.wallet)
+            const result1 = await gw.addFile(buffData, "my-file.txt", "ipfs", baseAccount.wallet)
 
             expect(gatewayServer.interactionCount).to.equal(1)
             expect(gatewayServer.interactionList[0].actual.method).to.equal("addFile")
             expect(gatewayServer.interactionList[0].actual.type).to.equal("ipfs")
-            expect(gatewayServer.interactionList[0].actual.content).to.equal(base64File)
+            expect(gatewayServer.interactionList[0].actual.content).to.equal(buffData)
             expect(gatewayServer.interactionList[0].actual.address).to.equal(baseAccount.address)
             expect(gatewayServer.interactionList[0].actual.requestId).to.match(/^0x[0-9a-fA-F]{64}$/)
             expect(gatewayServer.interactionList[0].actual.signature).to.match(/^0x[0-9a-fA-F]{100,}$/)
@@ -277,24 +282,25 @@ describe("Gateway", () => {
             await gatewayServer.stop()
         })
         it("Should retrieve a pinned file", async () => {
-            const base64File = "ZGVjZW50cmFsaXplZA=="
+            const fileContent = "HI THERE"
+            const buffData = Buffer.from(fileContent)
 
             // Gateway (server)
             const responseList: GatewayResponse[] = [
                 { error: false, response: ["ipfs://ipfs/2345"] },
-                { error: false, response: [base64File] }
+                { error: false, response: [buffData.toString("base64")] }
             ]
             const gatewayServer = new GatewayMock({ port, responseList })
 
             // Client
             const gw = new Gateway(gatewayUrl)
-            const result1 = await gw.addFile(base64File, "my-file", "ipfs", baseAccount.wallet)
+            const result1 = await gw.addFile(buffData, "my-file.txt", "ipfs", baseAccount.wallet)
             expect(result1).to.equal("ipfs://ipfs/2345")
 
             expect(gatewayServer.interactionCount).to.equal(1)
 
             const result2 = await gw.fetchFile(result1)
-            expect(result2).to.equal(base64File)
+            expect(result2).to.equal(buffData)
 
             expect(gatewayServer.interactionCount).to.equal(2)
             expect(gatewayServer.interactionList[1].actual.method).to.equal("fetchFile")
@@ -306,7 +312,8 @@ describe("Gateway", () => {
         it("Should request to unpin an old file")
         it("Should list the currently pinned files")
         it("Should enforce authenticated upload requests", async () => {
-            const base64File = "ZGVjZW50cmFsaXplZA=="
+            const fileContent = "HI THERE"
+            const buffData = Buffer.from(fileContent)
 
             // Gateway (server)
             const gatewayServer = new GatewayMock({ port, responseList: [] })
@@ -315,7 +322,7 @@ describe("Gateway", () => {
             try {
                 const gw = new Gateway(gatewayUrl)
                 await new Promise(resolve => setTimeout(resolve, 10))
-                await gw.addFile(base64File, "my-file", "ipfs", baseAccount.wallet)
+                await gw.addFile(buffData, "my-file.txt", "ipfs", baseAccount.wallet)
                 throw new Error("Should have thrown an error but didn't")
             }
             catch (err) {

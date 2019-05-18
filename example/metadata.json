@@ -1,0 +1,50 @@
+{
+    "version": "1.0",
+    "languages": [
+        "en",
+        "fr"
+    ],
+    "entity-name": "My official entity",
+    "entity-description": {
+        "en": "The description of my entity goes here",
+        "fr": "La description officielle de mon organisation est ici"
+    },
+    "voting-contract": "0x0",
+    "gateway-update": {
+        "timeout": 60000,
+        "topic": "vocdoni-gateway-update",
+        "difficulty": 1000
+    },
+    "process-ids": {
+        "active": [],
+        "ended": []
+    },
+    "news-feed": {
+        "en": "https://hipsterpixel.co/feed.json",
+        "fr": "https://feed2json.org/convert?url=http://www.intertwingly.net/blog/index.atom"
+    },
+    "avatar": "https://hipsterpixel.co/assets/favicons/apple-touch-icon.png",
+    "gateway-boot-nodes": [
+        {
+            "update": "pss://publicKey@0x0",
+            "fetch": "https://hostname:port/route"
+        }
+    ],
+    "relays": [
+        {
+            "publicKey": "0x23456...",
+            "messagingUri": "<messaging-uri>"
+        }
+    ],
+    "actions": [
+        {
+            "type": "browser",
+            "name": {
+                "en": "Sign up to The Entity",
+                "fr": "S'inscrire à l'organisation"
+            },
+            "url": "https://census-register.cloud/sign-up/",
+            "visible": "https://census-registry.cloud/lambda/census-register-visible/"
+        }
+    ]
+}
