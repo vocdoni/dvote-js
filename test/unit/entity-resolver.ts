@@ -155,6 +155,12 @@ describe("Entity Resolver", () => {
 
     describe("Resolver Text List Records", () => {
 
+        it("Should return an empty list for non-existing fields", async () => {
+            const key = "list-1"
+
+            expect(await contractInstance.list(entityId, key)).to.deep.equal([])
+        })
+
         it("Should allow to push elements to a list", async () => {
             const key = "list-1"
             const text1 = "Some text here"

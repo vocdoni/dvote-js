@@ -1,4 +1,4 @@
-import * as WebSocket from "ws"
+import * as WebSocket from "isomorphic-ws"
 
 type ConstructorParams = {
     port: number,
