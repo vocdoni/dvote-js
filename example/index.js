@@ -95,12 +95,15 @@ async function fetchRemoteFile() {
     const gw = new Gateway(GATEWAY_VOC_URI)
 
     const strData = "HI THERE"
-    const result = await gw.addFile(Buffer.from(strData), "my-data.txt", "ipfs", wallet)
-    console.log("ORIGIN", result)
+    const origin = await gw.addFile(Buffer.from(strData), "my-data.txt", "ipfs", wallet)
+    console.log("DATA STORED ON:", origin)
 
+    console.log("\nREADING", origin)
     // const data = await gw.fetchFile("QmYJWvsxyABqd5mnyKbwr7KCFs2uotBGDEwerSYyjtKS7M") // hello
     // const data = await gw.fetchFile("QmXGXxhh84PxoKTwFUofSE3RcuPpJjs56aTbxPMzLS6Cha")
-    const data = await gw.fetchFile("ipfs://QmXGXxhh84PxoKTwFUofSE3RcuPpJjs56aTbxPMzLS6Cha")
+    // const data = await gw.fetchFile("ipfs://QmXGXxhh84PxoKTwFUofSE3RcuPpJjs56aTbxPMzLS6Cha")
+    const data = await gw.fetchFile(origin)
+    // const data = await gw.fetchFile(origin)
     console.log("DATA:", data.toString())
 
     gw.disconnect()
@@ -108,8 +111,8 @@ async function fetchRemoteFile() {
 
 async function main() {
     // await registerEntity()
-    await readEntity()
-    // await fetchRemoteFile()
+    // await readEntity()
+    await fetchRemoteFile()
 }
 
 main()
