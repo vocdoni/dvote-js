@@ -1,4 +1,4 @@
-// import * as WebSocket from "ws"
+// import * as WebSocket from "isomorphic-ws"
 // import { GatewayMock, InteractionMock } from "./gateway"
 // const assert = require("assert")
 
