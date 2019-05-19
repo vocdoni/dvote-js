@@ -1,6 +1,7 @@
 const { EntityResolver, Gateway } = require("..") // require("dvote-js")
 const { Wallet } = require("ethers")
 const { Buffer } = require("buffer/")
+const fs = require("fs")
 
 const jsonMetadata = require("./metadata.json")
 const MNEMONIC = "..."
@@ -89,7 +90,22 @@ async function readEntity() {
     if (resolverInstance.provider.polling) resolverInstance.provider.polling = false
 }
 
-async function fetchRemoteFile() {
+async function fileUpload() {
+    const wallet = Wallet.fromMnemonic(MNEMONIC)
+    const gw = new Gateway(GATEWAY_VOC_URI)
+
+    const strData = fs.readFileSync(__dirname + "/mobile-org-web-action-example.html").toString()
+    const origin = await gw.addFile(Buffer.from(strData), "mobile-org-web-action-example.html", "ipfs", wallet)
+    console.log("mobile-org-web-action-example.html\nDATA STORED ON:", origin)
+
+    console.log("\nReading back", origin)
+    const data = await gw.fetchFile(origin)
+    console.log("DATA:", data.toString())
+
+    gw.disconnect()
+}
+
+async function remoteFetch() {
     const wallet = Wallet.fromMnemonic(MNEMONIC)
     const gw = new Gateway(GATEWAY_VOC_URI)
 
@@ -102,7 +118,6 @@ async function fetchRemoteFile() {
     // const data = await gw.fetchFile("QmXGXxhh84PxoKTwFUofSE3RcuPpJjs56aTbxPMzLS6Cha")
     // const data = await gw.fetchFile("ipfs://QmXGXxhh84PxoKTwFUofSE3RcuPpJjs56aTbxPMzLS6Cha")
     const data = await gw.fetchFile(origin)
-    // const data = await gw.fetchFile(origin)
     console.log("DATA:", data.toString())
 
     gw.disconnect()
@@ -110,8 +125,9 @@ async function fetchRemoteFile() {
 
 async function main() {
     // await registerEntity()
-    // await readEntity()
-    await fetchRemoteFile()
+    await readEntity()
+    // await fileUpload()
+    // await remoteFetch()
 }
 
 main()

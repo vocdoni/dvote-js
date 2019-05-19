@@ -43,8 +43,8 @@
                 "en": "Sign up to The Entity",
                 "fr": "S'inscrire à l'organisation"
             },
-            "url": "https://census-register.cloud/sign-up/",
-            "visible": "https://census-registry.cloud/lambda/census-register-visible/"
+            "url": "https://cloudflare-ipfs.com/ipfs/QmZ56Z2kpG5QjJcWfhxFD4ac3DhfX21hrQ2gCTrWxzTAse",
+            "visible": true
         }
     ]
 }
