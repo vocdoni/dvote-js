@@ -22,9 +22,7 @@ async function registerEntity() {
     const wallet = Wallet.fromMnemonic(MNEMONIC)
     const gw = new Gateway(GATEWAY_VOC_URI)
     const strMetadata = JSON.stringify(jsonMetadata)
-    // const metaOrigin = await gw.addFile(Buffer.from(strMetadata), "my-entity-metadata.json", "ipfs", wallet)
-    // const metaOrigin = "ipfs://Qma2oGYjNYVUSSRpGWNVhfu6oMyKYkgKZ6fbQWfZoYAc26"
-    const metaOrigin = "ipfs://QmPFXkSvRe2uQxrmBkivzgAkmKDWRjv3vjThWsW6ZChejE"
+    const metaOrigin = await gw.addFile(Buffer.from(strMetadata), "my-entity-metadata.json", "ipfs", wallet)
     console.log("ORIGIN", metaOrigin)
 
     console.log("Setting values. Please wait...")
@@ -60,6 +58,7 @@ async function registerEntity() {
 
     // ensure to disconnect if using WS
     if (resolverInstance.provider.polling) resolverInstance.provider.polling = false
+    gw.disconnect()
 }
 
 async function readEntity() {
