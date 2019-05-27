@@ -5,18 +5,20 @@ const fs = require("fs")
 
 const jsonMetadata = require("./metadata.json")
 const MNEMONIC = "..."
+const PATH = "m/44'/60'/0'/0/0"
 const GATEWAY_VOC_URI = "ws://host:2000/dvote"
 const GATEWAY_ETH_PROVIDER_URI = "http://host:2001/web3"
 const resolverContractAddress = "0x..."
-const myEntityAddress = "0x..."
+let myEntityAddress
 
 async function registerEntity() {
-    console.log("Attaching to", resolverContractAddress)
+    console.log("Attaching to instance", resolverContractAddress)
 
     const provider = Gateway.ethereumProvider(GATEWAY_ETH_PROVIDER_URI)
-    const EntityResolverFactory = new EntityResolver({ provider, mnemonic: MNEMONIC })
+    const EntityResolverFactory = new EntityResolver({ provider, mnemonic: MNEMONIC, mnemonicPath: PATH })
     const resolverInstance = EntityResolverFactory.attach(resolverContractAddress)
 
+    myEntityAddress = await EntityResolverFactory.wallet.getAddress()
     const entityId = EntityResolver.getEntityId(myEntityAddress)
     console.log("Entity ID", entityId)
 
@@ -43,14 +45,14 @@ async function registerEntity() {
     await tx.wait()
     tx = await resolverInstance.setText(entityId, "vnd.vocdoni.process-ids.ended", JSON.stringify(jsonMetadata['process-ids']['ended']))
     await tx.wait()
-    tx = await resolverInstance.setText(entityId, "vnd.vocdoni.news-feed.en", jsonMetadata['news-feed']['en'])
-    await tx.wait()
-    tx = await resolverInstance.setText(entityId, "vnd.vocdoni.news-feed.fr", jsonMetadata['news-feed']['fr'])
-    await tx.wait()
-    tx = await resolverInstance.setText(entityId, "vnd.vocdoni.entity-description.en", jsonMetadata['entity-description']['en'])
-    await tx.wait()
-    tx = await resolverInstance.setText(entityId, "vnd.vocdoni.entity-description.fr", jsonMetadata['entity-description']['fr'])
-    await tx.wait()
+
+    for (let lang of jsonMetadata.languages) {
+        tx = await resolverInstance.setText(entityId, `vnd.vocdoni.news-feed.${lang}`, jsonMetadata['news-feed'][lang])
+        await tx.wait()
+        tx = await resolverInstance.setText(entityId, `vnd.vocdoni.entity-description.${lang}`, jsonMetadata['entity-description'][lang])
+        await tx.wait()
+    }
+
     tx = await resolverInstance.setText(entityId, "vnd.vocdoni.avatar", jsonMetadata["avatar"])
     await tx.wait()
 
@@ -63,24 +65,31 @@ async function registerEntity() {
 }
 
 async function readEntity() {
-    console.log("Attaching to", resolverContractAddress)
+    console.log("Attaching to instance", resolverContractAddress)
 
     const provider = Gateway.ethereumProvider(GATEWAY_ETH_PROVIDER_URI)
-    const EntityResolverFactory = new EntityResolver({ provider, mnemonic: MNEMONIC })
+    const EntityResolverFactory = new EntityResolver({ provider, mnemonic: MNEMONIC, mnemonicPath: PATH })
     const resolverInstance = EntityResolverFactory.attach(resolverContractAddress)
+
+    myEntityAddress = await EntityResolverFactory.wallet.getAddress()
     const entityId = EntityResolver.getEntityId(myEntityAddress)
+    console.log("Entity ID", entityId)
+
+    const langs = JSON.parse(await resolverInstance.text(entityId, "vnd.vocdoni.languages"))
+    console.log("vnd.vocdoni.languages =", langs);
 
     console.log("vnd.vocdoni.entity-name =", await resolverInstance.text(entityId, "vnd.vocdoni.entity-name"));
-    console.log("vnd.vocdoni.languages =", await resolverInstance.text(entityId, "vnd.vocdoni.languages"));
     console.log("vnd.vocdoni.meta =", await resolverInstance.text(entityId, "vnd.vocdoni.meta"));
     console.log("vnd.vocdoni.voting-contract =", await resolverInstance.text(entityId, "vnd.vocdoni.voting-contract"));
     console.log("vnd.vocdoni.gateway-update =", await resolverInstance.text(entityId, "vnd.vocdoni.gateway-update"));
     console.log("vnd.vocdoni.process-ids.active =", await resolverInstance.text(entityId, "vnd.vocdoni.process-ids.active"));
     console.log("vnd.vocdoni.process-ids.ended =", await resolverInstance.text(entityId, "vnd.vocdoni.process-ids.ended"));
-    console.log("vnd.vocdoni.news-feed.en =", await resolverInstance.text(entityId, "vnd.vocdoni.news-feed.en"));
-    console.log("vnd.vocdoni.news-feed.fr =", await resolverInstance.text(entityId, "vnd.vocdoni.news-feed.fr"));
-    console.log("vnd.vocdoni.entity-description.en =", await resolverInstance.text(entityId, "vnd.vocdoni.entity-description.en"));
-    console.log("vnd.vocdoni.entity-description.fr =", await resolverInstance.text(entityId, "vnd.vocdoni.entity-description.fr"));
+
+    for (let lang of langs) {
+        console.log(`vnd.vocdoni.news-feed.${lang} =`, await resolverInstance.text(entityId, `vnd.vocdoni.news-feed.${lang}`));
+        console.log(`vnd.vocdoni.entity-description.${lang} =`, await resolverInstance.text(entityId, `vnd.vocdoni.entity-description.${lang}`));
+    }
+
     console.log("vnd.vocdoni.avatar =", await resolverInstance.text(entityId, "vnd.vocdoni.avatar"));
 
     const meta = await EntityResolverFactory.getJsonMetadata(myEntityAddress, GATEWAY_VOC_URI)
