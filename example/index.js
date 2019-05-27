@@ -100,9 +100,10 @@ async function readEntity() {
 }
 
 async function fileUpload() {
+    let gw
     try {
     const wallet = Wallet.fromMnemonic(MNEMONIC)
-    const gw = new Gateway(GATEWAY_VOC_URI)
+        gw = new Gateway(GATEWAY_VOC_URI)
 
         console.log("SIGNING FROM ADDRESS", wallet.address)
 
@@ -117,7 +118,7 @@ async function fileUpload() {
     gw.disconnect()
     } catch (err) {
         console.error(err)
-        gw.disconnect()
+        if (gw) gw.disconnect()
     }
 }
 
