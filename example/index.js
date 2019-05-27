@@ -100,8 +100,11 @@ async function readEntity() {
 }
 
 async function fileUpload() {
+    try {
     const wallet = Wallet.fromMnemonic(MNEMONIC)
     const gw = new Gateway(GATEWAY_VOC_URI)
+
+        console.log("SIGNING FROM ADDRESS", wallet.address)
 
     const strData = fs.readFileSync(__dirname + "/mobile-org-web-action-example.html").toString()
     const origin = await gw.addFile(Buffer.from(strData), "mobile-org-web-action-example.html", "ipfs", wallet)
@@ -112,6 +115,10 @@ async function fileUpload() {
     console.log("DATA:", data.toString())
 
     gw.disconnect()
+    } catch (err) {
+        console.error(err)
+        gw.disconnect()
+    }
 }
 
 async function remoteFetch() {
@@ -134,8 +141,8 @@ async function remoteFetch() {
 
 async function main() {
     // await registerEntity()
-    await readEntity()
-    // await fileUpload()
+    // await readEntity()
+    await fileUpload()
     // await remoteFetch()
 }
 
