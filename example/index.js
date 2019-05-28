@@ -92,7 +92,7 @@ async function readEntity() {
 
     console.log("vnd.vocdoni.avatar =", await resolverInstance.text(entityId, "vnd.vocdoni.avatar"));
 
-    const meta = await EntityResolverFactory.getJsonMetadata(myEntityAddress, GATEWAY_VOC_URI)
+    const meta = await EntityResolverFactory.fetchJsonMetadata(myEntityAddress, GATEWAY_VOC_URI)
     console.log("JSON METADATA\n", meta)
 
     // ensure to disconnect if using WS
