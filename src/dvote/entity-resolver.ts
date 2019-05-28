@@ -71,11 +71,11 @@ export default class EntityResolver extends SmartContract {
     }
 
     /**
-     * Fetch the JSON metadata for the given entityAddress using the given gateway
+     * Fetch the JSON metadata file for the given entityAddress using the given gateway
      * @param entityAddress 
      * @param gatewayUri URI of a Vocdoni Gateway to fetch the data from
      */
-    public async getJsonMetadata(entityAddress: string, gatewayUri: string): Promise<EntityMetadata> {
+    public async fetchJsonMetadata(entityAddress: string, gatewayUri: string): Promise<EntityMetadata> {
         if (!entityAddress) throw new Error("Invalid entityAddress")
         else if (!gatewayUri) throw new Error("Invalid gateway IP")
 
@@ -91,47 +91,41 @@ export default class EntityResolver extends SmartContract {
     }
 
     /**
-     * Fetch the JSON metadata for the given entityAddress using the given gateway
+     * Fetch the entire collection of ENS resolver fields for the given entityAddress using the attached provider
      * @param entityAddress 
      */
-    public async getResolverFields(entityAddress: string): Promise<EntityMetadata> {
+    public async fetchAllFields(entityAddress: string): Promise<Object> {
         if (!entityAddress) throw new Error("Invalid entityAddress")
 
         const entityId = EntityResolver.getEntityId(entityAddress)
 
-        const result: EntityMetadata = {
-            "version": "1.0",
+        const result = {
             // STRINGS
-            "languages": JSON.parse(await this.contractInstance.text(entityId, TextRecordKeys.LANGUAGES)),
-            "entity-name": await this.contractInstance.text(entityId, TextRecordKeys.NAME),
-            "entity-description": {},
-            // "meta": await this.contractInstance.text(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI),
-            "voting-contract": await this.contractInstance.text(entityId, TextRecordKeys.VOTING_CONTRACT_ADDRESS),
-            "gateway-update": JSON.parse(await this.contractInstance.text(entityId, TextRecordKeys.GATEWAYS_UPDATE_CONFIG)),
-            "process-ids": {
-                "active": JSON.parse(await this.contractInstance.text(entityId, TextRecordKeys.ACTIVE_PROCESS_IDS)),
-                "ended": JSON.parse(await this.contractInstance.text(entityId, TextRecordKeys.ENDED_PROCESS_IDS)),
-            },
-            "news-feed": {},
-            "avatar": await this.contractInstance.text(entityId, TextRecordKeys.AVATAR_CONTENT_URI),
+            [TextRecordKeys.LANGUAGES]: JSON.parse(await this.contractInstance.text(entityId, TextRecordKeys.LANGUAGES)),
+            [TextRecordKeys.NAME]: await this.contractInstance.text(entityId, TextRecordKeys.NAME),
+            [TextRecordKeys.JSON_METADATA_CONTENT_URI]: await this.contractInstance.text(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI),
+            [TextRecordKeys.VOTING_CONTRACT_ADDRESS]: await this.contractInstance.text(entityId, TextRecordKeys.VOTING_CONTRACT_ADDRESS),
+            [TextRecordKeys.GATEWAYS_UPDATE_CONFIG]: JSON.parse(await this.contractInstance.text(entityId, TextRecordKeys.GATEWAYS_UPDATE_CONFIG)),
+            [TextRecordKeys.ACTIVE_PROCESS_IDS]: JSON.parse(await this.contractInstance.text(entityId, TextRecordKeys.ACTIVE_PROCESS_IDS)),
+            [TextRecordKeys.ENDED_PROCESS_IDS]: JSON.parse(await this.contractInstance.text(entityId, TextRecordKeys.ENDED_PROCESS_IDS)),
+            [TextRecordKeys.AVATAR_CONTENT_URI]: await this.contractInstance.text(entityId, TextRecordKeys.AVATAR_CONTENT_URI),
 
             // STRING ARRAYS
-            "gateway-boot-nodes": (await this.contractInstance.list(entityId, TextListRecordKeys.BOOT_ENTITIES)).map(entry => JSON.parse(entry || "{}")),
-            // [TextListRecordKeys.CENSUS_IDS]: await this.contractInstance.list(entityId, TextListRecordKeys.CENSUS_IDS),
-            // [TextListRecordKeys.CENSUS_MANAGER_KEYS]: await this.contractInstance.list(entityId, TextListRecordKeys.CENSUS_MANAGER_KEYS),
-            // [TextListRecordKeys.CENSUS_SERVICES]: await this.contractInstance.list(entityId, TextListRecordKeys.CENSUS_SERVICES),
-            // [TextListRecordKeys.CENSUS_SERVICE_SOURCE_ENTITIES]: (await this.contractInstance.list(entityId, TextListRecordKeys.CENSUS_SERVICE_SOURCE_ENTITIES)).map(entry => JSON.parse(entry || "{}")),
-            // [TextListRecordKeys.FALLBACK_BOOTNODE_ENTITIES]: (await this.contractInstance.list(entityId, TextListRecordKeys.FALLBACK_BOOTNODE_ENTITIES)).map(entry => JSON.parse(entry || "{}")),
-            // [TextListRecordKeys.GATEWAY_BOOT_NODES]: (await this.contractInstance.list(entityId, TextListRecordKeys.GATEWAY_BOOT_NODES)).map(entry => JSON.parse(entry || "{}")),
-            "relays": (await this.contractInstance.list(entityId, TextListRecordKeys.RELAYS)).map(entry => JSON.parse(entry || "{}")),
-            // [TextListRecordKeys.TRUSTED_ENTITIES]: (await this.contractInstance.list(entityId, TextListRecordKeys.TRUSTED_ENTITIES)).map(entry => JSON.parse(entry || "{}")),
-            "actions": [] // Defined on the JSON version only
+            [TextListRecordKeys.BOOT_ENTITIES]: (await this.contractInstance.list(entityId, TextListRecordKeys.BOOT_ENTITIES)).map(entry => JSON.parse(entry || "{}")),
+            [TextListRecordKeys.CENSUS_IDS]: await this.contractInstance.list(entityId, TextListRecordKeys.CENSUS_IDS),
+            [TextListRecordKeys.CENSUS_MANAGER_KEYS]: await this.contractInstance.list(entityId, TextListRecordKeys.CENSUS_MANAGER_KEYS),
+            [TextListRecordKeys.CENSUS_SERVICES]: await this.contractInstance.list(entityId, TextListRecordKeys.CENSUS_SERVICES),
+            [TextListRecordKeys.CENSUS_SERVICE_SOURCE_ENTITIES]: (await this.contractInstance.list(entityId, TextListRecordKeys.CENSUS_SERVICE_SOURCE_ENTITIES)).map(entry => JSON.parse(entry || "{}")),
+            [TextListRecordKeys.FALLBACK_BOOTNODE_ENTITIES]: (await this.contractInstance.list(entityId, TextListRecordKeys.FALLBACK_BOOTNODE_ENTITIES)).map(entry => JSON.parse(entry || "{}")),
+            [TextListRecordKeys.GATEWAY_BOOT_NODES]: (await this.contractInstance.list(entityId, TextListRecordKeys.GATEWAY_BOOT_NODES)).map(entry => JSON.parse(entry || "{}")),
+            [TextListRecordKeys.RELAYS]: (await this.contractInstance.list(entityId, TextListRecordKeys.RELAYS)).map(entry => JSON.parse(entry || "{}")),
+            [TextListRecordKeys.TRUSTED_ENTITIES]: (await this.contractInstance.list(entityId, TextListRecordKeys.TRUSTED_ENTITIES)).map(entry => JSON.parse(entry || "{}")),
         }
 
         // language dependent fields
-        for (let lang of result.languages) {
-            result["news-feed"][lang] = await this.contractInstance.text(entityId, TextRecordKeys.NEWS_FEED_URI_PREFIX + lang)
-            result["entity-description"][lang] = await this.contractInstance.text(entityId, TextRecordKeys.DESCRIPTION_PREFIX + lang)
+        for (let lang of result[TextRecordKeys.LANGUAGES]) {
+            result[TextRecordKeys.NEWS_FEED_URI_PREFIX + lang] = await this.contractInstance.text(entityId, TextRecordKeys.NEWS_FEED_URI_PREFIX + lang)
+            result[TextRecordKeys.DESCRIPTION_PREFIX + lang] = await this.contractInstance.text(entityId, TextRecordKeys.DESCRIPTION_PREFIX + lang)
         }
 
         return result;

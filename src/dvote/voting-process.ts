@@ -85,7 +85,7 @@ export default class VotingProcess extends SmartContract {
      * @param processId 
      * @param gatewayUri 
      */
-    public async getJsonMetadata(processId: string, gatewayUri: string): Promise<string> {
+    public async fetchJsonMetadata(processId: string, gatewayUri: string): Promise<string> {
         if (!processId) throw new Error("Invalid processId")
         else if (!gatewayUri) throw new Error("Invalid gateway IP")
         else if (!this.contractInstance) throw new Error("You need to attach to a contract or deploy a new one before invoking this operation")
@@ -109,7 +109,7 @@ export default class VotingProcess extends SmartContract {
      * @param gatewayUri 
      */
     public async getMerkleProof(processId: string, address: number, gatewayUri: string): Promise<string> {
-        const metadata = await this.getJsonMetadata(processId, gatewayUri)
+        const metadata = await this.fetchJsonMetadata(processId, gatewayUri)
 
         // TODO: Use the CensusService Object
 
