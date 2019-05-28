@@ -1,4 +1,4 @@
-import EntityResolver, { TextRecordKeys, TextListRecordKeys } from "../../src/dvote/entity-resolver"
+import EntityResolver, { TextRecordKeys } from "../../src/dvote/entity-resolver"
 import { Contract } from "ethers"
 import { EntityResolverInstance } from "dvote-solidity"
 import { getAccounts, TestAccount } from "../eth-util"
