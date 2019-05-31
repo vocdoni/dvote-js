@@ -2,7 +2,7 @@ import { providers, utils } from "ethers"
 import { EntityResolver as EntityContractDefinition } from "dvote-solidity"
 import SmartContract from "../lib/smart-contract"
 import Gateway from "./gateway"
-import { EntityMetadata } from "lib/metadata-types";
+import { EntityMetadata, EntityResolverFields } from "lib/metadata-types";
 
 const { abi, bytecode } = EntityContractDefinition
 
@@ -94,7 +94,7 @@ export default class EntityResolver extends SmartContract {
      * Fetch the entire collection of ENS resolver fields for the given entityAddress using the attached provider
      * @param entityAddress 
      */
-    public async fetchAllFields(entityAddress: string): Promise<Object> {
+    public async fetchAllFields(entityAddress: string): Promise<EntityResolverFields> {
         if (!entityAddress) throw new Error("Invalid entityAddress")
 
         const entityId = EntityResolver.getEntityId(entityAddress)
@@ -128,7 +128,7 @@ export default class EntityResolver extends SmartContract {
             result[TextRecordKeys.DESCRIPTION_PREFIX + lang] = await this.contractInstance.text(entityId, TextRecordKeys.DESCRIPTION_PREFIX + lang)
         }
 
-        return result;
+        return result as EntityResolverFields;
     }
 }
 

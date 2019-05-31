@@ -116,6 +116,32 @@ type ImageUploadSource = {
     caption?: MultiLanguageText
 }
 
+type EntityReference = {
+    resolverAddress: HexString,
+    entityId: HexString
+}
+
+export type EntityResolverFields = {
+    "vnd.vocdoni.languages": string[]
+    "vnd.vocdoni.entity-name": string
+    "vnd.vocdoni.meta": string
+    "vnd.vocdoni.voting-contract": string
+    "vnd.vocdoni.gateway-update": { timeout: number, difficulty: number, topic: string }
+    "vnd.vocdoni.process-ids.active": string[]
+    "vnd.vocdoni.process-ids.ended": string[]
+    "vnd.vocdoni.avatar": string
+
+    // STRING ARRAYS
+    "vnd.vocdoni.boot-entities": EntityReference[]
+    "vnd.vocdoni.census-ids": HexString
+    "vnd.vocdoni.census-manager-keys": EntityReference[]
+    "vnd.vocdoni.census-services": MessagingURI
+    "vnd.vocdoni.census-service-source-entities": EntityReference[]
+    "vnd.vocdoni.fallback-bootnodes-entities": EntityReference[]
+    "vnd.vocdoni.gateway-boot-nodes": GatewayBootNode[]
+    "vnd.vocdoni.relays": RelayData[]
+    "vnd.vocdoni.trusted-entities": EntityReference[]
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // VOTING PROCESS METADATA
