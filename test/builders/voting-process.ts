@@ -1,6 +1,5 @@
 import VotingProcess from "../../src/dvote/voting-process"
 import { Contract } from "ethers"
-import { VotingProcessInstance } from "dvote-solidity"
 import { getAccounts, TestAccount } from "../eth-util"
 import EntityBuilder from "./entity-resolver"
 
@@ -29,12 +28,12 @@ export default class VotingProcessBuilder {
         this.entityAccount = this.accounts[1]
     }
 
-    async build(votingProcessessCount: number = 1): Promise<VotingProcessInstance | Contract> {
+    async build(votingProcessessCount: number = 1): Promise<Contract> {
         const factory = new VotingProcess({
             provider: this.entityAccount.provider,
             privateKey: this.entityAccount.privateKey
         })
-        const contractInstance: (VotingProcessInstance | Contract) = await factory.deploy()
+        const contractInstance: Contract = await factory.deploy()
 
         if (!this.entityResolver) {
             const entityBuilder = new EntityBuilder().withEntityAccount(this.entityAccount)

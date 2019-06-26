@@ -4,8 +4,11 @@
         "en",
         "fr"
     ],
-    "entity-name": "My official entity",
-    "entity-description": {
+    "name": {
+        "en": "My official entity",
+        "fr": "Mon organisation officielle"
+    },
+    "description": {
         "en": "The description of my entity goes here",
         "fr": "La description officielle de mon organisation est ici"
     },

@@ -1,6 +1,5 @@
 import EntityResolver, { TextRecordKeys } from "../../src/dvote/entity-resolver"
 import { Contract } from "ethers"
-import { EntityResolverInstance } from "dvote-solidity"
 import { getAccounts, TestAccount } from "../eth-util"
 
 // DEFAULT VALUES
@@ -19,7 +18,7 @@ export default class EntityBuilder {
         this.entityAccount = this.accounts[1]
     }
 
-    async build(): Promise<EntityResolverInstance | Contract> {
+    async build(): Promise<Contract> {
         const factory = new EntityResolver({
             provider: this.entityAccount.provider,
             privateKey: this.entityAccount.privateKey
