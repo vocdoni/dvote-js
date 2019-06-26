@@ -157,7 +157,10 @@ export default class Gateway {
                     // Detect behavior on Browser/NodeJS
                     if (!msg || !msg.data) throw new Error("Invalid response message")
 
-                    if (msg.data instanceof Buffer || msg.data instanceof Uint8Array) {
+                    if (typeof msg.data == "string") {
+                        this.gotWebSocketMessage(msg.data)
+                    }
+                    else if (msg.data instanceof Buffer || msg.data instanceof Uint8Array) {
                         this.gotWebSocketMessage(msg.data.toString())
                     }
                     else if (typeof Blob != "undefined" && msg.data instanceof Blob) {
@@ -169,7 +172,7 @@ export default class Gateway {
                     }
                     else {
                         // this.gotWebSocketMessage(msg.data.toString())
-                        console.error("Unsupported response", msg.data)
+                        console.error("Unsupported response", typeof msg.data, msg.data)
                     }
                 }
                 this.connectionPromise = null
@@ -397,9 +400,11 @@ export default class Gateway {
     /**
      * Closes the WS connection if it is currently active
      */
-    public disconnect() {
-        if (!this.webSocket || !this.webSocket.close) return
-        this.webSocket.close()
+    public disconnect(): Promise<void> {
+        if (this.webSocket && this.webSocket.close) {
+            this.webSocket.close()
+        }
+        return new Promise(resolve => setTimeout(resolve, 10))
     }
 
     private signRequestBody(request: RequestParameters, wallet: Wallet): Promise<string> {
