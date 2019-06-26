@@ -115,7 +115,7 @@ export default class SmartContract {
      * Use the given signer to sign transactions.
      * @param params An object containing the provider and/or signer to use
      */
-    connect(signer: Signer): Contract {
+    setSigner(signer: Signer): Contract {
         if (!signer) throw new Error("A signer/wallet is required")
 
         this.contractInstance = this.contractInstance.connect(signer)
