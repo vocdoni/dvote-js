@@ -100,27 +100,27 @@ export default class SmartContract {
     }
 
     /**
-     * Set the given provider and/or signer to connect to the blockchain or sign transactions.
-     * A provider may contain a signer, so using both is not strictly necessary.
-     * If both are set, the provider will take preference.
-     * @param params An object containing the provider and/or signer to use
+     * Use the given provider to connect to the blockchain.
+     * @param provider
      */
-    connect(params: { provider?: providers.Provider, signer?: Signer } = {}): Contract {
-        if (!params.provider && !params.signer) throw new Error("A provider or a signer is required")
-        else if (params.provider) {
-            this.contractInstance = this.contractInstance.connect(params.provider)
-            this.provider = params.provider
-
-            if (params.signer) {
-                this.wallet = params.signer
-            }
-        }
-        else {
-            this.contractInstance = this.contractInstance.connect(params.signer)
-            this.wallet = params.signer
-        }
+    setProvider(provider: providers.Provider): Contract {
+        if (!provider) throw new Error("The provider is required")
+        this.contractInstance = this.contractInstance.connect(provider)
+        this.provider = provider
 
         return this.contractInstance
     }
 
+    /**
+     * Use the given signer to sign transactions.
+     * @param params An object containing the provider and/or signer to use
+     */
+    connect(signer: Signer): Contract {
+        if (!signer) throw new Error("A signer/wallet is required")
+
+        this.contractInstance = this.contractInstance.connect(signer)
+        this.wallet = signer
+
+        return this.contractInstance
+    }
 }
