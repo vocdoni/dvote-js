@@ -135,16 +135,18 @@ export default class EntityResolver extends SmartContract {
 // ENS KEYS
 
 export const TextRecordKeys = {
-    NAME: "vnd.vocdoni.entity-name",
     LANGUAGES: "vnd.vocdoni.languages",
     JSON_METADATA_CONTENT_URI: "vnd.vocdoni.meta",
     VOTING_CONTRACT_ADDRESS: "vnd.vocdoni.voting-contract",
     GATEWAYS_UPDATE_CONFIG: "vnd.vocdoni.gateway-update",
     ACTIVE_PROCESS_IDS: "vnd.vocdoni.process-ids.active",
     ENDED_PROCESS_IDS: "vnd.vocdoni.process-ids.ended",
-    NEWS_FEED_URI_PREFIX: "vnd.vocdoni.news-feed.", // + lang
-    DESCRIPTION_PREFIX: "vnd.vocdoni.entity-description.", // + lang
     AVATAR_CONTENT_URI: "vnd.vocdoni.avatar",
+
+    // Language-dependent text fields
+    NAME: "vnd.vocdoni.name.",
+    DESCRIPTION_PREFIX: "vnd.vocdoni.description.",
+    NEWS_FEED_URI_PREFIX: "vnd.vocdoni.news-feed.",
 }
 
 export const TextListRecordKeys = {

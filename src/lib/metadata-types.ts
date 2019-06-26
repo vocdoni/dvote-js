@@ -5,8 +5,8 @@ type PublicKey = HexString           // Uncompressed ECDSA public key
 type PrivateKey = HexString
 type ProcessId = HexString           // Hash of the organizer's address and the nonce of the process
 
-type MultiLanguageText = {
-    [lang: string]: string           // Indexed by language  { en: "Hello", fr: "Salut", ... }
+type MultiLanguage<T> = {
+    [lang: string]: T                // Indexed by language  { en: value, fr: value, ... }
 }
 
 type ContentURI = string             // Comma-separated list of URI's (http://vocdoni.io/docs/#/architecture/protocol/data-origins?id=content-uri)
@@ -17,13 +17,13 @@ type URL = string
 // ENTITY METADATA
 ///////////////////////////////////////////////////////////////////////////////
 
-// More info: http://vocdoni.io/docs/#/architecture/components/entity?id=meta
-
+/**
+ * JSON metadata. Intended to be stored on IPFS or similar.
+ * More info: http://vocdoni.io/docs/#/architecture/components/entity?id=meta
+ */
 export interface EntityMetadata {
     version: ProtocolVersion,             // Protocol version
     languages: string[],                  // Two character language code (en, fr, it, ...)
-    "entity-name": string,
-    "entity-description": MultiLanguageText,
     "voting-contract": ContractAddress,
     "gateway-update": {
         timeout: number,                  // milliseconds after which a Gateway is marked as down
@@ -34,10 +34,12 @@ export interface EntityMetadata {
         active: ProcessId[],
         ended: ProcessId[]
     },
-    "news-feed": {
-        [lang: string]: ContentURI   // Indexed by language  { en: <content-uri>, fr: <content-uri>, ... }
-    },
     avatar: ContentURI,
+
+    // Language-dependent ENS fields
+    name: MultiLanguage<string>,
+    description: MultiLanguage<string>,
+    "news-feed": MultiLanguage<ContentURI>,
 
     // Bootnodes providing a list of active Gateways
     "gateway-boot-nodes": GatewayBootNode[],
@@ -66,7 +68,7 @@ type EntityCustomAction = EntityBaseAction & (EntityBrowserAction | EntityImageU
 // The common fields of any action
 interface EntityBaseAction {
     // Localized Call To Action to appear on the app
-    name: MultiLanguageText,
+    name: MultiLanguage<string>,
 }
 
 // Opening an interactive web browser
@@ -113,7 +115,7 @@ type ImageUploadSource = {
     name: string,                            // Arbitrary name to identify the data when the JSON is posted
     orientation?: "portrait" | "landscape",  // Optional when type == "gallery"
     overlay?: "face" | "id-card-front",
-    caption?: MultiLanguageText
+    caption?: MultiLanguage<string>
 }
 
 type EntityReference = {
@@ -123,13 +125,17 @@ type EntityReference = {
 
 export type EntityResolverFields = {
     "vnd.vocdoni.languages": string[]
-    "vnd.vocdoni.entity-name": string
     "vnd.vocdoni.meta": string
     "vnd.vocdoni.voting-contract": string
     "vnd.vocdoni.gateway-update": { timeout: number, difficulty: number, topic: string }
     "vnd.vocdoni.process-ids.active": string[]
     "vnd.vocdoni.process-ids.ended": string[]
     "vnd.vocdoni.avatar": string
+
+    // Language-dependent text fields
+    "vnd.vocdoni.name.en": string
+    "vnd.vocdoni.description.en": string
+    "vnd.vocdoni.news-feed.en": string
 
     // STRING ARRAYS
     "vnd.vocdoni.boot-entities": EntityReference[]
@@ -147,8 +153,9 @@ export type EntityResolverFields = {
 // VOTING PROCESS METADATA
 ///////////////////////////////////////////////////////////////////////////////
 
-// More info: http://vocdoni.io/docs/#/architecture/components/process?id=process-metadata-json
-
+/**
+ * More info: http://vocdoni.io/docs/#/architecture/components/process?id=process-metadata-json
+ */
 export interface VotingProcessMetadata {
 
 }

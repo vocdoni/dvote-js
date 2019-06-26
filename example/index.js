@@ -31,9 +31,7 @@ async function registerEntity() {
     console.log("Setting values. Please wait...")
 
     // setting values
-    let tx = await resolverInstance.setText(entityId, "vnd.vocdoni.entity-name", jsonMetadata["entity-name"])
-    await tx.wait()
-    tx = await resolverInstance.setText(entityId, "vnd.vocdoni.languages", JSON.stringify(jsonMetadata.languages))
+    let tx = await resolverInstance.setText(entityId, "vnd.vocdoni.languages", JSON.stringify(jsonMetadata.languages))
     await tx.wait()
     tx = await resolverInstance.setText(entityId, "vnd.vocdoni.meta", metaOrigin)
     await tx.wait()
@@ -47,9 +45,11 @@ async function registerEntity() {
     await tx.wait()
 
     for (let lang of jsonMetadata.languages) {
-        tx = await resolverInstance.setText(entityId, `vnd.vocdoni.news-feed.${lang}`, jsonMetadata['news-feed'][lang])
+        tx = await resolverInstance.setText(entityId, `vnd.vocdoni.name.${lang}`, jsonMetadata["name"])
         await tx.wait()
-        tx = await resolverInstance.setText(entityId, `vnd.vocdoni.entity-description.${lang}`, jsonMetadata['entity-description'][lang])
+        tx = await resolverInstance.setText(entityId, `vnd.vocdoni.description.${lang}`, jsonMetadata['description'][lang])
+        await tx.wait()
+        tx = await resolverInstance.setText(entityId, `vnd.vocdoni.news-feed.${lang}`, jsonMetadata['news-feed'][lang])
         await tx.wait()
     }
 
@@ -78,7 +78,7 @@ async function readEntity() {
     const langs = JSON.parse(await resolverInstance.text(entityId, "vnd.vocdoni.languages"))
     console.log("vnd.vocdoni.languages =", langs);
 
-    console.log("vnd.vocdoni.entity-name =", await resolverInstance.text(entityId, "vnd.vocdoni.entity-name"));
+    console.log("vnd.vocdoni.name =", await resolverInstance.text(entityId, "vnd.vocdoni.name"));
     console.log("vnd.vocdoni.meta =", await resolverInstance.text(entityId, "vnd.vocdoni.meta"));
     console.log("vnd.vocdoni.voting-contract =", await resolverInstance.text(entityId, "vnd.vocdoni.voting-contract"));
     console.log("vnd.vocdoni.gateway-update =", await resolverInstance.text(entityId, "vnd.vocdoni.gateway-update"));
@@ -87,7 +87,7 @@ async function readEntity() {
 
     for (let lang of langs) {
         console.log(`vnd.vocdoni.news-feed.${lang} =`, await resolverInstance.text(entityId, `vnd.vocdoni.news-feed.${lang}`));
-        console.log(`vnd.vocdoni.entity-description.${lang} =`, await resolverInstance.text(entityId, `vnd.vocdoni.entity-description.${lang}`));
+        console.log(`vnd.vocdoni.description.${lang} =`, await resolverInstance.text(entityId, `vnd.vocdoni.description.${lang}`));
     }
 
     console.log("vnd.vocdoni.avatar =", await resolverInstance.text(entityId, "vnd.vocdoni.avatar"));
@@ -102,20 +102,20 @@ async function readEntity() {
 async function fileUpload() {
     let gw
     try {
-    const wallet = Wallet.fromMnemonic(MNEMONIC)
+        const wallet = Wallet.fromMnemonic(MNEMONIC)
         gw = new Gateway(GATEWAY_VOC_URI)
 
         console.log("SIGNING FROM ADDRESS", wallet.address)
 
-    const strData = fs.readFileSync(__dirname + "/mobile-org-web-action-example.html").toString()
-    const origin = await gw.addFile(Buffer.from(strData), "mobile-org-web-action-example.html", "ipfs", wallet)
-    console.log("mobile-org-web-action-example.html\nDATA STORED ON:", origin)
+        const strData = fs.readFileSync(__dirname + "/mobile-org-web-action-example.html").toString()
+        const origin = await gw.addFile(Buffer.from(strData), "mobile-org-web-action-example.html", "ipfs", wallet)
+        console.log("mobile-org-web-action-example.html\nDATA STORED ON:", origin)
 
-    console.log("\nReading back", origin)
-    const data = await gw.fetchFile(origin)
-    console.log("DATA:", data.toString())
+        console.log("\nReading back", origin)
+        const data = await gw.fetchFile(origin)
+        console.log("DATA:", data.toString())
 
-    gw.disconnect()
+        gw.disconnect()
     } catch (err) {
         console.error(err)
         if (gw) gw.disconnect()
