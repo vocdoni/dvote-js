@@ -1,6 +1,6 @@
 {
   "name": "dvote-js",
-  "version": "0.2.12",
+  "version": "0.3.0",
   "description": "Javascript/Typescript library to interact with Vocdoni voting processes",
   "main": "dist/index",
   "types": "dist/index",
@@ -22,7 +22,7 @@
   "dependencies": {
     "buffer": "^5.2.1",
     "dvote-solidity": "^0.1.4",
-    "ethers": "^4.0.27",
+    "ethers": "^4.0.31",
     "isomorphic-ws": "^4.0.1",
     "universal-parse-url": "^1.0.2",
     "ws": "^7.0.0"
@@ -35,7 +35,7 @@
     "chai": "^4.2.0",
     "dotenv": "^7.0.0",
     "ganache-cli": "^6.4.2",
-    "ganache-core": "^2.5.5",
+    "ganache-core": "^2.5.6",
     "mocha": "^5.2.0",
     "sinon": "^7.3.1",
     "ts-node": "^7.0.1",
