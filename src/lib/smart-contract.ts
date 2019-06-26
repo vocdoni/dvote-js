@@ -79,6 +79,10 @@ export default class SmartContract {
         return this.contractInstance
     }
 
+    /**
+     * Use the contract instance at the given address
+     * @param address Contract instance address
+     */
     attach(address: string): Contract {
         this.contractInstance = new Contract(address, this.abi, this.provider)
         if (this.wallet) this.contractInstance = this.contractInstance.connect(this.wallet)
@@ -86,9 +90,37 @@ export default class SmartContract {
         return this.contractInstance
     }
 
+    /**
+     * Deploy the contract to the blockchain using the predefined bytecode and ABI
+     */
     deployed(): Contract {
         if (!this.contractInstance) throw new Error("Please, attach to an instance or deploy one")
 
         return this.contractInstance
     }
+
+    /**
+     * Set the given provider and/or signer to connect to the blockchain or sign transactions.
+     * A provider may contain a signer, so using both is not strictly necessary.
+     * If both are set, the provider will take preference.
+     * @param params An object containing the provider and/or signer to use
+     */
+    connect(params: { provider?: providers.Provider, signer?: Signer } = {}): Contract {
+        if (!params.provider && !params.signer) throw new Error("A provider or a signer is required")
+        else if (params.provider) {
+            this.contractInstance = this.contractInstance.connect(params.provider)
+            this.provider = params.provider
+
+            if (params.signer) {
+                this.wallet = params.signer
+            }
+        }
+        else {
+            this.contractInstance = this.contractInstance.connect(params.signer)
+            this.wallet = params.signer
+        }
+
+        return this.contractInstance
+    }
+
 }
