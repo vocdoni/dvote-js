@@ -2,16 +2,25 @@ import * as WebSocket from "isomorphic-ws"
 
 type ConstructorParams = {
     port: number,
-    responseList: GatewayResponse[]
+    responses: GatewayResponse[]
 }
 export type GatewayResponse = {
-    error: boolean,
-    response: string[],
-    requestId?: string
+    id: string
+    response?: {
+        request: string  // Request ID here as well
+        timestamp?: number
+        [key: string]: any
+    }
+    error?: {
+        request: string  // Request ID here as well
+        timestamp?: number
+        message: string
+    }
+    signature: string
 }
 export type InteractionMock = {
     actual?: any,                     // What the client actually sent
-    responseData: GatewayResponse     // What to send as a response
+    responseData: GatewayResponse    // What to send as a response
 }
 
 // THE GATEWAY SERVER MOCK
@@ -24,12 +33,10 @@ export class GatewayMock {
 
     constructor(params: ConstructorParams) {
         this.socketServer = new WebSocket.Server({ port: params.port || 8000 })
-        this.interactionList = params.responseList.map(response => {
-            return {
-                actual: null,             // no requests received yet
-                responseData: response
-            }
-        })
+        this.interactionList = params.responses.map(response => ({
+            actual: null,             // no requests received yet
+            responseData: response
+        }))
 
         this.socketServer.on('connection', socket => {
             this.activeSocket = socket
@@ -38,7 +45,6 @@ export class GatewayMock {
     }
 
     private gotRequest(requestData: string) {
-        // console.log("[GATEWAY REQ]", requestData)
         const idx = this.interactionCount
         if (idx >= this.interactionList.length) throw new Error("The Gateway received more transactions than it should: " + (this.interactionCount + 1))
         else if (!this.interactionList[idx]) throw new Error("Mock transaction data is empty")
@@ -48,9 +54,18 @@ export class GatewayMock {
         if (!this.activeSocket) throw new Error("No socket client to reply to")
 
         const responseData: GatewayResponse = this.interactionList[idx].responseData
-        // keep the given requestId
-        responseData.requestId = (this.interactionList[idx].actual as any).requestId
-        // reply stringified
+        responseData.id = this.interactionList[idx].actual.id
+        if (responseData.response) {
+            responseData.response.request = this.interactionList[idx].actual.id
+        }
+        else if (responseData.error) {
+            responseData.error.request = this.interactionList[idx].actual.id
+        }
+        else {
+            console.error("GATEWAY MOCK: No request or error field present", responseData)
+        }
+
+        // Reply stringified
         this.activeSocket.send(JSON.stringify(responseData))
 
         this.interactionCount++
