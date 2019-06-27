@@ -1,4 +1,5 @@
-import EntityResolver, { TextRecordKeys } from "../../src/dvote/entity-resolver"
+import EntityResolver from "../../src/dvote/entity-resolver"
+import { TextRecordKeys } from "../../src/lib/metadata-types"
 import { Contract } from "ethers"
 import { getAccounts, TestAccount } from "../eth-util"
 
@@ -27,7 +28,7 @@ export default class EntityBuilder {
 
         const entityId = EntityResolver.getEntityId(this.entityAccount.address)
 
-        await contractInstance.setText(entityId, TextRecordKeys.NAME, this.name)
+        await contractInstance.setText(entityId, TextRecordKeys.NAME_PREFIX + "default", this.name)
 
         return contractInstance
     }
