@@ -140,6 +140,32 @@ async function remoteFetch() {
     gw.disconnect()
 }
 
+async function entityUpdate() {
+    console.log("Attaching to instance", resolverContractAddress)
+
+    const provider = Gateway.ethereumProvider(GATEWAY_ETH_PROVIDER_URI)
+    const EntityResolverFactory = new EntityResolver({ provider, mnemonic: MNEMONIC, mnemonicPath: PATH })
+    const resolverInstance = EntityResolverFactory.attach(resolverContractAddress)
+
+    myEntityAddress = await EntityResolverFactory.wallet.getAddress()
+    const entityId = EntityResolver.getEntityId(myEntityAddress)
+    console.log("Entity ID", entityId)
+
+    const wallet = Wallet.fromMnemonic(MNEMONIC)
+    const gw = new Gateway(GATEWAY_VOC_URI)
+    const strMetadata = JSON.stringify(jsonMetadata)
+    const metaOrigin = await gw.addFile(Buffer.from(strMetadata), "my-entity-metadata.json", "ipfs", wallet)
+    console.log("ORIGIN", metaOrigin)
+
+    console.log("Setting values. Please wait...")
+
+    const entityFields = EntityResolver.fromJsonToEnsFields(jsonMetadata, "")
+    await EntityResolverFactory.updateEntity(myEntityAddress, entityFields, jsonMetadata.actions)
+
+    console.log("DONE")
+}
+
+
 async function main() {
     // await registerEntity()
     // await readEntity()

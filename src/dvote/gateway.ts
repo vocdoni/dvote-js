@@ -345,14 +345,18 @@ export default class Gateway {
      * 
      * See https://vocdoni.io/docs/#/architecture/components/gateway?id=add-file
      * 
-     * @param buffer Uint8Array with the file contents
+     * @param buffer Uint8Array or string with the file contents
      * @param type What type of P2P protocol should be used
      * @param wallet An Ethers.js wallet capable of signing the payload
      * @return The URI of the newly added file
      */
-    public async addFile(buffer: Uint8Array, name: string, fsType: "swarm" | "ipfs", wallet: Wallet): Promise<string> {
+    public async addFile(buffer: Uint8Array | string, name: string, fsType: "swarm" | "ipfs", wallet: Wallet): Promise<string> {
         if (!buffer) throw new Error("Empty payload")
         else if (!fsType) throw new Error("Empty type")
+
+        if (typeof buffer == "string") {
+            buffer = new Uint8Array(Buffer.from(buffer))
+        }
 
         const requestBody: RequestParameters = {
             method: "addFile",

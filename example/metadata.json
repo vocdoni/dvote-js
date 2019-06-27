@@ -1,15 +1,14 @@
 {
     "version": "1.0",
     "languages": [
-        "en",
-        "fr"
+        "default"
     ],
     "name": {
-        "en": "My official entity",
+        "default": "My official entity",
         "fr": "Mon organisation officielle"
     },
     "description": {
-        "en": "The description of my entity goes here",
+        "default": "The description of my entity goes here",
         "fr": "La description officielle de mon organisation est ici"
     },
     "voting-contract": "0x0",
@@ -23,7 +22,7 @@
         "ended": []
     },
     "news-feed": {
-        "en": "https://hipsterpixel.co/feed.json",
+        "default": "https://hipsterpixel.co/feed.json",
         "fr": "https://feed2json.org/convert?url=http://www.intertwingly.net/blog/index.atom"
     },
     "avatar": "https://hipsterpixel.co/assets/favicons/apple-touch-icon.png",
@@ -43,7 +42,7 @@
         {
             "type": "browser",
             "name": {
-                "en": "Sign up to The Entity",
+                "default": "Sign up to The Entity",
                 "fr": "S'inscrire à l'organisation"
             },
             "url": "https://cloudflare-ipfs.com/ipfs/QmZ56Z2kpG5QjJcWfhxFD4ac3DhfX21hrQ2gCTrWxzTAse",
