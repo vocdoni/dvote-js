@@ -363,14 +363,12 @@ describe("Gateway", () => {
             expect(Object.keys(info.personal_accounts).length).to.be.approximately(10, 9)
             expect(Object.keys(info.personal_accounts)[0]).to.match(/^0x[0-9a-fA-F]{40}$/)
 
-const addr = Object.keys(info.personal_accounts)[0]
+            const addr = Object.keys(info.personal_accounts)[0]
 
-const gw = new Gateway(gatewayUrl)
-console.log("3.3.3")
-const gwProvider = await Gateway.ethereumProviderFromGateway(gw)
-console.log("4.4.4.")
-const balance = await gwProvider.getBalance(addr)
-console.log("444")
+            const gw = new Gateway(gatewayUrl)
+            // FIXME: review this assertion once the Gateway proxy is ready
+            const gwProvider = await Gateway.ethereumProviderFromGateway(gw)
+            const balance = await gwProvider.getBalance(addr)
 
             expect(balance.toHexString()).to.match(/^0x[0-9a-fA-F]{10,}$/)
 
