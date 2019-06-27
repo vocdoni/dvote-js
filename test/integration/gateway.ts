@@ -299,7 +299,7 @@ describe("Gateway", () => {
             // Gateway (server)
             const responses: GatewayResponse[] = [
                 { id: "123", response: { request: "123", timestamp: 123, uri: "ipfs://ipfs/2345" }, signature: "123" },
-                { id: "234", response: { request: "234", timestamp: 234, content: [buffData.toString("base64")] }, signature: "234" }
+                { id: "234", response: { request: "234", timestamp: 234, content: buffData.toString("base64") }, signature: "234" }
             ]
             const gatewayServer = new GatewayMock({ port, responses })
 
@@ -311,12 +311,12 @@ describe("Gateway", () => {
             expect(gatewayServer.interactionCount).to.equal(1)
 
             const result2 = await gw.fetchFile(result1)
-            expect(result2).to.equal(buffData)
+            expect(result2.toString()).to.equal(buffData.toString())
 
             expect(gatewayServer.interactionCount).to.equal(2)
             expect(gatewayServer.interactionList[1].actual.request.method).to.equal("fetchFile")
             expect(gatewayServer.interactionList[1].actual.request.uri).to.equal(result1)
-            expect(gatewayServer.interactionList[1].actual.id).to.match(/^0x[0-9a-fA-F]{64}$/)
+            expect(gatewayServer.interactionList[1].actual.id).to.match(/^[0-9a-fA-F]{64}$/)
 
             await gatewayServer.stop()
         })
@@ -344,7 +344,7 @@ describe("Gateway", () => {
                 expect(err.message).to.equal("Invalid wallet")
             }
 
-            expect(gatewayServer.interactionCount).to.equal(0)
+            expect(gatewayServer.interactionCount).to.equal(1)
 
             await gatewayServer.stop()
         })
@@ -363,11 +363,14 @@ describe("Gateway", () => {
             expect(Object.keys(info.personal_accounts).length).to.be.approximately(10, 9)
             expect(Object.keys(info.personal_accounts)[0]).to.match(/^0x[0-9a-fA-F]{40}$/)
 
-            const addr = Object.keys(info.personal_accounts)[0]
+const addr = Object.keys(info.personal_accounts)[0]
 
-            const gw = new Gateway(gatewayUrl)
-            const gwProvider = await Gateway.ethereumProviderFromGateway(gw)
-            const balance = await gwProvider.getBalance(addr)
+const gw = new Gateway(gatewayUrl)
+console.log("3.3.3")
+const gwProvider = await Gateway.ethereumProviderFromGateway(gw)
+console.log("4.4.4.")
+const balance = await gwProvider.getBalance(addr)
+console.log("444")
 
             expect(balance.toHexString()).to.match(/^0x[0-9a-fA-F]{10,}$/)
 
