@@ -6,7 +6,9 @@ type PrivateKey = HexString
 type ProcessId = HexString           // Hash of the organizer's address and the nonce of the process
 
 type MultiLanguage<T> = {
-    [lang: string]: T                // Indexed by language  { en: value, fr: value, ... }
+    default: T
+    // FIXME: Use language codes in the future
+    // [lang: string]: T                // Indexed by language  { en: value, fr: value, ... }
 }
 
 type ContentURI = string             // Comma-separated list of URI's (http://vocdoni.io/docs/#/architecture/protocol/data-origins?id=content-uri)
@@ -23,7 +25,8 @@ type URL = string
  */
 export interface EntityMetadata {
     version: ProtocolVersion,             // Protocol version
-    languages: string[],                  // Two character language code (en, fr, it, ...)
+    languages: ["default",] // FIXME: Remove in favor of actual language codes
+    // languages: string[],                  // Two character language code (en, fr, it, ...)
     "voting-contract": ContractAddress,
     "gateway-update": {
         timeout: number,                  // milliseconds after which a Gateway is marked as down
@@ -133,9 +136,9 @@ export type EntityResolverFields = {
     "vnd.vocdoni.avatar": string
 
     // Language-dependent text fields
-    "vnd.vocdoni.name.en": string
-    "vnd.vocdoni.description.en": string
-    "vnd.vocdoni.news-feed.en": string
+    "vnd.vocdoni.name.default": string    // FIXME: Use language codes in the future
+    "vnd.vocdoni.description.default": string    // FIXME: Use language codes in the future
+    "vnd.vocdoni.news-feed.default": string    // FIXME: Use language codes in the future
 
     // STRING ARRAYS
     "vnd.vocdoni.boot-entities": EntityReference[]
@@ -147,6 +150,35 @@ export type EntityResolverFields = {
     "vnd.vocdoni.gateway-boot-nodes": GatewayBootNode[]
     "vnd.vocdoni.relays": RelayData[]
     "vnd.vocdoni.trusted-entities": EntityReference[]
+}
+
+// ENS KEYS
+
+export const TextRecordKeys = {
+    LANGUAGES: "vnd.vocdoni.languages",
+    JSON_METADATA_CONTENT_URI: "vnd.vocdoni.meta",
+    VOTING_CONTRACT_ADDRESS: "vnd.vocdoni.voting-contract",
+    GATEWAYS_UPDATE_CONFIG: "vnd.vocdoni.gateway-update",
+    ACTIVE_PROCESS_IDS: "vnd.vocdoni.process-ids.active",
+    ENDED_PROCESS_IDS: "vnd.vocdoni.process-ids.ended",
+    AVATAR_CONTENT_URI: "vnd.vocdoni.avatar",
+
+    // Language-dependent text fields
+    NAME_PREFIX: "vnd.vocdoni.name.",
+    DESCRIPTION_PREFIX: "vnd.vocdoni.description.",
+    NEWS_FEED_URI_PREFIX: "vnd.vocdoni.news-feed.",
+}
+
+export const TextListRecordKeys = {
+    GATEWAY_BOOT_NODES: "vnd.vocdoni.gateway-boot-nodes",
+    BOOT_ENTITIES: "vnd.vocdoni.boot-entities",
+    FALLBACK_BOOTNODE_ENTITIES: "vnd.vocdoni.fallback-bootnodes-entities",
+    TRUSTED_ENTITIES: "vnd.vocdoni.trusted-entities",
+    CENSUS_SERVICES: "vnd.vocdoni.census-services",
+    CENSUS_SERVICE_SOURCE_ENTITIES: "vnd.vocdoni.census-service-source-entities",
+    CENSUS_IDS: "vnd.vocdoni.census-ids",
+    CENSUS_MANAGER_KEYS: "vnd.vocdoni.census-manager-keys",
+    RELAYS: "vnd.vocdoni.relays",
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -6,7 +6,8 @@ import { getAccounts, increaseTimestamp, TestAccount } from "../eth-util"
 import { EntityResolverInstance } from "dvote-solidity"
 
 
-import EntityResolver, { TextRecordKeys } from "../../src/dvote/entity-resolver"
+import { TextRecordKeys } from "../../src/lib/metadata-types"
+import EntityResolver from "../../src/dvote/entity-resolver"
 import EntityBuilder, { DEFAULT_NAME } from "../builders/entity-resolver"
 
 let accounts: TestAccount[]
@@ -83,10 +84,10 @@ describe("Entity Resolver", () => {
             entityId = EntityResolver.getEntityId(randomAccount.address)
 
             contractInstance = await new EntityBuilder().withEntityAccount(randomAccount).build()
-            expect(await contractInstance.text(entityId, TextRecordKeys.NAME)).to.eq(DEFAULT_NAME)
+            expect(await contractInstance.text(entityId, TextRecordKeys.NAME_PREFIX + "default")).to.eq(DEFAULT_NAME)
 
             contractInstance = await new EntityBuilder().withEntityAccount(randomAccount).withName("ENTITY NAME 3").build()
-            expect(await contractInstance.text(entityId, TextRecordKeys.NAME)).to.eq("ENTITY NAME 3")
+            expect(await contractInstance.text(entityId, TextRecordKeys.NAME_PREFIX + "default")).to.eq("ENTITY NAME 3")
         })
 
     })
@@ -95,10 +96,10 @@ describe("Entity Resolver", () => {
 
         it("Should set and retrieve the name of an entity", async () => {
             contractInstance = await new EntityBuilder().build()
-            expect(await contractInstance.text(entityId, TextRecordKeys.NAME)).to.eq(DEFAULT_NAME)
+            expect(await contractInstance.text(entityId, TextRecordKeys.NAME_PREFIX + "default")).to.eq(DEFAULT_NAME)
 
             contractInstance = await new EntityBuilder().withName("ENTITY NAME 2").build()
-            expect(await contractInstance.text(entityId, TextRecordKeys.NAME)).to.eq("ENTITY NAME 2")
+            expect(await contractInstance.text(entityId, TextRecordKeys.NAME_PREFIX + "default")).to.eq("ENTITY NAME 2")
         })
 
         it("Should allow to set any arbitrary key/value", async () => {

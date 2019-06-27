@@ -2,7 +2,7 @@ import { providers, utils } from "ethers"
 import { EntityResolver as EntityContractDefinition } from "dvote-solidity"
 import SmartContract from "../lib/smart-contract"
 import Gateway from "./gateway"
-import { EntityMetadata, EntityResolverFields } from "lib/metadata-types";
+import { EntityMetadata, EntityResolverFields, TextRecordKeys, TextListRecordKeys } from "lib/metadata-types";
 
 const { abi, bytecode } = EntityContractDefinition
 
@@ -102,7 +102,6 @@ export default class EntityResolver extends SmartContract {
         const result = {
             // STRINGS
             [TextRecordKeys.LANGUAGES]: JSON.parse(await this.contractInstance.text(entityId, TextRecordKeys.LANGUAGES)),
-            [TextRecordKeys.NAME]: await this.contractInstance.text(entityId, TextRecordKeys.NAME),
             [TextRecordKeys.JSON_METADATA_CONTENT_URI]: await this.contractInstance.text(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI),
             [TextRecordKeys.VOTING_CONTRACT_ADDRESS]: await this.contractInstance.text(entityId, TextRecordKeys.VOTING_CONTRACT_ADDRESS),
             [TextRecordKeys.GATEWAYS_UPDATE_CONFIG]: JSON.parse(await this.contractInstance.text(entityId, TextRecordKeys.GATEWAYS_UPDATE_CONFIG)),
@@ -124,39 +123,11 @@ export default class EntityResolver extends SmartContract {
 
         // language dependent fields
         for (let lang of result[TextRecordKeys.LANGUAGES]) {
+            result[TextRecordKeys.NAME_PREFIX + lang] = await this.contractInstance.text(entityId, TextRecordKeys.NAME_PREFIX + lang)
             result[TextRecordKeys.NEWS_FEED_URI_PREFIX + lang] = await this.contractInstance.text(entityId, TextRecordKeys.NEWS_FEED_URI_PREFIX + lang)
             result[TextRecordKeys.DESCRIPTION_PREFIX + lang] = await this.contractInstance.text(entityId, TextRecordKeys.DESCRIPTION_PREFIX + lang)
         }
 
         return result as EntityResolverFields;
     }
-}
-
-// ENS KEYS
-
-export const TextRecordKeys = {
-    LANGUAGES: "vnd.vocdoni.languages",
-    JSON_METADATA_CONTENT_URI: "vnd.vocdoni.meta",
-    VOTING_CONTRACT_ADDRESS: "vnd.vocdoni.voting-contract",
-    GATEWAYS_UPDATE_CONFIG: "vnd.vocdoni.gateway-update",
-    ACTIVE_PROCESS_IDS: "vnd.vocdoni.process-ids.active",
-    ENDED_PROCESS_IDS: "vnd.vocdoni.process-ids.ended",
-    AVATAR_CONTENT_URI: "vnd.vocdoni.avatar",
-
-    // Language-dependent text fields
-    NAME: "vnd.vocdoni.name.",
-    DESCRIPTION_PREFIX: "vnd.vocdoni.description.",
-    NEWS_FEED_URI_PREFIX: "vnd.vocdoni.news-feed.",
-}
-
-export const TextListRecordKeys = {
-    GATEWAY_BOOT_NODES: "vnd.vocdoni.gateway-boot-nodes",
-    BOOT_ENTITIES: "vnd.vocdoni.boot-entities",
-    FALLBACK_BOOTNODE_ENTITIES: "vnd.vocdoni.fallback-bootnodes-entities",
-    TRUSTED_ENTITIES: "vnd.vocdoni.trusted-entities",
-    CENSUS_SERVICES: "vnd.vocdoni.census-services",
-    CENSUS_SERVICE_SOURCE_ENTITIES: "vnd.vocdoni.census-service-source-entities",
-    CENSUS_IDS: "vnd.vocdoni.census-ids",
-    CENSUS_MANAGER_KEYS: "vnd.vocdoni.census-manager-keys",
-    RELAYS: "vnd.vocdoni.relays",
 }
