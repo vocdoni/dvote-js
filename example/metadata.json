@@ -12,11 +12,6 @@
         "fr": "La description officielle de mon organisation est ici"
     },
     "voting-contract": "0x0",
-    "gateway-update": {
-        "timeout": 60000,
-        "topic": "vocdoni-gateway-update",
-        "difficulty": 1000
-    },
     "process-ids": {
         "active": [],
         "ended": []
@@ -26,12 +21,11 @@
         "fr": "https://feed2json.org/convert?url=http://www.intertwingly.net/blog/index.atom"
     },
     "avatar": "https://hipsterpixel.co/assets/favicons/apple-touch-icon.png",
-    "gateway-boot-nodes": [
-        {
-            "update": "pss://publicKey@0x0",
-            "fetch": "https://hostname:port/route"
-        }
-    ],
+    "gateway-update": {
+        "timeout": 60000,
+        "topic": "vocdoni-gateway-update",
+        "difficulty": 1000
+    },
     "relays": [
         {
             "publicKey": "0x23456...",
@@ -48,5 +42,15 @@
             "url": "https://cloudflare-ipfs.com/ipfs/QmZ56Z2kpG5QjJcWfhxFD4ac3DhfX21hrQ2gCTrWxzTAse",
             "visible": true
         }
-    ]
+    ],
+    "gateway-boot-nodes": [
+        {
+            "update": "pss://publicKey@0x0",
+            "fetch": "https://hostname:port/route"
+        }
+    ],
+    "boot-entities": [],
+    "fallback-boot-nodes-entities": [],
+    "trusted-entities": [],
+    "census-service-source-entities": []
 }
