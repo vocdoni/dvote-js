@@ -28,7 +28,7 @@ export default class EntityBuilder {
 
         const entityId = EntityResolver.getEntityId(this.entityAccount.address)
 
-        await contractInstance.setText(entityId, TextRecordKeys.NAME_PREFIX + "default", this.name)
+        await contractInstance.setText(entityId, "key-name", this.name)
 
         return contractInstance
     }

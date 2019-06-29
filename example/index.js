@@ -4,95 +4,42 @@ const { Buffer } = require("buffer/")
 const fs = require("fs")
 
 const jsonMetadata = require("./metadata.json")
-const MNEMONIC = "..."
+const MNEMONIC = "perfect kite link property simple eight welcome spring enforce universe barely cargo"
 const PATH = "m/44'/60'/0'/0/0"
-const GATEWAY_VOC_URI = "ws://host:2000/dvote"
-const GATEWAY_ETH_PROVIDER_URI = "http://host:2001/web3"
-const resolverContractAddress = "0x..."
+const GATEWAY_DVOTE_URI = "ws://dev1.vocdoni.net:2082/dvote"
+const GATEWAY_ETH_PROVIDER_URI = "http://dev1.vocdoni.net:2086/affeafacd3a5c886"
+const resolverContractAddress = "0x0dCA233CE5152d58c74E74693A3C496D01542244"
 let myEntityAddress
 
 async function registerEntity() {
-    console.log("Attaching to instance", resolverContractAddress)
+    console.log("Attaching the instance of Entity Resolver:", resolverContractAddress)
 
     const provider = Gateway.ethereumProvider(GATEWAY_ETH_PROVIDER_URI)
-    const EntityResolverFactory = new EntityResolver({ provider, mnemonic: MNEMONIC, mnemonicPath: PATH })
-    const resolverInstance = EntityResolverFactory.attach(resolverContractAddress)
+    const resolver = new EntityResolver({ provider, mnemonic: MNEMONIC, mnemonicPath: PATH })
+    const resolverInstance = resolver.attach(resolverContractAddress)
 
-    myEntityAddress = await EntityResolverFactory.wallet.getAddress()
-    const entityId = EntityResolver.getEntityId(myEntityAddress)
-    console.log("Entity ID", entityId)
+    myEntityAddress = await resolver.wallet.getAddress()
 
-    const wallet = Wallet.fromMnemonic(MNEMONIC)
-    const gw = new Gateway(GATEWAY_VOC_URI)
-    const strMetadata = JSON.stringify(jsonMetadata)
-    const metaOrigin = await gw.addFile(Buffer.from(strMetadata), "my-entity-metadata.json", "ipfs", wallet)
-    console.log("ORIGIN", metaOrigin)
-
-    console.log("Setting values. Please wait...")
-
-    // setting values
-    let tx = await resolverInstance.setText(entityId, "vnd.vocdoni.languages", JSON.stringify(jsonMetadata.languages))
-    await tx.wait()
-    tx = await resolverInstance.setText(entityId, "vnd.vocdoni.meta", metaOrigin)
-    await tx.wait()
-    tx = await resolverInstance.setText(entityId, "vnd.vocdoni.voting-contract", jsonMetadata['voting-contract'])
-    await tx.wait()
-    tx = await resolverInstance.setText(entityId, "vnd.vocdoni.gateway-update", JSON.stringify(jsonMetadata['gateway-update']))
-    await tx.wait()
-    tx = await resolverInstance.setText(entityId, "vnd.vocdoni.voting-processes.active", JSON.stringify(jsonMetadata['voting-processes']['active']))
-    await tx.wait()
-    tx = await resolverInstance.setText(entityId, "vnd.vocdoni.voting-processes.ended", JSON.stringify(jsonMetadata['voting-processes']['ended']))
-    await tx.wait()
-
-    for (let lang of jsonMetadata.languages) {
-        tx = await resolverInstance.setText(entityId, `vnd.vocdoni.name.${lang}`, jsonMetadata["name"])
-        await tx.wait()
-        tx = await resolverInstance.setText(entityId, `vnd.vocdoni.description.${lang}`, jsonMetadata['description'][lang])
-        await tx.wait()
-        tx = await resolverInstance.setText(entityId, `vnd.vocdoni.news-feed.${lang}`, jsonMetadata['news-feed'][lang])
-        await tx.wait()
-    }
-
-    tx = await resolverInstance.setText(entityId, "vnd.vocdoni.avatar", jsonMetadata["avatar"])
-    await tx.wait()
+    await resolver.updateEntity(myEntityAddress, jsonMetadata, GATEWAY_DVOTE_URI)
 
     // show stored values
     console.log("\nEntity registered!\n")
+    console.log("The JSON metadata should become generally available in a few minutes")
 
     // ensure to disconnect if using WS
     if (resolverInstance.provider.polling) resolverInstance.provider.polling = false
-    gw.disconnect()
 }
 
 async function readEntity() {
-    console.log("Attaching to instance", resolverContractAddress)
+    console.log("Attaching the instance of Entity Resolver:", resolverContractAddress)
 
     const provider = Gateway.ethereumProvider(GATEWAY_ETH_PROVIDER_URI)
-    const EntityResolverFactory = new EntityResolver({ provider, mnemonic: MNEMONIC, mnemonicPath: PATH })
-    const resolverInstance = EntityResolverFactory.attach(resolverContractAddress)
+    const resolver = new EntityResolver({ provider, mnemonic: MNEMONIC, mnemonicPath: PATH })
+    const resolverInstance = resolver.attach(resolverContractAddress)
 
-    myEntityAddress = await EntityResolverFactory.wallet.getAddress()
-    const entityId = EntityResolver.getEntityId(myEntityAddress)
-    console.log("Entity ID", entityId)
+    myEntityAddress = await resolver.wallet.getAddress()
 
-    const langs = JSON.parse(await resolverInstance.text(entityId, "vnd.vocdoni.languages"))
-    console.log("vnd.vocdoni.languages =", langs);
-
-    console.log("vnd.vocdoni.name =", await resolverInstance.text(entityId, "vnd.vocdoni.name"));
-    console.log("vnd.vocdoni.meta =", await resolverInstance.text(entityId, "vnd.vocdoni.meta"));
-    console.log("vnd.vocdoni.voting-contract =", await resolverInstance.text(entityId, "vnd.vocdoni.voting-contract"));
-    console.log("vnd.vocdoni.gateway-update =", await resolverInstance.text(entityId, "vnd.vocdoni.gateway-update"));
-    console.log("vnd.vocdoni.voting-processes.active =", await resolverInstance.text(entityId, "vnd.vocdoni.voting-processes.active"));
-    console.log("vnd.vocdoni.voting-processes.ended =", await resolverInstance.text(entityId, "vnd.vocdoni.voting-processes.ended"));
-
-    for (let lang of langs) {
-        console.log(`vnd.vocdoni.news-feed.${lang} =`, await resolverInstance.text(entityId, `vnd.vocdoni.news-feed.${lang}`));
-        console.log(`vnd.vocdoni.description.${lang} =`, await resolverInstance.text(entityId, `vnd.vocdoni.description.${lang}`));
-    }
-
-    console.log("vnd.vocdoni.avatar =", await resolverInstance.text(entityId, "vnd.vocdoni.avatar"));
-
-    const meta = await EntityResolverFactory.getMetadata(myEntityAddress, GATEWAY_VOC_URI)
+    const meta = await resolver.getMetadata(myEntityAddress, GATEWAY_DVOTE_URI)
     console.log("JSON METADATA\n", meta)
 
     // ensure to disconnect if using WS
@@ -103,7 +50,7 @@ async function fileUpload() {
     let gw
     try {
         const wallet = Wallet.fromMnemonic(MNEMONIC)
-        gw = new Gateway(GATEWAY_VOC_URI)
+        gw = new Gateway(GATEWAY_DVOTE_URI)
 
         console.log("SIGNING FROM ADDRESS", wallet.address)
 
@@ -124,7 +71,7 @@ async function fileUpload() {
 
 async function remoteFetch() {
     const wallet = Wallet.fromMnemonic(MNEMONIC)
-    const gw = new Gateway(GATEWAY_VOC_URI)
+    const gw = new Gateway(GATEWAY_DVOTE_URI)
 
     const strData = "HI THERE"
     const origin = await gw.addFile(Buffer.from(strData), "my-data.txt", "ipfs", wallet)
@@ -140,36 +87,11 @@ async function remoteFetch() {
     gw.disconnect()
 }
 
-async function entityUpdate() {
-    console.log("Attaching to instance", resolverContractAddress)
-
-    const provider = Gateway.ethereumProvider(GATEWAY_ETH_PROVIDER_URI)
-    const EntityResolverFactory = new EntityResolver({ provider, mnemonic: MNEMONIC, mnemonicPath: PATH })
-    const resolverInstance = EntityResolverFactory.attach(resolverContractAddress)
-
-    myEntityAddress = await EntityResolverFactory.wallet.getAddress()
-    const entityId = EntityResolver.getEntityId(myEntityAddress)
-    console.log("Entity ID", entityId)
-
-    const wallet = Wallet.fromMnemonic(MNEMONIC)
-    const gw = new Gateway(GATEWAY_VOC_URI)
-    const strMetadata = JSON.stringify(jsonMetadata)
-    const metaOrigin = await gw.addFile(Buffer.from(strMetadata), "my-entity-metadata.json", "ipfs", wallet)
-    console.log("ORIGIN", metaOrigin)
-
-    console.log("Setting values. Please wait...")
-
-    const entityFields = EntityResolver.fromJsonToEnsFields(jsonMetadata, "")
-    await EntityResolverFactory.updateEntity(myEntityAddress, entityFields, jsonMetadata.actions)
-
-    console.log("DONE")
-}
-
 
 async function main() {
-    // await registerEntity()
-    // await readEntity()
-    await fileUpload()
+    await registerEntity()
+    await readEntity()
+    // await fileUpload()
     // await remoteFetch()
 }
 

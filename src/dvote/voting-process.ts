@@ -1,4 +1,4 @@
-import { providers, utils, Contract } from "ethers"
+import { providers, utils } from "ethers"
 import { VotingProcess as VotingProcessContractDefinition } from "dvote-solidity"
 import { VotingProcessData } from "dvote-solidity/build/types"
 import SmartContract from "../lib/smart-contract"
@@ -18,13 +18,21 @@ type VotingProcessConstructorParams = {
     mnemonicPath?: string                   // Derivation path
 }
 
+/** Custom Smart Contract operations for a Voting Process contract */
+type VotingProcessContractMethods = {
+    // TODO: Add the typings from
+    // https://github.com/vocdoni/dvote-solidity/blob/master/contracts/VotingProcess.sol
+}
+
 /**
  * The class extends the behavior of the SmartContract base class
  */
-export default class VotingProcess extends SmartContract {
+export default class VotingProcess extends SmartContract<VotingProcessContractMethods> {
     gateway: Gateway = null
 
-    // STATIC FUNCTIONS
+    ///////////////////////////////////////////////////////////////////////////
+    // STATIC
+    ///////////////////////////////////////////////////////////////////////////
 
     /**
      * Compute the ID of a process off-chain
@@ -56,7 +64,9 @@ export default class VotingProcess extends SmartContract {
         throw new Error("unimplemented")
     }
 
+    ///////////////////////////////////////////////////////////////////////////
     // METHODS
+    ///////////////////////////////////////////////////////////////////////////
 
     /**
      * Creates a contract factory to deploy or attach to VotingProcess instances
@@ -73,7 +83,7 @@ export default class VotingProcess extends SmartContract {
             providerUrl: params.providerUrl,
             provider: params.provider,
 
-            // optional for read-only
+            // optional for read-only use cases
             privateKey: params.privateKey,
             mnemonic: params.mnemonic,
             mnemonicPath: params.mnemonicPath

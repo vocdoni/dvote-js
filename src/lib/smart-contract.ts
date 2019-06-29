@@ -20,14 +20,14 @@ type ConstructorParams = {
  * The class serves as the foundation for deploying and attaching to 
  * Smart Contracts
  */
-export default class SmartContract {
+export default abstract class SmartContract<CustomContractMethods> {
     abi: any[]
     bytecode: string
 
     provider: providers.Provider
     wallet: Wallet | Signer
 
-    contractInstance: Contract
+    contractInstance: (Contract & CustomContractMethods)
 
     constructor(params: ConstructorParams) {
         if (!params) throw new Error("Invalid parameters")
@@ -70,11 +70,14 @@ export default class SmartContract {
         this.contractInstance = null
     }
 
-    async deploy(): Promise<Contract> {
+    /**
+     * Deploy the contract using the current provider and wallet
+     */
+    async deploy(): Promise<(Contract & CustomContractMethods)> {
         if (!this.wallet) throw new Error("You need to provide a private key, a mnemonic or a web3 provider with an account to deploy a contract")
 
         const contractFactory = new ContractFactory(this.abi, this.bytecode, this.wallet)
-        this.contractInstance = await contractFactory.deploy()
+        this.contractInstance = (await contractFactory.deploy()) as (Contract & CustomContractMethods)
 
         return this.contractInstance
     }
@@ -83,15 +86,15 @@ export default class SmartContract {
      * Use the contract instance at the given address
      * @param address Contract instance address
      */
-    attach(address: string): Contract {
-        this.contractInstance = new Contract(address, this.abi, this.provider)
-        if (this.wallet) this.contractInstance = this.contractInstance.connect(this.wallet)
+    attach(address: string): (Contract & CustomContractMethods) {
+        this.contractInstance = new Contract(address, this.abi, this.provider) as (Contract & CustomContractMethods)
+        if (this.wallet) this.contractInstance = this.contractInstance.connect(this.wallet) as (Contract & CustomContractMethods)
 
         return this.contractInstance
     }
 
     /**
-     * Deploy the contract to the blockchain using the predefined bytecode and ABI
+     * Return the current contract instance
      */
     deployed(): Contract {
         if (!this.contractInstance) throw new Error("Please, attach to an instance or deploy one")
@@ -103,9 +106,9 @@ export default class SmartContract {
      * Use the given provider to connect to the blockchain.
      * @param provider
      */
-    setProvider(provider: providers.Provider): Contract {
+    setProvider(provider: providers.Provider): (Contract & CustomContractMethods) {
         if (!provider) throw new Error("The provider is required")
-        this.contractInstance = this.contractInstance.connect(provider)
+        this.contractInstance = this.contractInstance.connect(provider) as (Contract & CustomContractMethods)
         this.provider = provider
 
         return this.contractInstance
@@ -115,10 +118,10 @@ export default class SmartContract {
      * Use the given signer to sign transactions.
      * @param params An object containing the provider and/or signer to use
      */
-    setSigner(signer: Signer): Contract {
+    setSigner(signer: Signer): (Contract & CustomContractMethods) {
         if (!signer) throw new Error("A signer/wallet is required")
 
-        this.contractInstance = this.contractInstance.connect(signer)
+        this.contractInstance = this.contractInstance.connect(signer) as (Contract & CustomContractMethods)
         this.wallet = signer
 
         return this.contractInstance
