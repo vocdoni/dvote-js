@@ -39,9 +39,9 @@ async function registerEntity() {
     await tx.wait()
     tx = await resolverInstance.setText(entityId, "vnd.vocdoni.gateway-update", JSON.stringify(jsonMetadata['gateway-update']))
     await tx.wait()
-    tx = await resolverInstance.setText(entityId, "vnd.vocdoni.process-ids.active", JSON.stringify(jsonMetadata['process-ids']['active']))
+    tx = await resolverInstance.setText(entityId, "vnd.vocdoni.voting-processes.active", JSON.stringify(jsonMetadata['voting-processes']['active']))
     await tx.wait()
-    tx = await resolverInstance.setText(entityId, "vnd.vocdoni.process-ids.ended", JSON.stringify(jsonMetadata['process-ids']['ended']))
+    tx = await resolverInstance.setText(entityId, "vnd.vocdoni.voting-processes.ended", JSON.stringify(jsonMetadata['voting-processes']['ended']))
     await tx.wait()
 
     for (let lang of jsonMetadata.languages) {
@@ -82,8 +82,8 @@ async function readEntity() {
     console.log("vnd.vocdoni.meta =", await resolverInstance.text(entityId, "vnd.vocdoni.meta"));
     console.log("vnd.vocdoni.voting-contract =", await resolverInstance.text(entityId, "vnd.vocdoni.voting-contract"));
     console.log("vnd.vocdoni.gateway-update =", await resolverInstance.text(entityId, "vnd.vocdoni.gateway-update"));
-    console.log("vnd.vocdoni.process-ids.active =", await resolverInstance.text(entityId, "vnd.vocdoni.process-ids.active"));
-    console.log("vnd.vocdoni.process-ids.ended =", await resolverInstance.text(entityId, "vnd.vocdoni.process-ids.ended"));
+    console.log("vnd.vocdoni.voting-processes.active =", await resolverInstance.text(entityId, "vnd.vocdoni.voting-processes.active"));
+    console.log("vnd.vocdoni.voting-processes.ended =", await resolverInstance.text(entityId, "vnd.vocdoni.voting-processes.ended"));
 
     for (let lang of langs) {
         console.log(`vnd.vocdoni.news-feed.${lang} =`, await resolverInstance.text(entityId, `vnd.vocdoni.news-feed.${lang}`));
@@ -92,7 +92,7 @@ async function readEntity() {
 
     console.log("vnd.vocdoni.avatar =", await resolverInstance.text(entityId, "vnd.vocdoni.avatar"));
 
-    const meta = await EntityResolverFactory.fetchJsonMetadata(myEntityAddress, GATEWAY_VOC_URI)
+    const meta = await EntityResolverFactory.getMetadata(myEntityAddress, GATEWAY_VOC_URI)
     console.log("JSON METADATA\n", meta)
 
     // ensure to disconnect if using WS

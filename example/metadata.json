@@ -11,8 +11,8 @@
         "default": "The description of my entity goes here",
         "fr": "La description officielle de mon organisation est ici"
     },
-    "voting-contract": "0x0",
-    "process-ids": {
+    "voting-contract": "0x0123456789012345678901234567890123456789",
+    "voting-processes": {
         "active": [],
         "ended": []
     },
@@ -28,7 +28,7 @@
     },
     "relays": [
         {
-            "publicKey": "0x23456...",
+            "publicKey": "04875204f7b0bd9dfcf9af89b4fa0c44016f4b0372646c2142f55136973bd0d660565755341e4c583d49f9d607d08d40e3558de7e6f14f34aa83b7436ac70dc958",
             "messagingUri": "<messaging-uri>"
         }
     ],
@@ -45,8 +45,8 @@
     ],
     "gateway-boot-nodes": [
         {
-            "update": "pss://publicKey@0x0",
-            "fetch": "https://hostname:port/route"
+            "heartbeatMessagingUri": "pss://publicKey@0x0",
+            "fetchUri": "https://hostname:port/route"
         }
     ],
     "boot-entities": [],
