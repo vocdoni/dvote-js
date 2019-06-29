@@ -11,8 +11,18 @@ type MultiLanguage<T> = {
     // [lang: string]: T                // Indexed by language  { en: value, fr: value, ... }
 }
 
-type ContentURI = string             // Comma-separated list of URI's (http://vocdoni.io/docs/#/architecture/protocol/data-origins?id=content-uri)
-type MessagingURI = string           // Comma-separated list of URI's (http://vocdoni.io/docs/#/architecture/protocol/data-origins?id=messaging-uri)
+/**
+ * Comma-separated list of URI's. 
+ * See http://vocdoni.io/docs/#/architecture/protocol/data-origins?id=content-uri
+ */
+type ContentURI = string
+
+/**
+ * Comma-separated list of URI's. 
+ * See http://vocdoni.io/docs/#/architecture/protocol/data-origins?id=messaging-uri
+ */
+type MessagingURI = string
+
 type URL = string
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -40,24 +50,28 @@ export const TextListRecordKeys = {
  * More info: http://vocdoni.io/docs/#/architecture/components/entity?id=meta
  */
 export interface EntityMetadata {
-    version: ProtocolVersion,             // Protocol version
+    version: ProtocolVersion,                // Protocol version
     languages: ["default"], // FIXME: Remove in favor of actual language codes
     // languages: string[],                  // Two character language code (en, fr, it, ...)
 
     name: MultiLanguage<string>,
     description: MultiLanguage<string>,
 
-    "news-feed": MultiLanguage<ContentURI>,
-    "voting-contract": ContractAddress,
-    "voting-processes": {
+    newsFeed: MultiLanguage<ContentURI>,
+    votingContract: ContractAddress,
+    votingProcesses: {
         active: ProcessId[],  // Process ID's to query on the Voting Contract
         ended: ProcessId[]
     },
     avatar: ContentURI,
 
+    // List of custom interactions that the entity defines.
+    // It may include anything like visiting web sites, uploading pictures, making payments, etc.
+    actions: EntityCustomAction[],
+
     // Entity's boot nodes providing a list of active Gateways
-    "gateway-boot-nodes": GatewayBootNode[],
-    "gateway-update": {
+    gatewayBootNodes: GatewayBootNode[],
+    gatewayUpdate: {
         timeout: number,                  // milliseconds after which a Gateway is marked as down
         topic: string,                    // Topic used for the messaging protocol (e.g. "vocdoni-gateway-update")
         difficulty: number                // Difficulty of the proof of work, to prevent spammers
@@ -66,14 +80,10 @@ export interface EntityMetadata {
     // The effective list of relays for a voting process is on the Voting Process smart contract
     relays: RelayInfo[],
 
-    // List of custom interactions that the entity defines.
-    // It may include anything like visiting web sites, uploading pictures, making payments, etc.
-    actions: EntityCustomAction[],
-
-    "boot-entities": EntityReference[],
-    "fallback-boot-node-entities": EntityReference[],
-    "trusted-entities": EntityReference[],
-    "census-service-managed-entities": EntityReference[],
+    bootEntities: EntityReference[],
+    fallbackBootNodeEntities: EntityReference[],
+    trustedEntities: EntityReference[],
+    censusServiceManagedEntities: EntityReference[],
 }
 
 interface GatewayBootNode {
