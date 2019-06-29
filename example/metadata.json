@@ -11,27 +11,16 @@
         "default": "The description of my entity goes here",
         "fr": "La description officielle de mon organisation est ici"
     },
-    "voting-contract": "0x0123456789012345678901234567890123456789",
-    "voting-processes": {
+    "votingContract": "0x0123456789012345678901234567890123456789",
+    "votingProcesses": {
         "active": [],
         "ended": []
     },
-    "news-feed": {
+    "newsFeed": {
         "default": "https://hipsterpixel.co/feed.json",
         "fr": "https://feed2json.org/convert?url=http://www.intertwingly.net/blog/index.atom"
     },
     "avatar": "https://hipsterpixel.co/assets/favicons/apple-touch-icon.png",
-    "gateway-update": {
-        "timeout": 60000,
-        "topic": "vocdoni-gateway-update",
-        "difficulty": 1000
-    },
-    "relays": [
-        {
-            "publicKey": "04875204f7b0bd9dfcf9af89b4fa0c44016f4b0372646c2142f55136973bd0d660565755341e4c583d49f9d607d08d40e3558de7e6f14f34aa83b7436ac70dc958",
-            "messagingUri": "<messaging-uri>"
-        }
-    ],
     "actions": [
         {
             "type": "browser",
@@ -43,14 +32,25 @@
             "visible": true
         }
     ],
-    "gateway-boot-nodes": [
+    "gatewayBootNodes": [
         {
             "heartbeatMessagingUri": "pss://publicKey@0x0",
-            "fetchUri": "https://hostname:port/route"
+            "fetchUri": "https://bootnode:port/gateways.json"
         }
     ],
-    "boot-entities": [],
-    "fallback-boot-nodes-entities": [],
-    "trusted-entities": [],
-    "census-service-source-entities": []
+    "gatewayUpdate": {
+        "timeout": 60000,
+        "topic": "vocdoni-gateway-update",
+        "difficulty": 1000
+    },
+    "relays": [
+        {
+            "publicKey": "04875204f7b0bd9dfcf9af89b4fa0c44016f4b0372646c2142f55136973bd0d660565755341e4c583d49f9d607d08d40e3558de7e6f14f34aa83b7436ac70dc958",
+            "messagingUri": "<messaging-uri>"
+        }
+    ],
+    "bootEntities": [],
+    "fallbackBootNodeEntities": [],
+    "trustedEntities": [],
+    "censusServiceManagedEntities": []
 }

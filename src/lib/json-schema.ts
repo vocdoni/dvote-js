@@ -43,42 +43,22 @@ const entityMetadataSchema = Joi.object().keys({
     name: Joi.object().keys(multiLanguageStringKeys).required(),
     description: Joi.object().keys(multiLanguageStringKeys).required(),
 
-    "voting-contract": Joi.string().regex(/^0x[a-z0-9]{40}$/).required(),
-    "voting-processes": Joi.object().keys({
+    votingContract: Joi.string().regex(/^0x[a-z0-9]{40}$/).required(),
+    votingProcesses: Joi.object().keys({
         active: Joi.array().items(Joi.string().regex(/^0x[a-z0-9]+$/)).required(),
         ended: Joi.array().items(Joi.string().regex(/^0x[a-z0-9]+$/)).required()
     }).required(),
-    "news-feed": Joi.object().keys(multiLanguageStringKeys).required(),
+    newsFeed: Joi.object().keys(multiLanguageStringKeys).required(),
     avatar: Joi.string().required(),
 
-    "gateway-update": Joi.object().keys({
-        timeout: Joi.number().integer().min(10000), // milliseconds
-        topic: Joi.string().required(),
-        difficulty: Joi.number().integer().min(0)
-    }).required(),
-
-    "gateway-boot-nodes": Joi.array().items(
-        Joi.object().keys({
-            heartbeatMessagingUri: Joi.string().required(),
-            fetchUri: Joi.string().required()
-        }),
-    ).required(),
-
-    "relays": Joi.array().items(
-        Joi.object().keys({
-            publicKey: Joi.string().regex(/^[a-z0-9]{130}$/).required(),
-            messagingUri: Joi.string().required()
-        }),
-    ).required(),
-
-    "actions": Joi.array().items(
+    actions: Joi.array().items(
         Joi.object().keys({
             // Common
+            type: Joi.string().regex(/^(browser|image)$/),
             name: Joi.object().keys(multiLanguageStringKeys).required(),
             visible: Joi.alternatives([Joi.string(), Joi.boolean()]).required(),
 
             // Optional
-            type: Joi.string().regex(/^(browser|image)$/),
             url: Joi.string().optional(),
             imageSources: Joi.array().items(
                 Joi.object().keys({
@@ -92,12 +72,32 @@ const entityMetadataSchema = Joi.object().keys({
         })
     ).required(),
 
-    "boot-entities": Joi.array().items(entityReferenceSchema).required(),
+    gatewayBootNodes: Joi.array().items(
+        Joi.object().keys({
+            heartbeatMessagingUri: Joi.string().required(),
+            fetchUri: Joi.string().required()
+        }),
+    ).required(),
 
-    "fallback-boot-nodes-entities": Joi.array().items(entityReferenceSchema).required(),
+    gatewayUpdate: Joi.object().keys({
+        timeout: Joi.number().integer().min(10000), // milliseconds
+        topic: Joi.string().required(),
+        difficulty: Joi.number().integer().min(0)
+    }).required(),
 
-    "trusted-entities": Joi.array().items(entityReferenceSchema).required(),
+    relays: Joi.array().items(
+        Joi.object().keys({
+            publicKey: Joi.string().regex(/^[a-z0-9]{130}$/).required(),
+            messagingUri: Joi.string().required()
+        }),
+    ).required(),
 
-    "census-service-source-entities": Joi.array().items(entityReferenceSchema).required()
+    bootEntities: Joi.array().items(entityReferenceSchema).required(),
+
+    fallbackBootNodeEntities: Joi.array().items(entityReferenceSchema).required(),
+
+    trustedEntities: Joi.array().items(entityReferenceSchema).required(),
+
+    censusServiceManagedEntities: Joi.array().items(entityReferenceSchema).required()
 })
 
