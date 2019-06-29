@@ -101,6 +101,7 @@ export default class Gateway {
      */
     public static ethereumProviderFromGateway(gateway: Gateway, params: EthereumProviderParams = { protocol: "ws", port: 8545 }): providers.JsonRpcProvider {
         if (!gateway) throw new Error("Invalid gateway provided")
+        else if (!gateway.gatewayWsUri) throw new Error("Invalid gateway WS URI")
 
         const currentUri = parseURL(gateway.gatewayWsUri)
         if (!currentUri.host) throw new Error("Empty gateway host: " + currentUri.host)

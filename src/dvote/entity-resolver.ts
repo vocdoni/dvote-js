@@ -3,7 +3,7 @@ import { EntityResolver as EntityContractDefinition } from "dvote-solidity"
 import SmartContract from "../lib/smart-contract"
 import Gateway from "./gateway"
 import { EntityMetadata, TextRecordKeys, EntityCustomAction } from "../lib/metadata-types";
-import { checkValidEntityMetadata } from "lib/json-schema";
+import { checkValidEntityMetadata } from "../lib/json-schema";
 
 const { abi, bytecode } = EntityContractDefinition
 
@@ -19,11 +19,73 @@ type EntityConstructorParams = {
     mnemonicPath?: string                   // Derivation path
 }
 
+/** Custom Smart Contract operations for an Entity Resolver contract */
+type EntityResolverContractMethods = {
+    /**
+     * Returns the text associated with an ENS node and key.
+     * @param entityId The ENS node to query.
+     * @param key The key to retrieve.
+     * @return The record's text.
+     */
+    text(entityId: string, key: string): Promise<string>
+    /**
+     * Returns the list associated with an ENS node and key.
+     * @param entityId The ENS node to query.
+     * @param key The key of the list.
+     * @return The list array of values.
+     */
+    list(entityId: string, key: string): Promise<string[]>
+    /**
+     * Returns the text associated with an ENS node, key and index.
+     * @param entityId The ENS node to query.
+     * @param key The key of the list.
+     * @param index The index within the list to retrieve.
+     * @return The list entry's text value.
+     */
+    listText(entityId: string, key: string, index: number): Promise<string>
+    /**
+     * Sets the text of the ENS node and key.
+     * May only be called by the owner of that node in the ENS registry.
+     * @param entityId The ENS node to modify.
+     * @param key The key to modify.
+     * @param value The text to store.
+     */
+    setText(entityId: string, key: string, value: string): Promise<{ wait: () => Promise<any> }>
+    /**
+     * Sets the text of the ENS node, key and index.
+     * May only be called by the owner of that node in the ENS registry.
+     * @param entityId The ENS node to modify.
+     * @param key The key of the list to modify.
+     * @param index The index of the list to set.
+     * @param value The text to store.
+     */
+    setListText(entityId: string, key: string, index: number, value: string): Promise<{ wait: () => Promise<any> }>
+    /**
+     * Appends a new value on the given ENS node and key.
+     * May only be called by the owner of that node in the ENS registry.
+     * @param entityId The ENS node to modify.
+     * @param key The key of the list to modify.
+     * @param value The text to store.
+     */
+    pushListText(entityId: string, key: string, value: string): Promise<{ wait: () => Promise<any> }>
+    /**
+     * Removes the value on the ENS node, key and index.
+     * May only be called by the owner of that node in the ENS registry.
+     * Note: This may cause items to be arranged in a different order.
+     * @param entityId The ENS node to modify.
+     * @param key The key of the list to modify.
+     * @param index The index to remove.
+     */
+    removeListIndex(entityId: string, key: string, index: number): Promise<{ wait: () => Promise<any> }>
+}
+
 /**
  * The class extends the behavior of the SmartContract base class
  */
-export default class EntityResolver extends SmartContract {
+export default class EntityResolver extends SmartContract<EntityResolverContractMethods> {
+    ///////////////////////////////////////////////////////////////////////////
     // STATIC
+    ///////////////////////////////////////////////////////////////////////////
 
     /**
      * Computes the ID of an entity given its address
@@ -34,6 +96,13 @@ export default class EntityResolver extends SmartContract {
     }
 
     /**
+     * Asserts that the given metadata is valid.
+     * Throws an exception if it is not.
+     */
+    public static checkValidMetadata(entityMetadata: EntityMetadata) {
+        return checkValidEntityMetadata(entityMetadata)
+    }
+    /**
      * Retrieve a list of curently active gateways for the given entityAddress
      * @param provider 
      * @param resolverAddress 
@@ -43,7 +112,9 @@ export default class EntityResolver extends SmartContract {
         throw new Error("unimplemented") // TODO:
     }
 
+    ///////////////////////////////////////////////////////////////////////////
     // METHODS
+    ///////////////////////////////////////////////////////////////////////////
 
     /**
      * Creates a contract factory to deploy or attach to EntityResolver instances
@@ -94,10 +165,12 @@ export default class EntityResolver extends SmartContract {
     /**
      * Update the ENS fields on the blockchain and upload the corresponding JSON metadata file to IPFS using a Gateway
      * Throws an Error if the schema does not match
+     * NOTE: The JSON metadata may need a few minutes before it can be generally fetched from IPFS
      * @param entityAddress 
-     * @param entityMetadata
+     * @param entityMetadata 
+     * @param dvoteGatewayUri 
      */
-    public async updateEntity(entityAddress: string, entityMetadata: EntityMetadata, entityActions: EntityCustomAction[], gatewayUri: string): Promise<EntityMetadata> {
+    public async updateEntity(entityAddress: string, entityMetadata: EntityMetadata, dvoteGatewayUri: string): Promise<void> {
         if (!entityAddress) throw new Error("Invalid entityAddress")
         else if (!entityMetadata) throw new Error("Invalid Entity metadata")
 
@@ -105,7 +178,7 @@ export default class EntityResolver extends SmartContract {
         EntityResolver.checkValidMetadata(entityMetadata)
 
         const strJsonMeta = JSON.stringify(entityMetadata)
-        const gw = new Gateway(gatewayUri)
+        const gw = new Gateway(dvoteGatewayUri)
         const ipfsUri = await gw.addFile(strJsonMeta, "entity-meta.json", "ipfs", this.wallet as Wallet)
         gw.disconnect()
 
@@ -115,17 +188,7 @@ export default class EntityResolver extends SmartContract {
 
         // TODO: Unpin oldMetaContentUri
 
-        return tx.wait()
-    }
-
-    // STATIC METHODS
-
-    /**
-     * Asserts that the given metadata is valid.
-     * Throws an exception if it is not.
-     */
-    public static checkValidMetadata(entityMetadata: EntityMetadata) {
-        return checkValidEntityMetadata(entityMetadata)
+        await tx.wait()
     }
 }
 
