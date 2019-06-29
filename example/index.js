@@ -4,11 +4,11 @@ const { Buffer } = require("buffer/")
 const fs = require("fs")
 
 const jsonMetadata = require("./metadata.json")
-const MNEMONIC = "perfect kite link property simple eight welcome spring enforce universe barely cargo"
+const MNEMONIC = "... mnemonic ..."
 const PATH = "m/44'/60'/0'/0/0"
-const GATEWAY_DVOTE_URI = "ws://dev1.vocdoni.net:2082/dvote"
-const GATEWAY_ETH_PROVIDER_URI = "http://dev1.vocdoni.net:2086/affeafacd3a5c886"
-const resolverContractAddress = "0x0dCA233CE5152d58c74E74693A3C496D01542244"
+const GATEWAY_DVOTE_URI = "ws://host:2082/dvote"
+const GATEWAY_ETH_PROVIDER_URI = "http://host:2086/path"
+const resolverContractAddress = "0x1234"
 let myEntityAddress
 
 async function registerEntity() {
