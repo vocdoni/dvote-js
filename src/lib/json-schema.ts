@@ -1,4 +1,4 @@
-import * as Joi from "@hapi/joi"
+import * as Joi from "joi-browser"
 import { by639_1 } from 'iso-language-codes'
 import { EntityMetadata } from "./metadata-types"
 
