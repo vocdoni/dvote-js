@@ -6,3 +6,4 @@ export { default as Gateway } from "./dvote/gateway"
 
 // Types
 export { EntityMetadata, TextRecordKeys, TextListRecordKeys } from "./lib/metadata-types"
+export { EntityMetadataTemplate } from "./lib/json-schema"

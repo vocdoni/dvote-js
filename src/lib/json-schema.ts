@@ -17,6 +17,55 @@ export function checkValidEntityMetadata(entityMetadata: EntityMetadata) {
     }
 }
 
+// SKELETON JSON OBJECTS
+
+export const EntityMetadataTemplate: EntityMetadata = {
+    version: "1.0",
+    languages: [
+        "default"
+    ],
+    name: {
+        default: "My official entity",
+        // fr: "Mon organisation officielle"
+    },
+    description: {
+        default: "The description of my entity goes here",
+        // fr: "La description officielle de mon organisation est ici"
+    },
+    votingContract: "0x0123456789012345678901234567890123456789",
+    votingProcesses: {
+        active: [],
+        ended: []
+    },
+    newsFeed: {
+        default: "https://hipsterpixel.co/feed.json",
+        // fr: "https://feed2json.org/convert?url=http://www.intertwingly.net/blog/index.atom"
+    },
+    avatar: "https://hipsterpixel.co/assets/favicons/apple-touch-icon.png",
+    actions: [
+        {
+            type: "browser",
+            name: {
+                default: "Sign up to The Entity",
+                // fr: "S'inscrire à l'organisation"
+            },
+            url: "https://cloudflare-ipfs.com/ipfs/QmZ56Z2kpG5QjJcWfhxFD4ac3DhfX21hrQ2gCTrWxzTAse",
+            visible: true
+        }
+    ],
+    gatewayBootNodes: [],
+    gatewayUpdate: {
+        timeout: 60000,
+        topic: "vocdoni-gateway-update",
+        difficulty: 1000
+    },
+    relays: [],
+    bootEntities: [],
+    fallbackBootNodeEntities: [],
+    trustedEntities: [],
+    censusServiceManagedEntities: []
+}
+
 // INTERMEDIATE SCHEMAS
 
 // Like { en: Joi.string(), fr: Joi.string, it: Joi.string, ... }
