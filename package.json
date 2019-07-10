@@ -1,10 +1,10 @@
 {
   "name": "dvote-js",
-  "version": "0.4.5",
+  "version": "0.4.4",
   "description": "Javascript/Typescript library to interact with Vocdoni voting processes",
   "main": "dist/index",
   "types": "dist/index",
-  "repository": "https://gitlab.com/vocdoni/dvote-js.git",
+  "repository": "https://github.com/vocdoni/dvote-js.git",
   "author": "Vocdoni <root@vocdoni.io>",
   "license": "GPL-3.0-or-later",
   "private": false,

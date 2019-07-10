@@ -29,7 +29,7 @@
                 "fr": "S'inscrire à l'organisation"
             },
             "url": "https://cloudflare-ipfs.com/ipfs/QmZ56Z2kpG5QjJcWfhxFD4ac3DhfX21hrQ2gCTrWxzTAse",
-            "visible": true
+            "visible": "always"
         }
     ],
     "gatewayBootNodes": [

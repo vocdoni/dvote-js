@@ -7,6 +7,7 @@ import * as WebSocket from "isomorphic-ws"
 import { parseURL } from 'universal-parse-url'
 import { Wallet, utils, providers } from "ethers"
 import { Buffer } from 'buffer'
+import { JsonRpcSigner } from "ethers/providers";
 
 type GatewayMethod = "fetchFile" | "addFile" | "getVotingRing" | "submitVoteEnvelope" | "getVoteStatus"
 
@@ -241,12 +242,12 @@ export default class Gateway {
      * @param wallet The wallet to use for signing
      * @param timeout Timeout in seconds to wait before failing (default: 50)
      */
-    private async sendSignedMessage(requestBody: RequestParameters, wallet: Wallet, timeout: number = 50): Promise<GatewayResponse> {
+    private async sendSignedMessage(requestBody: RequestParameters, wallet: Wallet | JsonRpcSigner, timeout: number = 50): Promise<GatewayResponse> {
         if (typeof requestBody != "object") return Promise.reject(new Error("The payload should be a javascript object"))
         if (typeof wallet != "object") return Promise.reject(new Error("The wallet is required"))
 
         const requestId = utils.keccak256('0x' + Date.now().toString(16)).substr(2)
-        const signature = await this.signRequestBody(requestBody, wallet)
+        const signature = await signRequestBody(requestBody, wallet)
 
         const content: MessageRequestContent = {
             id: requestId,
@@ -351,7 +352,7 @@ export default class Gateway {
      * @param wallet An Ethers.js wallet capable of signing the payload
      * @return The URI of the newly added file
      */
-    public async addFile(buffer: Uint8Array | string, name: string, fsType: "swarm" | "ipfs", wallet: Wallet): Promise<string> {
+    public async addFile(buffer: Uint8Array | string, name: string, fsType: "swarm" | "ipfs", wallet: Wallet | JsonRpcSigner): Promise<string> {
         if (!buffer) throw new Error("Empty payload")
         else if (!fsType) throw new Error("Empty type")
 
@@ -411,17 +412,18 @@ export default class Gateway {
         }
         return new Promise(resolve => setTimeout(resolve, 10))
     }
+}
 
-    private signRequestBody(request: RequestParameters, wallet: Wallet): Promise<string> {
-        if (!wallet) throw new Error("Invalid wallet")
 
-        // Ensure ordered key names
-        request = Object.keys(request).sort().reduce((prev, cur) => {
-            prev[cur] = request[cur]
-            return prev
-        }, {} as RequestParameters)
+function signRequestBody(request: RequestParameters, wallet: Wallet | JsonRpcSigner): Promise<string> {
+    if (!wallet) throw new Error("Invalid wallet")
 
-        const msg = JSON.stringify(request)
-        return wallet.signMessage(msg)
-    }
+    // Ensure ordered key names
+    request = Object.keys(request).sort().reduce((prev, cur) => {
+        prev[cur] = request[cur]
+        return prev
+    }, {} as RequestParameters)
+
+    const msg = JSON.stringify(request)
+    return wallet.signMessage(msg)
 }

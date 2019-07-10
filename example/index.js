@@ -19,12 +19,15 @@ async function registerEntity() {
     const resolverInstance = resolver.attach(resolverContractAddress)
 
     myEntityAddress = await resolver.wallet.getAddress()
+    myEntityId = EntityResolver.getEntityId(myEntityAddress)
+    console.log("Entity ID", myEntityId)
 
-    await resolver.updateEntity(myEntityAddress, jsonMetadata, GATEWAY_DVOTE_URI)
+    const contentUri = await resolver.updateEntity(myEntityAddress, jsonMetadata, GATEWAY_DVOTE_URI)
 
     // show stored values
     console.log("\nEntity registered!\n")
     console.log("The JSON metadata should become generally available in a few minutes")
+    console.log(contentUri)
 
     // ensure to disconnect if using WS
     if (resolverInstance.provider.polling) resolverInstance.provider.polling = false

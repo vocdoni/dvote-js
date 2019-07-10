@@ -50,7 +50,7 @@ export const EntityMetadataTemplate: EntityMetadata = {
                 // fr: "S'inscrire à l'organisation"
             },
             url: "https://cloudflare-ipfs.com/ipfs/QmZ56Z2kpG5QjJcWfhxFD4ac3DhfX21hrQ2gCTrWxzTAse",
-            visible: true
+            visible: "always"
         }
     ],
     gatewayBootNodes: [],
@@ -105,7 +105,7 @@ const entityMetadataSchema = Joi.object().keys({
             // Common
             type: Joi.string().regex(/^(browser|image)$/),
             name: Joi.object().keys(multiLanguageStringKeys).required(),
-            visible: Joi.alternatives([Joi.string(), Joi.boolean()]).required(),
+            visible: Joi.string().required(),
 
             // Optional
             url: Joi.string().optional(),

@@ -169,8 +169,9 @@ export default class EntityResolver extends SmartContract<EntityResolverContract
      * @param entityAddress 
      * @param entityMetadata 
      * @param dvoteGatewayUri 
+     * @return A content URI with the IPFS origin
      */
-    public async updateEntity(entityAddress: string, entityMetadata: EntityMetadata, dvoteGatewayUri: string): Promise<void> {
+    public async updateEntity(entityAddress: string, entityMetadata: EntityMetadata, dvoteGatewayUri: string): Promise<string> {
         if (!entityAddress) throw new Error("Invalid entityAddress")
         else if (!entityMetadata) throw new Error("Invalid Entity metadata")
 
@@ -189,6 +190,7 @@ export default class EntityResolver extends SmartContract<EntityResolverContract
         // TODO: Unpin oldMetaContentUri
 
         await tx.wait()
+        return ipfsUri
     }
 }
 
