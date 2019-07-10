@@ -17,9 +17,9 @@ stages:
 
 # This folder is cached between builds
 # http://docs.gitlab.com/ce/ci/yaml/README.html#cache
-# cache:
-#   paths:
-#   - node_modules/
+cache:
+  paths:
+  - node_modules/
 
 ## INTEGRATION
 
@@ -34,8 +34,8 @@ build:
   #   name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
   #   paths:
   #     - dist/
-  only:
-    - master
+  # only:
+  #   - master
 
 test:
   image: node:10.16-stretch
