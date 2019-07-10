@@ -85,6 +85,7 @@ export default abstract class SmartContract<CustomContractMethods> {
     /**
      * Use the contract instance at the given address
      * @param address Contract instance address
+     * @return A contract instance attached to the given address
      */
     attach(address: string): (Contract & CustomContractMethods) {
         this.contractInstance = new Contract(address, this.abi, this.provider) as (Contract & CustomContractMethods)
@@ -96,7 +97,7 @@ export default abstract class SmartContract<CustomContractMethods> {
     /**
      * Return the current contract instance
      */
-    deployed(): Contract {
+    deployed(): (Contract & CustomContractMethods) {
         if (!this.contractInstance) throw new Error("Please, attach to an instance or deploy one")
 
         return this.contractInstance

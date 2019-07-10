@@ -104,9 +104,9 @@ interface EntityBaseAction {
     name: MultiLanguage<string>,
 
     // Endpoint to POST to with the publicKey and a signed timestamp
-    // Returning true will show the action and hide it otherwise
-    // Entering "true" instead of a URL will show it always
-    visible: URL | true
+    // Returning a response with true as a value will show the action
+    // Entering "always" instead of a URL will show it always
+    visible: URL | "always"
 }
 
 // Opening an interactive web browser
