@@ -42,7 +42,7 @@ test:
   stage: test
   script:
     # - apt-get install build-essential
-    - npm install
+    - npm install || true
     - npm run test
 
 # docker build:
