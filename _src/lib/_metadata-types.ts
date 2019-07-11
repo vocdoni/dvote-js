@@ -23,7 +23,7 @@ type ContentURI = string
  */
 type MessagingURI = string
 
-type URL = string
+type URI = string
 
 ///////////////////////////////////////////////////////////////////////////////
 // ENTITY METADATA
@@ -88,7 +88,7 @@ export interface EntityMetadata {
 
 interface GatewayBootNode {
     heartbeatMessagingUri: MessagingURI,   // Where Gateways should report their status updates
-    fetchUri: URL                          // Where to fetch the Bootnode Gateways
+    fetchUri: URI                          // Where to fetch the Bootnode Gateways
 }
 
 interface RelayInfo {
@@ -105,18 +105,18 @@ interface EntityBaseAction {
 
     // Endpoint to POST to with the publicKey and a signed timestamp
     // Returning a response with true as a value will show the action
-    // Entering "always" instead of a URL will show it always
-    visible: URL | "always"
+    // Entering "always" instead of a URI will show it always
+    visible: URI | "always"
 }
 
 // Opening an interactive web browser
 interface EntityBrowserAction {
     type: "browser",
 
-    // The URL to navigate to
+    // The URI to navigate to
     // - The embedded web site can send messages to the host app
     // - Messages can request the public key, or a signature
-    url: URL
+    url: URI
 }
 
 // App-driven image upload example
@@ -133,10 +133,10 @@ interface EntityImageUploadAction {
     //   ...
     // }
     //
-    // The URL will receive the following query string parameters:
+    // The URI will receive the following query string parameters:
     // - signature = sign(hash(jsonBody), privateKey)
     // - publicKey
-    url: URL
+    url: URI
 }
 
 type ImageUploadSource = {
