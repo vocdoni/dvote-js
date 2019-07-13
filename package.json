@@ -17,18 +17,19 @@
     "test": "./node_modules/.bin/mocha -r ts-node/register test/**/*.ts",
     "test:unit": "./node_modules/.bin/mocha -r ts-node/register test/unit/*.ts",
     "test:integration": "./node_modules/.bin/mocha -r ts-node/register test/integration/*.ts",
-    "test:remote": "NODE_ENV='test' ./node_modules/.bin/mocha --timeout 20000 -r ts-node/register test/**/*.ts"
+    "test:remote": "NODE_ENV='test' ./node_modules/.bin/mocha --timeout 20000 -r ts-node/register test/**/*.ts",
+    "postinstall": "rm -Rf node_modules/ganache-core/node_modules/web3-providers-ws/node_modules/websocket/.git || true"
   },
   "dependencies": {
     "axios": "^0.19.0",
     "buffer": "^5.2.1",
-    "dvote-solidity": "^0.1.4",
-    "ethers": "^4.0.31",
+    "dvote-solidity": "^0.1.7",
+    "ethers": "^4.0.33",
     "iso-language-codes": "^1.0.3",
     "isomorphic-ws": "^4.0.1",
     "joi-browser": "^13.4.0",
     "universal-parse-url": "^1.0.2",
-    "ws": "^7.0.0"
+    "ws": "^7.1.0"
   },
   "devDependencies": {
     "@types/chai": "^4.1.7",
@@ -37,12 +38,12 @@
     "@types/ws": "^6.0.1",
     "chai": "^4.2.0",
     "dotenv": "^7.0.0",
-    "ganache-cli": "^6.4.2",
-    "ganache-core": "^2.5.6",
+    "ganache-cli": "^6.4.5",
+    "ganache-core": "^2.5.7",
     "mocha": "^5.2.0",
     "sinon": "^7.3.1",
     "ts-node": "^7.0.1",
-    "tslint": "^5.15.0",
-    "typescript": "^3.4.3"
+    "tslint": "^5.18.0",
+    "typescript": "^3.5.3"
   }
 }

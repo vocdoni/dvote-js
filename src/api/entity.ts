@@ -6,6 +6,11 @@ import { TextRecordKeys } from "../models/entity"
 import { fetchFileString, addFile } from "./file"
 import GatewayURI from "../util/gateway-uri"
 
+export {
+    deployEntityContract,
+    getEntityResolverInstance
+} from "../net/contract"
+
 /**
  * Computes the ID of an entity given its address
  * @param entityAddress 

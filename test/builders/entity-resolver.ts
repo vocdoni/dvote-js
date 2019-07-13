@@ -1,5 +1,5 @@
-import EntityResolver from "../../src/dvote/entity-resolver"
-import { TextRecordKeys } from "../../src/lib/metadata-types"
+import { getEntityId, deployEntityContract } from "../../src/api/entity"
+// import { TextRecordKeys } from "../../src/models/entity"
 import { Contract } from "ethers"
 import { getAccounts, TestAccount } from "../eth-util"
 
@@ -20,13 +20,9 @@ export default class EntityBuilder {
     }
 
     async build(): Promise<Contract> {
-        const factory = new EntityResolver({
-            provider: this.entityAccount.provider,
-            privateKey: this.entityAccount.privateKey
-        })
-        const contractInstance = await factory.deploy()
+        const contractInstance = await deployEntityContract({ provider: this.entityAccount.provider }, { wallet: this.entityAccount.wallet })
 
-        const entityId = EntityResolver.getEntityId(this.entityAccount.address)
+        const entityId = getEntityId(this.entityAccount.address)
 
         await contractInstance.setText(entityId, "key-name", this.name)
 
