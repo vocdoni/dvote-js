@@ -1,4 +1,4 @@
-import VotingProcess from "../../src/dvote/voting-process"
+import { deployVotingContract, getProcessId } from "../../src/api/vote"
 import { Contract } from "ethers"
 import { getAccounts, TestAccount } from "../eth-util"
 import EntityBuilder from "./entity-resolver"
@@ -29,11 +29,7 @@ export default class VotingProcessBuilder {
     }
 
     async build(votingProcessessCount: number = 1): Promise<Contract> {
-        const factory = new VotingProcess({
-            provider: this.entityAccount.provider,
-            privateKey: this.entityAccount.privateKey
-        })
-        const contractInstance: Contract = await factory.deploy()
+        const contractInstance = await deployVotingContract({ provider: this.entityAccount.provider }, { wallet: this.entityAccount.wallet })
 
         if (!this.entityResolver) {
             const entityBuilder = new EntityBuilder().withEntityAccount(this.entityAccount)
@@ -46,7 +42,7 @@ export default class VotingProcessBuilder {
 
         const processIds: string[] = []
         for (let i = 0; i < votingProcessessCount; i++) {
-            let processId = VotingProcess.getProcessId(this.entityAccount.address, i)
+            let processId = getProcessId(this.entityAccount.address, i)
             processIds.push(processId)
 
             await contractInstance.create(

@@ -1,7 +1,3 @@
-# DEPRECATED
-
-This repository has been moved to https://gitlab.com/vocdoni/dvote-js
-
 # DVote JS
 Formerly known as dvote-client, this library aims to provide utility classes and methods to invoke decentralized operations within a voting process. It covers the typical functionality of Client applications, as well as the Process Manager or the Census Manager.
 

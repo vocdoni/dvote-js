@@ -4,6 +4,11 @@ import { VocGateway } from "../net/gateway"
 import { fetchFileString } from "./file"
 import GatewayURI from "../util/gateway-uri"
 
+export {
+    deployVotingContract,
+    getVotingContractInstance
+} from "../net/contract"
+
 /**
  * Compute the ID of a process off-chain
  * @param entityAddress 

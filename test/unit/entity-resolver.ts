@@ -5,8 +5,8 @@ import { addCompletionHooks } from "../mocha-hooks"
 import { getAccounts, increaseTimestamp, TestAccount } from "../eth-util"
 import { EntityResolverInstance } from "dvote-solidity"
 
-
-import EntityResolver from "../../src/dvote/entity-resolver"
+import { getEntityId } from "../../src/api/entity"
+import { deployEntityContract, getEntityResolverInstance } from "../../src/index"
 import EntityBuilder, { DEFAULT_NAME } from "../builders/entity-resolver"
 
 let accounts: TestAccount[]
@@ -25,7 +25,7 @@ describe("Entity Resolver", () => {
         entityAccount = accounts[1]
         randomAccount = accounts[2]
 
-        entityId = EntityResolver.getEntityId(entityAccount.address)
+        entityId = getEntityId(entityAccount.address)
 
         contractInstance = await new EntityBuilder().build()
     })
@@ -33,29 +33,24 @@ describe("Entity Resolver", () => {
     describe("Resolver Smart Contract", () => {
 
         it("Should deploy the smart contract", async () => {
-            const factory = new EntityResolver({ provider: entityAccount.provider, privateKey: entityAccount.privateKey })
-            contractInstance = await factory.deploy()
+            contractInstance = await deployEntityContract({ provider: entityAccount.provider }, { wallet: entityAccount.wallet })
 
             expect(contractInstance).to.be.ok
             expect(contractInstance.address.match(/^0x[0-9a-fA-F]{40}$/)).to.be.ok
         })
 
         it("Should attach to a given instance", async () => {
-            const factory = new EntityResolver({ provider: entityAccount.provider, privateKey: entityAccount.privateKey })
-            contractInstance = await factory.deploy()
+            contractInstance = await deployEntityContract({ provider: entityAccount.provider }, { wallet: entityAccount.wallet })
 
             expect(contractInstance.address).to.be.ok
 
             await contractInstance.setText(entityId, "custom-key", "custom value")
             expect(await contractInstance.text(entityId, "custom-key")).to.equal("custom value")
 
-            const resolver = new EntityResolver({ provider: entityAccount.provider, privateKey: entityAccount.privateKey })
+            const newInstance = getEntityResolverInstance({ provider: entityAccount.provider }, contractInstance.address)
 
-            const newInstance = resolver.attach(contractInstance.address)
             expect(newInstance.address).to.equal(contractInstance.address)
             expect(await newInstance.text(entityId, "custom-key")).to.equal("custom value")
-
-            expect(newInstance).to.equal(resolver.deployed())
         })
 
         it("Should compute the id of an entity address", async () => {
@@ -73,14 +68,14 @@ describe("Entity Resolver", () => {
             ]
 
             for (let item of data) {
-                expect(EntityResolver.getEntityId(item.address)).to.equal(item.id)
+                expect(getEntityId(item.address)).to.equal(item.id)
 
                 expect(await contractInstance.getEntityId(item.address)).to.equal(item.id, "Solidity and JS entity Id's should match")
             }
         })
 
         it("Should work for any creator account", async () => {
-            entityId = EntityResolver.getEntityId(randomAccount.address)
+            entityId = getEntityId(randomAccount.address)
 
             contractInstance = await new EntityBuilder().withEntityAccount(randomAccount).build()
             expect(await contractInstance.text(entityId, "key-name")).to.eq(DEFAULT_NAME)
