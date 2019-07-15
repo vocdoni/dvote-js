@@ -280,7 +280,7 @@ export class Web3Gateway {
             contractFactory = new ContractFactory(abi, bytecode, signer)
         }
         else { // wallet
-            if (!signer.provider) {
+            if (!wallet.provider) {
                 wallet = new Wallet(wallet.privateKey, this.provider)
             }
 
