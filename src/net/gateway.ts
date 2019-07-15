@@ -154,7 +154,11 @@ export class VocGateway {
     public async sendMessage(requestBody: RequestParameters, wallet: Wallet | Signer = null, timeout: number = 50): Promise<any> {
         if (typeof requestBody != "object") return Promise.reject(new Error("The payload should be a javascript object"))
         else if (typeof wallet != "object") return Promise.reject(new Error("The wallet is required"))
-        else if (!this.webSocket) return Promise.reject(new Error("The gateway connection is not yet available"))
+        if (this.connectionPromise) {
+            await this.connectionPromise
+        }
+
+        if (!this.webSocket) return Promise.reject(new Error("The gateway connection is not yet available"))
 
         const requestId = utils.keccak256('0x' + Date.now().toString(16)).substr(2)
         const content: MessageRequestContent = {

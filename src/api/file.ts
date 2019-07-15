@@ -130,13 +130,9 @@ export function addFile(buffer: Uint8Array | string, name: string, walletOrSigne
         timestamp: Date.now()
     }
 
-    return gateway.sendMessage(requestBody, walletOrSigner).then(message => {
-        if (message.error) {
-            if (message.error.message) throw new Error(message.error.message)
-            else throw new Error("The data could not be uploaded")
-        }
-        else if (!message.response || !message.response.uri) throw new Error("The data could not be uploaded")
+    return gateway.sendMessage(requestBody, walletOrSigner).then(response => {
+        if (!response || !response.uri) throw new Error("The data could not be uploaded")
 
-        return message.response.uri
+        return response.uri
     })
 }
