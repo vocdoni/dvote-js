@@ -9,10 +9,10 @@ import { expect } from "chai"
 import { Contract } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
 import { getAccounts, increaseTimestamp, TestAccount } from "../eth-util"
-import { VotingProcessInstance } from "dvote-solidity"
+import { VotingProcessContractMethods } from "dvote-solidity"
 
 
-import VotingProcess from "../../src/dvote/voting-process"
+import { getProcessId, deployVotingContract, getVotingContractInstance } from "../../src/api/vote"
 import VotingProcessBuilder, {
     DEFAULT_NAME,
     DEFAULT_METADATA_CONTENT_URI,
@@ -29,7 +29,7 @@ let randomAccount: TestAccount
 let relayAccount1: TestAccount
 let relayAccount2: TestAccount
 let processId: string
-let contractInstance: VotingProcessInstance | Contract
+let contractInstance: VotingProcessContractMethods & Contract
 
 addCompletionHooks()
 
@@ -43,17 +43,13 @@ describe("Voting Process", () => {
         relayAccount2 = accounts[4]
 
         contractInstance = await new VotingProcessBuilder().build()
-        processId = await VotingProcess.getProcessId(entityAccount.address, 0)
+        processId = await getProcessId(entityAccount.address, 0)
     })
 
     describe("Smart Contract", () => {
 
         it("Should deploy the smart contract", async () => {
-            const factory = new VotingProcess({
-                provider: entityAccount.provider,
-                privateKey: entityAccount.privateKey
-            })
-            contractInstance = await factory.deploy()
+            contractInstance = await deployVotingContract({ provider: entityAccount.provider, wallet: entityAccount.wallet })
 
             expect(contractInstance).to.be.ok
             expect(contractInstance.address.match(/^0x[0-9a-fA-F]{40}$/)).to.be.ok
@@ -73,8 +69,8 @@ describe("Voting Process", () => {
             await contractInstance.create(resolverAddress, name, customMetadataUri, startTime, endTime, customPublicKey)
 
             // attach from a new object
-            const vProcess = new VotingProcess({ provider: entityAccount.provider, privateKey: entityAccount.privateKey })
-            const newInstance = vProcess.attach(contractInstance.address)
+
+            const newInstance = getVotingContractInstance({ provider: entityAccount.provider }, contractInstance.address)
             expect(newInstance.address).to.equal(contractInstance.address)
 
             const data = await newInstance.get(customProcessId)
@@ -86,8 +82,6 @@ describe("Voting Process", () => {
             expect(data.endTime.toNumber()).to.equal(endTime)
             expect(data.voteEncryptionPublicKey).to.equal(customPublicKey)
             expect(data.canceled).to.equal(false)
-
-            expect(newInstance).to.equal(vProcess.deployed())
         })
 
         it("Should compute process ID's in the same way as the on-chain version", async () => {
@@ -98,7 +92,7 @@ describe("Voting Process", () => {
 
             for (let account of accounts.filter(() => Math.random() >= 0.5)) {
                 for (let index of indexes) {
-                    let expected = VotingProcess.getProcessId(account.address, index)
+                    let expected = getProcessId(account.address, index)
                     let received = await contractInstance.getProcessId(account.address, index)
                     expect(received).to.equal(expected)
                 }
@@ -107,10 +101,10 @@ describe("Voting Process", () => {
 
         it("The getProcessId() should match getNextProcessId()", async () => {
             // entityAddress has one process created by default from the builder
-            expect(await contractInstance.getNextProcessId(entityAccount.address)).to.equal(VotingProcess.getProcessId(entityAccount.address, 1))
+            expect(await contractInstance.getNextProcessId(entityAccount.address)).to.equal(getProcessId(entityAccount.address, 1))
 
             // randomAccount has no process yet
-            expect(await contractInstance.getNextProcessId(randomAccount.address)).to.equal(VotingProcess.getProcessId(randomAccount.address, 0))
+            expect(await contractInstance.getNextProcessId(randomAccount.address)).to.equal(getProcessId(randomAccount.address, 0))
         })
 
         it("Should work for any creator account", async () => {
@@ -325,8 +319,7 @@ describe("Voting Process", () => {
             await increaseTimestamp(DEFAULT_START_TIME_PADDING + 2)
 
             // attach from a relay's account
-            const vProcess = new VotingProcess({ provider: relayAccount1.provider, privateKey: relayAccount1.privateKey })
-            const relayContractInstance = vProcess.attach(contractInstance.address)
+            const relayContractInstance = getVotingContractInstance({ provider: relayAccount1.provider, wallet: relayAccount1.wallet }, contractInstance.address)
 
             // add one
             const result1 = await contractInstance.getVoteBatchCount(processId)
@@ -370,8 +363,7 @@ describe("Voting Process", () => {
 
                 increaseTimestamp(DEFAULT_START_TIME_PADDING + 2).then(() => {
                     // attach from a relay's account
-                    const vProcess = new VotingProcess({ provider: relayAccount1.provider, privateKey: relayAccount1.privateKey })
-                    const relayContractInstance = vProcess.attach(contractInstance.address)
+                    const relayContractInstance = getVotingContractInstance({ provider: relayAccount1.provider, wallet: relayAccount1.wallet }, contractInstance.address)
                     return relayContractInstance.registerVoteBatch(processId, "ipfs://ipfs/1234")
                 }).catch(reject)
             })

@@ -1,7 +1,9 @@
 import { deployVotingContract, getProcessId } from "../../src/api/vote"
+import { VotingProcessContractMethods } from "dvote-solidity"
 import { Contract } from "ethers"
 import { getAccounts, TestAccount } from "../eth-util"
 import EntityBuilder from "./entity-resolver"
+import { BigNumber } from "ethers/utils"
 
 // DEFAULT VALUES
 export const DEFAULT_NAME = "Voting Process name"
@@ -28,8 +30,8 @@ export default class VotingProcessBuilder {
         this.entityAccount = this.accounts[1]
     }
 
-    async build(votingProcessessCount: number = 1): Promise<Contract> {
-        const contractInstance = await deployVotingContract({ provider: this.entityAccount.provider }, { wallet: this.entityAccount.wallet })
+    async build(votingProcessessCount: number = 1): Promise<Contract & VotingProcessContractMethods> {
+        const contractInstance = await deployVotingContract({ provider: this.entityAccount.provider, wallet: this.entityAccount.wallet })
 
         if (!this.entityResolver) {
             const entityBuilder = new EntityBuilder().withEntityAccount(this.entityAccount)

@@ -3,7 +3,7 @@ import { expect } from "chai"
 import { Contract } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
 import { getAccounts, increaseTimestamp, TestAccount } from "../eth-util"
-import { EntityResolverInstance } from "dvote-solidity"
+import { EntityResolver, EntityResolverContractMethods } from "dvote-solidity"
 
 import { getEntityId } from "../../src/api/entity"
 import { deployEntityContract, getEntityResolverInstance } from "../../src/index"
@@ -14,7 +14,7 @@ let baseAccount: TestAccount
 let entityAccount: TestAccount
 let randomAccount: TestAccount
 let entityId: string
-let contractInstance: EntityResolverInstance & Contract
+let contractInstance: EntityResolverContractMethods & Contract
 
 addCompletionHooks()
 
@@ -33,14 +33,14 @@ describe("Entity Resolver", () => {
     describe("Resolver Smart Contract", () => {
 
         it("Should deploy the smart contract", async () => {
-            contractInstance = await deployEntityContract({ provider: entityAccount.provider }, { wallet: entityAccount.wallet })
+            contractInstance = await deployEntityContract({ provider: entityAccount.provider, wallet: entityAccount.wallet })
 
             expect(contractInstance).to.be.ok
             expect(contractInstance.address.match(/^0x[0-9a-fA-F]{40}$/)).to.be.ok
         })
 
         it("Should attach to a given instance", async () => {
-            contractInstance = await deployEntityContract({ provider: entityAccount.provider }, { wallet: entityAccount.wallet })
+            contractInstance = await deployEntityContract({ provider: entityAccount.provider, wallet: entityAccount.wallet })
 
             expect(contractInstance.address).to.be.ok
 
@@ -357,4 +357,9 @@ describe("Entity Resolver", () => {
 
     })
 
+    describe("Metadata validator", () => {
+        it("Should accept a valid Entity Metadata JSON")
+
+        it("Should reject invalid Entity Metadata JSON payloads")
+    })
 })
