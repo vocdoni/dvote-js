@@ -4,9 +4,10 @@ import { Contract } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
 import { getAccounts, increaseTimestamp, TestAccount } from "../eth-util"
 import { EntityResolver, EntityResolverContractMethods } from "dvote-solidity"
+const fs = require("fs")
 
 import { getEntityId } from "../../src/api/entity"
-import { deployEntityContract, getEntityResolverInstance } from "../../src/index"
+import { deployEntityContract, getEntityResolverInstance, checkValidEntityMetadata } from "../../src/index"
 import EntityBuilder, { DEFAULT_NAME } from "../builders/entity-resolver"
 
 let accounts: TestAccount[]
@@ -358,8 +359,46 @@ describe("Entity Resolver", () => {
     })
 
     describe("Metadata validator", () => {
-        it("Should accept a valid Entity Metadata JSON")
+        it("Should accept a valid Entity Metadata JSON", () => {
+            const entityMetadata = fs.readFileSync(__dirname + "/../../example/metadata.json")
 
-        it("Should reject invalid Entity Metadata JSON payloads")
+            expect(() => {
+                checkValidEntityMetadata(JSON.parse(entityMetadata))
+            }).to.not.throw
+        })
+
+        it("Should reject invalid Entity Metadata JSON payloads", () => {
+            // Totally invalid
+            expect(() => {
+                const payload = JSON.parse('{"test": 123}')
+                checkValidEntityMetadata(payload)
+            }).to.throw
+
+            expect(() => {
+                const payload = JSON.parse('{"name": {"default": "hello", "fr": "Alô"}}')
+                checkValidEntityMetadata(payload)
+            }).to.throw
+
+            // Incomplete fields
+            const entityMetadata = fs.readFileSync(__dirname + "/../../example/metadata.json")
+
+            expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { version: null })) }).to.throw
+            expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { languages: null })) }).to.throw
+            expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { name: null })) }).to.throw
+            expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { description: null })) }).to.throw
+            expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { votingContract: null })) }).to.throw
+            expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { votingProcesses: null })) }).to.throw
+            expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { newsFeed: null })) }).to.throw
+            expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { avatar: null })) }).to.throw
+            expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { actions: null })) }).to.throw
+            expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { gatewayBootNodes: null })) }).to.throw
+            expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { gatewayUpdate: null })) }).to.throw
+            expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { relays: null })) }).to.throw
+            expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { bootEntities: null })) }).to.throw
+            expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { fallbackBootNodeEntities: null })) }).to.throw
+            expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { trustedEntities: null })) }).to.throw
+            expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { censusServiceManagedEntities: null })) }).to.throw
+
+        })
     })
 })
