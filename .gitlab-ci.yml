@@ -28,6 +28,7 @@ build:
   stage: build
   script:
     # - apt-get install build-essential
+    - rm -Rf node_modules/ganache-core/node_modules/web3-providers-ws/node_modules/websocket/.git
     - npm install
     - npm run build
   # artifacts:
@@ -42,6 +43,7 @@ test:
   stage: test
   script:
     # - apt-get install build-essential
+    - rm -Rf node_modules/ganache-core/node_modules/web3-providers-ws/node_modules/websocket/.git
     - npm install || true
     - npm run test
 
