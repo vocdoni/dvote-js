@@ -24,17 +24,17 @@ type AttachToContractParams = { gatewayUri?: string, provider?: providers.Provid
  * One of `gatewayUri`/`provider` and `signer`/`wallet` is required
  */
 export async function deployEntityContract(params: DeployContractParams = {}): Promise<Contract & EntityResolverContractMethods> {
-    const gwParams = { gatewayUri: params.gatewayUri, provider: params.provider }
-    const signParams = { signer: params.signer, wallet: params.wallet }
+    let { gatewayUri, provider, signer, wallet } = params
 
-    const gw = new Web3Gateway(gwParams)
-    const instance = await gw.deploy<EntityResolverContractMethods>(EntityContractDefinition.abi, EntityContractDefinition.bytecode, signParams)
+    const gw = new Web3Gateway({ gatewayUri, provider })
+    const instance = await gw.deploy<EntityResolverContractMethods>(EntityContractDefinition.abi, EntityContractDefinition.bytecode, { signer, wallet })
 
-    if (params.signer) {
-        return instance.connect(params.signer) as Contract & EntityResolverContractMethods
+    if (signer) {
+        return instance.connect(signer) as Contract & EntityResolverContractMethods
     }
     else { // if we reach this point, then wallet myst have been set
-        return instance.connect(params.wallet) as Contract & EntityResolverContractMethods
+        if (!wallet.provider) wallet = wallet.connect(gw.getProvider())
+        return instance.connect(wallet) as Contract & EntityResolverContractMethods
     }
 }
 
@@ -49,17 +49,17 @@ export async function deployEntityContract(params: DeployContractParams = {}): P
  * One of `gatewayUri`/`provider` and `signer`/`wallet` is required
  */
 export async function deployVotingContract(params: DeployContractParams = {}): Promise<Contract & VotingProcessContractMethods> {
-    const gwParams = { gatewayUri: params.gatewayUri, provider: params.provider }
-    const signParams = { signer: params.signer, wallet: params.wallet }
+    let { gatewayUri, provider, signer, wallet } = params
 
-    const gw = new Web3Gateway(gwParams)
-    const instance = await gw.deploy<VotingProcessContractMethods>(VotingContractDefinition.abi, VotingContractDefinition.bytecode, signParams)
+    const gw = new Web3Gateway({ gatewayUri, provider })
+    const instance = await gw.deploy<VotingProcessContractMethods>(VotingContractDefinition.abi, VotingContractDefinition.bytecode, { signer, wallet })
 
-    if (params.signer) {
-        return instance.connect(params.signer) as Contract & VotingProcessContractMethods
+    if (signer) {
+        return instance.connect(signer) as Contract & VotingProcessContractMethods
     }
     else { // if we reach this point, then wallet myst have been set
-        return instance.connect(params.wallet) as Contract & VotingProcessContractMethods
+        if (!wallet.provider) wallet = wallet.connect(gw.getProvider())
+        return instance.connect(wallet) as Contract & VotingProcessContractMethods
     }
 }
 
@@ -77,12 +77,13 @@ export async function deployVotingContract(params: DeployContractParams = {}): P
  * One of `gatewayUri`/`provider` and `signer`/`wallet` is required
  */
 export function getEntityResolverInstance(params: AttachToContractParams = {}, address: string): (Contract & EntityResolverContractMethods) {
-    const gwParams = { gatewayUri: params.gatewayUri, provider: params.provider }
-    const { signer, wallet } = params
+    let { gatewayUri, provider, signer, wallet } = params
 
-    const gw = new Web3Gateway(gwParams)
-    if (wallet)
+    const gw = new Web3Gateway({ gatewayUri, provider })
+    if (wallet) {
+        if (!wallet.provider) wallet = wallet.connect(gw.getProvider())
         return gw.attach(address, EntityContractDefinition.abi).connect(wallet) as (Contract & EntityResolverContractMethods)
+    }
     else if (signer)
         return gw.attach(address, EntityContractDefinition.abi).connect(signer) as (Contract & EntityResolverContractMethods)
     else
@@ -101,12 +102,13 @@ export function getEntityResolverInstance(params: AttachToContractParams = {}, a
  * One of `gatewayUri`/`provider` and `signer`/`wallet` is required
  */
 export function getVotingContractInstance(params: AttachToContractParams = {}, address: string): (Contract & VotingProcessContractMethods) {
-    const gwParams = { gatewayUri: params.gatewayUri, provider: params.provider }
-    const { signer, wallet } = params
+    let { gatewayUri, provider, signer, wallet } = params
 
-    const gw = new Web3Gateway(gwParams)
-    if (wallet)
+    const gw = new Web3Gateway({ gatewayUri, provider })
+    if (wallet) {
+        if (!wallet.provider) wallet = wallet.connect(gw.getProvider())
         return gw.attach(address, VotingContractDefinition.abi).connect(wallet) as (Contract & VotingProcessContractMethods)
+    }
     else if (signer)
         return gw.attach(address, VotingContractDefinition.abi).connect(signer) as (Contract & VotingProcessContractMethods)
     else
