@@ -310,6 +310,7 @@ describe("VocGateway", () => {
 
             expect(gatewayServer.interactionCount).to.equal(1)
 
+            const gw = new VocGateway(gatewayUrl)
             const result2 = await fetchFileBytes(result1, gw)
             expect(result2.toString()).to.equal(buffData.toString())
 
