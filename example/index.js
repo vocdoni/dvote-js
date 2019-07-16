@@ -8,21 +8,23 @@ const {
     addFile,
     fetchFileString
 } = require("..") // require("dvote-js")
+
 const { Wallet, providers } = require("ethers")
 const { Buffer } = require("buffer/")
 const fs = require("fs")
 
 const jsonMetadata = require("./metadata.json")
-const MNEMONIC = "payment scare exotic code enter party soul ignore horse glove myself ignore"
+// const MNEMONIC = "payment scare exotic code enter party soul ignore horse glove myself ignore"
+const MNEMONIC = "bar bundle start frog dish gauge square subway load easily south bamboo"
 const PATH = "m/44'/60'/0'/0/0"
-const GATEWAY_DVOTE_URI = "ws://host/dvote"
-const GATEWAY_WEB3_PROVIDER_URI = "https://rpc.slock.it/goerli"
-// const GATEWAY_WEB3_PROVIDER_URI = "http://127.0.0.1:8545"
-const resolverContractAddress = "0x9fa513Df94fF9EAE4b63669F187928d20bd7cE6F"
+const GATEWAY_DVOTE_URI = "wss://dev1.vocdoni.net:443/dvote"
+// const GATEWAY_WEB3_PROVIDER_URI = "https://rpc.slock.it/goerli"
+const GATEWAY_WEB3_PROVIDER_URI = "http://127.0.0.1:8545"
+const resolverContractAddress = "0x21f7DcCd9D1ce4C3685A5c50096265A8db4103b4"
 
 async function deployEntityResolver() {
     const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
-    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH).connect(provider)
+    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
     console.log("Deploying contract...")
     const contractInstance = await deployEntityContract({ provider, wallet })
@@ -45,7 +47,7 @@ async function deployEntityResolver() {
 
 async function attachToEntityResolver() {
     const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
-    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH).connect(provider)
+    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
     console.log("Attaching to contract at", resolverContractAddress)
     const contractInstance = await getEntityResolverInstance({ provider, wallet }, resolverContractAddress)
@@ -63,30 +65,24 @@ async function attachToEntityResolver() {
 
 async function registerEntity() {
     const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
-    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH).connect(provider)
-
-    console.log("Attaching the Entity Resolver:", resolverContractAddress)
-    const resolverInstance = await getEntityResolverInstance({ provider, wallet }, resolverContractAddress)
+    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
     const myEntityAddress = await wallet.getAddress()
     const myEntityId = getEntityId(myEntityAddress)
 
     console.log("Entity ID", myEntityId)
-    const gw = new GatewayURI(GATEWAY_DVOTE_URI, GATEWAY_ETH_PROVIDER_URI)
+    const gw = new GatewayURI(GATEWAY_DVOTE_URI, GATEWAY_WEB3_PROVIDER_URI)
     const contentUri = await updateEntity(myEntityAddress, resolverContractAddress, jsonMetadata, wallet, gw)
 
     // show stored values
     console.log("\nEntity registered!\n")
     console.log("The JSON metadata should become generally available in a few minutes")
     console.log(contentUri)
-
-    // ensure to disconnect if using WS
-    if (resolverInstance.provider.polling) resolverInstance.provider.polling = false
 }
 
 async function readEntity() {
     const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
-    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH).connect(provider)
+    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
     const myEntityAddress = await wallet.getAddress()
     const gw = new GatewayURI(GATEWAY_DVOTE_URI, GATEWAY_WEB3_PROVIDER_URI)
@@ -107,7 +103,7 @@ async function fileUpload() {
 
         console.log("\nReading back", origin)
         const data = await fetchFileString(origin, GATEWAY_DVOTE_URI)
-        console.log("DATA:", data.toString())
+        console.log("DATA:", data)
 
     } catch (err) {
         console.error(err)
@@ -116,9 +112,9 @@ async function fileUpload() {
 
 async function main() {
     // await deployEntityResolver()
-    // await attachToEntityResolver()
+    await attachToEntityResolver()
 
-    await registerEntity()
+    // await registerEntity()
     // await readEntity()
     // await fileUpload()
 }

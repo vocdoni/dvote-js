@@ -14,7 +14,7 @@ import { Wallet, Signer } from "ethers"
  * @param contentUri 
  * @param gateway (optional) A Vocdoni Gateway instance
  */
-export function fetchFileString(contentUri: ContentURI | string, gateway: VocGateway | string): Promise<String> {
+export function fetchFileString(contentUri: ContentURI | string, gateway: VocGateway | string): Promise<string> {
     let cUri: ContentURI
     if (typeof contentUri == "string") cUri = new ContentURI(contentUri)
     else cUri = contentUri

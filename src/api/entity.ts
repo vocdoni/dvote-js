@@ -5,6 +5,7 @@ import { getEntityResolverInstance } from "../net/contract"
 import { TextRecordKeys } from "../models/entity"
 import { fetchFileString, addFile } from "./file"
 import GatewayURI from "../util/gateway-uri"
+import { providerFromUri } from "../util/providers";
 
 export {
     deployEntityContract,
@@ -69,6 +70,9 @@ export async function updateEntity(entityAddress: string, resolverContractAddres
 
     const strJsonMeta = JSON.stringify(entityMetadata)
     const gw = new VocGateway(gatewayUri.dvote, gatewayPublicKey)
+    if (walletOrSigner instanceof Wallet && !walletOrSigner.provider) {
+        walletOrSigner = walletOrSigner.connect(providerFromUri(gatewayUri.web3))
+    }
     const ipfsUri = await addFile(strJsonMeta, "entity-metadata.json", walletOrSigner, gw)
     gw.disconnect()
 
