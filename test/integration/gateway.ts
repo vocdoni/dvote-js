@@ -305,8 +305,7 @@ describe("VocGateway", () => {
             const gatewayServer = new GatewayMock({ port, responses })
 
             // Client
-            const gw = new VocGateway(gatewayUrl)
-            const result1 = await addFile(buffData, "my-file.txt", baseAccount.wallet, gw)
+            const result1 = await addFile(buffData, "my-file.txt", baseAccount.wallet, gatewayUrl)
             expect(result1).to.equal("ipfs://ipfs/2345")
 
             expect(gatewayServer.interactionCount).to.equal(1)

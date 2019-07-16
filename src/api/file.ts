@@ -14,7 +14,7 @@ import { Wallet, Signer } from "ethers"
  * @param contentUri 
  * @param gateway (optional) A Vocdoni Gateway instance
  */
-export function fetchFileString(contentUri: ContentURI | string, gateway: VocGateway): Promise<String> {
+export function fetchFileString(contentUri: ContentURI | string, gateway: VocGateway | string): Promise<String> {
     let cUri: ContentURI
     if (typeof contentUri == "string") cUri = new ContentURI(contentUri)
     else cUri = contentUri
@@ -32,7 +32,7 @@ export function fetchFileString(contentUri: ContentURI | string, gateway: VocGat
  * @param contentUri 
  * @param gateway (optional) A Vocdoni Gateway instance
  */
-export async function fetchFileBytes(contentUri: ContentURI | string, gateway: VocGateway = null): Promise<Buffer> {
+export async function fetchFileBytes(contentUri: ContentURI | string, gateway: VocGateway | string = null): Promise<Buffer> {
     if (!contentUri) throw new Error("Invalid contentUri")
 
     let cUri: ContentURI
@@ -41,16 +41,31 @@ export async function fetchFileBytes(contentUri: ContentURI | string, gateway: V
 
     // Attempt 1: fetch all from the given gateway
     if (gateway) {
+        let gw: VocGateway
+        if (typeof gateway == "string") {
+            gw = new VocGateway(gateway)
+        }
+        else if (!(gateway instanceof VocGateway)) {
+            throw new Error("Invalid Gateway provided")
+        }
+        else {
+            gw = gateway
+        }
+
         try {
-            const response = await gateway.sendMessage({ method: "fetchFile", uri: cUri.toString() })
+            const response = await gw.sendMessage({ method: "fetchFile", uri: cUri.toString() })
             if (!response || !response.content) {
                 throw "Invalid response received from the gateway"
             }
 
-            gateway.disconnect()
+            // Disconnect if the VocGateway connection was created by the function
+            if (typeof gateway == "string") gw.disconnect()
+
             return Buffer.from(response.content, "base64")
         } catch (err) {
-            gateway.disconnect()
+            // Disconnect if the VocGateway connection was created by the function
+            if (typeof gateway == "string") gw.disconnect()
+
             if (err != "The request timed out") throw err
             // otherwise, continue below
         }
@@ -111,15 +126,27 @@ export async function fetchFileBytes(contentUri: ContentURI | string, gateway: V
  * @param buffer Uint8Array or string with the file contents
  * @param type What type of P2P protocol should be used
  * @param wallet An Ethers.js wallet capable of signing the payload
+ * @param gateway A string with the Gateway URI or a VocGateway object, set with a URI and a public key
  * @return The URI of the newly added file
  */
-export function addFile(buffer: Uint8Array | string, name: string, walletOrSigner: Wallet | Signer, gateway: VocGateway): Promise<string> {
+export function addFile(buffer: Uint8Array | string, name: string, walletOrSigner: Wallet | Signer, gateway: VocGateway | string): Promise<string> {
     if (!buffer) throw new Error("Empty payload")
     else if (!walletOrSigner) throw new Error("Wallet is required")
     else if (!gateway) throw new Error("A gateway is required")
 
     if (typeof buffer == "string") {
         buffer = new Uint8Array(Buffer.from(buffer))
+    }
+
+    let gw: VocGateway
+    if (typeof gateway == "string") {
+        gw = new VocGateway(gateway)
+    }
+    else if (!(gateway instanceof VocGateway)) {
+        throw new Error("Invalid Gateway provided")
+    }
+    else {
+        gw = gateway
     }
 
     const requestBody: RequestParameters = {
@@ -130,7 +157,10 @@ export function addFile(buffer: Uint8Array | string, name: string, walletOrSigne
         timestamp: Date.now()
     }
 
-    return gateway.sendMessage(requestBody, walletOrSigner).then(response => {
+    return gw.sendMessage(requestBody, walletOrSigner).then(response => {
+        // Disconnect if the VocGateway connection was created by the function
+        if (typeof gateway == "string") gw.disconnect()
+
         if (!response || !response.uri) throw new Error("The data could not be uploaded")
 
         return response.uri
