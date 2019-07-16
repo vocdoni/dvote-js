@@ -23,12 +23,19 @@ type AttachToContractParams = { gatewayUri?: string, provider?: providers.Provid
  * 
  * One of `gatewayUri`/`provider` and `signer`/`wallet` is required
  */
-export function deployEntityContract(params: DeployContractParams = {}): Promise<Contract & EntityResolverContractMethods> {
+export async function deployEntityContract(params: DeployContractParams = {}): Promise<Contract & EntityResolverContractMethods> {
     const gwParams = { gatewayUri: params.gatewayUri, provider: params.provider }
     const signParams = { signer: params.signer, wallet: params.wallet }
 
     const gw = new Web3Gateway(gwParams)
-    return gw.deploy<EntityResolverContractMethods>(EntityContractDefinition.abi, EntityContractDefinition.bytecode, signParams)
+    const instance = await gw.deploy<EntityResolverContractMethods>(EntityContractDefinition.abi, EntityContractDefinition.bytecode, signParams)
+
+    if (params.signer) {
+        return instance.connect(params.signer) as Contract & EntityResolverContractMethods
+    }
+    else { // if we reach this point, then wallet myst have been set
+        return instance.connect(params.wallet) as Contract & EntityResolverContractMethods
+    }
 }
 
 /**
@@ -41,12 +48,19 @@ export function deployEntityContract(params: DeployContractParams = {}): Promise
  * 
  * One of `gatewayUri`/`provider` and `signer`/`wallet` is required
  */
-export function deployVotingContract(params: DeployContractParams = {}): Promise<Contract & VotingProcessContractMethods> {
+export async function deployVotingContract(params: DeployContractParams = {}): Promise<Contract & VotingProcessContractMethods> {
     const gwParams = { gatewayUri: params.gatewayUri, provider: params.provider }
     const signParams = { signer: params.signer, wallet: params.wallet }
 
     const gw = new Web3Gateway(gwParams)
-    return gw.deploy<VotingProcessContractMethods>(VotingContractDefinition.abi, VotingContractDefinition.bytecode, signParams)
+    const instance = await gw.deploy<VotingProcessContractMethods>(VotingContractDefinition.abi, VotingContractDefinition.bytecode, signParams)
+
+    if (params.signer) {
+        return instance.connect(params.signer) as Contract & VotingProcessContractMethods
+    }
+    else { // if we reach this point, then wallet myst have been set
+        return instance.connect(params.wallet) as Contract & VotingProcessContractMethods
+    }
 }
 
 // INSTANCE ATTACHMENT

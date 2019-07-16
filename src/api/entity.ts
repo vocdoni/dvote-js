@@ -60,7 +60,7 @@ export async function getEntityMetadata(entityAddress: string, resolverContractA
  * @return A content URI with the IPFS origin
  */
 export async function updateEntity(entityAddress: string, resolverContractAddress: string, entityMetadata: EntityMetadata,
-    walletOrSigner: Wallet | Signer, gatewayUri: GatewayURI): Promise<string> {
+    walletOrSigner: Wallet | Signer, gatewayUri: GatewayURI, gatewayPublicKey?: string): Promise<string> {
     if (!entityAddress) throw new Error("Invalid entityAddress")
     else if (!entityMetadata) throw new Error("Invalid Entity metadata")
 
@@ -68,12 +68,12 @@ export async function updateEntity(entityAddress: string, resolverContractAddres
     checkValidEntityMetadata(entityMetadata)
 
     const strJsonMeta = JSON.stringify(entityMetadata)
-    const gw = new VocGateway(gatewayUri.dvote)
+    const gw = new VocGateway(gatewayUri.dvote, gatewayPublicKey)
     const ipfsUri = await addFile(strJsonMeta, "entity-metadata.json", walletOrSigner, gw)
     gw.disconnect()
 
     // Set the IPFS origin on the blockchain
-    const resolverInstance = getEntityResolverInstance({ gatewayUri: gatewayUri.web3 }, resolverContractAddress)
+    const resolverInstance = getEntityResolverInstance({ gatewayUri: gatewayUri.web3, signer: walletOrSigner }, resolverContractAddress)
 
     const entityId = getEntityId(entityAddress)
     const tx = await resolverInstance.setText(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI, ipfsUri)
