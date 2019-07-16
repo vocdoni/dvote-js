@@ -2,7 +2,8 @@ import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
 import { getAccounts, TestAccount, mnemonic } from "../eth-util"
-import { Gateway } from "../../src"
+import { VocGateway, Web3Gateway } from "../../src/net/gateway"
+import { addFile, fetchFileBytes } from "../../src/api/file"
 import { GatewayMock, InteractionMock, GatewayResponse } from "../mocks/gateway"
 import { server as ganacheRpcServer } from "ganache-core"
 import { Buffer } from "buffer"
@@ -19,7 +20,7 @@ const defaultDummyResponse = { id: "123", response: { request: "123", timestamp:
 
 addCompletionHooks()
 
-describe("Gateway", () => {
+describe("VocGateway", () => {
     beforeEach(async () => {
         accounts = getAccounts()
         baseAccount = accounts[0]
@@ -28,14 +29,14 @@ describe("Gateway", () => {
     })
 
     describe("Lifecycle", () => {
-        it("Should create a Gateway instance", async () => {
+        it("Should create a VocGateway instance", async () => {
             const gatewayServer = new GatewayMock({ port, responses: [] })
 
             expect(() => {
-                const gw1 = new Gateway("")
+                const gw1 = new VocGateway("")
             }).to.throw
 
-            const gw2 = new Gateway(gatewayUrl)
+            const gw2 = new VocGateway(gatewayUrl)
             expect(await gw2.getUri()).to.equal(gatewayUrl)
 
             gw2.disconnect()
@@ -48,9 +49,9 @@ describe("Gateway", () => {
             const gatewayServer1 = new GatewayMock({ port: port1, responses: [defaultDummyResponse] })
             expect(gatewayServer1.interactionCount).to.equal(0)
 
-            const gwClient = new Gateway(gatewayUrl1)
+            const gwClient = new VocGateway(gatewayUrl1)
             expect(await gwClient.getUri()).to.equal(gatewayUrl1)
-            await gwClient.request({ method: "getVoteStatus", processId: "1234", nullifier: "2345" })
+            await gwClient.sendMessage({ method: "getVoteStatus", processId: "1234", nullifier: "2345" })
 
             await gwClient.disconnect()
             await gatewayServer1.stop()
@@ -60,9 +61,9 @@ describe("Gateway", () => {
 
             const gatewayServer2 = new GatewayMock({ port: port2, responses: [defaultDummyResponse] })
             expect(gatewayServer2.interactionCount).to.equal(0)
-            await gwClient.setGatewayUri(gatewayUrl2)
+            await gwClient.connect(gatewayUrl2)
             expect(await gwClient.getUri()).to.equal(gatewayUrl2)
-            await gwClient.request({ method: "getVoteStatus", processId: "5678", nullifier: "6789" })
+            await gwClient.sendMessage({ method: "getVoteStatus", processId: "5678", nullifier: "6789" })
 
             await gwClient.disconnect()
             await gatewayServer2.stop()
@@ -84,13 +85,13 @@ describe("Gateway", () => {
                     { id: "456", response: { request: "456", timestamp: 456, result: "OK 5" }, signature: "456" },
                 ]
             })
-            const gwClient = new Gateway(gatewayUrl)
+            const gwClient = new VocGateway(gatewayUrl)
 
-            const response1 = await gwClient.request({ method: "getVoteStatus", processId: "1234", nullifier: "2345" })
-            const response2 = await gwClient.request({ method: "getVoteStatus", processId: "3456", nullifier: "4567" })
-            const response3 = await gwClient.request({ method: "getVoteStatus", processId: "5678", nullifier: "6789" })
-            const response4 = await gwClient.request({ method: "fetchFile", uri: "12345" })
-            const response5 = await gwClient.request({ method: "fetchFile", uri: "67890" })
+            const response1 = await gwClient.sendMessage({ method: "getVoteStatus", processId: "1234", nullifier: "2345" })
+            const response2 = await gwClient.sendMessage({ method: "getVoteStatus", processId: "3456", nullifier: "4567" })
+            const response3 = await gwClient.sendMessage({ method: "getVoteStatus", processId: "5678", nullifier: "6789" })
+            const response4 = await gwClient.sendMessage({ method: "fetchFile", uri: "12345" })
+            const response5 = await gwClient.sendMessage({ method: "fetchFile", uri: "67890" })
 
             expect(response1.result).to.equal("OK 1")
             expect(response2.result).to.equal("OK 2")
@@ -126,38 +127,38 @@ describe("Gateway", () => {
                     { id: "456", error: { request: "456", timestamp: 456, message: "ERROR 5" }, signature: "456" },
                 ]
             })
-            const gwClient = new Gateway(gatewayUrl)
+            const gwClient = new VocGateway(gatewayUrl)
 
             try {
-                await gwClient.request({ method: "getVoteStatus", processId: "1234", nullifier: "2345" })
+                await gwClient.sendMessage({ method: "getVoteStatus", processId: "1234", nullifier: "2345" })
                 throw new Error("Request did not fail")
             }
             catch (err) {
                 expect(err.message).to.equal("ERROR 1")
             }
             try {
-                await gwClient.request({ method: "getVoteStatus", processId: "3456", nullifier: "4567" })
+                await gwClient.sendMessage({ method: "getVoteStatus", processId: "3456", nullifier: "4567" })
                 throw new Error("Request did not fail")
             }
             catch (err) {
                 expect(err.message).to.equal("ERROR 2")
             }
             try {
-                await gwClient.request({ method: "getVoteStatus", processId: "5678", nullifier: "6789" })
+                await gwClient.sendMessage({ method: "getVoteStatus", processId: "5678", nullifier: "6789" })
                 throw new Error("Request did not fail")
             }
             catch (err) {
                 expect(err.message).to.equal("ERROR 3")
             }
             try {
-                await gwClient.request({ method: "fetchFile", uri: "12345" })
+                await gwClient.sendMessage({ method: "fetchFile", uri: "12345" })
                 throw new Error("Request did not fail")
             }
             catch (err) {
                 expect(err.message).to.equal("ERROR 4")
             }
             try {
-                await gwClient.request({ method: "fetchFile", uri: "67890" })
+                await gwClient.sendMessage({ method: "fetchFile", uri: "67890" })
                 throw new Error("Request did not fail")
             }
             catch (err) {
@@ -188,13 +189,13 @@ describe("Gateway", () => {
     //         const fileContent = "GOOD MORNING"
     //         const buffData = Buffer.from(fileContent)
 
-    //         // Gateway (server)
+    //         // VocGateway (server)
     //         const responses: GatewayResponse[] = [{ error: false, response: ["bzz://1234"] }]
     //         const gatewayServer = new GatewayMock({ port, responses })
 
     //         // Client
-    //         const gw = new Gateway(gatewayUrl)
-    //         const result1 = await gw.addFile(buffData, "my-file.txt", "swarm", baseAccount.wallet)
+    //         const gw = new VocGateway(gatewayUrl)
+    //         const result1 = await addFile(buffData, "my-file.txt", baseAccount.wallet, gw)
 
     //         expect(gatewayServer.interactionCount).to.equal(1)
     //         expect(gatewayServer.interactionList[0].actual.request.method).to.equal("addFile")
@@ -213,7 +214,7 @@ describe("Gateway", () => {
     //         const fileContent = "HELLO WORLD"
     //         const buffData = Buffer.from(fileContent)
 
-    //         // Gateway (server)
+    //         // VocGateway (server)
     //         const responses: GatewayResponse[] = [
     //             { error: false, response: ["bzz://2345"] },
     //             { error: false, response: [buffData.toString("base64")] }
@@ -221,13 +222,13 @@ describe("Gateway", () => {
     //         const gatewayServer = new GatewayMock({ port, responses })
 
     //         // Client
-    //         const gw = new Gateway(gatewayUrl)
-    //         const result1 = await gw.addFile(buffData, "my-file.txt", "swarm", baseAccount.wallet)
+    //         const gw = new VocGateway(gatewayUrl)
+    //         const result1 = await addFile(buffData, "my-file.txt", baseAccount.wallet, gw)
     //         expect(result1).to.equal("bzz://2345")
 
     //         expect(gatewayServer.interactionCount).to.equal(1)
 
-    //         const result2 = (await gw.fetchFile(result1)).toString("base64")
+    //         const result2 = (await fetchFileBytes(result1, gw)).toString("base64")
     //         expect(result2).to.equal(buffData)
 
     //         expect(gatewayServer.interactionCount).to.equal(2)
@@ -243,14 +244,14 @@ describe("Gateway", () => {
     //         const fileContent = "HI THERE"
     //         const buffData = Buffer.from(fileContent)
 
-    //         // Gateway (server)
+    //         // VocGateway (server)
     //         const gatewayServer = new GatewayMock({ port, responses: [] })
 
     //         // Client
     //         try {
-    //             const gw = new Gateway(gatewayUrl)
+    //             const gw = new VocGateway(gatewayUrl)
     //             await new Promise(resolve => setTimeout(resolve, 10))
-    //             await gw.addFile(buffData, "my-file.txt", "swarm", null)
+    //             await addFile(buffData, "my-file.txt", null, gw)
     //             throw new Error("Should have thrown an error but didn't")
     //         }
     //         catch (err) {
@@ -269,15 +270,15 @@ describe("Gateway", () => {
             const fileContent = "HI THERE"
             const buffData = Buffer.from(fileContent)
 
-            // Gateway (server)
+            // VocGateway (server)
             const responses: GatewayResponse[] = [
                 { id: "123", response: { request: "123", timestamp: 123, uri: "ipfs://ipfs/1234" }, signature: "123" }
             ]
             const gatewayServer = new GatewayMock({ port, responses })
 
             // Client
-            const gw = new Gateway(gatewayUrl)
-            const result1 = await gw.addFile(buffData, "my-file.txt", "ipfs", baseAccount.wallet)
+            const gw = new VocGateway(gatewayUrl)
+            const result1 = await addFile(buffData, "my-file.txt", baseAccount.wallet, gw)
 
             expect(gatewayServer.interactionCount).to.equal(1)
             expect(gatewayServer.interactionList[0].actual.request.method).to.equal("addFile")
@@ -296,7 +297,7 @@ describe("Gateway", () => {
             const fileContent = "HI THERE"
             const buffData = Buffer.from(fileContent)
 
-            // Gateway (server)
+            // VocGateway (server)
             const responses: GatewayResponse[] = [
                 { id: "123", response: { request: "123", timestamp: 123, uri: "ipfs://ipfs/2345" }, signature: "123" },
                 { id: "234", response: { request: "234", timestamp: 234, content: buffData.toString("base64") }, signature: "234" }
@@ -304,13 +305,13 @@ describe("Gateway", () => {
             const gatewayServer = new GatewayMock({ port, responses })
 
             // Client
-            const gw = new Gateway(gatewayUrl)
-            const result1 = await gw.addFile(buffData, "my-file.txt", "ipfs", baseAccount.wallet)
+            const result1 = await addFile(buffData, "my-file.txt", baseAccount.wallet, gatewayUrl)
             expect(result1).to.equal("ipfs://ipfs/2345")
 
             expect(gatewayServer.interactionCount).to.equal(1)
 
-            const result2 = await gw.fetchFile(result1)
+            const gw = new VocGateway(gatewayUrl)
+            const result2 = await fetchFileBytes(result1, gw)
             expect(result2.toString()).to.equal(buffData.toString())
 
             expect(gatewayServer.interactionCount).to.equal(2)
@@ -326,7 +327,7 @@ describe("Gateway", () => {
             const fileContent = "HI THERE"
             const buffData = Buffer.from(fileContent)
 
-            // Gateway (server)
+            // VocGateway (server)
             const gatewayServer = new GatewayMock({
                 port, responses: [
                     { id: "123", error: { request: "123", timestamp: 123, message: "Invalid wallet" }, signature: "123" },
@@ -335,9 +336,9 @@ describe("Gateway", () => {
 
             // Client
             try {
-                const gw = new Gateway(gatewayUrl)
+                const gw = new VocGateway(gatewayUrl)
                 await new Promise(resolve => setTimeout(resolve, 10))
-                await gw.addFile(buffData, "my-file.txt", "ipfs", baseAccount.wallet)
+                await addFile(buffData, "my-file.txt", baseAccount.wallet, gw)
                 throw new Error("Should have thrown an error but didn't")
             }
             catch (err) {
@@ -354,25 +355,25 @@ describe("Gateway", () => {
     describe("Web3 provider", () => {
         it("Should provide a Web3 JSON RPC provider to interact with the blockchain", async () => {
             // Web socket server
-            const webSocketServer = new GatewayMock({ port, responses: [] })
+            // const webSocketServer = new GatewayMock({ port, responses: [] })
 
             // Web3 node
             const rpcServer = ganacheRpcServer()
-            const info: any = await new Promise(resolve => rpcServer.listen(8545, (err, info) => resolve(info)))
+            const info: any = await new Promise(resolve => rpcServer.listen(port, (err, info) => resolve(info)))
 
             expect(Object.keys(info.personal_accounts).length).to.be.approximately(10, 9)
             expect(Object.keys(info.personal_accounts)[0]).to.match(/^0x[0-9a-fA-F]{40}$/)
 
             const addr = Object.keys(info.personal_accounts)[0]
 
-            const gw = new Gateway(gatewayUrl)
-            // FIXME: review this assertion once the Gateway proxy is ready
-            const gwProvider = await Gateway.ethereumProviderFromGateway(gw)
+            const gatewayUrl = `http://localhost:${port}`
+            const gw = new Web3Gateway({ gatewayUri: gatewayUrl })
+            const gwProvider = gw.getProvider()
             const balance = await gwProvider.getBalance(addr)
 
             expect(balance.toHexString()).to.match(/^0x[0-9a-fA-F]{10,}$/)
 
-            webSocketServer.stop()
+            // webSocketServer.stop()
             rpcServer.close()
         })
     })
