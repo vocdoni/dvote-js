@@ -9,7 +9,7 @@ const {
     fetchFileString
 } = require("..") // require("dvote-js")
 
-const { Wallet, providers } = require("ethers")
+const { Wallet, providers, utils } = require("ethers")
 const { Buffer } = require("buffer/")
 const fs = require("fs")
 
@@ -110,6 +110,27 @@ async function fileUpload() {
     }
 }
 
+async function checkSignature() {
+    const response = {
+        "id": "16ba55c30a8f3b7d212512e31ac0e8aba927a25ce03b592ee6c49091acad63ee",
+        "response": {
+            "request": "16ba55c30a8f3b7d212512e31ac0e8aba927a25ce03b592ee6c49091acad63ee",
+            "timestamp": 1563458688772935070,
+            "uri": "ipfs://QmQ9exgKoEfC8NrmXRQTvejbB1d6mZApmNWAe5MQ1ZMX1C"
+        },
+        "signature": "0x1b5a3a555d1f4b7ee9dad8cd87b02d551638f433c648e86fad0bc7356218939b170c74276442aa061d5d1afe7fb65a85591d67cbca130ba79cfde1982364fe4500"
+    }
+    const strBody = JSON.stringify(response.response)
+
+    const expectedPublicKey = "02325f284f50fa52d53579c7873a480b351cc20f7780fa556929f5017283ad2449"
+    const expectedAddress = utils.computeAddress("0x" + expectedPublicKey)
+
+    const actualAddress = utils.verifyMessage(strBody, response.signature)
+
+    console.log("EXPECTED", expectedAddress)
+    console.log("ACTUAL", actualAddress)
+}
+
 async function main() {
     // await deployEntityResolver()
     await attachToEntityResolver()
@@ -117,6 +138,7 @@ async function main() {
     // await registerEntity()
     // await readEntity()
     // await fileUpload()
+    // checkSignature()
 }
 
 main()

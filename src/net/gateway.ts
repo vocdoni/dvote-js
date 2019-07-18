@@ -224,9 +224,14 @@ export class VocGateway {
         const request = this.requestList.find(r => r.id == response.id)
         if (!request) return // it may have timed out
 
-        // TODO: CHECK THE SIGNATURE OF THE RESPONSE
-        console.warn("TO DO: CHECK THE SIGNATURE OF THE RESPONSE")
-        // this.publicKey
+        // Check the signature of the response
+        if (this.publicKey) {
+            const pubK = this.publicKey.startsWith("0x") ? this.publicKey : "0x" + this.publicKey
+            const expectedAddress = utils.computeAddress(pubK)
+            const strBody = JSON.stringify(response.response)
+            const actualAddress = utils.verifyMessage(strBody, response.signature)
+            if (!actualAddress || expectedAddress != actualAddress) throw new Error("The signature of the response does not match the expected public key")
+        }
 
         clearTimeout(request.timeout)
         delete request.reject
