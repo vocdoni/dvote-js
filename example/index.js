@@ -2,6 +2,7 @@ const {
     getEntityResolverInstance,
     deployEntityContract,
     getEntityId,
+    VocGateway,
     GatewayURI,
     getEntityMetadata,
     updateEntity,
@@ -17,7 +18,7 @@ const jsonMetadata = require("./metadata.json")
 // const MNEMONIC = "payment scare exotic code enter party soul ignore horse glove myself ignore"
 const MNEMONIC = "bar bundle start frog dish gauge square subway load easily south bamboo"
 const PATH = "m/44'/60'/0'/0/0"
-const GATEWAY_DVOTE_URI = "ws://host/dvote"
+const GATEWAY_PUB_KEY = ""
 // const GATEWAY_WEB3_PROVIDER_URI = "https://rpc.slock.it/goerli"
 const GATEWAY_WEB3_PROVIDER_URI = "http://127.0.0.1:8545"
 const resolverContractAddress = "0x21f7DcCd9D1ce4C3685A5c50096265A8db4103b4"
@@ -92,20 +93,24 @@ async function readEntity() {
 }
 
 async function fileUpload() {
+    var gw
     try {
         const wallet = Wallet.fromMnemonic(MNEMONIC)
+        gw = new VocGateway(GATEWAY_DVOTE_URI, GATEWAY_PUB_KEY || null)
 
         console.log("SIGNING FROM ADDRESS", wallet.address)
 
         const strData = fs.readFileSync(__dirname + "/mobile-org-web-action-example.html").toString()
-        const origin = await addFile(Buffer.from(strData), "mobile-org-web-action-example.html", wallet, GATEWAY_DVOTE_URI)
+        const origin = await addFile(Buffer.from(strData), "mobile-org-web-action-example.html", wallet, gw)
         console.log("mobile-org-web-action-example.html\nDATA STORED ON:", origin)
 
         console.log("\nReading back", origin)
-        const data = await fetchFileString(origin, GATEWAY_DVOTE_URI)
+        const data = await fetchFileString(origin, gw)
         console.log("DATA:", data)
 
+        gw.disconnect()
     } catch (err) {
+        if (gw) gw.disconnect()
         console.error(err)
     }
 }
