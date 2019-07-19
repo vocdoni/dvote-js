@@ -49,7 +49,8 @@ type GatewayResponse = {
         requestId: string,
         message: string
     },
-    response?: any
+    response?: any,
+    signature: string
 }
 
 const uriPattern = /^([a-z][a-z0-9+.-]+):(\/\/([^@]+@)?([a-z0-9.\-_~]+)(:\d+)?)?((?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])*)*|(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+)*)?(\?(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?(\#(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?$/i
@@ -192,12 +193,27 @@ export class VocGateway {
         })
 
         const msg = (await reqPromise) as GatewayResponse
+
+        // Check the signature of the response
+        if (this.publicKey) {
+            if (msg.response) {
+                if (!this.isSignatureValid(msg.signature, msg.response)) {
+                    throw new Error("The signature of the response does not match the expected one")
+                }
+            }
+            else if (msg.error) {
+                if (!this.isSignatureValid(msg.signature, msg.error)) {
+                    throw new Error("The signature of the response does not match the expected one")
+                }
+            }
+        }
+
         if (msg.error) {
             if (msg.error.message) throw new Error(msg.error.message)
             else throw new Error("There was an error while handling the request")
         }
-        else if (msg.error) {
-            throw new Error(msg.response && msg.response[0] || "There was an error while handling the request")
+        else if (!msg.response) {
+            throw new Error("Received an empty response")
         }
 
         return msg.response
@@ -224,15 +240,6 @@ export class VocGateway {
         const request = this.requestList.find(r => r.id == response.id)
         if (!request) return // it may have timed out
 
-        // Check the signature of the response
-        if (this.publicKey) {
-            const pubK = this.publicKey.startsWith("0x") ? this.publicKey : "0x" + this.publicKey
-            const expectedAddress = utils.computeAddress(pubK)
-            const strBody = JSON.stringify(response.response)
-            const actualAddress = utils.verifyMessage(strBody, response.signature)
-            if (!actualAddress || expectedAddress != actualAddress) throw new Error("The signature of the response does not match the expected public key")
-        }
-
         clearTimeout(request.timeout)
         delete request.reject
         delete request.timeout
@@ -240,8 +247,31 @@ export class VocGateway {
         // remove from the list
         this.requestList = this.requestList.filter(r => r.id != response.id)
 
+        // The request payload is handled in `sendMessage`
         request.resolve(response)
         delete request.resolve
+    }
+
+    /**
+     * 
+     * @param signature Hex encoded signature (created with the Ethereum prefix)
+     * @param responseBody JSON object of the `response` or `error` fields
+     */
+    private isSignatureValid(signature: string, responseBody: any): boolean {
+        if (!this.publicKey) return true
+        else if (!signature) return false
+
+        const gwPublicKey = this.publicKey.startsWith("0x") ? this.publicKey : "0x" + this.publicKey
+        const expectedAddress = utils.computeAddress(gwPublicKey)
+
+        responseBody = sortObjectFields(responseBody)
+        let strBody: string
+        if (typeof responseBody != "string") strBody = JSON.stringify(responseBody)
+        else strBody = responseBody
+
+        const actualAddress = utils.verifyMessage(strBody, signature)
+
+        return actualAddress && expectedAddress && (actualAddress == expectedAddress)
     }
 }
 
