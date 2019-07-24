@@ -196,6 +196,13 @@ export class VocGateway {
 
         // Check the signature of the response
         if (this.publicKey) {
+            const from = Math.floor(Date.now() / 1000) - 10
+            const until = Math.floor(Date.now() / 1000) + 10
+            if (typeof msg.response.timestamp != "number" ||
+                msg.response.timestamp < from || msg.response.timestamp > until) {
+                throw new Error("The response does not provide a valid timestamp")
+            }
+
             if (msg.response) {
                 if (!this.isSignatureValid(msg.signature, msg.response)) {
                     throw new Error("The signature of the response does not match the expected one")
