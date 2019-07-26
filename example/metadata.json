@@ -1,5 +1,6 @@
 {
     "version": "1.0",
+    "entityId": "0x409568155b5da230b6d95ca9460713b3c4d12c59851ed84aaa7ba52844c0eb5f",
     "languages": [
         "default"
     ],
@@ -11,7 +12,11 @@
         "default": "The description of my entity goes here",
         "fr": "La description officielle de mon organisation est ici"
     },
-    "votingContract": "0x0123456789012345678901234567890123456789",
+    "contracts": {
+        "resolverAddress": "0x21f7DcCd9D1ce4C3685A5c50096265A8db4103b4",
+        "votingAddress": "0x1234567890123456789012345678901234567890",
+        "networkId": "goerli"
+    },
     "votingProcesses": {
         "active": [],
         "ended": []
@@ -20,7 +25,10 @@
         "default": "https://hipsterpixel.co/feed.json",
         "fr": "https://feed2json.org/convert?url=http://www.intertwingly.net/blog/index.atom"
     },
-    "avatar": "https://hipsterpixel.co/assets/favicons/apple-touch-icon.png",
+    "media": {
+        "avatar": "https://hipsterpixel.co/assets/favicons/apple-touch-icon.png",
+        "header": "https://images.unsplash.com/photo-1557518016-299b3b3c2e7f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=500&q=80"
+    },
     "actions": [
         {
             "type": "browser",
@@ -34,8 +42,8 @@
     ],
     "gatewayBootNodes": [
         {
-            "heartbeatMessagingUri": "pss://publicKey@0x0",
-            "fetchUri": "https://bootnode:port/gateways.json"
+            "fetchUri": "https://bootnode:port/gateways.json",
+            "heartbeatMessagingUri": "pss://publicKey@0x0"
         }
     ],
     "gatewayUpdate": {

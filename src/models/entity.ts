@@ -48,25 +48,36 @@ const multiLanguageStringKeys = {
 }
 
 const entityReferenceSchema = Joi.object().keys({
-    resolverAddress: Joi.string().regex(/^0x[a-z0-9]{40}$/).required(),
-    entityId: Joi.string().regex(/^0x[a-z0-9]+$/).required(),
+    resolverAddress: Joi.string().regex(/^0x[a-zA-Z0-9]{40}$/).required(),
+    networkId: Joi.string().regex(/^[a-z]+$/).required(),
+    entityId: Joi.string().regex(/^0x[a-z0-9]+$/).required()
 })
 
 // MAIN ENTITY SCHEMA
 
 const entityMetadataSchema = Joi.object().keys({
     version: Joi.string().regex(/^[0-9]\.[0-9]$/).required(),
+    entityId: Joi.string().regex(/^0x[a-z0-9]+$/).required(),
+
     languages: Joi.array().items(Joi.string().regex(/^([a-z]{2}|default)$/)).required(), // TODO: remove default
     name: Joi.object().keys(multiLanguageStringKeys).required(),
     description: Joi.object().keys(multiLanguageStringKeys).required(),
 
-    votingContract: Joi.string().regex(/^0x[a-z0-9]{40}$/).required(),
+    contracts: Joi.object().keys({
+        resolverAddress: Joi.string().regex(/^0x[a-zA-Z0-9]{40}$/).required(),
+        votingAddress: Joi.string().regex(/^0x[a-zA-Z0-9]{40}$/).required(),
+        networkId: Joi.string().regex(/^[a-z]+$/).required()
+    }).required(),
     votingProcesses: Joi.object().keys({
         active: Joi.array().items(Joi.string().regex(/^0x[a-z0-9]+$/)).required(),
         ended: Joi.array().items(Joi.string().regex(/^0x[a-z0-9]+$/)).required()
     }).required(),
+
     newsFeed: Joi.object().keys(multiLanguageStringKeys).required(),
-    avatar: Joi.string().required(),
+    media: Joi.object().keys({
+        avatar: Joi.string().required(),
+        header: Joi.string().required(),
+    }),
 
     actions: Joi.array().items(
         Joi.object().keys({
@@ -91,8 +102,8 @@ const entityMetadataSchema = Joi.object().keys({
 
     gatewayBootNodes: Joi.array().items(
         Joi.object().keys({
-            heartbeatMessagingUri: Joi.string().required(),
-            fetchUri: Joi.string().required()
+            fetchUri: Joi.string().required(),
+            heartbeatMessagingUri: Joi.string().required()
         }),
     ).required(),
 
@@ -146,6 +157,7 @@ export const TextListRecordKeys = {
  */
 export interface EntityMetadata {
     version: ProtocolVersion,                // Protocol version
+    entityId: string,
     languages: ["default"], // FIXME: Remove in favor of actual language codes
     // languages: string[],                  // Two character language code (en, fr, it, ...)
 
@@ -153,12 +165,19 @@ export interface EntityMetadata {
     description: MultiLanguage<string>,
 
     newsFeed: MultiLanguage<ContentURI>,
-    votingContract: ContractAddress,
+    contracts: {
+        resolverAddress: ContractAddress,
+        votingAddress: ContractAddress,
+        networkId: string,
+    },
     votingProcesses: {
         active: ProcessId[],  // Process ID's to query on the Voting Contract
         ended: ProcessId[]
     },
-    avatar: ContentURI,
+    media: {
+        avatar: ContentURI,
+        header: ContentURI
+    },
 
     // List of custom interactions that the entity defines.
     // It may include anything like visiting web sites, uploading pictures, making payments, etc.
@@ -182,8 +201,8 @@ export interface EntityMetadata {
 }
 
 interface GatewayBootNode {
-    heartbeatMessagingUri: MessagingURI,   // Where Gateways should report their status updates
-    fetchUri: URI                          // Where to fetch the Bootnode Gateways
+    fetchUri: URI,                          // Where to fetch the Bootnode Gateways
+    heartbeatMessagingUri: MessagingURI     // Where Gateways should report their status updates
 }
 
 interface RelayInfo {
@@ -244,6 +263,7 @@ type ImageUploadSource = {
 
 type EntityReference = {
     resolverAddress: ContractAddress,
+    networkId: string,
     entityId: HexString
 }
 
@@ -253,6 +273,7 @@ type EntityReference = {
 
 export const EntityMetadataTemplate: EntityMetadata = {
     version: "1.0",
+    entityId: "0x0000000000000000000000000000000000000000000000000000000000000000",
     languages: [
         "default"
     ],
@@ -264,7 +285,11 @@ export const EntityMetadataTemplate: EntityMetadata = {
         default: "The description of my entity goes here",
         // fr: "La description officielle de mon organisation est ici"
     },
-    votingContract: "0x0123456789012345678901234567890123456789",
+    contracts: {
+        "resolverAddress": "0x21f7DcCd9D1ce4C3685A5c50096265A8db4103b4",
+        "votingAddress": "0x1234567890123456789012345678901234567890",
+        "networkId": "goerli"
+    },
     votingProcesses: {
         active: [],
         ended: []
@@ -273,7 +298,10 @@ export const EntityMetadataTemplate: EntityMetadata = {
         default: "https://hipsterpixel.co/feed.json",
         // fr: "https://feed2json.org/convert?url=http://www.intertwingly.net/blog/index.atom"
     },
-    avatar: "https://hipsterpixel.co/assets/favicons/apple-touch-icon.png",
+    media: {
+        avatar: "https://host/image.png",
+        header: "https://host/image.png"
+    },
     actions: [
         {
             type: "browser",
