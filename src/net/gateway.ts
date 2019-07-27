@@ -47,7 +47,8 @@ type GatewayResponse = {
     id: string,
     error?: {
         requestId: string,
-        message: string
+        message: string,
+        timestamp: number
     },
     response?: any,
     signature: string
@@ -171,12 +172,6 @@ export class VocGateway {
             content.signature = await signRequestBody(requestBody, wallet)
         }
 
-        if (this.connectionPromise) {
-            // wait until the socket is open
-            // useful if the GW object has just been initialized
-            await this.connectionPromise
-        }
-
         const reqPromise = new Promise((resolve, reject) => {
             this.requestList.push({
                 id: requestId,
@@ -196,10 +191,11 @@ export class VocGateway {
 
         // Check the signature of the response
         if (this.publicKey) {
+            const timestamp = msg.response ? msg.response.timestamp : (msg.error ? msg.error.timestamp : null)
+
             const from = Math.floor(Date.now() / 1000) - 10
             const until = Math.floor(Date.now() / 1000) + 10
-            if (typeof msg.response.timestamp != "number" ||
-                msg.response.timestamp < from || msg.response.timestamp > until) {
+            if (typeof timestamp != "number" || timestamp < from || timestamp > until) {
                 throw new Error("The response does not provide a valid timestamp")
             }
 
