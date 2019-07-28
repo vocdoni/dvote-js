@@ -149,7 +149,7 @@ export class VocGateway {
 
     /**
      * Send a WS message to a Vocdoni Gateway and add an entry to track its response
-     * @param requestBody Parameters of the request to send
+     * @param requestBody Parameters of the request to send. The timestamp (in seconds) will be added to the object.
      * @param wallet (optional) The wallet to use for signing (default: null)
      * @param timeout (optional) Timeout in seconds to wait before failing (default: 50)
      */
@@ -161,6 +161,11 @@ export class VocGateway {
         }
 
         if (!this.webSocket) return Promise.reject(new Error("The gateway connection is not yet available"))
+
+        // Append the current timestamp to the body
+        if (typeof requestBody.timestamp == "undefined") {
+            requestBody.timestamp = Math.floor(Date.now() / 1000)
+        }
 
         const requestId = utils.keccak256('0x' + Date.now().toString(16)).substr(2)
         const content: MessageRequestContent = {

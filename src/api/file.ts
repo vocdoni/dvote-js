@@ -153,8 +153,7 @@ export function addFile(buffer: Uint8Array | string, name: string, walletOrSigne
         method: "addFile",
         type: "ipfs",
         name,
-        content: Buffer.from(buffer).toString("base64"),
-        timestamp: Date.now()
+        content: Buffer.from(buffer).toString("base64")
     }
 
     return gw.sendMessage(requestBody, walletOrSigner).then(response => {
