@@ -46,7 +46,7 @@ type MessageRequestContent = {
 type GatewayResponse = {
     id: string,
     error?: {
-        requestId: string,
+        request: string,
         message: string,
         timestamp: number
     },
@@ -193,6 +193,11 @@ export class VocGateway {
         })
 
         const msg = (await reqPromise) as GatewayResponse
+
+        const incomingReqId = msg.response ? msg.response.request : (msg.error ? msg.error.request : null)
+        if (incomingReqId !== requestId) {
+            throw new Error("The signed request ID does not match the expected one")
+        }
 
         // Check the signature of the response
         if (this.publicKey) {
