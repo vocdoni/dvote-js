@@ -116,24 +116,64 @@ async function fileUpload() {
 }
 
 async function checkSignature() {
-    const response = {
-        "id": "16ba55c30a8f3b7d212512e31ac0e8aba927a25ce03b592ee6c49091acad63ee",
-        "response": {
-            "request": "16ba55c30a8f3b7d212512e31ac0e8aba927a25ce03b592ee6c49091acad63ee",
-            "timestamp": 1563458688772935070,
-            "uri": "ipfs://QmQ9exgKoEfC8NrmXRQTvejbB1d6mZApmNWAe5MQ1ZMX1C"
-        },
-        "signature": "0x1b5a3a555d1f4b7ee9dad8cd87b02d551638f433c648e86fad0bc7356218939b170c74276442aa061d5d1afe7fb65a85591d67cbca130ba79cfde1982364fe4500"
+    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+    const message = "Hello dapp"
+    const signature = await wallet.signMessage(message)
+
+    console.log("ISSUING SIGNATURE")
+    console.log("ADDR:    ", await wallet.getAddress())
+    console.log("PUB K:   ", wallet.signingKey.publicKey)
+    console.log("SIG      ", signature)
+    console.log()
+
+    // Approach 1
+    const actualAddress = utils.verifyMessage(message, signature)
+
+    console.log("APPROACH 1")
+    console.log("EXPECTED ADDR: ", await wallet.getAddress())
+    console.log("ACTUAL ADDR:   ", actualAddress)
+    console.log()
+
+    // Approach 2
+    const msgHash = utils.hashMessage(message);
+    const msgHashBytes = utils.arrayify(msgHash);
+
+    // Now you have the digest,
+    const recoveredPubKey = utils.recoverPublicKey(msgHashBytes, signature);
+    const recoveredAddress = utils.recoverAddress(msgHashBytes, signature);
+
+    const matches = wallet.signingKey.publicKey === recoveredPubKey
+
+    console.log("APPROACH 2")
+    // console.log("MSG HASH", msgHash)
+    console.log("EXPECTED ADDR:    ", await wallet.getAddress())
+    console.log("RECOVERED ADDR:   ", recoveredAddress)
+
+    console.log("EXPECTED PUB K:   ", wallet.signingKey.publicKey)
+    console.log("RECOVERED PUB K': ", recoveredPubKey)
+
+    console.log("SIGNATURE VALID:", matches)
+    console.log()
     }
-    const strBody = JSON.stringify(response.response)
 
-    const expectedPublicKey = "02325f284f50fa52d53579c7873a480b351cc20f7780fa556929f5017283ad2449"
-    const expectedAddress = utils.computeAddress("0x" + expectedPublicKey)
+async function gatewayRequest() {
+    const pubKey = "02325f284f50fa52d53579c7873a480b351cc20f7780fa556929f5017283ad2449"
+    const gw = new VocGateway(GATEWAY_DVOTE_URI, pubKey)
+    console.log("THE GW:", gw.publicKey)
+    // const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
-    const actualAddress = utils.verifyMessage(strBody, response.signature)
+    // const req = { a: 1 }
+    // const r = await gw.sendMessage(req, wallet, 10)
 
-    console.log("EXPECTED", expectedAddress)
-    console.log("ACTUAL", actualAddress)
+    const origin = "ipfs://QmUNZNB1u31eoAw1ooqXRGxGvSQg4Y7MdTTLUwjEp86WnE"
+    console.log("\nReading from", GATEWAY_DVOTE_URI)
+    console.log("\nReading", origin)
+    const data = await fetchFileString(origin, gw)
+    console.log("DATA:", data)
+
+    // console.log("Sending:", req)
+    // console.log("Got:", r)
+    gw.disconnect()
 }
 
 async function main() {
