@@ -119,10 +119,12 @@ async function checkSignature() {
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
     const message = "Hello dapp"
     const signature = await wallet.signMessage(message)
+    const expectedAddress = await wallet.getAddress()
+    const expectedPublicKey = wallet.signingKey.publicKey
 
     console.log("ISSUING SIGNATURE")
-    console.log("ADDR:    ", await wallet.getAddress())
-    console.log("PUB K:   ", wallet.signingKey.publicKey)
+    console.log("ADDR:    ", expectedAddress)
+    console.log("PUB K:   ", expectedPublicKey)
     console.log("SIG      ", signature)
     console.log()
 
@@ -130,7 +132,7 @@ async function checkSignature() {
     const actualAddress = utils.verifyMessage(message, signature)
 
     console.log("APPROACH 1")
-    console.log("EXPECTED ADDR: ", await wallet.getAddress())
+    console.log("EXPECTED ADDR: ", expectedAddress)
     console.log("ACTUAL ADDR:   ", actualAddress)
     console.log()
 
@@ -142,17 +144,16 @@ async function checkSignature() {
     const recoveredPubKey = utils.recoverPublicKey(msgHashBytes, signature);
     const recoveredAddress = utils.recoverAddress(msgHashBytes, signature);
 
-    const matches = wallet.signingKey.publicKey === recoveredPubKey
+    const matches = expectedPublicKey === recoveredPubKey
 
     console.log("APPROACH 2")
-    // console.log("MSG HASH", msgHash)
-    console.log("EXPECTED ADDR:    ", await wallet.getAddress())
+    console.log("EXPECTED ADDR:    ", expectedAddress)
     console.log("RECOVERED ADDR:   ", recoveredAddress)
 
-    console.log("EXPECTED PUB K:   ", wallet.signingKey.publicKey)
-    console.log("RECOVERED PUB K': ", recoveredPubKey)
+    console.log("EXPECTED PUB K:   ", expectedPublicKey)
+    console.log("RECOVERED PUB K:  ", recoveredPubKey)
 
-    console.log("SIGNATURE VALID:", matches)
+    console.log("SIGNATURE VALID:  ", matches)
     console.log()
     }
 
