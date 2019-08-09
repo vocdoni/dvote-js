@@ -226,6 +226,7 @@ interface EntityBaseAction {
 // Opening an interactive web browser
 interface EntityBrowserAction {
     type: "browser",
+    register: boolean,
 
     // The URI to navigate to
     // - The embedded web site can send messages to the host app
@@ -305,12 +306,13 @@ export const EntityMetadataTemplate: EntityMetadata = {
     actions: [
         {
             type: "browser",
+            register: true,
             name: {
-                default: "Sign up to The Entity",
-                // fr: "S'inscrire à l'organisation"
+                default: "Sign up",
+                // fr: "S'inscrire"
             },
-            url: "https://cloudflare-ipfs.com/ipfs/QmZ56Z2kpG5QjJcWfhxFD4ac3DhfX21hrQ2gCTrWxzTAse",
-            visible: "always"
+            url: "https://registry.vocdoni.net/register.html?entityId=0x0",
+            visible: "https://registry.vocdoni.net/api/actions/status"
         }
     ],
     gatewayBootNodes: [],
