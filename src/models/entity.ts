@@ -88,6 +88,7 @@ const entityMetadataSchema = Joi.object().keys({
 
             // Optional
             url: Joi.string().optional(),
+            register: Joi.boolean().optional(),
             imageSources: Joi.array().items(
                 Joi.object().keys({
                     type: Joi.string().regex(/^(front-camera|back-camera|gallery)$/).required(),

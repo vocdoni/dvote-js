@@ -95,21 +95,21 @@
 
         window.requestData = async function () {
             try {
-                const pubKey1 = await sendHostRequest({ type: "getPublicKey" })
+                const pubKey1 = await sendHostRequest({ method: "getPublicKey" })
                 showResponse("Public Key (1): " + pubKey1)
             }
             catch (err) {
                 showError(err)
             }
             try {
-                const pubKey2 = await sendHostRequest({ type: "getPublicKey" })
+                const pubKey2 = await sendHostRequest({ method: "getPublicKey" })
                 showResponse("Public Key (2): " + pubKey2)
             }
             catch (err) {
                 showError(err)
             }
             try {
-                await sendHostRequest({ type: "does-not-exist" })
+                await sendHostRequest({ method: "does-not-exist" })
             }
             catch (err) {
                 showError(err)
@@ -118,7 +118,7 @@
 
         window.requestClose = async function () {
             try {
-                await sendHostRequest({ type: 'closeWindow' })
+                await sendHostRequest({ method: 'closeWindow' })
             }
             catch (err) {
                 showError(err)
