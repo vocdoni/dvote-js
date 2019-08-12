@@ -128,7 +128,7 @@ const entityMetadataSchema = Joi.object().keys({
     trustedEntities: Joi.array().items(entityReferenceSchema).required(),
 
     censusServiceManagedEntities: Joi.array().items(entityReferenceSchema).required()
-})
+}).unknown(true) // allow deprecated or unknown fields beyond the required ones
 
 
 ///////////////////////////////////////////////////////////////////////////////

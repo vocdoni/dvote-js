@@ -51,7 +51,7 @@ const multiLanguageStringKeys = {
 
 const voteMetadataSchema = Joi.object().keys({
     // TODO: complete the schema
-})
+}).unknown(true) // allow deprecated or unknown fields beyond the required ones
 
 
 ///////////////////////////////////////////////////////////////////////////////
