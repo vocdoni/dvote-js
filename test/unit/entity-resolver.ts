@@ -393,7 +393,6 @@ describe("Entity Resolver", () => {
             expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { actions: null })) }).to.throw
             expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { gatewayBootNodes: null })) }).to.throw
             expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { gatewayUpdate: null })) }).to.throw
-            expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { relays: null })) }).to.throw
             expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { bootEntities: null })) }).to.throw
             expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { fallbackBootNodeEntities: null })) }).to.throw
             expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { trustedEntities: null })) }).to.throw

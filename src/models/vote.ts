@@ -69,13 +69,14 @@ const voteMetadataSchema = Joi.object().keys({
         messagingUris: Joi.array().items(Joi.string().required())
     }),
     details: {
+        entityId: Joi.string().regex(/^0x[a-z0-9]+$/).required(),
         encryptionPublicKey: Joi.string().required(),
         title: Joi.object().keys(multiLanguageStringKeys).required(),
         description: Joi.object().keys(multiLanguageStringKeys).required(),
-        headerImages: Joi.array().items(Joi.string().required()),
+        headerImage: Joi.string().required(),
         questions: Joi.array().items(
             Joi.object().keys({
-                questionType: Joi.string().valid(...questionTypes).required(),
+                type: Joi.string().valid(...questionTypes).required(),
                 question: Joi.object().keys(multiLanguageStringKeys).required(),
                 description: Joi.object().keys(multiLanguageStringKeys).required(),
                 voteOptions: Joi.array().items(multiLanguageVoteKeys).required()
@@ -107,13 +108,14 @@ export interface VotingProcess {
         messagingUris: MessagingURI[] // Messaging URI of the Census Services to request data from
     },
     details: {
+        entityId: HexString,
         encryptionPublicKey: HexString,
         title: MultiLanguage<string>,
         description: MultiLanguage<string>,
-        headerImages: ContentURI[],
+        headerImage: ContentURI,
         questions: [
             {
-                questionType: QuestionType, // Defines how the UI should allow to choose among the votingOptions.
+                type: QuestionType, // Defines how the UI should allow to choose among the votingOptions.
                 question: MultiLanguage<string>,
                 description: MultiLanguage<string>,
                 voteOptions: (MultiLanguage<string> & { value: string })[]
@@ -140,19 +142,18 @@ export const VotingProcessTemplate: VotingProcess = {
         ] // Messaging URI of the Census Services to request data from
     },
     details: {
-        encryptionPublicKey: "0x1123",
+        entityId: "0x1234",
+        encryptionPublicKey: "12345678",
         title: {
             default: "Universal Basic Income"
         },
         description: {
             default: "## Markdown text goes here\n### Abstract"
         },
-        headerImages: [
-            "<content uri>"
-        ],
+        headerImage: "<content uri>",
         questions: [
             {
-                questionType: "single-choice",
+                type: "single-choice",
                 question: {
                     default: "Should universal basic income become a human right?"
                 },

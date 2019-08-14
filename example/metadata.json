@@ -52,12 +52,6 @@
         "topic": "vocdoni-gateway-update",
         "difficulty": 1000
     },
-    "relays": [
-        {
-            "publicKey": "04875204f7b0bd9dfcf9af89b4fa0c44016f4b0372646c2142f55136973bd0d660565755341e4c583d49f9d607d08d40e3558de7e6f14f34aa83b7436ac70dc958",
-            "messagingUri": "<messaging-uri>"
-        }
-    ],
     "bootEntities": [],
     "fallbackBootNodeEntities": [],
     "trustedEntities": [],

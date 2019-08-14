@@ -13,7 +13,6 @@ export default class EntityBuilder {
     entityAccount: TestAccount
 
     name: string = DEFAULT_NAME
-    // relays: any[]
 
     constructor() {
         this.accounts = getAccounts()

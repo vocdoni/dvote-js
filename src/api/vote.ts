@@ -14,7 +14,11 @@ export {
  * @param entityAddress 
  * @param processIndex 
  */
+
 export function getProcessId(entityAddress: string, processIndex: number): string {
+    // TODO: 
+    throw new Error("TODO: unimplemented")
+    
     const hexStr = "0000000000000000000000000000000000000000000000000000000000000000" + processIndex.toString(16)
     const processIndexBytes = hexStr.slice(-64)
 
@@ -103,9 +107,8 @@ export async function getVoteMetadata(processId: string, votingContractAddress: 
 //  * @param voteEnvelope
 //  * @param processId 
 //  * @param gatewayUri 
-//  * @param relayAddress
 //  */
-// export async function submitVoteEnvelope(voteEnvelope: VoteEnvelopeLRS | VoteEnvelopeZK, processId: string, gatewayUri: string, relayAddress: string): Promise<boolean> {
+// export async function submitVoteEnvelope(voteEnvelope: VoteEnvelopeLRS | VoteEnvelopeZK, processId: string, gatewayUri: string): Promise<boolean> {
 //     throw new Error("unimplemented")
 
 //     if (voteEnvelope.type == "lrs-envelope") {
@@ -127,7 +130,6 @@ export async function getVoteMetadata(processId: string, votingContractAddress: 
 //         method: "submitVoteEnvelope",
 //         processId,
 //         encryptedEnvelope,
-//         relayAddress
 //     }).then(strData => JSON.parse(strData))
 // }
 

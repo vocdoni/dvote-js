@@ -114,13 +114,6 @@ const entityMetadataSchema = Joi.object().keys({
         difficulty: Joi.number().integer().min(0)
     }).required(),
 
-    relays: Joi.array().items(
-        Joi.object().keys({
-            publicKey: Joi.string().regex(/^[a-z0-9]{130}$/).required(),
-            messagingUri: Joi.string().required()
-        }),
-    ).required(),
-
     bootEntities: Joi.array().items(entityReferenceSchema).required(),
 
     fallbackBootNodeEntities: Joi.array().items(entityReferenceSchema).required(),
@@ -191,9 +184,6 @@ export interface EntityMetadata {
         topic: string,                    // Topic used for the messaging protocol (e.g. "vocdoni-gateway-update")
         difficulty: number                // Difficulty of the proof of work, to prevent spammers
     },
-    // List of currently active Relays. This list is just for informational purposes.
-    // The effective list of relays for a voting process is on the Voting Process smart contract
-    relays: RelayInfo[],
 
     bootEntities: EntityReference[],
     fallbackBootNodeEntities: EntityReference[],
@@ -204,11 +194,6 @@ export interface EntityMetadata {
 interface GatewayBootNode {
     fetchUri: URI,                          // Where to fetch the Bootnode Gateways
     heartbeatMessagingUri: MessagingURI     // Where Gateways should report their status updates
-}
-
-interface RelayInfo {
-    publicKey: PublicKey,         // Uncompressed public key to encrypt data sent to it
-    messagingUri: MessagingURI    // Where to send messages. See Data origins > Messaging URI
 }
 
 export type EntityCustomAction = EntityBaseAction & (EntityBrowserAction | EntityImageUploadAction)
@@ -322,7 +307,6 @@ export const EntityMetadataTemplate: EntityMetadata = {
         topic: "vocdoni-gateway-update",
         difficulty: 1000
     },
-    relays: [],
     bootEntities: [],
     fallbackBootNodeEntities: [],
     trustedEntities: [],
