@@ -88,6 +88,7 @@ const entityMetadataSchema = Joi.object().keys({
 
             // Optional
             url: Joi.string().optional(),
+            register: Joi.boolean().optional(),
             imageSources: Joi.array().items(
                 Joi.object().keys({
                     type: Joi.string().regex(/^(front-camera|back-camera|gallery)$/).required(),
@@ -127,7 +128,7 @@ const entityMetadataSchema = Joi.object().keys({
     trustedEntities: Joi.array().items(entityReferenceSchema).required(),
 
     censusServiceManagedEntities: Joi.array().items(entityReferenceSchema).required()
-})
+}).unknown(true) // allow deprecated or unknown fields beyond the required ones
 
 
 ///////////////////////////////////////////////////////////////////////////////

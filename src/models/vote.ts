@@ -61,7 +61,6 @@ const questionTypes = ["single-choice"]
 const voteMetadataSchema = Joi.object().keys({
     version: Joi.string().regex(/^[0-9]\.[0-9]$/).required(),
     type: Joi.string().valid(...processTypes).required(),
-
     startBlock: Joi.number().integer().min(0).required(),
     numberOfBlocks: Joi.number().integer().min(0).required(),
     census: Joi.object().keys({
@@ -83,7 +82,7 @@ const voteMetadataSchema = Joi.object().keys({
             })
         ).required()
     }
-})
+}).unknown(true) // allow deprecated or unknown fields beyond the required ones
 
 ///////////////////////////////////////////////////////////////////////////////
 // TYPE DEFINITIONS

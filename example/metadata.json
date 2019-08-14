@@ -38,7 +38,7 @@
                 "fr": "S'inscrire"
             },
             "url": "https://registry.vocdoni.net/register.html?entityId=0x0",
-            "visible": "https://registry.vocdoni.net/api/actions/status"
+            "visible": "https://registry.vocdoni.net/api/actions/status?action=register"
         }
     ],
     "gatewayBootNodes": [
