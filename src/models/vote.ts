@@ -1,5 +1,5 @@
 // This file provides:
-// - Typescript type definitions for VotingProcess objects
+// - Typescript type definitions for ProcessMetadata objects
 // - Metadata JSON validation checker
 // - A metadata JSON template
 
@@ -25,7 +25,7 @@ import { by639_1 } from 'iso-language-codes'
  * Asserts that the given metadata is valid.
  * Throws an exception if it is not.
  */
-export function checkValidVotingProcess(voteMetadata: VotingProcess) {
+export function checkValidProcessMetadata(voteMetadata: ProcessMetadata) {
     if (typeof voteMetadata != "object") throw new Error("The metadata must be a JSON object")
 
     const result = Joi.validate(voteMetadata, voteMetadataSchema)
@@ -97,7 +97,7 @@ type QuestionType = "single-choice"
  * JSON metadata. Intended to be stored on IPFS or similar.
  * More info: https://vocdoni.io/docs/#/architecture/components/process?id=process-metadata-json
  */
-export interface VotingProcess {
+export interface ProcessMetadata {
     version: ProtocolVersion, // Version of the metadata schema used
     type: ProcessType, // details depends on the type
     startBlock: number, // Block number on the votchain since the process will be open
@@ -128,7 +128,7 @@ export interface VotingProcess {
 // JSON TEMPLATE
 ///////////////////////////////////////////////////////////////////////////////
 
-export const VotingProcessTemplate: VotingProcess = {
+export const ProcessMetadataTemplate: ProcessMetadata = {
     version: "1.0",
     type: "snark-vote",
     startBlock: 10000, // Block number on the votchain since the process will be open

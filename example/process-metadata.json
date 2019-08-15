@@ -1,0 +1,46 @@
+{
+    "version": "1.0",
+    "type": "snark-vote",
+    "startBlock": 10000,
+    "numberOfBlocks": 400,
+    "census": {
+        "id": "0x1234...",
+        "merkleRoot": "0x1234...",
+        "messagingUris": [
+            "<messaging uri>",
+            "..."
+        ]
+    },
+    "details": {
+        "entityId": "0x1234",
+        "encryptionPublicKey": "12345678",
+        "title": {
+            "default": "Universal Basic Income"
+        },
+        "description": {
+            "default": "## Markdown text goes here\n### Abstract"
+        },
+        "headerImage": "<content uri>",
+        "questions": [
+            {
+                "type": "single-choice",
+                "question": {
+                    "default": "Should universal basic income become a human right?"
+                },
+                "description": {
+                    "default": "## Markdown text goes here\n### Abstract"
+                },
+                "voteOptions": [
+                    {
+                        "default": "Yes",
+                        "value": "1"
+                    },
+                    {
+                        "default": "No",
+                        "value": "2"
+                    }
+                ]
+            }
+        ]
+    }
+}

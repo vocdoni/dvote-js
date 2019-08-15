@@ -360,7 +360,7 @@ describe("Entity Resolver", () => {
 
     describe("Metadata validator", () => {
         it("Should accept a valid Entity Metadata JSON", () => {
-            const entityMetadata = fs.readFileSync(__dirname + "/../../example/metadata.json")
+            const entityMetadata = fs.readFileSync(__dirname + "/../../example/entity-metadata.json")
 
             expect(() => {
                 checkValidEntityMetadata(JSON.parse(entityMetadata))
@@ -380,7 +380,7 @@ describe("Entity Resolver", () => {
             }).to.throw
 
             // Incomplete fields
-            const entityMetadata = fs.readFileSync(__dirname + "/../../example/metadata.json")
+            const entityMetadata = fs.readFileSync(__dirname + "/../../example/entity-metadata.json")
 
             expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { version: null })) }).to.throw
             expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { languages: null })) }).to.throw

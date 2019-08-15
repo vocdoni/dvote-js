@@ -320,7 +320,7 @@ export class Web3Gateway {
      * If a wallet is given, the Gateway URI will be used unless the wallet is already connected
      */
     async deploy<CustomContractMethods>(abi: string | (string | utils.ParamType)[] | utils.Interface, bytecode: string,
-        signParams: { signer?: Signer, wallet?: Wallet } = {}): Promise<(Contract & CustomContractMethods)> {
+        signParams: { signer?: Signer, wallet?: Wallet } = {}, deployArguments: any[] = []): Promise<(Contract & CustomContractMethods)> {
         var contractFactory: ContractFactory
 
         if (!signParams) throw new Error("Invalid signing parameters")
@@ -338,7 +338,7 @@ export class Web3Gateway {
 
             contractFactory = new ContractFactory(abi, bytecode, wallet)
         }
-        return (await contractFactory.deploy()) as (Contract & CustomContractMethods)
+        return (await contractFactory.deploy(deployArguments)) as (Contract & CustomContractMethods)
     }
 
     /**

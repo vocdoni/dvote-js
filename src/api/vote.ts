@@ -1,29 +1,13 @@
-import { utils, Wallet, Signer } from "ethers"
 import { getVotingContractInstance } from "../net/contract"
-import { VocGateway } from "../net/gateway"
-import { fetchFileString } from "./file"
 import GatewayURI from "../util/gateway-uri"
+// import { utils, Wallet, Signer } from "ethers"
+// import { VocGateway } from "../net/gateway"
+// import { fetchFileString } from "./file"
 
 export {
     deployVotingContract,
     getVotingContractInstance
 } from "../net/contract"
-
-/**
- * Compute the ID of a process off-chain
- * @param entityAddress 
- * @param processIndex 
- */
-
-export function getProcessId(entityAddress: string, processIndex: number): string {
-    // TODO: 
-    throw new Error("TODO: unimplemented")
-    
-    const hexStr = "0000000000000000000000000000000000000000000000000000000000000000" + processIndex.toString(16)
-    const processIndexBytes = hexStr.slice(-64)
-
-    return utils.keccak256(entityAddress + processIndexBytes)
-}
 
 /**
  * Compute the derived public key given a processId

@@ -48,11 +48,13 @@ export async function deployEntityContract(params: DeployContractParams = {}): P
  * 
  * One of `gatewayUri`/`provider` and `signer`/`wallet` is required
  */
-export async function deployVotingContract(params: DeployContractParams = {}): Promise<Contract & VotingProcessContractMethods> {
+export async function deployVotingContract(params: DeployContractParams = {}, deployArguments: [number]): Promise<Contract & VotingProcessContractMethods> {
+    if (typeof deployArguments[0] != "number") throw new Error("Invalid Chain ID")
+    
     let { gatewayUri, provider, signer, wallet } = params
 
     const gw = new Web3Gateway({ gatewayUri, provider })
-    const instance = await gw.deploy<VotingProcessContractMethods>(VotingContractDefinition.abi, VotingContractDefinition.bytecode, { signer, wallet })
+    const instance = await gw.deploy<VotingProcessContractMethods>(VotingContractDefinition.abi, VotingContractDefinition.bytecode, { signer, wallet }, deployArguments)
 
     if (signer) {
         return instance.connect(signer) as Contract & VotingProcessContractMethods

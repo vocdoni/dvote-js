@@ -10,24 +10,22 @@ import { Contract } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
 import { getAccounts, increaseTimestamp, TestAccount } from "../eth-util"
 import { VotingProcessContractMethods } from "dvote-solidity"
+const fs = require("fs")
 
 
-import { getProcessId, deployVotingContract, getVotingContractInstance } from "../../src/api/vote"
+import { deployVotingContract, getVotingContractInstance } from "../../src/api/vote"
 import VotingProcessBuilder, {
-    DEFAULT_NAME,
-    DEFAULT_METADATA_CONTENT_URI,
-    DEFAULT_START_TIME_PADDING,
-    DEFAULT_END_TIME_PADDING,
-    DEFAULT_VOTING_PUBLIC_KEY
+    DEFAULT_METADATA_CONTENT_HASHED_URI
 } from "../builders/voting-process"
-import { BigNumber } from "ethers/utils";
+import { BigNumber } from "ethers/utils"
+import { checkValidProcessMetadata, ProcessMetadataTemplate } from "../../src";
 
 let accounts: TestAccount[]
 let baseAccount: TestAccount
 let entityAccount: TestAccount
 let randomAccount: TestAccount
-let relayAccount1: TestAccount
-let relayAccount2: TestAccount
+let randomAccount1: TestAccount
+let randomAccount2: TestAccount
 let processId: string
 let contractInstance: VotingProcessContractMethods & Contract
 
@@ -39,17 +37,17 @@ describe("Voting Process", () => {
         baseAccount = accounts[0]
         entityAccount = accounts[1]
         randomAccount = accounts[2]
-        relayAccount1 = accounts[3]
-        relayAccount2 = accounts[4]
+        randomAccount1 = accounts[3]
+        randomAccount2 = accounts[4]
 
         contractInstance = await new VotingProcessBuilder().build()
-        processId = await getProcessId(entityAccount.address, 0)
+        processId = await contractInstance.getProcessId(entityAccount.address, 0)
     })
 
     describe("Smart Contract", () => {
 
         it("Should deploy the smart contract", async () => {
-            contractInstance = await deployVotingContract({ provider: entityAccount.provider, wallet: entityAccount.wallet })
+            contractInstance = await deployVotingContract({ provider: entityAccount.provider, wallet: entityAccount.wallet }, [123])
 
             expect(contractInstance).to.be.ok
             expect(contractInstance.address.match(/^0x[0-9a-fA-F]{40}$/)).to.be.ok
@@ -59,14 +57,8 @@ describe("Voting Process", () => {
             // set custom data on a deployed instance
             expect(contractInstance.address).to.be.ok
             const customProcessId = await contractInstance.getNextProcessId(entityAccount.address)
-            const resolverAddress = "0x00f8bf6a479f320ead074411a4b0e7944ea8c9c1"
-            const name = "A custom process name here"
-            const customMetadataUri = "bzz://xxxxxxxx,ipfs://ipfs/xxxxxxxx"
-            const startTime = Math.floor(Date.now() / 1000) + 60
-            const endTime = Math.floor(Date.now() / 1000) + 120
-            const customPublicKey = "0x2345"
 
-            await contractInstance.create(resolverAddress, name, customMetadataUri, startTime, endTime, customPublicKey)
+            await contractInstance.create(DEFAULT_METADATA_CONTENT_HASHED_URI)
 
             // attach from a new object
 
@@ -74,37 +66,33 @@ describe("Voting Process", () => {
             expect(newInstance.address).to.equal(contractInstance.address)
 
             const data = await newInstance.get(customProcessId)
-            expect(data.entityResolver.toLowerCase()).to.equal(resolverAddress)
+            expect(data.metadataContentHashedUri.toLowerCase()).to.equal(DEFAULT_METADATA_CONTENT_HASHED_URI)
             expect(data.entityAddress).to.equal(entityAccount.address)
-            expect(data.processName).to.equal(name)
-            expect(data.metadataContentUri).to.equal(customMetadataUri)
-            expect(data.startTime.toNumber()).to.equal(startTime)
-            expect(data.endTime.toNumber()).to.equal(endTime)
-            expect(data.voteEncryptionPublicKey).to.equal(customPublicKey)
+            expect(data.voteEncryptionPrivateKey).to.equal("")
             expect(data.canceled).to.equal(false)
         })
 
-        it("Should compute process ID's in the same way as the on-chain version", async () => {
-            const indexes = []
-            for (let i = 0; i < 30; i++) {
-                indexes.push(Math.round(Math.random() * 1000000000))
-            }
+        // it("Should compute process ID's in the same way as the on-chain version", async () => {
+        //     const indexes = []
+        //     for (let i = 0; i < 30; i++) {
+        //         indexes.push(Math.round(Math.random() * 1000000000))
+        //     }
 
-            for (let account of accounts.filter(() => Math.random() >= 0.5)) {
-                for (let index of indexes) {
-                    let expected = getProcessId(account.address, index)
-                    let received = await contractInstance.getProcessId(account.address, index)
-                    expect(received).to.equal(expected)
-                }
-            }
-        }).timeout(5000)
+        //     for (let account of accounts.filter(() => Math.random() >= 0.5)) {
+        //         for (let index of indexes) {
+        //             let expected = getProcessId(account.address, index)
+        //             let received = await contractInstance.getProcessId(account.address, index)
+        //             expect(received).to.equal(expected)
+        //         }
+        //     }
+        // }).timeout(5000)
 
         it("The getProcessId() should match getNextProcessId()", async () => {
             // entityAddress has one process created by default from the builder
-            expect(await contractInstance.getNextProcessId(entityAccount.address)).to.equal(getProcessId(entityAccount.address, 1))
+            expect(await contractInstance.getNextProcessId(entityAccount.address)).to.equal(await contractInstance.getProcessId(entityAccount.address, 1))
 
             // randomAccount has no process yet
-            expect(await contractInstance.getNextProcessId(randomAccount.address)).to.equal(getProcessId(randomAccount.address, 0))
+            expect(await contractInstance.getNextProcessId(randomAccount.address)).to.equal(await contractInstance.getProcessId(randomAccount.address, 0))
         })
 
         it("Should work for any creator account", async () => {
@@ -112,10 +100,10 @@ describe("Voting Process", () => {
             const builder = new VotingProcessBuilder()
 
             contractInstance = await builder.withEntityAccount(randomAccount).build()
-            expect((await contractInstance.get(processId)).processName).to.eq(DEFAULT_NAME)
+            expect((await contractInstance.get(processId)).entityAddress).to.eq(randomAccount.address)
 
-            contractInstance = await builder.withEntityAccount(randomAccount).withName("VOTING PROCESS HERE").build()
-            expect((await contractInstance.get(processId)).processName).to.eq("VOTING PROCESS HERE")
+            contractInstance = await builder.withEntityAccount(randomAccount2).build()
+            expect((await contractInstance.get(processId)).entityAddress).to.eq(randomAccount2.address)
         })
 
     })
@@ -123,43 +111,27 @@ describe("Voting Process", () => {
     describe("Process creation", () => {
 
         it("Should allow to create voting processess", async () => {
-            const resolverAddress = "0x0123456789012345678901234567890123456789"
-            const name = "Test process"
-            const metadataUri = "bzz://yyyyyyyyyyyy,ipfs://ipfs/yyyyyyyyyyyy"
-            const startTime = Math.floor(Date.now() / 1000) + 150
-            const endTime = Math.floor(Date.now() / 1000) + 250
-            const publicKey = "0x3456"
+            const metadataContentHashedUri = "ipfs://ipfs/yyyyyyyyyyyy,https://host/file!0987654321"
 
             processId = await contractInstance.getNextProcessId(entityAccount.address)
 
-            await contractInstance.create(resolverAddress, name, metadataUri, startTime, endTime, publicKey)
+            await contractInstance.create(metadataContentHashedUri)
 
             const data = await contractInstance.get(processId)
-            expect(data.entityResolver.toLowerCase()).to.equal(resolverAddress)
             expect(data.entityAddress).to.equal(entityAccount.address)
-            expect(data.processName).to.equal(name)
-            expect(data.metadataContentUri).to.equal(metadataUri)
-            expect(data.startTime.toNumber()).to.equal(startTime)
-            expect(data.endTime.toNumber()).to.equal(endTime)
-            expect(data.voteEncryptionPublicKey).to.equal(publicKey)
+            expect(data.metadataContentHashedUri).to.equal(metadataContentHashedUri)
+            expect(data.voteEncryptionPrivateKey).to.equal("")
             expect(data.canceled).to.equal(false)
         })
 
-        it("Should report creation events", async () => {
-            const resolverAddress = "0x1234567890123456789012345678901234567890"
-            const name = "Test process 2"
-            const metadataUri = "bzz://zzzzzzzz,ipfs://ipfs/zzzzzzzz"
-            const startTime = Math.floor(Date.now() / 1000) + 1500
-            const endTime = Math.floor(Date.now() / 1000) + 2500
-            const publicKey = "0x4567"
-
+        it("Should notify creation events", async () => {
             processId = await contractInstance.getNextProcessId(entityAccount.address)
 
             const result: { entityAddress: string, processId: string } = await new Promise((resolve, reject) => {
                 contractInstance.on("ProcessCreated", (entityAddress: string, processId: string) => {
                     resolve({ entityAddress, processId })
                 })
-                contractInstance.create(resolverAddress, name, metadataUri, startTime, endTime, publicKey)
+                contractInstance.create(DEFAULT_METADATA_CONTENT_HASHED_URI)
                     .catch(reject)
             })
 
@@ -178,13 +150,12 @@ describe("Voting Process", () => {
 
             const data = await contractInstance.get(processId)
             expect(data.entityAddress).to.equal(entityAccount.address)
-            expect(data.processName).to.equal(DEFAULT_NAME)
-            expect(data.metadataContentUri).to.equal(DEFAULT_METADATA_CONTENT_URI)
-            expect(data.voteEncryptionPublicKey).to.equal(DEFAULT_VOTING_PUBLIC_KEY)
+            expect(data.metadataContentHashedUri).to.equal(DEFAULT_METADATA_CONTENT_HASHED_URI)
+            expect(data.voteEncryptionPrivateKey).to.equal("")
             expect(data.canceled).to.equal(true)
         })
 
-        it("Should report event cancelation", async () => {
+        it("Should notify event cancelation", async () => {
             const result: { entityAddress: string, processId: string } = await new Promise((resolve, reject) => {
                 contractInstance.on("ProcessCanceled", (entityAddress: string, processId: string) => {
                     resolve({ entityAddress, processId })
@@ -195,220 +166,300 @@ describe("Voting Process", () => {
             expect(result.entityAddress).to.equal(entityAccount.address)
             expect(result.processId).to.equal(processId)
         }).timeout(8000)
-
     })
 
-    describe("Relay addition", () => {
+    describe("Genesis info", () => {
+        it("Should allow to set the genesis Content Hashed URI", async () => {
+            const genesisContentHashedUri = "ipfs://12341234!56785678"
 
-        it("Should allow to add relays", async () => {
-            const publicKey1 = "0x123456"
-            const publicKey2 = "0x234567"
-            const messagingUri1 = "pss://1234@5678"
-            const messagingUri2 = "pubsub://1234#5678"
-
-            // add one
-            const tx = await contractInstance.addRelay(processId, relayAccount1.address, publicKey1, messagingUri1)
+            const tx = await contractInstance.setGenesis(genesisContentHashedUri)
             expect(tx).to.be.ok
             expect(tx.to).to.equal(contractInstance.address)
 
-            const result1 = await contractInstance.getRelayIndex(processId)
-            expect(result1).to.deep.equal([relayAccount1.address])
-            expect(await contractInstance.isActiveRelay(processId, relayAccount1.address)).to.equal(true)
+            const data = await contractInstance.getGenesis()
+            expect(data).to.equal(genesisContentHashedUri)
+        })
 
-            const result2 = await contractInstance.getRelay(processId, relayAccount1.address)
-            expect(result2.publicKey).to.equal(publicKey1)
-            expect(result2.messagingUri).to.equal(messagingUri1)
+        it("Should notify the event", async () => {
+            const genesisContentHashedUri = "ipfs://12341234!56785678"
+
+            const result: { genesis: string } = await new Promise((resolve, reject) => {
+                contractInstance.on("GenesisChanged", (genesis: string) => {
+                    resolve({ genesis })
+                })
+                contractInstance.setGenesis(genesisContentHashedUri).catch(reject)
+            })
+
+            expect(result.genesis).to.equal(genesisContentHashedUri)
+        }).timeout(8000)
+    })
+
+    describe("Chain ID", () => {
+        it("Should allow to set the Chain ID", async () => {
+            const chainId = 1234
+
+            let tx = await contractInstance.setChainId(chainId)
+            expect(tx).to.be.ok
+            expect(tx.to).to.equal(contractInstance.address)
+
+            let data = await contractInstance.getChainId()
+            expect(data.toNumber()).to.equal(chainId)
+        })
+
+        it("Should notify the event", async () => {
+            const chainId = 1234
+
+            const result: { chainId: BigNumber } = await new Promise((resolve, reject) => {
+                contractInstance.on("ChainIdChanged", (chainId: BigNumber) => {
+                    resolve({ chainId })
+                })
+                contractInstance.setChainId(chainId).catch(reject)
+            })
+
+            expect(result.chainId.toNumber()).to.equal(chainId)
+        }).timeout(8000)
+    })
+
+    describe("Validator addition", () => {
+
+        it("Should allow to add validators", async () => {
+            const publicKey1 = "0x123456"
+            const publicKey2 = "0x234567"
+
+            // add one
+            const tx = await contractInstance.addValidator(publicKey1)
+            expect(tx).to.be.ok
+            expect(tx.to).to.equal(contractInstance.address)
+
+            const result1 = await contractInstance.getValidators()
+            expect(result1).to.deep.equal([publicKey1])
 
             // add another one
-            const tx2 = await contractInstance.addRelay(processId, relayAccount2.address, publicKey2, messagingUri2)
+            const tx2 = await contractInstance.addValidator(publicKey2)
             expect(tx2).to.be.ok
             expect(tx2.to).to.equal(contractInstance.address)
 
-            const result3 = await contractInstance.getRelayIndex(processId)
-            expect(result3).to.deep.equal([relayAccount1.address, relayAccount2.address])
-            expect(await contractInstance.isActiveRelay(processId, relayAccount2.address)).to.equal(true)
-
-            const result4 = await contractInstance.getRelay(processId, relayAccount2.address)
-            expect(result4.publicKey).to.equal(publicKey2)
-            expect(result4.messagingUri).to.equal(messagingUri2)
+            const result3 = await contractInstance.getValidators()
+            expect(result3).to.deep.equal([publicKey1, publicKey2])
         })
 
-        it("Should report about relays added to a process", async () => {
-            const result: { relayAddress: string, processId: string } = await new Promise((resolve, reject) => {
-                contractInstance.on("RelayAdded", (processId: string, relayAddress: string) => {
-                    resolve({ relayAddress, processId })
+        it("Should notify about validators added to a process", async () => {
+            const publicKey1 = "0x123456"
+
+            const result: { validatorPublicKey: string } = await new Promise((resolve, reject) => {
+                contractInstance.on("ValidatorAdded", (validatorPublicKey: string) => {
+                    resolve({ validatorPublicKey })
                 })
-                contractInstance.addRelay(processId, relayAccount1.address, "0x1234", "pss://1234@2345").catch(reject)
+                contractInstance.addValidator(publicKey1).catch(reject)
             })
 
-            expect(result.processId).to.equal(processId)
-            expect(result.relayAddress).to.equal(relayAccount1.address)
+            expect(result.validatorPublicKey).to.equal(publicKey1)
         }).timeout(8000)
-
     })
 
-    describe("Disabling relays", () => {
-
-        it("Should allow to disable a relay", async () => {
+    describe("Removing validators", () => {
+        it("Should allow to remove a Validator", async () => {
             const publicKey1 = "0x123456"
             const publicKey2 = "0x234567"
-            const messagingUri1 = "pss://1234@5678"
-            const messagingUri2 = "pubsub://1234#5678"
 
             contractInstance = await new VotingProcessBuilder()
-                .withRelay(relayAccount1.address, publicKey1, messagingUri1)
-                .withRelay(relayAccount2.address, publicKey2, messagingUri2)
                 .build()
+
+            // add some
+            await contractInstance.addValidator(publicKey1)
+            await contractInstance.addValidator(publicKey2)
 
             // remove one
-            const tx = await contractInstance.disableRelay(processId, relayAccount1.address)
+            const tx = await contractInstance.removeValidator(0, publicKey1)
             expect(tx).to.be.ok
             expect(tx.to).to.equal(contractInstance.address)
 
-            const result1 = await contractInstance.getRelayIndex(processId)
-            expect(result1).to.deep.equal([relayAccount2.address])
-            expect(await contractInstance.isActiveRelay(processId, relayAccount1.address)).to.equal(false)
-
-            const result2 = await contractInstance.getRelay(processId, relayAccount1.address)
-            expect(result2.publicKey).to.equal(publicKey1)
-            expect(result2.messagingUri).to.equal(messagingUri1)
+            const result1 = await contractInstance.getValidators()
+            expect(result1).to.deep.equal([publicKey2])
 
             // remove the other one
-            const tx2 = await contractInstance.disableRelay(processId, relayAccount2.address)
+            const tx2 = await contractInstance.removeValidator(0, publicKey2)
             expect(tx2).to.be.ok
             expect(tx2.to).to.equal(contractInstance.address)
 
-            const result3 = await contractInstance.getRelayIndex(processId)
-            expect(result3).to.deep.equal([])
-            expect(await contractInstance.isActiveRelay(processId, relayAccount2.address)).to.equal(false)
-
-            const result4 = await contractInstance.getRelay(processId, relayAccount2.address)
-            expect(result4.publicKey).to.equal(publicKey2)
-            expect(result4.messagingUri).to.equal(messagingUri2)
+            const result2 = await contractInstance.getValidators()
+            expect(result2).to.deep.equal([])
         })
 
-        it("Should report about relays disabled on a process", async () => {
+        it("Should notify about Validators removed", async () => {
             const publicKey1 = "0x123456"
-            const messagingUri1 = "pss://1234@5678"
 
             contractInstance = await new VotingProcessBuilder()
-                .withRelay(relayAccount1.address, publicKey1, messagingUri1)
                 .build()
 
-            const result: { relayAddress: string, processId: string } = await new Promise((resolve, reject) => {
-                contractInstance.on("RelayAdded", (processId: string, relayAddress: string) => {
-                    resolve({ relayAddress, processId })
+            await contractInstance.addValidator(publicKey1)
+
+            const result: { validatorPublicKey: string } = await new Promise((resolve, reject) => {
+                contractInstance.on("ValidatorRemoved", (validatorPublicKey: string) => {
+                    resolve({ validatorPublicKey })
                 })
-                contractInstance.disableRelay(processId, relayAccount1.address).catch(reject)
+                contractInstance.removeValidator(0, publicKey1).catch(reject)
             })
 
-            expect(result.processId).to.equal(processId)
-            expect(result.relayAddress).to.equal(relayAccount1.address)
+            expect(result.validatorPublicKey).to.equal(publicKey1)
         }).timeout(8000)
-
     })
 
-    describe("Registering vote batches", () => {
+    describe("Oracle addition", () => {
 
-        it("Should allow to register a vote batch", async () => {
-            // created by the entity
-            contractInstance = await new VotingProcessBuilder()
-                .withRelay(relayAccount1.address)
-                .build()
-
-            await increaseTimestamp(DEFAULT_START_TIME_PADDING + 2)
-
-            // attach from a relay's account
-            const relayContractInstance = getVotingContractInstance({ provider: relayAccount1.provider, wallet: relayAccount1.wallet }, contractInstance.address)
+        it("Should allow to add oracles", async () => {
+            const publicKey1 = "0x123456"
+            const publicKey2 = "0x234567"
 
             // add one
-            const result1 = await contractInstance.getVoteBatchCount(processId)
-            expect(result1.toNumber()).to.equal(0)
+            const tx = await contractInstance.addOracle(publicKey1)
+            expect(tx).to.be.ok
+            expect(tx.to).to.equal(contractInstance.address)
 
-            const tx1 = await relayContractInstance.registerVoteBatch(processId, "bzz://1234")
-            expect(tx1).to.be.ok
-            expect(tx1.to).to.equal(relayContractInstance.address)
-
-            const result2 = await contractInstance.getVoteBatchCount(processId)
-            expect(result2.toNumber()).to.equal(1)
-
-            const result3 = await contractInstance.getBatch(processId, 0)
-            expect(result3).to.equal("bzz://1234")
+            const result1 = await contractInstance.getOracles()
+            expect(result1).to.deep.equal([publicKey1])
 
             // add another one
-            const result4 = await contractInstance.getVoteBatchCount(processId)
-            expect(result4.toNumber()).to.equal(1)
-
-            const tx2 = await relayContractInstance.registerVoteBatch(processId, "ipfs://ipfs/2345")
+            const tx2 = await contractInstance.addOracle(publicKey2)
             expect(tx2).to.be.ok
-            expect(tx2.to).to.equal(relayContractInstance.address)
+            expect(tx2.to).to.equal(contractInstance.address)
 
-            const result5 = await contractInstance.getVoteBatchCount(processId)
-            expect(result5.toNumber()).to.equal(2)
-
-            const result6 = await contractInstance.getBatch(processId, 1)
-            expect(result6).to.equal("ipfs://ipfs/2345")
+            const result3 = await contractInstance.getOracles()
+            expect(result3).to.deep.equal([publicKey1, publicKey2])
         })
 
-        it("Should report about vote batches added to a process", async () => {
-            // created by the entity
-            contractInstance = await new VotingProcessBuilder()
-                .withRelay(relayAccount1.address)
-                .build()
+        it("Should notify about oracles added to a process", async () => {
+            const publicKey1 = "0x123456"
 
-            const result: { batchNumber: BigNumber, processId: string } = await new Promise((resolve, reject) => {
-                contractInstance.on("BatchRegistered", (processId: string, batchNumber: BigNumber) => {
-                    resolve({ processId, batchNumber })
+            const result: { oraclePublicKey: string } = await new Promise((resolve, reject) => {
+                contractInstance.on("OracleAdded", (oraclePublicKey: string) => {
+                    resolve({ oraclePublicKey })
                 })
-
-                increaseTimestamp(DEFAULT_START_TIME_PADDING + 2).then(() => {
-                    // attach from a relay's account
-                    const relayContractInstance = getVotingContractInstance({ provider: relayAccount1.provider, wallet: relayAccount1.wallet }, contractInstance.address)
-                    return relayContractInstance.registerVoteBatch(processId, "ipfs://ipfs/1234")
-                }).catch(reject)
+                contractInstance.addOracle(publicKey1).catch(reject)
             })
 
-            expect(result.processId).to.equal(processId)
-            expect(result.batchNumber.toNumber()).to.equal(0)
+            expect(result.oraclePublicKey).to.equal(publicKey1)
         }).timeout(8000)
-
     })
 
-    describe("Revealing the private key", () => {
+    describe("Removing oracles", () => {
+        it("Should allow to remove an Oracle", async () => {
+            const publicKey1 = "0x123456"
+            const publicKey2 = "0x234567"
 
-        it("Should allow to reveal the private key", async () => {
-            // wait until the default process is ended
-            await increaseTimestamp(DEFAULT_END_TIME_PADDING + 2)
+            contractInstance = await new VotingProcessBuilder()
+                .build()
 
-            const privKey = "I_AM_THE_PRIV_KEY"
+            // add some
+            await contractInstance.addOracle(publicKey1)
+            await contractInstance.addOracle(publicKey2)
+
+            // remove one
+            const tx = await contractInstance.removeOracle(0, publicKey1)
+            expect(tx).to.be.ok
+            expect(tx.to).to.equal(contractInstance.address)
+
+            const result1 = await contractInstance.getOracles()
+            expect(result1).to.deep.equal([publicKey2])
+
+            // remove the other one
+            const tx2 = await contractInstance.removeOracle(0, publicKey2)
+            expect(tx2).to.be.ok
+            expect(tx2.to).to.equal(contractInstance.address)
+
+            const result2 = await contractInstance.getOracles()
+            expect(result2).to.deep.equal([])
+        })
+
+        it("Should notify about oracles removed on a process", async () => {
+            const publicKey1 = "0x123456"
+
+            contractInstance = await new VotingProcessBuilder()
+                .build()
+
+            await contractInstance.addOracle(publicKey1)
+
+            const result: { oraclePublicKey: string } = await new Promise((resolve, reject) => {
+                contractInstance.on("OracleRemoved", (oraclePublicKey: string) => {
+                    resolve({ oraclePublicKey })
+                })
+                contractInstance.removeOracle(0, publicKey1).catch(reject)
+            })
+
+            expect(result.oraclePublicKey).to.equal(publicKey1)
+        }).timeout(8000)
+    })
+
+    describe("Decryption key publishing", () => {
+
+        it("Should allow to reveal the decryption key", async () => {
+            // created by the entity
+            contractInstance = await new VotingProcessBuilder()
+                .withEntityAccount(entityAccount)
+                .build()
 
             const result1 = await contractInstance.getPrivateKey(processId)
             expect(result1).to.equal("")
 
-            const tx = await contractInstance.revealPrivateKey(processId, privKey)
-            await tx.wait()
+            const tx1 = await contractInstance.publishPrivateKey(processId, "1234-5678")
+            expect(tx1).to.be.ok
+            expect(tx1.to).to.equal(contractInstance.address)
 
             const result2 = await contractInstance.getPrivateKey(processId)
-            expect(result2).to.equal(privKey)
+            expect(result2).to.equal("1234-5678")
         })
 
-        it("Should report about vote batches added to a process", async () => {
-            const privKey = "I_AM_THE_PRIV_KEY"
-
+        it("Should notify about decryption keys revealed", async () => {
             const result: { privateKey: string, processId: string } = await new Promise((resolve, reject) => {
-                contractInstance.on("PrivateKeyRevealed", (processId: string, privateKey: string) => {
+                contractInstance.on("PrivateKeyPublished", (processId: string, privateKey: string) => {
                     resolve({ processId, privateKey })
                 })
 
-                increaseTimestamp(DEFAULT_END_TIME_PADDING + 2).then(() => {
-                    return contractInstance.revealPrivateKey(processId, privKey)
-                }).catch(reject)
+                return contractInstance.publishPrivateKey(processId, "1234-5678").catch(reject)
             })
 
             expect(result.processId).to.equal(processId)
-            expect(result.privateKey).to.equal(privKey)
+            expect(result.privateKey).to.equal("1234-5678")
         }).timeout(8000)
+    })
 
+    describe("Results publishing", () => {
+
+        it("Should allow to publish the results", async () => {
+            // created by the entity
+            contractInstance = await new VotingProcessBuilder()
+                .withEntityAccount(entityAccount)
+                .build()
+
+            const result1 = await contractInstance.getResults(processId)
+            expect(result1).to.equal("")
+
+            const tx1 = await contractInstance.publishPrivateKey(processId, "hello-world")
+            await tx1.wait()
+
+            const tx2 = await contractInstance.publishResults(processId, "1234-5678")
+            expect(tx2).to.be.ok
+            expect(tx2.to).to.equal(contractInstance.address)
+            await tx2.wait()
+
+            const result2 = await contractInstance.getResults(processId)
+            expect(result2).to.equal("1234-5678")
+        })
+
+        it("Should notify about results published", async () => {
+            const result: { results: string, processId: string } = await new Promise((resolve, reject) => {
+                contractInstance.on("ResultsPublished", (processId: string, results: string) => {
+                    resolve({ processId, results })
+                })
+
+                return contractInstance.publishPrivateKey(processId, "hello-world").then(() =>
+                    contractInstance.publishResults(processId, "1234-5678")
+                ).catch(reject)
+            })
+
+            expect(result.processId).to.equal(processId)
+            expect(result.results).to.equal("1234-5678")
+        }).timeout(8000)
     })
 
     describe("Census keys derivation", () => {
@@ -417,14 +468,14 @@ describe("Voting Process", () => {
         it("Should produce valid signatures that match with the derived public key")
     })
 
-    describe("Linkable Ring Signatures", () => {
-        it("Should produce a ring signature using a private key and a ring of public keys")
-        it("Should allow to verify that a valid signature is within a public key ring")
-        it("Should deny the validity of a signature produced by key that don't belong to the given ring")
-        it("Should link two signatures that have been issued with the same key pair")
-        it("Should not link two signatures that have been issued with different key pairs")
-        it("Should bundle a Vote Package into a valid Vote Envelope that only the chosen relay can decrypt")
-    })
+    // describe("Linkable Ring Signatures", () => {
+    //     it("Should produce a ring signature using a private key and a ring of public keys")
+    //     it("Should allow to verify that a valid signature is within a public key ring")
+    //     it("Should deny the validity of a signature produced by key that don't belong to the given ring")
+    //     it("Should link two signatures that have been issued with the same key pair")
+    //     it("Should not link two signatures that have been issued with different key pairs")
+    //     it("Should bundle a Vote Package into a valid Vote Envelope that only the chosen relay can decrypt")
+    // })
 
     describe("ZK Snarks", () => {
         it("Should produce a valid ZK proof if the user is eligible to vote in an election")
@@ -432,4 +483,41 @@ describe("Voting Process", () => {
         it("Should bundle a Vote Package into a valid Vote Envelope that only the chosen relay can decrypt")
     })
 
+    describe("Metadata validator", () => {
+        it("Should accept a valid Process Metadata JSON", () => {
+            const processMetadata = fs.readFileSync(__dirname + "/../../example/process-metadata.json")
+
+            expect(() => {
+                checkValidProcessMetadata(JSON.parse(processMetadata))
+            }).to.not.throw
+
+            expect(() => {
+                checkValidProcessMetadata(ProcessMetadataTemplate)
+            }).to.not.throw
+        })
+
+        it("Should reject invalid Process Metadata JSON payloads", () => {
+            // Totally invalid
+            expect(() => {
+                const payload = JSON.parse('{"test": 123}')
+                checkValidProcessMetadata(payload)
+            }).to.throw
+
+            expect(() => {
+                const payload = JSON.parse('{"name": {"default": "hello", "fr": "Alô"}}')
+                checkValidProcessMetadata(payload)
+            }).to.throw
+
+            // Incomplete fields
+            const processMetadata = fs.readFileSync(__dirname + "/../../example/process-metadata.json")
+
+            expect(() => { checkValidProcessMetadata(Object.assign({}, processMetadata, { version: null })) }).to.throw
+            expect(() => { checkValidProcessMetadata(Object.assign({}, processMetadata, { type: null })) }).to.throw
+            expect(() => { checkValidProcessMetadata(Object.assign({}, processMetadata, { startBlock: null })) }).to.throw
+            expect(() => { checkValidProcessMetadata(Object.assign({}, processMetadata, { numberOfBlocks: null })) }).to.throw
+            expect(() => { checkValidProcessMetadata(Object.assign({}, processMetadata, { census: null })) }).to.throw
+            expect(() => { checkValidProcessMetadata(Object.assign({}, processMetadata, { details: null })) }).to.throw
+
+        })
+    })
 })

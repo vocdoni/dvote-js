@@ -14,7 +14,7 @@ const { Wallet, providers, utils } = require("ethers")
 const { Buffer } = require("buffer/")
 const fs = require("fs")
 
-const jsonMetadata = require("./metadata.json")
+const jsonMetadata = require("./entity-metadata.json")
 // const MNEMONIC = "payment scare exotic code enter party soul ignore horse glove myself ignore"
 const MNEMONIC = "bar bundle start frog dish gauge square subway load easily south bamboo"
 const PATH = "m/44'/60'/0'/0/0"
@@ -65,7 +65,7 @@ async function attachToEntityResolver() {
 }
 
 async function registerEntity() {
-    const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
+    // const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
     const myEntityAddress = await wallet.getAddress()
@@ -82,12 +82,15 @@ async function registerEntity() {
 }
 
 async function readEntity() {
-    const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
+    // const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
     const myEntityAddress = await wallet.getAddress()
     const gw = new GatewayURI(GATEWAY_DVOTE_URI, GATEWAY_WEB3_PROVIDER_URI)
 
+    console.log("ENTITY ID:", getEntityId(myEntityAddress))
+    console.log("RESOLVER:", resolverContractAddress)
+    console.log("GW:", GATEWAY_DVOTE_URI, GATEWAY_WEB3_PROVIDER_URI)
     const meta = await getEntityMetadata(myEntityAddress, resolverContractAddress, gw)
     console.log("JSON METADATA\n", meta)
 }
