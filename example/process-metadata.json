@@ -32,11 +32,17 @@
                 },
                 "voteOptions": [
                     {
-                        "default": "Yes",
+                        "title": {
+                            "en": "Yes",
+                            "ca": "Sí"
+                        },
                         "value": "1"
                     },
                     {
-                        "default": "No",
+                        "title": {
+                            "en": "No",
+                            "ca": "No"
+                        },
                         "value": "2"
                     }
                 ]

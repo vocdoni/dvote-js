@@ -8,11 +8,11 @@ describe("Voting Process", () => {
         it("Should allow to upload the JSON metadata of a new Voting Process")
     })
 
-    describe("Linkable Ring Signatures", () => {
-        it("Should fetch the given ring (modulus group) from the census service")
-        it("Should submit a Vote Envelope to a Gateway")
-        it("Should request the status of a vote to a Gateway and provide a response")
-    })
+    // describe("Linkable Ring Signatures", () => {
+    //     it("Should fetch the given ring (modulus group) from the census service")
+    //     it("Should submit a Vote Envelope to a Gateway")
+    //     it("Should request the status of a vote to a Gateway and provide a response")
+    // })
 
     describe("ZK Snarks", () => {
         it("Should fetch the census Merkle Proof from the census service")

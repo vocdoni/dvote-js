@@ -6,7 +6,7 @@ describe("Census", () => {
     describe("Claims", () => {
         it("Should allow to add a claim to a census")
         it("Should allow to add a set of claims to a census")
-        it("Should set the parameters of an LRS census")
+        // it("Should set the parameters of an LRS census")
         it("Should request and provide the Merkle root of a census (ZK)")
         it("Should fetch the Merkle proof of an account within a census")
         it("Should allow to dump a given census")

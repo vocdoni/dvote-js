@@ -47,12 +47,6 @@ const multiLanguageStringKeys = {
     default: Joi.string().optional()
 }
 
-const multiLanguageVoteKeys = {
-    ...strLangCodes,
-    default: Joi.string().optional(),
-    value: Joi.string().required()
-}
-
 // MAIN ENTITY SCHEMA
 
 const processTypes = ["snark-vote", "snark-poll", "snark-petition"]
@@ -79,7 +73,12 @@ const voteMetadataSchema = Joi.object().keys({
                 type: Joi.string().valid(...questionTypes).required(),
                 question: Joi.object().keys(multiLanguageStringKeys).required(),
                 description: Joi.object().keys(multiLanguageStringKeys).required(),
-                voteOptions: Joi.array().items(multiLanguageVoteKeys).required()
+                voteOptions: Joi.array().items(
+                    Joi.object().keys({
+                        title: Joi.object().keys(multiLanguageStringKeys).required(),
+                        value: Joi.string().required()
+                    })
+                ).required()
             })
         ).required()
     }
@@ -113,14 +112,15 @@ export interface ProcessMetadata {
         title: MultiLanguage<string>,
         description: MultiLanguage<string>,
         headerImage: ContentURI,
-        questions: [
-            {
-                type: QuestionType, // Defines how the UI should allow to choose among the votingOptions.
-                question: MultiLanguage<string>,
-                description: MultiLanguage<string>,
-                voteOptions: (MultiLanguage<string> & { value: string })[]
-            }
-        ]
+        questions: {
+            type: QuestionType, // Defines how the UI should allow to choose among the votingOptions.
+            question: MultiLanguage<string>,
+            description: MultiLanguage<string>,
+            voteOptions: {
+                title: MultiLanguage<string>,
+                value: string
+            }[]
+        }[]
     }
 }
 
@@ -162,11 +162,15 @@ export const ProcessMetadataTemplate: ProcessMetadata = {
                 },
                 voteOptions: [
                     {
-                        default: "Yes",
+                        title: {
+                            default: "Yes",
+                        },
                         value: "1"
                     },
                     {
-                        default: "No",
+                        title: {
+                            default: "No",
+                        },
                         value: "2"
                     }
                 ]
