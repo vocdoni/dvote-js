@@ -21,6 +21,12 @@ const jsonMetadata = require("./entity-metadata.json")
 // const MNEMONIC = "payment scare exotic code enter party soul ignore horse glove myself ignore"
 const MNEMONIC = "bar bundle start frog dish gauge square subway load easily south bamboo"
 const PATH = "m/44'/60'/0'/0/0"
+const GATEWAY_PUB_KEY = "02325f284f50fa52d53579c7873a480b351cc20f7780fa556929f5017283ad2449"
+const GATEWAY_DVOTE_URI = "wss://host/dvote"
+const GATEWAY_CENSUS_URI = "wss://host/census"
+// const GATEWAY_WEB3_PROVIDER_URI = "https://host/web3"
+const GATEWAY_WEB3_PROVIDER_URI = "https://rpc.slock.it/goerli"
+// const GATEWAY_WEB3_PROVIDER_URI = "http://127.0.0.1:8545"
 const ENTITY_RESOLVER_CONTRACT_ADDRESS = "0xF6B058613DD7C8a55eE07Fd4a0a66CfD662F36E9"
 const VOTING_PROCESS_CONTRACT_ADDRESS = "0xea7D210f6975616f2F7B2D6360f91f2378E5E144"
 
@@ -202,7 +208,7 @@ async function checkSignature() {
 
     console.log("SIGNATURE VALID:  ", matches)
     console.log()
-    }
+}
 
 async function gatewayRequest() {
     // DVOTE
