@@ -1,4 +1,4 @@
-import { deployVotingContract } from "../../src/api/vote"
+import { deployVotingProcessContract } from "../../src/api/vote"
 import { VotingProcessContractMethods } from "dvote-solidity"
 import { Contract } from "ethers"
 import { getAccounts, TestAccount } from "../eth-util"
@@ -22,7 +22,7 @@ export default class VotingProcessBuilder {
     }
 
     async build(votingProcessessCount: number = 1): Promise<Contract & VotingProcessContractMethods> {
-        const contractInstance = await deployVotingContract({ provider: this.entityAccount.provider, wallet: this.entityAccount.wallet }, [this.chainId])
+        const contractInstance = await deployVotingProcessContract({ provider: this.entityAccount.provider, wallet: this.entityAccount.wallet }, [this.chainId])
 
         // const blockNumber = await this.entityAccount.provider.getBlockNumber()
         // const currentBlock = await this.entityAccount.provider.getBlock(blockNumber)

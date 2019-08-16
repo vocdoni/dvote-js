@@ -1,15 +1,15 @@
 import { providers, utils, Wallet, Signer } from "ethers"
 import { checkValidEntityMetadata, EntityMetadata } from "../models/entity"
 import { VocGateway } from "../net/gateway"
-import { getEntityResolverInstance } from "../net/contract"
+import { getEntityResolverContractInstance } from "../net/contract"
 import { TextRecordKeys } from "../models/entity"
 import { fetchFileString, addFile } from "./file"
 import GatewayURI from "../util/gateway-uri"
 import { providerFromUri } from "../util/providers";
 
 export {
-    deployEntityContract,
-    getEntityResolverInstance
+    deployEntityResolverContract,
+    getEntityResolverContractInstance
 } from "../net/contract"
 
 /**
@@ -39,7 +39,7 @@ export async function getEntityMetadata(entityAddress: string, resolverContractA
     else if (!gatewayUri || !(gatewayUri instanceof GatewayURI)) throw new Error("Invalid Gateway URI object")
 
     const entityId = getEntityId(entityAddress)
-    const resolverInstance = getEntityResolverInstance({ gatewayUri: gatewayUri.web3 }, resolverContractAddress)
+    const resolverInstance = getEntityResolverContractInstance({ gatewayUri: gatewayUri.web3 }, resolverContractAddress)
 
     const metadataContentUri = await resolverInstance.text(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI)
     if (!metadataContentUri) throw new Error("The given entity has no metadata defined yet")
@@ -77,7 +77,7 @@ export async function updateEntity(entityAddress: string, resolverContractAddres
     gw.disconnect()
 
     // Set the IPFS origin on the blockchain
-    const resolverInstance = getEntityResolverInstance({ gatewayUri: gatewayUri.web3, signer: walletOrSigner }, resolverContractAddress)
+    const resolverInstance = getEntityResolverContractInstance({ gatewayUri: gatewayUri.web3, signer: walletOrSigner }, resolverContractAddress)
 
     const entityId = getEntityId(entityAddress)
     const tx = await resolverInstance.setText(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI, ipfsUri)

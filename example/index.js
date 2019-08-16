@@ -1,6 +1,8 @@
 const {
-    getEntityResolverInstance,
-    deployEntityContract,
+    getEntityResolverContractInstance,
+    getVotingProcessContractInstance,
+    deployEntityResolverContract,
+    deployVotingProcessContract,
     getEntityId,
     VocGateway,
     GatewayURI,
@@ -18,17 +20,16 @@ const jsonMetadata = require("./entity-metadata.json")
 // const MNEMONIC = "payment scare exotic code enter party soul ignore horse glove myself ignore"
 const MNEMONIC = "bar bundle start frog dish gauge square subway load easily south bamboo"
 const PATH = "m/44'/60'/0'/0/0"
-const GATEWAY_PUB_KEY = ""
-// const GATEWAY_WEB3_PROVIDER_URI = "https://rpc.slock.it/goerli"
-const GATEWAY_WEB3_PROVIDER_URI = "http://127.0.0.1:8545"
-const resolverContractAddress = "0x21f7DcCd9D1ce4C3685A5c50096265A8db4103b4"
+const ENTITY_RESOLVER_CONTRACT_ADDRESS = "0xF6B058613DD7C8a55eE07Fd4a0a66CfD662F36E9"
+const VOTING_PROCESS_CONTRACT_ADDRESS = "0xea7D210f6975616f2F7B2D6360f91f2378E5E144"
 
 async function deployEntityResolver() {
     const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
-    console.log("Deploying contract...")
-    const contractInstance = await deployEntityContract({ provider, wallet })
+    console.log("Deploying Entity Resolver contract...")
+    const contractInstance = await deployEntityResolverContract({ provider, wallet })
+    await contractInstance.deployTransaction.wait()
     console.log("Entity Resolver deployed at", contractInstance.address)
 
     const myEntityAddress = await wallet.getAddress()
@@ -50,8 +51,8 @@ async function attachToEntityResolver() {
     const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
-    console.log("Attaching to contract at", resolverContractAddress)
-    const contractInstance = await getEntityResolverInstance({ provider, wallet }, resolverContractAddress)
+    console.log("Attaching to contract at", ENTITY_RESOLVER_CONTRACT_ADDRESS)
+    const contractInstance = await getEntityResolverContractInstance({ provider, wallet }, ENTITY_RESOLVER_CONTRACT_ADDRESS)
 
     const myEntityAddress = await wallet.getAddress()
     const myEntityId = getEntityId(myEntityAddress)
@@ -64,6 +65,48 @@ async function attachToEntityResolver() {
     console.log("Value stored on the blockchain:", val)
 }
 
+async function deployVotingProcess() {
+    const CHAIN_ID = 5
+    const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
+    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+
+    console.log("Deploying Voting Process contract...")
+    const contractInstance = await deployVotingProcessContract({ provider, wallet }, [CHAIN_ID])
+    await contractInstance.deployTransaction.wait()
+    console.log("Voting Process deployed at", contractInstance.address)
+
+    // console.log("Setting chainId = 5 (goerli)")
+    // let tx = await contractInstance.setChainId(CHAIN_ID)
+    // await tx.wait()
+
+    console.log("Setting genesis")
+    tx = await contractInstance.setGenesis("ipfs://ipfs-hash-here!sha3-hash-here")
+    await tx.wait()
+
+    console.log("Deployment completed!")
+}
+
+async function attachToVotingProcess() {
+    const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
+    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+
+    console.log("Attaching to contract at", VOTING_PROCESS_CONTRACT_ADDRESS)
+    const contractInstance = await getVotingProcessContractInstance({ provider, wallet }, VOTING_PROCESS_CONTRACT_ADDRESS)
+
+    console.log("Reading 'genesis'")
+    let val = await contractInstance.getGenesis()
+    console.log("Value stored on the blockchain:", val)
+
+    console.log("Setting genesis")
+    tx = await contractInstance.setGenesis("ipfs://ipfs-hash-2-here!sha3-hash-here")
+    await tx.wait()
+
+    console.log("Reading 'genesis'")
+    val = await contractInstance.getGenesis()
+    console.log("Value stored on the blockchain:", val)
+
+}
+
 async function registerEntity() {
     // const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
@@ -72,8 +115,8 @@ async function registerEntity() {
     const myEntityId = getEntityId(myEntityAddress)
 
     console.log("Entity ID", myEntityId)
-    const gw = new GatewayURI(GATEWAY_DVOTE_URI, GATEWAY_WEB3_PROVIDER_URI)
-    const contentUri = await updateEntity(myEntityAddress, resolverContractAddress, jsonMetadata, wallet, gw)
+    const gw = new GatewayURI(GATEWAY_DVOTE_URI, GATEWAY_CENSUS_URI, GATEWAY_WEB3_PROVIDER_URI)
+    const contentUri = await updateEntity(myEntityAddress, ENTITY_RESOLVER_CONTRACT_ADDRESS, jsonMetadata, wallet, gw)
 
     // show stored values
     console.log("\nEntity registered!\n")
@@ -86,12 +129,12 @@ async function readEntity() {
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
     const myEntityAddress = await wallet.getAddress()
-    const gw = new GatewayURI(GATEWAY_DVOTE_URI, GATEWAY_WEB3_PROVIDER_URI)
+    const gw = new GatewayURI(GATEWAY_DVOTE_URI, GATEWAY_CENSUS_URI, GATEWAY_WEB3_PROVIDER_URI)
 
     console.log("ENTITY ID:", getEntityId(myEntityAddress))
-    console.log("RESOLVER:", resolverContractAddress)
-    console.log("GW:", GATEWAY_DVOTE_URI, GATEWAY_WEB3_PROVIDER_URI)
-    const meta = await getEntityMetadata(myEntityAddress, resolverContractAddress, gw)
+    console.log("RESOLVER:", ENTITY_RESOLVER_CONTRACT_ADDRESS)
+    console.log("GW:", GATEWAY_DVOTE_URI, GATEWAY_CENSUS_URI, GATEWAY_WEB3_PROVIDER_URI)
+    const meta = await getEntityMetadata(myEntityAddress, ENTITY_RESOLVER_CONTRACT_ADDRESS, gw)
     console.log("JSON METADATA\n", meta)
 }
 
@@ -182,12 +225,15 @@ async function gatewayRequest() {
 
 async function main() {
     // await deployEntityResolver()
-    await attachToEntityResolver()
+    // await attachToEntityResolver()
+    // await deployVotingProcess()
+    await attachToVotingProcess()
 
     // await registerEntity()
     // await readEntity()
     // await fileUpload()
-    // checkSignature()
+    // await checkSignature()
+    // await gatewayRequest()
 }
 
 main()

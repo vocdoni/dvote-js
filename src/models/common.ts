@@ -12,13 +12,19 @@ export type MultiLanguage<T> = {
 
 /**
  * Comma-separated list of URI's. 
- * See http://vocdoni.io/docs/#/architecture/protocol/data-origins?id=content-uri
+ * See https://vocdoni.io/docs/#/architecture/protocol/data-origins?id=content-uri
  */
 export type ContentURI = string
 
 /**
+ * Comma-separated list of URI's with the SHA3 hash of the content appended at the end, after a "!" symbol
+ * See https://vocdoni.io/docs/#/architecture/protocol/data-origins?id=content-hashed-uri
+ */
+export type ContentHashedURI = string
+
+/**
  * Comma-separated list of URI's. 
- * See http://vocdoni.io/docs/#/architecture/protocol/data-origins?id=messaging-uri
+ * See https://vocdoni.io/docs/#/architecture/protocol/data-origins?id=messaging-uri
  */
 export type MessagingURI = string
 

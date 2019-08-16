@@ -24,7 +24,7 @@ type WsRequest = {
     timeout: any
 }
 
-type GatewayMethod = "fetchFile" | "addFile" | "getVotingRing" | "submitVoteEnvelope" | "getVoteStatus"
+type GatewayMethod = "fetchFile" | "addFile" | "submitVoteEnvelope" | "getVoteStatus" | "addCensus" // "getVotingRing"
 
 /** Parameters sent by the function caller */
 export interface RequestParameters {
@@ -58,6 +58,7 @@ const uriPattern = /^([a-z][a-z0-9+.-]+):(\/\/([^@]+@)?([a-z0-9.\-_~]+)(:\d+)?)?
 
 /**
  * This class provides access to Vocdoni Gateways sending JSON payloads over Web Sockets
+ * intended to interact within voting processes
  */
 export class VocGateway {
     private publicKey: string = null
@@ -287,6 +288,13 @@ export class VocGateway {
         return actualAddress && expectedAddress && (actualAddress == expectedAddress)
     }
 }
+
+/**
+ * This class provides access to Vocdoni Gateways sending JSON payloads over Web Sockets
+ * intended to interact with a Census Service.
+ * Currently, it directly inherits from VocGateway
+ */
+export class CensusGateway extends VocGateway { }
 
 export class Web3Gateway {
     private provider: providers.Provider

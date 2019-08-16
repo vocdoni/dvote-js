@@ -1,12 +1,12 @@
-import { getVotingContractInstance } from "../net/contract"
+import { getVotingProcessContractInstance } from "../net/contract"
 import GatewayURI from "../util/gateway-uri"
 // import { utils, Wallet, Signer } from "ethers"
 // import { VocGateway } from "../net/gateway"
 // import { fetchFileString } from "./file"
 
 export {
-    deployVotingContract,
-    getVotingContractInstance
+    deployVotingProcessContract,
+    getVotingProcessContractInstance
 } from "../net/contract"
 
 /**
@@ -37,7 +37,7 @@ export async function getVoteMetadata(processId: string, votingContractAddress: 
     else if (!votingContractAddress) throw new Error("Invalid votingContractAddress")
     else if (!gatewayUri || !(gatewayUri instanceof GatewayURI)) throw new Error("Invalid Gateway URI object")
 
-    const resolverInstance = getVotingContractInstance({ gatewayUri: gatewayUri.web3 }, votingContractAddress)
+    const resolverInstance = getVotingProcessContractInstance({ gatewayUri: gatewayUri.web3 }, votingContractAddress)
 
     // const metadataContentUri = await resolverInstance.text(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI)
     // if (!metadataContentUri) throw new Error("The given entity has no metadata defined yet")

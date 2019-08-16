@@ -1,4 +1,4 @@
-import { getEntityId, deployEntityContract } from "../../src/api/entity"
+import { getEntityId, deployEntityResolverContract } from "../../src/api/entity"
 // import { TextRecordKeys } from "../../src/models/entity"
 import { EntityResolverContractMethods } from "dvote-solidity"
 import { Contract } from "ethers"
@@ -20,7 +20,7 @@ export default class EntityBuilder {
     }
 
     async build(): Promise<EntityResolverContractMethods & Contract> {
-        const contractInstance = await deployEntityContract({ provider: this.entityAccount.provider, wallet: this.entityAccount.wallet })
+        const contractInstance = await deployEntityResolverContract({ provider: this.entityAccount.provider, wallet: this.entityAccount.wallet })
 
         const entityId = getEntityId(this.entityAccount.address)
 

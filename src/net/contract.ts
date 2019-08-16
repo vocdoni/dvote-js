@@ -23,7 +23,7 @@ type AttachToContractParams = { gatewayUri?: string, provider?: providers.Provid
  * 
  * One of `gatewayUri`/`provider` and `signer`/`wallet` is required
  */
-export async function deployEntityContract(params: DeployContractParams = {}): Promise<Contract & EntityResolverContractMethods> {
+export async function deployEntityResolverContract(params: DeployContractParams = {}): Promise<Contract & EntityResolverContractMethods> {
     let { gatewayUri, provider, signer, wallet } = params
 
     const gw = new Web3Gateway({ gatewayUri, provider })
@@ -48,9 +48,10 @@ export async function deployEntityContract(params: DeployContractParams = {}): P
  * 
  * One of `gatewayUri`/`provider` and `signer`/`wallet` is required
  */
-export async function deployVotingContract(params: DeployContractParams = {}, deployArguments: [number]): Promise<Contract & VotingProcessContractMethods> {
-    if (typeof deployArguments[0] != "number") throw new Error("Invalid Chain ID")
-    
+export async function deployVotingProcessContract(params: DeployContractParams = {}, deployArguments: [number]): Promise<Contract & VotingProcessContractMethods> {
+    if (!deployArguments || !deployArguments.length) throw new Error("Invalid deploy arguments")
+    else if (typeof deployArguments[0] != "number") throw new Error("Invalid Chain ID")
+
     let { gatewayUri, provider, signer, wallet } = params
 
     const gw = new Web3Gateway({ gatewayUri, provider })
@@ -78,7 +79,7 @@ export async function deployVotingContract(params: DeployContractParams = {}, de
  * 
  * One of `gatewayUri`/`provider` and `signer`/`wallet` is required
  */
-export function getEntityResolverInstance(params: AttachToContractParams = {}, address: string): (Contract & EntityResolverContractMethods) {
+export function getEntityResolverContractInstance(params: AttachToContractParams = {}, address: string): (Contract & EntityResolverContractMethods) {
     let { gatewayUri, provider, signer, wallet } = params
 
     const gw = new Web3Gateway({ gatewayUri, provider })
@@ -103,7 +104,7 @@ export function getEntityResolverInstance(params: AttachToContractParams = {}, a
  * 
  * One of `gatewayUri`/`provider` and `signer`/`wallet` is required
  */
-export function getVotingContractInstance(params: AttachToContractParams = {}, address: string): (Contract & VotingProcessContractMethods) {
+export function getVotingProcessContractInstance(params: AttachToContractParams = {}, address: string): (Contract & VotingProcessContractMethods) {
     let { gatewayUri, provider, signer, wallet } = params
 
     const gw = new Web3Gateway({ gatewayUri, provider })
