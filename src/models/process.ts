@@ -5,17 +5,20 @@
 
 import {
     HexString,
-    ContractAddress,
-    PublicKey,
+    // ContractAddress,
+    // PublicKey,
     // PrivateKey,
-    ProcessId,
+    // ProcessId,
     MultiLanguage,
-    ContentURI,
-    MessagingURI,
     URI
 } from "./common"
 import * as Joi from "joi-browser"
 import { by639_1 } from 'iso-language-codes'
+
+// LOCAL TYPE ALIASES
+type ContentUriString = string
+type ContentHashedUriString = string
+type MessagingUriString = string
 
 ///////////////////////////////////////////////////////////////////////////////
 // VALIDATION
@@ -104,14 +107,14 @@ export interface ProcessMetadata {
     census: {
         id: HexString, // Census ID to use for the vote
         merkleRoot: HexString,
-        messagingUris: MessagingURI[] // Messaging URI of the Census Services to request data from
+        messagingUris: MessagingUriString[] // Messaging URI of the Census Services to request data from
     },
     details: {
         entityId: HexString,
         encryptionPublicKey: HexString,
         title: MultiLanguage<string>,
         description: MultiLanguage<string>,
-        headerImage: ContentURI,
+        headerImage: ContentUriString,
         questions: {
             type: QuestionType, // Defines how the UI should allow to choose among the votingOptions.
             question: MultiLanguage<string>,

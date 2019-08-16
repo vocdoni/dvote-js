@@ -1,13 +1,16 @@
 export default class ContentURI {
-    _contentUri: string[];
+    protected _contentUri: string[];
 
     /** Parses the given string into a Content URI */
     constructor(contentUri: string) {
-        if (!contentUri) throw new Error("Invalid contentUri");
+        if (typeof contentUri != "string") throw new Error("Invalid contentUri");
         this._contentUri = contentUri.split(",");
     }
 
+    /** Returns the Content URI as a string representation */
     toString(): string { return this._contentUri.join(","); }
+
+    /** Returns the individual URI's contained in the Content URI */
     items(): string[] { return this._contentUri }
 
     /** The hash of all IPFS items */

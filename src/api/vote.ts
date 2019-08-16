@@ -1,7 +1,7 @@
 import { getVotingProcessContractInstance } from "../net/contract"
 import GatewayURI from "../util/gateway-uri"
 // import { utils, Wallet, Signer } from "ethers"
-// import { VocGateway } from "../net/gateway"
+// import { DVoteGateway, CensusGateway } from "../net/gateway"
 // import { fetchFileString } from "./file"
 
 export {
@@ -42,7 +42,7 @@ export async function getVoteMetadata(processId: string, votingContractAddress: 
     // const metadataContentUri = await resolverInstance.text(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI)
     // if (!metadataContentUri) throw new Error("The given entity has no metadata defined yet")
 
-    // const gw = new VocGateway(gatewayUri.dvote)
+    // const gw = new DVoteGateway(gatewayUri.dvote)
     // const jsonBuffer = await fetchFileString(metadataContentUri, gw)
     // gw.disconnect()
 
@@ -148,7 +148,7 @@ export async function getVoteMetadata(processId: string, votingContractAddress: 
 //     if (!contentUri) throw new Error("A vote batch with the given number does not exist on process " + processId)
 
 //     // Ensure we are connected to the right Gateway
-//     const gateway = new VocGateway(gatewayUri)
+//     const gateway = new DVoteGateway(gatewayUri)
 
 //     const jsonBuffer = await this.gateway.fetchFile(contentUri)
 //     return jsonBuffer.toString("base64")

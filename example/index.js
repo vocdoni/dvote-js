@@ -4,7 +4,8 @@ const {
     deployEntityResolverContract,
     deployVotingProcessContract,
     getEntityId,
-    VocGateway,
+    DVoteGateway,
+    CensusGateway,
     GatewayURI,
     getEntityMetadata,
     updateEntity,
@@ -142,7 +143,7 @@ async function fileUpload() {
     var gw
     try {
         const wallet = Wallet.fromMnemonic(MNEMONIC)
-        gw = new VocGateway(GATEWAY_DVOTE_URI, GATEWAY_PUB_KEY || null)
+        gw = new DVoteGateway(GATEWAY_DVOTE_URI, GATEWAY_PUB_KEY || null)
 
         console.log("SIGNING FROM ADDRESS", wallet.address)
 
@@ -204,9 +205,9 @@ async function checkSignature() {
     }
 
 async function gatewayRequest() {
-    const pubKey = "02325f284f50fa52d53579c7873a480b351cc20f7780fa556929f5017283ad2449"
-    const gw = new VocGateway(GATEWAY_DVOTE_URI, pubKey)
-    console.log("THE GW:", gw.publicKey)
+    // DVOTE
+    let gw = new DVoteGateway(GATEWAY_DVOTE_URI, GATEWAY_PUB_KEY)
+    console.log("THE VOC GW:", gw.publicKey)
     // const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
     // const req = { a: 1 }

@@ -11,8 +11,8 @@ This library implements the protocol defined on https://vocdoni.io/docs/#/archit
 npm install dvote-js ethers
 ```
 
-- Gateways can serve as a **DVote** gateway and as a **Web3** Gateway
-  - `VocGateway` and `Web3Gateway`
+- Gateways can serve as a **DVote** gateway, **Census** gateway and as a **Web3** Gateway
+  - `DVoteGateway`, `CensysGateway` and `Web3Gateway`
 - **Signers** and **Wallets** are both used to sign Web3 transactions, as well as authenticating DVote requests
 
 **Ethers.js**

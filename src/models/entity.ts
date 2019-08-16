@@ -6,16 +6,20 @@
 import {
     HexString,
     ContractAddress,
-    PublicKey,
+    // PublicKey,
     // PrivateKey,
+    EntityId,
     ProcessId,
     MultiLanguage,
-    ContentURI,
-    MessagingURI,
     URI
 } from "./common"
 import * as Joi from "joi-browser"
 import { by639_1 } from 'iso-language-codes'
+
+// LOCAL TYPE ALIASES
+type ContentUriString = string
+type ContentHashedUriString = string
+type MessagingUriString = string
 
 ///////////////////////////////////////////////////////////////////////////////
 // VALIDATION
@@ -151,14 +155,14 @@ export const TextListRecordKeys = {
  */
 export interface EntityMetadata {
     version: ProtocolVersion,                // Protocol version
-    entityId: string,
+    entityId: EntityId,
     languages: ["default"], // FIXME: Remove in favor of actual language codes
     // languages: string[],                  // Two character language code (en, fr, it, ...)
 
     name: MultiLanguage<string>,
     description: MultiLanguage<string>,
 
-    newsFeed: MultiLanguage<ContentURI>,
+    newsFeed: MultiLanguage<ContentUriString>,
     contracts: {
         resolverAddress: ContractAddress,
         votingAddress: ContractAddress,
@@ -169,8 +173,8 @@ export interface EntityMetadata {
         ended: ProcessId[]
     },
     media: {
-        avatar: ContentURI,
-        header: ContentURI
+        avatar: ContentUriString,
+        header: ContentUriString
     },
 
     // List of custom interactions that the entity defines.
@@ -193,7 +197,7 @@ export interface EntityMetadata {
 
 interface GatewayBootNode {
     fetchUri: URI,                          // Where to fetch the Bootnode Gateways
-    heartbeatMessagingUri: MessagingURI     // Where Gateways should report their status updates
+    heartbeatMessagingUri: MessagingUriString     // Where Gateways should report their status updates
 }
 
 export type EntityCustomAction = EntityBaseAction & (EntityBrowserAction | EntityImageUploadAction)

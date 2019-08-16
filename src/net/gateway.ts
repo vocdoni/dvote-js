@@ -60,7 +60,7 @@ const uriPattern = /^([a-z][a-z0-9+.-]+):(\/\/([^@]+@)?([a-z0-9.\-_~]+)(:\d+)?)?
  * This class provides access to Vocdoni Gateways sending JSON payloads over Web Sockets
  * intended to interact within voting processes
  */
-export class VocGateway {
+export class DVoteGateway {
     private publicKey: string = null
     private uri: string = null
     private webSocket: WebSocket = null
@@ -292,9 +292,9 @@ export class VocGateway {
 /**
  * This class provides access to Vocdoni Gateways sending JSON payloads over Web Sockets
  * intended to interact with a Census Service.
- * Currently, it directly inherits from VocGateway
+ * Currently, it directly inherits from DVoteGateway
  */
-export class CensusGateway extends VocGateway { }
+export class CensusGateway extends DVoteGateway { }
 
 export class Web3Gateway {
     private provider: providers.Provider

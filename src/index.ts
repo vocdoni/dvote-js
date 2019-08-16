@@ -3,7 +3,7 @@ export * from "./api/file"
 export * from "./api/entity"
 export * from "./api/vote"
 export * from "./api/census"
-export { VocGateway, Web3Gateway } from "./net/gateway"
+export { DVoteGateway, CensusGateway, Web3Gateway } from "./net/gateway"
 
 // Wrappers
 export { default as ContentURI } from "./util/content-uri"

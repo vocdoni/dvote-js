@@ -2,7 +2,7 @@ import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
 import { getAccounts, TestAccount, mnemonic } from "../eth-util"
-import { VocGateway, Web3Gateway } from "../../src/net/gateway"
+import { DVoteGateway, CensusGateway, Web3Gateway } from "../../src/net/gateway"
 import { addFile, fetchFileBytes } from "../../src/api/file"
 import { GatewayMock, InteractionMock, GatewayResponse } from "../mocks/gateway"
 import { server as ganacheRpcServer } from "ganache-core"
@@ -20,7 +20,7 @@ const defaultDummyResponse = { id: "123", response: { request: "123", timestamp:
 
 addCompletionHooks()
 
-describe("VocGateway", () => {
+describe("DVoteGateway", () => {
     beforeEach(async () => {
         accounts = getAccounts()
         baseAccount = accounts[0]
@@ -29,14 +29,14 @@ describe("VocGateway", () => {
     })
 
     describe("Lifecycle", () => {
-        it("Should create a VocGateway instance", async () => {
+        it("Should create a DVoteGateway instance", async () => {
             const gatewayServer = new GatewayMock({ port, responses: [] })
 
             expect(() => {
-                const gw1 = new VocGateway("")
+                const gw1 = new DVoteGateway("")
             }).to.throw
 
-            const gw2 = new VocGateway(gatewayUrl)
+            const gw2 = new DVoteGateway(gatewayUrl)
             expect(await gw2.getUri()).to.equal(gatewayUrl)
 
             gw2.disconnect()
@@ -49,7 +49,7 @@ describe("VocGateway", () => {
             const gatewayServer1 = new GatewayMock({ port: port1, responses: [defaultDummyResponse] })
             expect(gatewayServer1.interactionCount).to.equal(0)
 
-            const gwClient = new VocGateway(gatewayUrl1)
+            const gwClient = new DVoteGateway(gatewayUrl1)
             expect(await gwClient.getUri()).to.equal(gatewayUrl1)
             await gwClient.sendMessage({ method: "getVoteStatus", processId: "1234", nullifier: "2345" })
 
@@ -85,7 +85,7 @@ describe("VocGateway", () => {
                     { id: "456", response: { request: "456", timestamp: 456, result: "OK 5" }, signature: "456" },
                 ]
             })
-            const gwClient = new VocGateway(gatewayUrl)
+            const gwClient = new DVoteGateway(gatewayUrl)
 
             const response1 = await gwClient.sendMessage({ method: "getVoteStatus", processId: "1234", nullifier: "2345" })
             const response2 = await gwClient.sendMessage({ method: "getVoteStatus", processId: "3456", nullifier: "4567" })
@@ -127,7 +127,7 @@ describe("VocGateway", () => {
                     { id: "456", error: { request: "456", timestamp: 456, message: "ERROR 5" }, signature: "456" },
                 ]
             })
-            const gwClient = new VocGateway(gatewayUrl)
+            const gwClient = new DVoteGateway(gatewayUrl)
 
             try {
                 await gwClient.sendMessage({ method: "getVoteStatus", processId: "1234", nullifier: "2345" })
@@ -189,12 +189,12 @@ describe("VocGateway", () => {
     //         const fileContent = "GOOD MORNING"
     //         const buffData = Buffer.from(fileContent)
 
-    //         // VocGateway (server)
+    //         // DVoteGateway (server)
     //         const responses: GatewayResponse[] = [{ error: false, response: ["bzz://1234"] }]
     //         const gatewayServer = new GatewayMock({ port, responses })
 
     //         // Client
-    //         const gw = new VocGateway(gatewayUrl)
+    //         const gw = new DVoteGateway(gatewayUrl)
     //         const result1 = await addFile(buffData, "my-file.txt", baseAccount.wallet, gw)
 
     //         expect(gatewayServer.interactionCount).to.equal(1)
@@ -214,7 +214,7 @@ describe("VocGateway", () => {
     //         const fileContent = "HELLO WORLD"
     //         const buffData = Buffer.from(fileContent)
 
-    //         // VocGateway (server)
+    //         // DVoteGateway (server)
     //         const responses: GatewayResponse[] = [
     //             { error: false, response: ["bzz://2345"] },
     //             { error: false, response: [buffData.toString("base64")] }
@@ -222,7 +222,7 @@ describe("VocGateway", () => {
     //         const gatewayServer = new GatewayMock({ port, responses })
 
     //         // Client
-    //         const gw = new VocGateway(gatewayUrl)
+    //         const gw = new DVoteGateway(gatewayUrl)
     //         const result1 = await addFile(buffData, "my-file.txt", baseAccount.wallet, gw)
     //         expect(result1).to.equal("bzz://2345")
 
@@ -244,12 +244,12 @@ describe("VocGateway", () => {
     //         const fileContent = "HI THERE"
     //         const buffData = Buffer.from(fileContent)
 
-    //         // VocGateway (server)
+    //         // DVoteGateway (server)
     //         const gatewayServer = new GatewayMock({ port, responses: [] })
 
     //         // Client
     //         try {
-    //             const gw = new VocGateway(gatewayUrl)
+    //             const gw = new DVoteGateway(gatewayUrl)
     //             await new Promise(resolve => setTimeout(resolve, 10))
     //             await addFile(buffData, "my-file.txt", null, gw)
     //             throw new Error("Should have thrown an error but didn't")
@@ -270,14 +270,14 @@ describe("VocGateway", () => {
             const fileContent = "HI THERE"
             const buffData = Buffer.from(fileContent)
 
-            // VocGateway (server)
+            // DVoteGateway (server)
             const responses: GatewayResponse[] = [
                 { id: "123", response: { request: "123", timestamp: 123, uri: "ipfs://ipfs/1234" }, signature: "123" }
             ]
             const gatewayServer = new GatewayMock({ port, responses })
 
             // Client
-            const gw = new VocGateway(gatewayUrl)
+            const gw = new DVoteGateway(gatewayUrl)
             const result1 = await addFile(buffData, "my-file.txt", baseAccount.wallet, gw)
 
             expect(gatewayServer.interactionCount).to.equal(1)
@@ -297,7 +297,7 @@ describe("VocGateway", () => {
             const fileContent = "HI THERE"
             const buffData = Buffer.from(fileContent)
 
-            // VocGateway (server)
+            // DVoteGateway (server)
             const responses: GatewayResponse[] = [
                 { id: "123", response: { request: "123", timestamp: 123, uri: "ipfs://ipfs/2345" }, signature: "123" },
                 { id: "234", response: { request: "234", timestamp: 234, content: buffData.toString("base64") }, signature: "234" }
@@ -310,7 +310,7 @@ describe("VocGateway", () => {
 
             expect(gatewayServer.interactionCount).to.equal(1)
 
-            const gw = new VocGateway(gatewayUrl)
+            const gw = new DVoteGateway(gatewayUrl)
             const result2 = await fetchFileBytes(result1, gw)
             expect(result2.toString()).to.equal(buffData.toString())
 
@@ -327,7 +327,7 @@ describe("VocGateway", () => {
             const fileContent = "HI THERE"
             const buffData = Buffer.from(fileContent)
 
-            // VocGateway (server)
+            // DVoteGateway (server)
             const gatewayServer = new GatewayMock({
                 port, responses: [
                     { id: "123", error: { request: "123", timestamp: 123, message: "Invalid wallet" }, signature: "123" },
@@ -336,7 +336,7 @@ describe("VocGateway", () => {
 
             // Client
             try {
-                const gw = new VocGateway(gatewayUrl)
+                const gw = new DVoteGateway(gatewayUrl)
                 await new Promise(resolve => setTimeout(resolve, 10))
                 await addFile(buffData, "my-file.txt", baseAccount.wallet, gw)
                 throw new Error("Should have thrown an error but didn't")

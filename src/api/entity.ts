@@ -1,6 +1,6 @@
 import { providers, utils, Wallet, Signer } from "ethers"
 import { checkValidEntityMetadata, EntityMetadata } from "../models/entity"
-import { VocGateway } from "../net/gateway"
+import { DVoteGateway } from "../net/gateway"
 import { getEntityResolverContractInstance } from "../net/contract"
 import { TextRecordKeys } from "../models/entity"
 import { fetchFileString, addFile } from "./file"
@@ -44,7 +44,7 @@ export async function getEntityMetadata(entityAddress: string, resolverContractA
     const metadataContentUri = await resolverInstance.text(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI)
     if (!metadataContentUri) throw new Error("The given entity has no metadata defined yet")
 
-    const gw = new VocGateway(gatewayUri.dvote)
+    const gw = new DVoteGateway(gatewayUri.dvote)
     const jsonBuffer = await fetchFileString(metadataContentUri, gw)
     gw.disconnect()
 
@@ -69,7 +69,7 @@ export async function updateEntity(entityAddress: string, resolverContractAddres
     checkValidEntityMetadata(entityMetadata)
 
     const strJsonMeta = JSON.stringify(entityMetadata)
-    const gw = new VocGateway(gatewayUri.dvote, gatewayPublicKey)
+    const gw = new DVoteGateway(gatewayUri.dvote, gatewayPublicKey)
     if (walletOrSigner instanceof Wallet && !walletOrSigner.provider) {
         walletOrSigner = walletOrSigner.connect(providerFromUri(gatewayUri.web3))
     }
