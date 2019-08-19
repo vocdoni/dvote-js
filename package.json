@@ -23,7 +23,7 @@
   "dependencies": {
     "axios": "^0.19.0",
     "buffer": "^5.2.1",
-    "dvote-solidity": "^0.2.4",
+    "dvote-solidity": "^0.3.1",
     "ethers": "^4.0.33",
     "iso-language-codes": "^1.0.3",
     "isomorphic-ws": "^4.0.1",

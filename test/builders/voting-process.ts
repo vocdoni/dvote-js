@@ -6,14 +6,18 @@ import { getAccounts, TestAccount } from "../eth-util"
 // import { BigNumber } from "ethers/utils"
 
 // DEFAULT VALUES
-export const DEFAULT_METADATA_CONTENT_HASHED_URI = "bzz://1234,ipfs://ipfs/1234!0987654321"
+export const DEFAULT_METADATA_CONTENT_HASHED_URI = "ipfs://ipfs/1234,https://server/uri!0987654321"
+export const DEFAULT_MERKLE_ROOT = "0x123456789"
+export const DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI = "ipfs://ipfs/1234,https://server/uri!1234567812345678"
 
 // BUILDER
 export default class VotingProcessBuilder {
     accounts: TestAccount[]
 
     entityAccount: TestAccount
-    metadataContentHashedUri: string = DEFAULT_METADATA_CONTENT_HASHED_URI
+    metadata: string = DEFAULT_METADATA_CONTENT_HASHED_URI
+    merkleRoot: string = DEFAULT_MERKLE_ROOT
+    merkleTree: string = DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI
     chainId: number = 0
 
     constructor() {
@@ -32,7 +36,7 @@ export default class VotingProcessBuilder {
             let processId = await contractInstance.getProcessId(this.entityAccount.address, i)
             processIds.push(processId)
 
-            await contractInstance.create(this.metadataContentHashedUri)
+            await contractInstance.create(this.metadata, this.merkleRoot, this.merkleTree)
         }
 
         return contractInstance
@@ -45,10 +49,10 @@ export default class VotingProcessBuilder {
         this.entityAccount = entityAccount
         return this
     }
-    withMetadataContentHashedUri(metadataContentHashedUri: string) {
-        if (!metadataContentHashedUri) throw new Error("Empty metadataContentHashedUri value")
+    withMetadata(metadata: string) {
+        if (!metadata) throw new Error("Empty metadata value")
 
-        this.metadataContentHashedUri = metadataContentHashedUri
+        this.metadata = metadata
         return this
     }
     withChainId(chainId: number) {
@@ -56,4 +60,3 @@ export default class VotingProcessBuilder {
         return this
     }
 }
-

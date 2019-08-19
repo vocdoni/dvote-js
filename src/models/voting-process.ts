@@ -61,9 +61,8 @@ const voteMetadataSchema = Joi.object().keys({
     startBlock: Joi.number().integer().min(0).required(),
     numberOfBlocks: Joi.number().integer().min(0).required(),
     census: Joi.object().keys({
-        id: Joi.string().regex(/^0x[a-z0-9]+$/).required(),
-        merkleRoot: Joi.string().regex(/^0x[a-z0-9]+$/).required(),
-        messagingUris: Joi.array().items(Joi.string().required())
+        censusMerkleRoot: Joi.string().regex(/^0x[a-z0-9]+$/).required(),
+        censusMerkleTree: Joi.string().required()
     }),
     details: {
         entityId: Joi.string().regex(/^0x[a-z0-9]+$/).required(),
@@ -105,9 +104,8 @@ export interface ProcessMetadata {
     startBlock: number, // Block number on the votchain since the process will be open
     numberOfBlocks: number,
     census: {
-        id: HexString, // Census ID to use for the vote
-        merkleRoot: HexString,
-        messagingUris: MessagingUriString[] // Messaging URI of the Census Services to request data from
+        censusMerkleRoot: HexString,
+        censusMerkleTree: ContentHashedUriString
     },
     details: {
         entityId: HexString,
@@ -137,12 +135,8 @@ export const ProcessMetadataTemplate: ProcessMetadata = {
     startBlock: 10000, // Block number on the votchain since the process will be open
     numberOfBlocks: 400,
     census: {
-        id: "0x1234...", // Census ID to use for the vote
-        merkleRoot: "0x1234...",
-        messagingUris: [
-            "<messaging uri>",
-            "..."
-        ] // Messaging URI of the Census Services to request data from
+        censusMerkleRoot: "0x1234...",
+        censusMerkleTree: "ipfs://12345678,https://server/file!12345678"
     },
     details: {
         entityId: "0x1234",

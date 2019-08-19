@@ -18,4 +18,4 @@ export * from "./util/signers"
 // Types
 export * from "./models/common"
 export * from "./models/entity"
-export * from "./models/process"
+export * from "./models/voting-process"

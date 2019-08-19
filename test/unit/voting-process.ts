@@ -15,7 +15,9 @@ const fs = require("fs")
 
 import { deployVotingProcessContract, getVotingProcessContractInstance } from "../../src/api/vote"
 import VotingProcessBuilder, {
-    DEFAULT_METADATA_CONTENT_HASHED_URI
+    DEFAULT_METADATA_CONTENT_HASHED_URI,
+    DEFAULT_MERKLE_ROOT,
+    DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI
 } from "../builders/voting-process"
 import { BigNumber } from "ethers/utils"
 import { checkValidProcessMetadata, ProcessMetadataTemplate } from "../../src";
@@ -58,7 +60,7 @@ describe("Voting Process", () => {
             expect(contractInstance.address).to.be.ok
             const customProcessId = await contractInstance.getNextProcessId(entityAccount.address)
 
-            await contractInstance.create(DEFAULT_METADATA_CONTENT_HASHED_URI)
+            await contractInstance.create(DEFAULT_METADATA_CONTENT_HASHED_URI, DEFAULT_MERKLE_ROOT, DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI)
 
             // attach from a new object
 
@@ -66,7 +68,9 @@ describe("Voting Process", () => {
             expect(newInstance.address).to.equal(contractInstance.address)
 
             const data = await newInstance.get(customProcessId)
-            expect(data.metadataContentHashedUri.toLowerCase()).to.equal(DEFAULT_METADATA_CONTENT_HASHED_URI)
+            expect(data.metadata.toLowerCase()).to.equal(DEFAULT_METADATA_CONTENT_HASHED_URI)
+            expect(data.censusMerkleRoot).to.equal(DEFAULT_MERKLE_ROOT)
+            expect(data.censusMerkleTree).to.equal(DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI)
             expect(data.entityAddress).to.equal(entityAccount.address)
             expect(data.voteEncryptionPrivateKey).to.equal("")
             expect(data.canceled).to.equal(false)
@@ -111,15 +115,19 @@ describe("Voting Process", () => {
     describe("Process creation", () => {
 
         it("Should allow to create voting processess", async () => {
-            const metadataContentHashedUri = "ipfs://ipfs/yyyyyyyyyyyy,https://host/file!0987654321"
+            const metadata = "ipfs://ipfs/yyyyyyyyyyyy,https://host/file!0987654321"
+            const merkleRoot = "0x09876543210987654321"
+            const merkleTree = "ipfs://ipfs/zzzzzzzzzzz,https://host/file!1234567812345678"
 
             processId = await contractInstance.getNextProcessId(entityAccount.address)
 
-            await contractInstance.create(metadataContentHashedUri)
+            await contractInstance.create(metadata, merkleRoot, merkleTree)
 
             const data = await contractInstance.get(processId)
             expect(data.entityAddress).to.equal(entityAccount.address)
-            expect(data.metadataContentHashedUri).to.equal(metadataContentHashedUri)
+            expect(data.metadata).to.equal(metadata)
+            expect(data.censusMerkleRoot).to.equal(merkleRoot)
+            expect(data.censusMerkleTree).to.equal(merkleTree)
             expect(data.voteEncryptionPrivateKey).to.equal("")
             expect(data.canceled).to.equal(false)
         })
@@ -131,7 +139,7 @@ describe("Voting Process", () => {
                 contractInstance.on("ProcessCreated", (entityAddress: string, processId: string) => {
                     resolve({ entityAddress, processId })
                 })
-                contractInstance.create(DEFAULT_METADATA_CONTENT_HASHED_URI)
+                contractInstance.create(DEFAULT_METADATA_CONTENT_HASHED_URI, DEFAULT_MERKLE_ROOT, DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI)
                     .catch(reject)
             })
 
@@ -150,7 +158,9 @@ describe("Voting Process", () => {
 
             const data = await contractInstance.get(processId)
             expect(data.entityAddress).to.equal(entityAccount.address)
-            expect(data.metadataContentHashedUri).to.equal(DEFAULT_METADATA_CONTENT_HASHED_URI)
+            expect(data.metadata).to.equal(DEFAULT_METADATA_CONTENT_HASHED_URI)
+            expect(data.censusMerkleRoot).to.equal(DEFAULT_MERKLE_ROOT)
+            expect(data.censusMerkleTree).to.equal(DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI)
             expect(data.voteEncryptionPrivateKey).to.equal("")
             expect(data.canceled).to.equal(true)
         })
@@ -170,27 +180,27 @@ describe("Voting Process", () => {
 
     describe("Genesis info", () => {
         it("Should allow to set the genesis Content Hashed URI", async () => {
-            const genesisContentHashedUri = "ipfs://12341234!56785678"
+            const genesis = "ipfs://12341234!56785678"
 
-            const tx = await contractInstance.setGenesis(genesisContentHashedUri)
+            const tx = await contractInstance.setGenesis(genesis)
             expect(tx).to.be.ok
             expect(tx.to).to.equal(contractInstance.address)
 
             const data = await contractInstance.getGenesis()
-            expect(data).to.equal(genesisContentHashedUri)
+            expect(data).to.equal(genesis)
         })
 
         it("Should notify the event", async () => {
-            const genesisContentHashedUri = "ipfs://12341234!56785678"
+            const genesis = "ipfs://12341234!56785678"
 
             const result: { genesis: string } = await new Promise((resolve, reject) => {
                 contractInstance.on("GenesisChanged", (genesis: string) => {
                     resolve({ genesis })
                 })
-                contractInstance.setGenesis(genesisContentHashedUri).catch(reject)
+                contractInstance.setGenesis(genesis).catch(reject)
             })
 
-            expect(result.genesis).to.equal(genesisContentHashedUri)
+            expect(result.genesis).to.equal(genesis)
         }).timeout(8000)
     })
 
