@@ -1,72 +1,78 @@
 import { getVotingProcessContractInstance } from "../net/contract"
 import GatewayURI from "../util/gateway-uri"
 // import { utils, Wallet, Signer } from "ethers"
-// import { DVoteGateway, CensusGateway } from "../net/gateway"
-// import { fetchFileString } from "./file"
+import { DVoteGateway, CensusGateway } from "../net/gateway"
+import { fetchFileString } from "./file"
 
 export {
     deployVotingProcessContract,
     getVotingProcessContractInstance
 } from "../net/contract"
 
-/**
- * Compute the derived public key given a processId
- * @param publicKey 
- * @param processId 
- */
-export function derivePublicKey(publicKey: string, processId: string): string {
-    throw new Error("TODO: unimplemented")
-}
+// /**
+//  * Compute the derived public key given a processId
+//  * @param publicKey 
+//  * @param processId 
+//  */
+// export function derivePublicKey(publicKey: string, processId: string): string {
+//     throw new Error("TODO: unimplemented")
+// }
 
-/**
- * Compute the derived private key given a processId
- * @param privateKey 
- * @param processId 
- */
-export function derivePrivateKey(privateKey: string, processId: string): string {
-    throw new Error("TODO: unimplemented")
-}
+// /**
+//  * Compute the derived private key given a processId
+//  * @param privateKey 
+//  * @param processId 
+//  */
+// export function derivePrivateKey(privateKey: string, processId: string): string {
+//     throw new Error("TODO: unimplemented")
+// }
 
 /**
  * Fetch the JSON metadata for the given processId using the given gateway
  * @param processId 
+ * @param votingProcessContractAddress
  * @param gatewayUri 
  */
-export async function getVoteMetadata(processId: string, votingContractAddress: string, gatewayUri: GatewayURI): Promise<string> {
+export async function getVoteMetadata(processId: string, votingProcessContractAddress: string, gatewayUri: GatewayURI): Promise<string> {
     if (!processId) throw new Error("Invalid processId")
-    else if (!votingContractAddress) throw new Error("Invalid votingContractAddress")
+    else if (!votingProcessContractAddress) throw new Error("Invalid votingProcessContractAddress")
     else if (!gatewayUri || !(gatewayUri instanceof GatewayURI)) throw new Error("Invalid Gateway URI object")
 
-    const resolverInstance = getVotingProcessContractInstance({ gatewayUri: gatewayUri.web3 }, votingContractAddress)
+    const processInstance = getVotingProcessContractInstance({ gatewayUri: gatewayUri.web3 }, votingProcessContractAddress)
 
-    // const metadataContentUri = await resolverInstance.text(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI)
-    // if (!metadataContentUri) throw new Error("The given entity has no metadata defined yet")
+    try {
+        const data = await processInstance.get(processId)
 
-    // const gw = new DVoteGateway(gatewayUri.dvote)
-    // const jsonBuffer = await fetchFileString(metadataContentUri, gw)
-    // gw.disconnect()
+        if (!data.metadata) throw new Error("The given voting process has no metadata")
 
-    // return JSON.parse(jsonBuffer.toString())
+        const gw = new DVoteGateway(gatewayUri.dvote)
+        const jsonBuffer = await fetchFileString(data.metadata, gw)
+        gw.disconnect()
 
-    throw new Error("TODO: unimplemented")
+        return JSON.parse(jsonBuffer.toString())
+    }
+    catch (err) {
+        console.error(err)
+        throw new Error("Could not fetch the process data")
+    }
 }
 
-// /**
-//  * Fetch the modulus group of the given process census using the given gateway
-//  * @param processId 
-//  * @param address
-//  * @param gatewayUri 
-//  */
-// export async function getMerkleProof(processId: string, address: number, gatewayUri: string): Promise<string> {
-//     const metadata = await this.getMetadata(processId, gatewayUri)
+/**
+ * Fetch the modulus group of the given process census using the given gateway
+ * @param processId 
+ * @param address
+ * @param gatewayUri 
+ */
+export async function getMerkleProof(processId: string, address: number, gatewayUri: string): Promise<string> {
+    const metadata = await this.getMetadata(processId, gatewayUri)
 
-//     // TODO: Use the CensusService Object
+    // TODO: Use the CensusService Object
 
-//     // TODO: Check that the vote type == ZK Snarks
-//     // TODO:
+    // TODO: Check that the vote type == ZK Snarks
+    // TODO:
 
-//     throw new Error("unimplemented")
-// }
+    throw new Error("unimplemented")
+}
 
 // /**
 //  * Fetch the modulus group of the given process census using the given gateway
@@ -154,7 +160,7 @@ export async function getVoteMetadata(processId: string, votingContractAddress: 
 //     return jsonBuffer.toString("base64")
 // }
 
-// // COMPUTATION METHODS
+// COMPUTATION METHODS
 
 // export function packageVote(votePkg: VotePackageLRS | VotePackageZK, relayPublicKey: string): VoteEnvelopeLRS | VoteEnvelopeZK {
 //     if (votePkg.type == "lrs-package") {
@@ -172,22 +178,22 @@ export async function getVoteMetadata(processId: string, votingContractAddress: 
 //     throw new Error("unimplemented")
 // }
 
-// function packageZkVote(votePkg: VotePackageZK, relayPublicKey: string): VoteEnvelopeLRS {
-//     throw new Error("unimplemented")
-// }
+function packageZkVote(votePkg: VotePackageZK, relayPublicKey: string): VoteEnvelopeLRS {
+    throw new Error("unimplemented")
+}
 
 
 // TYPES
 
-export type VotePackageLRS = {
-    type: "lrs-package"
-}
+// export type VotePackageLRS = {
+//     type: "lrs-package"
+// }
 export type VotePackageZK = {
     type: "zk-snarks-package"
 }
-export type VoteEnvelopeLRS = {
-    type: "lrs-envelope"
-}
+// export type VoteEnvelopeLRS = {
+//     type: "lrs-envelope"
+// }
 export type VoteEnvelopeZK = {
     type: "zk-snarks-envelope"
 }

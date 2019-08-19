@@ -1,4 +1,5 @@
 import ContentURI from "../util/content-uri"
+import ContentHashedURI from "../util/content-hashed-uri"
 import { DVoteGateway, RequestParameters } from "../net/gateway"
 import { fetchIpfsHash } from "../net/ipfs"
 import { Buffer } from 'buffer'
@@ -14,8 +15,8 @@ import { Wallet, Signer } from "ethers"
  * @param contentUri 
  * @param gateway (optional) A Vocdoni Gateway instance
  */
-export function fetchFileString(contentUri: ContentURI | string, gateway: DVoteGateway | string): Promise<string> {
-    let cUri: ContentURI
+export function fetchFileString(contentUri: ContentURI | ContentHashedURI | string, gateway: DVoteGateway | string): Promise<string> {
+    let cUri: ContentURI | ContentHashedURI
     if (typeof contentUri == "string") cUri = new ContentURI(contentUri)
     else cUri = contentUri
 
@@ -32,12 +33,12 @@ export function fetchFileString(contentUri: ContentURI | string, gateway: DVoteG
  * @param contentUri 
  * @param gateway (optional) A Vocdoni Gateway instance
  */
-export async function fetchFileBytes(contentUri: ContentURI | string, gateway: DVoteGateway | string = null): Promise<Buffer> {
+export async function fetchFileBytes(contentUri: ContentURI | ContentHashedURI | string, gateway: DVoteGateway | string = null): Promise<Buffer> {
     if (!contentUri) throw new Error("Invalid contentUri")
 
-    let cUri: ContentURI
-    if (typeof contentUri == "string") cUri = new ContentURI(contentUri)
-    else cUri = contentUri
+    let cUri: ContentHashedURI
+    if (typeof contentUri == "string") cUri = new ContentHashedURI(contentUri)
+    else cUri = new ContentHashedURI(contentUri.toString())
 
     // Attempt 1: fetch all from the given gateway
     if (gateway) {
@@ -53,13 +54,18 @@ export async function fetchFileBytes(contentUri: ContentURI | string, gateway: D
         }
 
         try {
-            const response = await gw.sendMessage({ method: "fetchFile", uri: cUri.toString() })
+            const response = await gw.sendMessage({ method: "fetchFile", uri: cUri.toContentUriString() })
             if (!response || !response.content) {
                 throw "Invalid response received from the gateway"
             }
 
             // Disconnect if the DVoteGateway connection was created by the function
             if (typeof gateway == "string") gw.disconnect()
+
+            if (cUri.hash) {
+                // TODO: Compute the SHA3-256 hash of the contents
+                console.warn("TO DO: Compute the SHA3-256 hash of the contents")
+            }
 
             return Buffer.from(response.content, "base64")
         } catch (err) {
@@ -72,23 +78,36 @@ export async function fetchFileBytes(contentUri: ContentURI | string, gateway: D
     }
 
     // Attempt 2: fetch fallback from IPFS public gateways
-    if (cUri.ipfsHash()) {
+    if (cUri.ipfsHash) {
         try {
-            var response = await fetchIpfsHash(cUri.ipfsHash())
-            if (response) return response
+            var response = await fetchIpfsHash(cUri.ipfsHash)
+            if (response) {
+
+                if (cUri.hash) {
+                    // TODO: Compute the SHA3-256 hash of the contents
+                    console.warn("TO DO: Compute the SHA3-256 hash of the contents")
+                }
+
+                return response
+            }
         } catch (err) {
             // continue
         }
     }
 
     // Attempt 3: fetch from fallback https endpoints
-    for (let uri in cUri.httpsItems()) {
+    for (let uri in cUri.httpsItems) {
         try {
             const res = await axios.get(uri)
             if (!res || !res.data || res.status >= 300) continue
+            else if (cUri.hash) {
+                // TODO: Compute the SHA3-256 hash of the contents
+                console.warn("TO DO: Compute the SHA3-256 hash of the contents")
+            }
+
             // If the response is not a string, it's because it has been parsed
             // into a JSON object, so we stringify it back
-            else if (typeof res.data != "string") {
+            if (typeof res.data != "string") {
                 res.data = JSON.stringify(res.data)
             }
             return Buffer.from(res.data)
@@ -99,13 +118,18 @@ export async function fetchFileBytes(contentUri: ContentURI | string, gateway: D
     }
 
     // Attempt 4: fetch from fallback http endpoints
-    for (let uri in cUri.httpItems()) {
+    for (let uri in cUri.httpItems) {
         try {
             const res = await axios.get(uri)
             if (!res || !res.data || res.status >= 300) continue
+            else if (cUri.hash) {
+                // TODO: Compute the SHA3-256 hash of the contents
+                console.warn("TO DO: Compute the SHA3-256 hash of the contents")
+            }
+
             // If the response is not a string, it's because it has been parsed
             // into a JSON object, so we stringify it back
-            else if (typeof res.data != "string") {
+            if (typeof res.data != "string") {
                 res.data = JSON.stringify(res.data)
             }
             return Buffer.from(res.data)

@@ -8,25 +8,27 @@ export default class ContentURI {
     }
 
     /** Returns the Content URI as a string representation */
-    toString(): string { return this._contentUri.join(","); }
+    public toString(): string {
+        return this._contentUri.join(",")
+    }
 
     /** Returns the individual URI's contained in the Content URI */
-    items(): string[] { return this._contentUri }
+    public get items(): string[] { return this._contentUri }
 
     /** The hash of all IPFS items */
-    ipfsHash(): string {
+    public get ipfsHash(): string {
         const item = this._contentUri.find(i => i.indexOf("ipfs://") == 0)
         if (!item) return null
         return item.replace(/^ipfs:\/\//, "")
     }
 
     /** The https endpoints */
-    httpsItems(): string[] {
+    public get httpsItems(): string[] {
         return this._contentUri.filter(i => i.indexOf("https://") == 0)
     }
 
     /** The http endpoints */
-    httpItems(): string[] {
+    public get httpItems(): string[] {
         return this._contentUri.filter(i => i.indexOf("http://") == 0)
     }
 }
