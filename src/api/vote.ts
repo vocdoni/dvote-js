@@ -178,7 +178,7 @@ export async function getMerkleProof(processId: string, address: number, gateway
 //     throw new Error("unimplemented")
 // }
 
-function packageZkVote(votePkg: VotePackageZK, relayPublicKey: string): VoteEnvelopeLRS {
+function packageZkVote(votePkg: VotePackageZK, relayPublicKey: string): VoteEnvelopeZK {
     throw new Error("unimplemented")
 }
 

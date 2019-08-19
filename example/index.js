@@ -6,6 +6,7 @@ const {
     getEntityId,
     DVoteGateway,
     CensusGateway,
+    ContentHashedURI,
     GatewayURI,
     getEntityMetadata,
     updateEntity,
@@ -17,7 +18,9 @@ const { Wallet, providers, utils } = require("ethers")
 const { Buffer } = require("buffer/")
 const fs = require("fs")
 
-const jsonMetadata = require("./entity-metadata.json")
+const entityMetadata = require("./entity-metadata.json")
+const processMetadata = require("./process-metadata.json")
+
 // const MNEMONIC = "payment scare exotic code enter party soul ignore horse glove myself ignore"
 const MNEMONIC = "bar bundle start frog dish gauge square subway load easily south bamboo"
 const PATH = "m/44'/60'/0'/0/0"
@@ -111,7 +114,33 @@ async function attachToVotingProcess() {
     console.log("Reading 'genesis'")
     val = await contractInstance.getGenesis()
     console.log("Value stored on the blockchain:", val)
+}
 
+async function createVotingProcess() {
+    const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
+    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+
+    gw = new DVoteGateway(GATEWAY_DVOTE_URI, GATEWAY_PUB_KEY || null)
+
+    console.log("Attaching to contract at", VOTING_PROCESS_CONTRACT_ADDRESS)
+    const contractInstance = await getVotingProcessContractInstance({ provider, wallet }, VOTING_PROCESS_CONTRACT_ADDRESS)
+
+    console.log("Uploading metadata...")
+    const strData = JSON.stringify(processMetadata)
+    const origin = await addFile(Buffer.from(strData), "process-metadata.json", wallet, gw)
+    console.log("process-metadata.json\nDATA STORED ON:", origin)
+
+    const metaCuri = new ContentHashedURI(origin)
+    metaCuri.setHashFrom(strData)
+
+    const censusCuri = new ContentHashedURI("http://localhost/")
+    censusCuri.setHashFrom("")
+
+    console.log("Creating process...")
+    const tx = await contractInstance.create(metaCuri, "0x0", censusCuri)
+    const result = await tx.wait()
+
+    console.log("RESULT", result)
 }
 
 async function registerEntity() {
@@ -123,7 +152,7 @@ async function registerEntity() {
 
     console.log("Entity ID", myEntityId)
     const gw = new GatewayURI(GATEWAY_DVOTE_URI, GATEWAY_CENSUS_URI, GATEWAY_WEB3_PROVIDER_URI)
-    const contentUri = await updateEntity(myEntityAddress, ENTITY_RESOLVER_CONTRACT_ADDRESS, jsonMetadata, wallet, gw)
+    const contentUri = await updateEntity(myEntityAddress, ENTITY_RESOLVER_CONTRACT_ADDRESS, entityMetadata, wallet, gw)
 
     // show stored values
     console.log("\nEntity registered!\n")
@@ -148,7 +177,7 @@ async function readEntity() {
 async function fileUpload() {
     var gw
     try {
-        const wallet = Wallet.fromMnemonic(MNEMONIC)
+        const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
         gw = new DVoteGateway(GATEWAY_DVOTE_URI, GATEWAY_PUB_KEY || null)
 
         console.log("SIGNING FROM ADDRESS", wallet.address)
@@ -234,7 +263,8 @@ async function main() {
     // await deployEntityResolver()
     // await attachToEntityResolver()
     // await deployVotingProcess()
-    await attachToVotingProcess()
+    // await attachToVotingProcess()
+    await createVotingProcess()
 
     // await registerEntity()
     // await readEntity()

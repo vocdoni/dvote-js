@@ -1,4 +1,6 @@
 import ContentURI from "./content-uri"
+import { sha3_256 } from 'js-sha3'
+import { Buffer } from 'buffer'
 
 export default class ContentHashedURI extends ContentURI {
     protected _hash: string
@@ -29,4 +31,13 @@ export default class ContentHashedURI extends ContentURI {
 
     /** Returns the hash on the content referenced by the underlying Content URI */
     public get hash(): string { return this._hash || null }
+
+    public setHashFrom(data: string | Uint8Array | Buffer | number[]) {
+        this._hash = ContentHashedURI.hashFrom(data)
+    }
+
+    /** Computes the SHA3 256 hash of the content provided */
+    static hashFrom(data: string | Uint8Array | Buffer | number[]): string {
+        return sha3_256(data)
+    }
 }

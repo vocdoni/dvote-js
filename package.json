@@ -23,11 +23,12 @@
   "dependencies": {
     "axios": "^0.19.0",
     "buffer": "^5.2.1",
-    "dvote-solidity": "^0.3.1",
+    "dvote-solidity": "^0.3.2",
     "ethers": "^4.0.33",
     "iso-language-codes": "^1.0.3",
     "isomorphic-ws": "^4.0.1",
     "joi-browser": "^13.4.0",
+    "js-sha3": "^0.8.0",
     "universal-parse-url": "^1.0.2",
     "ws": "^7.1.0"
   },
