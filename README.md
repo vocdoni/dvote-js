@@ -58,14 +58,14 @@ console.log("DATA:", data)
 const {
     getEntityResolverContractInstance,
     getEntityId,
-    GatewayURI,
+    GatewayInfo,
     updateEntity
 } = require("dvote-js")
 
 const { Wallet, providers } = require("ethers")
 
 const GATEWAY_DVOTE_URI = "wss://host:443/dvote"
-const GATEWAY_CENSUS_URI = "wss://host:443/census"
+const GATEWAY_SUPPORTED_APIS = ["file", "vote", "census"]
 const GATEWAY_WEB3_PROVIDER_URI = "https://rpc.slock.it/goerli"
 const resolverContractAddress = "0x9fa513Df94fF9EAE4b63669F187928d20bd7cE6F"
 const MNEMONIC = "..." 
@@ -80,8 +80,8 @@ const myEntityAddress = await wallet.getAddress()
 const myEntityId = getEntityId(myEntityAddress)
 const jsonMetadata = { ... } // EDIT THIS
 
-// Define the two URI's of the Gateway
-const gw = new GatewayURI(GATEWAY_DVOTE_URI, GATEWAY_CENSUS_URI, GATEWAY_ETH_PROVIDER_URI)
+// Define the info of the Gateway
+const gw = new GatewayInfo(GATEWAY_DVOTE_URI, GATEWAY_SUPPORTED_APIS, GATEWAY_ETH_PROVIDER_URI)
 
 // Request the update
 const contentUri = await updateEntity(myEntityAddress, resolverContractAddress, jsonMetadata, wallet, gw)
@@ -95,7 +95,7 @@ console.log("IPFS ORIGIN:", contentUri)
 const {
     getEntityResolverContractInstance,
     getEntityId,
-    GatewayURI,
+    GatewayInfo,
     getEntityMetadata,
     updateEntity,
     addFile,
@@ -105,6 +105,7 @@ const {
 const { Wallet, providers } = require("ethers")
 
 const GATEWAY_DVOTE_URI = "wss://host:443/dvote"
+const GATEWAY_SUPPORTED_APIS = ["file", "vote", "census"]
 const GATEWAY_WEB3_PROVIDER_URI = "https://rpc.slock.it/goerli"
 const resolverContractAddress = "0x9fa513Df94fF9EAE4b63669F187928d20bd7cE6F"
 const MNEMONIC = "..." 
@@ -113,7 +114,7 @@ const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
 const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
 const myEntityAddress = await wallet.getAddress()
-const gw = new GatewayURI(GATEWAY_DVOTE_URI, GATEWAY_CENSUS_URI, GATEWAY_WEB3_PROVIDER_URI)
+const gw = new GatewayInfo(GATEWAY_DVOTE_URI, GATEWAY_SUPPORTED_APIS, GATEWAY_WEB3_PROVIDER_URI)
 
 const meta = await getEntityMetadata(myEntityAddress, resolverContractAddress, gw)
 console.log("JSON METADATA", meta)
@@ -125,7 +126,6 @@ console.log("JSON METADATA", meta)
 const {
     getEntityResolverContractInstance,
     getEntityId,
-    GatewayURI,
     getEntityMetadata,
     updateEntity,
     addFile,

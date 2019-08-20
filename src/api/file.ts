@@ -1,10 +1,11 @@
 import ContentURI from "../util/content-uri"
 import ContentHashedURI from "../util/content-hashed-uri"
-import { DVoteGateway, RequestParameters } from "../net/gateway"
+import { DVoteGateway, DvoteRequestParameters } from "../net/gateway"
 import { fetchIpfsHash } from "../net/ipfs"
 import { Buffer } from 'buffer'
 import axios from "axios"
 import { Wallet, Signer } from "ethers"
+import GatewayInfo from "../util/gateway-info"
 // import { JsonRpcSigner } from "ethers/providers"
 
 /**
@@ -33,7 +34,7 @@ export function fetchFileString(contentUri: ContentURI | ContentHashedURI | stri
  * @param contentUri 
  * @param gateway (optional) A Vocdoni Gateway instance
  */
-export async function fetchFileBytes(contentUri: ContentURI | ContentHashedURI | string, gateway: DVoteGateway | string = null): Promise<Buffer> {
+export async function fetchFileBytes(contentUri: ContentURI | ContentHashedURI | string, gateway: GatewayInfo | string = null): Promise<Buffer> {
     if (!contentUri) throw new Error("Invalid contentUri")
 
     let cUri: ContentHashedURI
@@ -46,7 +47,7 @@ export async function fetchFileBytes(contentUri: ContentURI | ContentHashedURI |
         if (typeof gateway == "string") {
             gw = new DVoteGateway(gateway)
         }
-        else if (!(gateway instanceof DVoteGateway)) {
+        else if (!(gateway instanceof GatewayInfo)) {
             throw new Error("Invalid Gateway provided")
         }
         else {
@@ -173,7 +174,7 @@ export function addFile(buffer: Uint8Array | string, name: string, walletOrSigne
         gw = gateway
     }
 
-    const requestBody: RequestParameters = {
+    const requestBody: DvoteRequestParameters = {
         method: "addFile",
         type: "ipfs",
         name,

@@ -6,14 +6,82 @@ import * as WebSocket from "isomorphic-ws"
 import { parseURL } from 'universal-parse-url'
 import { Buffer } from 'buffer'
 import { Contract, ContractFactory, providers, utils, Wallet, Signer } from "ethers"
+import axios from "axios"
 import { providerFromUri } from "../util/providers"
-import GatewayURI from "../util/gateway-uri"
+import GatewayInfo from "../util/gateway-info"
+import { GatewayBootNodes, DVoteSupportedApi, WsGatewayMethod, fileApiMethods, voteApiMethods, censusApiMethods } from "../models/gateway-bootnode"
+
+const uriPattern = /^([a-z][a-z0-9+.-]+):(\/\/([^@]+@)?([a-z0-9.\-_~]+)(:\d+)?)?((?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])*)*|(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+)*)?(\?(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?(\#(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?$/i
+
+/**
+ * Retrieve the list of gateways for a given BootNode endpoint
+ */
+export function getGatewaysFromBootNode(bootNodeUri: string): Promise<{ [networkId: string]: { dvote: DVoteGateway[], web3: Web3Gateway[] } }> {
+    if (!uriPattern.test(bootNodeUri)) throw new Error("Invalid bootNodeUri")
+
+    return axios.get<GatewayBootNodes>(bootNodeUri).then(response => {
+        if (response.status < 200 || response.status >= 300) {
+            const result: { [networkId: string]: { dvote: DVoteGateway[], web3: Web3Gateway[] } } = {}
+            Object.keys(response.data).forEach(networkId => {
+                result[networkId] = {
+                    dvote: (response.data[networkId].dvote || []).map(item => {
+                        return new DVoteGateway(item.uri, item.apis, item.pubKey)
+                    }),
+                    web3: (response.data[networkId].web3 || []).map(item => {
+                        return new Web3Gateway({ gatewayUri: item.uri })
+                    })
+                }
+            })
+            return result
+        }
+        throw new Error()
+    }).catch(err => {
+        throw new Error(err && err.message || "Unable to fetch the boot nodes data")
+    })
+}
 
 /**
  * Retrieve a list of curently active gateways for the given entityAddress
  */
-export async function getActiveBaseGateways(entityAddress: string): Promise<GatewayURI[]> {
+export async function getActiveBaseGateways(entityAddress: string): Promise<GatewayInfo[]> {
     throw new Error("TODO: unimplemented") // TODO: getActiveBaseGateways()
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// CLASSES
+///////////////////////////////////////////////////////////////////////////////
+
+/** Base class on which, WsGateway and Web3Gateway are built */
+abstract class Gateway {
+    protected gwType: "web-socket" | "web3"
+    protected uri: string = ""
+    protected pubKey: string = ""
+
+    constructor(uri: string, type: "web-socket" | "web3", pubKey: string) {
+        if (!uriPattern.test(uri)) throw new Error("Invalid gateway URI")
+
+        if (type == "web3") this.gwType = "web3"
+        else this.gwType = "web-socket"
+
+        this.uri = uri
+        this.pubKey = pubKey || ""
+    }
+
+    public get type() { return this.gwType }
+    public get publicKey() { return this.pubKey }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// WS GATEWAY
+///////////////////////////////////////////////////////////////////////////////
+
+/** Parameters sent by the function caller */
+export interface DvoteRequestParameters {
+    // Common
+    method: WsGatewayMethod,
+    timestamp?: number,
+
+    [k: string]: any
 }
 
 /** Data structure of the request list */
@@ -24,21 +92,10 @@ type WsRequest = {
     timeout: any
 }
 
-type GatewayMethod = "fetchFile" | "addFile" | "submitVoteEnvelope" | "getVoteStatus" | "addCensus" // "getVotingRing"
-
-/** Parameters sent by the function caller */
-export interface RequestParameters {
-    // Common
-    method: GatewayMethod,
-    timestamp?: number,
-
-    [k: string]: any
-}
-
 /** What is actually sent by sendMessage() to the Gateway */
 type MessageRequestContent = {
     id: string,
-    request: RequestParameters,
+    request: DvoteRequestParameters,
     signature?: string
 }
 
@@ -54,38 +111,36 @@ type GatewayResponse = {
     signature: string
 }
 
-const uriPattern = /^([a-z][a-z0-9+.-]+):(\/\/([^@]+@)?([a-z0-9.\-_~]+)(:\d+)?)?((?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])*)*|(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+)*)?(\?(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?(\#(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?$/i
-
 /**
  * This class provides access to Vocdoni Gateways sending JSON payloads over Web Sockets
  * intended to interact within voting processes
  */
-export class DVoteGateway {
-    private publicKey: string = null
-    private uri: string = null
+export class DVoteGateway extends Gateway {
+    protected supportedApis: DVoteSupportedApi[]
     private webSocket: WebSocket = null
     private requestList: WsRequest[] = []  // keep track of the active requests
     private connectionPromise: Promise<void> = null   // let sendMessage wait of the socket is still not open
 
-    constructor(uri: string, publicKey: string = null) {
-        if (publicKey) this.publicKey = publicKey
+    /** Returns a new DVoteGateway object containing the URI, the supported API's and the public key */
+    constructor(uri: string, supportedApis: DVoteSupportedApi[], publicKey: string = null) {
+        super(uri, "web-socket", publicKey)
 
-        this.connect(uri)
+        this.supportedApis = supportedApis
     }
 
     /**
-     * Set or update the Gateway's web socket URI
-     * @param gatewayWsUri 
+     * Connect to the URI defined in the constructor. If a URI is given, discard the previour one and connect to the new one.
+     * @param gatewayWsUri (optional) If set, connect to the given URI
      * @returns Promise that resolves when the socket is open
      */
-    public connect(uri: string): Promise<void> {
-        if (!uri) throw new Error("The gateway URI is required")
-        else if (!uri.match(uriPattern)) throw new Error("Invalid Gateway URI")
+    public connect(uri?: string): Promise<void> {
+        if (!uri && !this.uri) throw new Error("Empty Gateway URI")
+        else if (uri && !uriPattern.test(uri)) throw new Error("Invalid Gateway URI")
 
         // Close any previous web socket that might be open
         this.disconnect()
 
-        const url = parseURL(uri)
+        const url = parseURL(uri || this.uri)
         if (url.protocol != "ws:" && url.protocol != "wss:") throw new Error("Unsupported gateway protocol: " + url.protocol)
 
         // Keep a promise so that calls to sendMessage coming before the socket is open
@@ -140,6 +195,15 @@ export class DVoteGateway {
     }
 
     /**
+     * Check whether the client is effectively connected to a Gateway
+     */
+    public async isConnected(): Promise<boolean> {
+        if (this.connectionPromise) await this.connectionPromise
+
+        return this.webSocket != null && this.uri != null
+    }
+
+    /**
      * Get the current URI of the Gateway
      */
     public async getUri(): Promise<string> {
@@ -154,14 +218,21 @@ export class DVoteGateway {
      * @param wallet (optional) The wallet to use for signing (default: null)
      * @param timeout (optional) Timeout in seconds to wait before failing (default: 50)
      */
-    public async sendMessage(requestBody: RequestParameters, wallet: Wallet | Signer = null, timeout: number = 50): Promise<any> {
+    public async sendMessage(requestBody: DvoteRequestParameters, wallet: Wallet | Signer = null, timeout: number = 50): Promise<any> {
         if (typeof requestBody != "object") return Promise.reject(new Error("The payload should be a javascript object"))
         else if (typeof wallet != "object") return Promise.reject(new Error("The wallet is required"))
-        if (this.connectionPromise) {
-            await this.connectionPromise
+
+        if (!(await this.isConnected())) {
+            await this.connect()
         }
 
         if (!this.webSocket) return Promise.reject(new Error("The gateway connection is not yet available"))
+
+        // Check API method availability
+        if ((fileApiMethods.indexOf(requestBody.method as any) >= 0 && this.supportedApis.indexOf("file") < 0) ||
+            (voteApiMethods.indexOf(requestBody.method as any) >= 0 && this.supportedApis.indexOf("vote") < 0) ||
+            (censusApiMethods.indexOf(requestBody.method as any) >= 0 && this.supportedApis.indexOf("census") < 0)
+        ) throw new Error("The method is not available in the Gateway's supported API's")
 
         // Append the current timestamp to the body
         if (typeof requestBody.timestamp == "undefined") {
@@ -289,13 +360,6 @@ export class DVoteGateway {
     }
 }
 
-/**
- * This class provides access to Vocdoni Gateways sending JSON payloads over Web Sockets
- * intended to interact with a Census Service.
- * Currently, it directly inherits from DVoteGateway
- */
-export class CensusGateway extends DVoteGateway { }
-
 export class Web3Gateway {
     private provider: providers.Provider
 
@@ -372,7 +436,7 @@ export class Web3Gateway {
 // INTERNAL HELPERS
 ///////////////////////////////////////////////////////////////////////////////
 
-function signRequestBody(request: RequestParameters, walletOrSigner: Wallet | Signer): Promise<string> {
+function signRequestBody(request: DvoteRequestParameters, walletOrSigner: Wallet | Signer): Promise<string> {
     if (!walletOrSigner) throw new Error("Invalid wallet/signer")
 
     request = sortObjectFields(request)

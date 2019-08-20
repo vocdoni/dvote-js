@@ -1,7 +1,7 @@
 import { getVotingProcessContractInstance } from "../net/contract"
-import GatewayURI from "../util/gateway-uri"
+import GatewayInfo from "../util/gateway-info"
 // import { utils, Wallet, Signer } from "ethers"
-import { DVoteGateway, CensusGateway } from "../net/gateway"
+import { DVoteGateway } from "../net/gateway"
 import { fetchFileString } from "./file"
 
 export {
@@ -33,19 +33,19 @@ export {
  * @param votingProcessContractAddress
  * @param gatewayUri 
  */
-export async function getVoteMetadata(processId: string, votingProcessContractAddress: string, gatewayUri: GatewayURI): Promise<string> {
+export async function getVoteMetadata(processId: string, votingProcessContractAddress: string, gateway: GatewayInfo): Promise<string> {
     if (!processId) throw new Error("Invalid processId")
     else if (!votingProcessContractAddress) throw new Error("Invalid votingProcessContractAddress")
-    else if (!gatewayUri || !(gatewayUri instanceof GatewayURI)) throw new Error("Invalid Gateway URI object")
+    else if (!gateway || !(gateway instanceof GatewayInfo)) throw new Error("Invalid Gateway URI object")
 
-    const processInstance = getVotingProcessContractInstance({ gatewayUri: gatewayUri.web3 }, votingProcessContractAddress)
+    const processInstance = getVotingProcessContractInstance({ gatewayUri: gateway.web3 }, votingProcessContractAddress)
 
     try {
         const data = await processInstance.get(processId)
 
         if (!data.metadata) throw new Error("The given voting process has no metadata")
 
-        const gw = new DVoteGateway(gatewayUri.dvote)
+        const gw = new DVoteGateway(gateway.dvote, gateway.supportedApis, gateway.publicKey)
         const jsonBuffer = await fetchFileString(data.metadata, gw)
         gw.disconnect()
 

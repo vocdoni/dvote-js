@@ -1,15 +1,11 @@
 import { Wallet, Signer } from "ethers"
-import { CensusGateway } from "../net/gateway"
+import { DVoteGateway } from "../net/gateway"
 
 
-export async function addCensus(censusId: string, pubKeys: string[], censusServiceUri: string, walletOrSigner: Wallet | Signer, gatewayUri: string, gatewayPublicKey?: string) {
-    if (!censusId || !pubKeys || !pubKeys.length || !censusServiceUri) throw new Error("Invalid parameters")
+export function addCensus(censusId: string, pubKeys: string[], gateway: DVoteGateway, walletOrSigner: Wallet | Signer): Promise<any> {
+    if (!censusId || !pubKeys || !pubKeys.length || !gateway) throw new Error("Invalid parameters")
 
-    const gw = new CensusGateway(gatewayUri, gatewayPublicKey)
-    const response = await gw.sendMessage({ method: "addCensus", censusId, pubKeys }, walletOrSigner)
-    gw.disconnect()
-
-    return response
+    return gateway.sendMessage({ method: "addCensus", censusId, pubKeys }, walletOrSigner)
 }
 
 export function addClaim() {

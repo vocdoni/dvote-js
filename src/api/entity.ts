@@ -4,7 +4,7 @@ import { DVoteGateway } from "../net/gateway"
 import { getEntityResolverContractInstance } from "../net/contract"
 import { TextRecordKeys } from "../models/entity"
 import { fetchFileString, addFile } from "./file"
-import GatewayURI from "../util/gateway-uri"
+import GatewayInfo from "../util/gateway-info"
 import { providerFromUri } from "../util/providers";
 
 export {
@@ -33,18 +33,18 @@ export function checkValidMetadata(entityMetadata: EntityMetadata) {
  * @param entityAddress 
  * @param gatewayUri URI of a Vocdoni Gateway to fetch the data from
  */
-export async function getEntityMetadata(entityAddress: string, resolverContractAddress: string, gatewayUri: GatewayURI): Promise<EntityMetadata> {
+export async function getEntityMetadata(entityAddress: string, resolverContractAddress: string, gateway: GatewayInfo): Promise<EntityMetadata> {
     if (!entityAddress) throw new Error("Invalid entityAddress")
     else if (!resolverContractAddress) throw new Error("Invalid resolverContractAddress")
-    else if (!gatewayUri || !(gatewayUri instanceof GatewayURI)) throw new Error("Invalid Gateway URI object")
+    else if (!gateway || !(gateway instanceof GatewayInfo)) throw new Error("Invalid Gateway URI object")
 
     const entityId = getEntityId(entityAddress)
-    const resolverInstance = getEntityResolverContractInstance({ gatewayUri: gatewayUri.web3 }, resolverContractAddress)
+    const resolverInstance = getEntityResolverContractInstance({ gatewayUri: gateway.web3 }, resolverContractAddress)
 
     const metadataContentUri = await resolverInstance.text(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI)
     if (!metadataContentUri) throw new Error("The given entity has no metadata defined yet")
 
-    const gw = new DVoteGateway(gatewayUri.dvote)
+    const gw = new DVoteGateway(gateway.dvote, gateway.supportedApis, gateway.publicKey)
     const jsonBuffer = await fetchFileString(metadataContentUri, gw)
     gw.disconnect()
 
@@ -61,7 +61,7 @@ export async function getEntityMetadata(entityAddress: string, resolverContractA
  * @return A content URI with the IPFS origin
  */
 export async function updateEntity(entityAddress: string, resolverContractAddress: string, entityMetadata: EntityMetadata,
-    walletOrSigner: Wallet | Signer, gatewayUri: GatewayURI, gatewayPublicKey?: string): Promise<string> {
+    walletOrSigner: Wallet | Signer, gateway: GatewayInfo, gatewayPublicKey?: string): Promise<string> {
     if (!entityAddress) throw new Error("Invalid entityAddress")
     else if (!entityMetadata) throw new Error("Invalid Entity metadata")
 
@@ -69,15 +69,15 @@ export async function updateEntity(entityAddress: string, resolverContractAddres
     checkValidEntityMetadata(entityMetadata)
 
     const strJsonMeta = JSON.stringify(entityMetadata)
-    const gw = new DVoteGateway(gatewayUri.dvote, gatewayPublicKey)
+    const gw = new DVoteGateway(gateway.dvote, gateway.supportedApis, gatewayPublicKey)
     if (walletOrSigner instanceof Wallet && !walletOrSigner.provider) {
-        walletOrSigner = walletOrSigner.connect(providerFromUri(gatewayUri.web3))
+        walletOrSigner = walletOrSigner.connect(providerFromUri(gateway.web3))
     }
     const ipfsUri = await addFile(strJsonMeta, "entity-metadata.json", walletOrSigner, gw)
     gw.disconnect()
 
     // Set the IPFS origin on the blockchain
-    const resolverInstance = getEntityResolverContractInstance({ gatewayUri: gatewayUri.web3, signer: walletOrSigner }, resolverContractAddress)
+    const resolverInstance = getEntityResolverContractInstance({ gatewayUri: gateway.web3, signer: walletOrSigner }, resolverContractAddress)
 
     const entityId = getEntityId(entityAddress)
     const tx = await resolverInstance.setText(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI, ipfsUri)

@@ -1,3 +1,5 @@
+require('dotenv').config()
+
 const {
     getEntityResolverContractInstance,
     getVotingProcessContractInstance,
@@ -5,9 +7,8 @@ const {
     deployVotingProcessContract,
     getEntityId,
     DVoteGateway,
-    CensusGateway,
     ContentHashedURI,
-    GatewayURI,
+    GatewayInfo,
     getEntityMetadata,
     updateEntity,
     addFile,
@@ -21,17 +22,14 @@ const fs = require("fs")
 const entityMetadata = require("./entity-metadata.json")
 const processMetadata = require("./process-metadata.json")
 
-// const MNEMONIC = "payment scare exotic code enter party soul ignore horse glove myself ignore"
-const MNEMONIC = "bar bundle start frog dish gauge square subway load easily south bamboo"
+const MNEMONIC = process.env.MNEMONIC || "bar bundle start frog dish gauge square subway load easily south bamboo"
 const PATH = "m/44'/60'/0'/0/0"
-const GATEWAY_PUB_KEY = "02325f284f50fa52d53579c7873a480b351cc20f7780fa556929f5017283ad2449"
-const GATEWAY_DVOTE_URI = "wss://host/dvote"
-const GATEWAY_CENSUS_URI = "wss://host/census"
-// const GATEWAY_WEB3_PROVIDER_URI = "https://host/web3"
-const GATEWAY_WEB3_PROVIDER_URI = "https://rpc.slock.it/goerli"
-// const GATEWAY_WEB3_PROVIDER_URI = "http://127.0.0.1:8545"
-const ENTITY_RESOLVER_CONTRACT_ADDRESS = "0xF6B058613DD7C8a55eE07Fd4a0a66CfD662F36E9"
-const VOTING_PROCESS_CONTRACT_ADDRESS = "0xea7D210f6975616f2F7B2D6360f91f2378E5E144"
+const GATEWAY_PUB_KEY = process.env.GATEWAY_PUB_KEY || "02325f284f50fa52d53579c7873a480b351cc20f7780fa556929f5017283ad2449"
+const GATEWAY_DVOTE_URI = process.env.GATEWAY_DVOTE_URI || "wss://myhost/dvote"
+const GATEWAY_CENSUS_URI = process.env.GATEWAY_CENSUS_URI || "wss://myhost/census"
+const GATEWAY_WEB3_PROVIDER_URI = process.env.GATEWAY_WEB3_PROVIDER_URI || "https://rpc.slock.it/goerli"
+const ENTITY_RESOLVER_CONTRACT_ADDRESS = process.env.ENTITY_RESOLVER_CONTRACT_ADDRESS || "0xF6B058613DD7C8a55eE07Fd4a0a66CfD662F36E9"
+const VOTING_PROCESS_CONTRACT_ADDRESS = process.env.VOTING_PROCESS_CONTRACT_ADDRESS || "0xea7D210f6975616f2F7B2D6360f91f2378E5E144"
 
 async function deployEntityResolver() {
     const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
@@ -151,7 +149,7 @@ async function registerEntity() {
     const myEntityId = getEntityId(myEntityAddress)
 
     console.log("Entity ID", myEntityId)
-    const gw = new GatewayURI(GATEWAY_DVOTE_URI, GATEWAY_CENSUS_URI, GATEWAY_WEB3_PROVIDER_URI)
+    const gw = new GatewayInfo(GATEWAY_DVOTE_URI, GATEWAY_CENSUS_URI, GATEWAY_WEB3_PROVIDER_URI)
     const contentUri = await updateEntity(myEntityAddress, ENTITY_RESOLVER_CONTRACT_ADDRESS, entityMetadata, wallet, gw)
 
     // show stored values
@@ -165,7 +163,7 @@ async function readEntity() {
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
     const myEntityAddress = await wallet.getAddress()
-    const gw = new GatewayURI(GATEWAY_DVOTE_URI, GATEWAY_CENSUS_URI, GATEWAY_WEB3_PROVIDER_URI)
+    const gw = new GatewayInfo(GATEWAY_DVOTE_URI, GATEWAY_CENSUS_URI, GATEWAY_WEB3_PROVIDER_URI)
 
     console.log("ENTITY ID:", getEntityId(myEntityAddress))
     console.log("RESOLVER:", ENTITY_RESOLVER_CONTRACT_ADDRESS)
