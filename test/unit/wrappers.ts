@@ -4,9 +4,9 @@ const { Buffer } = require("buffer/")
 
 import ContentUri from "../../src/util/content-uri"
 import ContentHashedUri from "../../src/util/content-hashed-uri"
-import GatewayUri from "../../src/util/gateway-uri"
+import GatewayInfo from "../../src/util/gateway-info"
 
-describe("Utilities", () => {
+describe("Wrappers", () => {
     describe("Content URI", () => {
         it("Should create a Content URI from a String", () => {
             const curi = new ContentUri("ipfs://1234,https://server/file,http://server/file")
@@ -88,28 +88,34 @@ describe("Utilities", () => {
         })
     })
 
-    describe("Gateway URI", () => {
-        it("Should create a Gateway URI from a String", () => {
-            const curi = new GatewayUri("wss://server/dvote", "wss://server/census", "https://server/web3")
+    describe("Gateway Info", () => {
+        it("Should create a Gateway Info from the URI's", () => {
+            const curi = new GatewayInfo("wss://server/dvote", ["census", "file", "vote"], "https://server/web3")
 
             expect(curi.dvote).to.equal("wss://server/dvote")
-            expect(curi.census).to.equal("wss://server/census")
+            expect(curi.supportedApis).to.deep.equal(["census", "file", "vote"])
             expect(curi.web3).to.equal("https://server/web3")
+
+            const curi2 = new GatewayInfo("wss://server2/dvote", ["vote"], "https://server2/web3")
+
+            expect(curi2.dvote).to.equal("wss://server2/dvote")
+            expect(curi2.supportedApis).to.deep.equal(["vote"])
+            expect(curi2.web3).to.equal("https://server2/web3")
         })
 
-        it("Should fail if a URI is empty", () => {
+        it("Should fail if a parameter is empty", () => {
             expect(() => {
-                new GatewayUri("", "wss://server/census", "https://server/web3")
+                new GatewayInfo("", ["census", "file", "vote"], "https://server/web3")
                 throw new Error("The function should have thrown an error but didn't")
             }).to.throw
 
             expect(() => {
-                new GatewayUri("wss://server/dvote", "", "https://server/web3")
+                new GatewayInfo("wss://server/dvote", null, "https://server/web3")
                 throw new Error("The function should have thrown an error but didn't")
             }).to.throw
 
             expect(() => {
-                new GatewayUri("wss://server/dvote", "wss://server/census", "")
+                new GatewayInfo("wss://server/dvote", ["census", "file", "vote"], "")
                 throw new Error("The function should have thrown an error but didn't")
             }).to.throw
         })

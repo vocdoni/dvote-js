@@ -6,7 +6,6 @@ import { Buffer } from 'buffer'
 import axios from "axios"
 import { Wallet, Signer } from "ethers"
 import GatewayInfo from "../util/gateway-info"
-// import { JsonRpcSigner } from "ethers/providers"
 
 /**
  * Fetch the contents of a file and return them as a string
@@ -16,7 +15,7 @@ import GatewayInfo from "../util/gateway-info"
  * @param contentUri 
  * @param gateway (optional) A Vocdoni Gateway instance
  */
-export function fetchFileString(contentUri: ContentURI | ContentHashedURI | string, gateway: DVoteGateway | string): Promise<string> {
+export function fetchFileString(contentUri: ContentURI | ContentHashedURI | string, gateway: GatewayInfo | DVoteGateway = null): Promise<string> {
     let cUri: ContentURI | ContentHashedURI
     if (typeof contentUri == "string") cUri = new ContentURI(contentUri)
     else cUri = contentUri
@@ -34,7 +33,7 @@ export function fetchFileString(contentUri: ContentURI | ContentHashedURI | stri
  * @param contentUri 
  * @param gateway (optional) A Vocdoni Gateway instance
  */
-export async function fetchFileBytes(contentUri: ContentURI | ContentHashedURI | string, gateway: GatewayInfo | string = null): Promise<Buffer> {
+export async function fetchFileBytes(contentUri: ContentURI | ContentHashedURI | string, gateway: GatewayInfo | DVoteGateway = null): Promise<Buffer> {
     if (!contentUri) throw new Error("Invalid contentUri")
 
     let cUri: ContentHashedURI
@@ -44,24 +43,21 @@ export async function fetchFileBytes(contentUri: ContentURI | ContentHashedURI |
     // Attempt 1: fetch all from the given gateway
     if (gateway) {
         let gw: DVoteGateway
-        if (typeof gateway == "string") {
-            gw = new DVoteGateway(gateway)
-        }
-        else if (!(gateway instanceof GatewayInfo)) {
-            throw new Error("Invalid Gateway provided")
-        }
-        else {
-            gw = gateway
-        }
+        if (gateway instanceof DVoteGateway) gw = gateway
+        else if (gateway instanceof GatewayInfo) gw = new DVoteGateway(gateway)
+        else throw new Error("Invalid Gateway provided")
 
         try {
+            // Connect only if we created the client
+            if (gateway instanceof GatewayInfo) await gw.connect()
             const response = await gw.sendMessage({ method: "fetchFile", uri: cUri.toContentUriString() })
-            if (!response || !response.content) {
-                throw "Invalid response received from the gateway"
-            }
 
-            // Disconnect if the DVoteGateway connection was created by the function
-            if (typeof gateway == "string") gw.disconnect()
+            // Disconnect only if we created the client
+            if (gateway instanceof GatewayInfo) gw.disconnect()
+
+            if (!response || !response.content) {
+                throw new Error("Invalid response received from the gateway")
+            }
 
             if (cUri.hash) {
                 // TODO: Compute the SHA3-256 hash of the contents
@@ -70,10 +66,10 @@ export async function fetchFileBytes(contentUri: ContentURI | ContentHashedURI |
 
             return Buffer.from(response.content, "base64")
         } catch (err) {
-            // Disconnect if the DVoteGateway connection was created by the function
-            if (typeof gateway == "string") gw.disconnect()
+            // Disconnect only if we created the client
+            if (gateway instanceof GatewayInfo) gw.disconnect()
 
-            if (err != "The request timed out") throw err
+            if (err && (err != "The request timed out" && err.message != "The request timed out")) throw err
             // otherwise, continue below
         }
     }
@@ -154,7 +150,7 @@ export async function fetchFileBytes(contentUri: ContentURI | ContentHashedURI |
  * @param gateway A string with the Gateway URI or a DVoteGateway object, set with a URI and a public key
  * @return The URI of the newly added file
  */
-export function addFile(buffer: Uint8Array | string, name: string, walletOrSigner: Wallet | Signer, gateway: DVoteGateway | string): Promise<string> {
+export async function addFile(buffer: Uint8Array | string, name: string, walletOrSigner: Wallet | Signer, gateway: GatewayInfo | DVoteGateway): Promise<string> {
     if (!buffer) throw new Error("Empty payload")
     else if (!walletOrSigner) throw new Error("Wallet is required")
     else if (!gateway) throw new Error("A gateway is required")
@@ -164,15 +160,12 @@ export function addFile(buffer: Uint8Array | string, name: string, walletOrSigne
     }
 
     let gw: DVoteGateway
-    if (typeof gateway == "string") {
+    if (gateway instanceof DVoteGateway) gw = gateway
+    else if (gateway instanceof GatewayInfo) {
         gw = new DVoteGateway(gateway)
+        await gw.connect()
     }
-    else if (!(gateway instanceof DVoteGateway)) {
-        throw new Error("Invalid Gateway provided")
-    }
-    else {
-        gw = gateway
-    }
+    else throw new Error("Invalid Gateway provided")
 
     const requestBody: DvoteRequestParameters = {
         method: "addFile",
@@ -182,8 +175,8 @@ export function addFile(buffer: Uint8Array | string, name: string, walletOrSigne
     }
 
     return gw.sendMessage(requestBody, walletOrSigner).then(response => {
-        // Disconnect if the DVoteGateway connection was created by the function
-        if (typeof gateway == "string") gw.disconnect()
+        // Disconnect only if we created the client
+        if (gateway instanceof GatewayInfo) gw.disconnect()
 
         if (!response || !response.uri) throw new Error("The data could not be uploaded")
 

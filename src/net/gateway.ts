@@ -13,8 +13,12 @@ import { GatewayBootNodes, DVoteSupportedApi, WsGatewayMethod, fileApiMethods, v
 
 const uriPattern = /^([a-z][a-z0-9+.-]+):(\/\/([^@]+@)?([a-z0-9.\-_~]+)(:\d+)?)?((?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])*)*|(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+)*)?(\?(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?(\#(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?$/i
 
+///////////////////////////////////////////////////////////////////////////////
+// GLOBAL FUNCTIONS
+///////////////////////////////////////////////////////////////////////////////
+
 /**
- * Retrieve the list of gateways for a given BootNode endpoint
+ * Retrieve the list of gateways for a given BootNode endpoint. The set of DVote Gateway instances need that you call `connect()` on them
  */
 export function getGatewaysFromBootNode(bootNodeUri: string): Promise<{ [networkId: string]: { dvote: DVoteGateway[], web3: Web3Gateway[] } }> {
     if (!uriPattern.test(bootNodeUri)) throw new Error("Invalid bootNodeUri")
@@ -25,10 +29,10 @@ export function getGatewaysFromBootNode(bootNodeUri: string): Promise<{ [network
             Object.keys(response.data).forEach(networkId => {
                 result[networkId] = {
                     dvote: (response.data[networkId].dvote || []).map(item => {
-                        return new DVoteGateway(item.uri, item.apis, item.pubKey)
+                        return new DVoteGateway({ uri: item.uri, supportedApis: item.apis, publicKey: item.pubKey })
                     }),
                     web3: (response.data[networkId].web3 || []).map(item => {
-                        return new Web3Gateway({ gatewayUri: item.uri })
+                        return new Web3Gateway(item.uri)
                     })
                 }
             })
@@ -48,31 +52,7 @@ export async function getActiveBaseGateways(entityAddress: string): Promise<Gate
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// CLASSES
-///////////////////////////////////////////////////////////////////////////////
-
-/** Base class on which, WsGateway and Web3Gateway are built */
-abstract class Gateway {
-    protected gwType: "web-socket" | "web3"
-    protected uri: string = ""
-    protected pubKey: string = ""
-
-    constructor(uri: string, type: "web-socket" | "web3", pubKey: string) {
-        if (!uriPattern.test(uri)) throw new Error("Invalid gateway URI")
-
-        if (type == "web3") this.gwType = "web3"
-        else this.gwType = "web-socket"
-
-        this.uri = uri
-        this.pubKey = pubKey || ""
-    }
-
-    public get type() { return this.gwType }
-    public get publicKey() { return this.pubKey }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// WS GATEWAY
+// DVOTE GATEWAY
 ///////////////////////////////////////////////////////////////////////////////
 
 /** Parameters sent by the function caller */
@@ -115,43 +95,83 @@ type GatewayResponse = {
  * This class provides access to Vocdoni Gateways sending JSON payloads over Web Sockets
  * intended to interact within voting processes
  */
-export class DVoteGateway extends Gateway {
-    protected supportedApis: DVoteSupportedApi[]
+export class DVoteGateway {
+    protected uri: string = ""
+    protected supportedApis: DVoteSupportedApi[] = []
+    protected pubKey: string = ""
+
     private webSocket: WebSocket = null
-    private requestList: WsRequest[] = []  // keep track of the active requests
     private connectionPromise: Promise<void> = null   // let sendMessage wait of the socket is still not open
+    private requestList: WsRequest[] = []  // keep track of the active requests
 
-    /** Returns a new DVoteGateway object containing the URI, the supported API's and the public key */
-    constructor(uri: string, supportedApis: DVoteSupportedApi[], publicKey: string = null) {
-        super(uri, "web-socket", publicKey)
+    /** 
+     * Returns a new DVote Gateway web socket client
+     * @param gatewayOrParams Either a GatewayInfo instance or a JSON object with the service URI, the supported API's and the public key
+     */
+    constructor(gatewayOrParams: GatewayInfo | { uri: string, supportedApis: DVoteSupportedApi[], publicKey?: string }) {
+        if (gatewayOrParams instanceof GatewayInfo) {
+            this.uri = gatewayOrParams.dvote
+            this.supportedApis = gatewayOrParams.supportedApis
+            this.pubKey = gatewayOrParams.publicKey
+        }
+        else {
+            const { uri, supportedApis, publicKey } = gatewayOrParams
+            if (!uriPattern.test(uri)) throw new Error("Invalid gateway URI")
 
-        this.supportedApis = supportedApis
+            this.uri = uri
+            this.supportedApis = supportedApis
+            this.pubKey = publicKey || ""
+        }
     }
 
     /**
      * Connect to the URI defined in the constructor. If a URI is given, discard the previour one and connect to the new one.
-     * @param gatewayWsUri (optional) If set, connect to the given URI
+     * @param gatewayOrParams (optional) If set, connect to the given coordinates
      * @returns Promise that resolves when the socket is open
      */
-    public connect(uri?: string): Promise<void> {
-        if (!uri && !this.uri) throw new Error("Empty Gateway URI")
-        else if (uri && !uriPattern.test(uri)) throw new Error("Invalid Gateway URI")
+    public connect(gatewayOrParams?: GatewayInfo | { uri: string, supportedApis: DVoteSupportedApi[], publicKey?: string }): Promise<void> {
+        let newUri: string, newSupportedApis: DVoteSupportedApi[], newPublicKey: string
+
+        if (gatewayOrParams) {
+            if (gatewayOrParams instanceof GatewayInfo) {
+                newUri = gatewayOrParams.dvote
+                newSupportedApis = gatewayOrParams.supportedApis
+                newPublicKey = gatewayOrParams.publicKey
+            }
+            else {
+                const { uri, supportedApis, publicKey } = gatewayOrParams
+                if (!uriPattern.test(uri)) throw new Error("Invalid Gateway URI")
+
+                newUri = uri
+                newSupportedApis = supportedApis
+                newPublicKey = publicKey
+            }
+        }
+        else if (!this.uri) throw new Error("The details of a gateway are needed in order to connect to it")
+        else {
+            newUri = this.uri
+            newSupportedApis = this.supportedApis || []
+            newPublicKey = this.publicKey || ""
+        }
+
 
         // Close any previous web socket that might be open
         this.disconnect()
 
-        const url = parseURL(uri || this.uri)
+        const url = parseURL(newUri)
         if (url.protocol != "ws:" && url.protocol != "wss:") throw new Error("Unsupported gateway protocol: " + url.protocol)
 
         // Keep a promise so that calls to sendMessage coming before the socket is open
         // wait until the promise is resolved
         this.connectionPromise = new Promise((resolve, reject) => {
             // Set up the web socket
-            const ws = new WebSocket(uri)
+            const ws = new WebSocket(newUri)
             ws.onopen = () => {
                 // the socket is ready
                 this.webSocket = ws
-                this.uri = uri
+                this.uri = newUri
+                this.supportedApis = newSupportedApis
+                this.pubKey = newPublicKey
 
                 ws.onmessage = msg => {
                     // Detect behavior on Browser/NodeJS
@@ -211,6 +231,8 @@ export class DVoteGateway extends Gateway {
 
         return this.uri
     }
+
+    public get publicKey() { return this.pubKey }
 
     /**
      * Send a WS message to a Vocdoni Gateway and add an entry to track its response
@@ -360,6 +382,9 @@ export class DVoteGateway extends Gateway {
     }
 }
 
+/**
+ * A Web3 wrapped client with utility methods to deploy and attach to Ethereum contracts.
+ */
 export class Web3Gateway {
     private provider: providers.Provider
 
@@ -368,22 +393,28 @@ export class Web3Gateway {
         return providerFromUri(uri)
     }
 
-    constructor(params: { gatewayUri?: string, provider?: providers.Provider } = {}) {
-        if (!params) throw new Error("Invalid params")
+    /**
+     * Returns a wrapped Ethereum Web3 client.
+     * @param gatewayOrProvider Can be a string with the host's URI or an Ethers Provider
+     */
+    constructor(gatewayOrProvider: string | GatewayInfo | providers.Provider) {
+        if (!gatewayOrProvider) throw new Error("Invalid Gateway or provider")
+        else if (typeof gatewayOrProvider == "string") {
+            if (!gatewayOrProvider.match(uriPattern)) throw new Error("Invalid Gateway URI")
 
-        const { gatewayUri, provider } = params
-
-        if (!gatewayUri && !provider) throw new Error("A gateway URI or a provider is required")
-        else if (gatewayUri) {
-            if (!gatewayUri.match(uriPattern)) throw new Error("Invalid Gateway URI")
-
-            const url = parseURL(gatewayUri)
+            const url = parseURL(gatewayOrProvider)
             if (url.protocol != "http:" && url.protocol != "https:") throw new Error("Unsupported gateway protocol: " + url.protocol)
-            this.provider = Web3Gateway.providerFromUri(gatewayUri)
+            this.provider = Web3Gateway.providerFromUri(gatewayOrProvider)
         }
-        else { // use provider
-            this.provider = provider
+        else if (gatewayOrProvider instanceof GatewayInfo) {
+            const url = parseURL(gatewayOrProvider.web3)
+            if (url.protocol != "http:" && url.protocol != "https:") throw new Error("Unsupported gateway protocol: " + url.protocol)
+            this.provider = Web3Gateway.providerFromUri(gatewayOrProvider.web3)
         }
+        else if (gatewayOrProvider instanceof providers.Provider) { // use as a provider
+            this.provider = gatewayOrProvider
+        }
+        else throw new Error("A gateway URI or a provider is required")
     }
 
     /**

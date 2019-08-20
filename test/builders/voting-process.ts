@@ -1,7 +1,7 @@
 import { deployVotingProcessContract } from "../../src/api/vote"
 import { VotingProcessContractMethods } from "dvote-solidity"
 import { Contract } from "ethers"
-import { getAccounts, TestAccount } from "../eth-util"
+import { getAccounts, TestAccount } from "../testing-eth-utils"
 // import EntityBuilder from "./entity-resolver"
 // import { BigNumber } from "ethers/utils"
 

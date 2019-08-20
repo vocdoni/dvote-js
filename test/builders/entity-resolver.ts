@@ -2,7 +2,7 @@ import { getEntityId, deployEntityResolverContract } from "../../src/api/entity"
 // import { TextRecordKeys } from "../../src/models/entity"
 import { EntityResolverContractMethods } from "dvote-solidity"
 import { Contract } from "ethers"
-import { getAccounts, TestAccount } from "../eth-util"
+import { getAccounts, TestAccount } from "../testing-eth-utils"
 
 // DEFAULT VALUES
 export const DEFAULT_NAME = "Organizer Entity Name"

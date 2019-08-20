@@ -8,7 +8,7 @@ import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { Contract } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
-import { getAccounts, increaseTimestamp, TestAccount } from "../eth-util"
+import { getAccounts, increaseTimestamp, TestAccount } from "../testing-eth-utils"
 import { VotingProcessContractMethods } from "dvote-solidity"
 const fs = require("fs")
 
@@ -20,7 +20,7 @@ import VotingProcessBuilder, {
     DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI
 } from "../builders/voting-process"
 import { BigNumber } from "ethers/utils"
-import { checkValidProcessMetadata, ProcessMetadataTemplate } from "../../src";
+import { checkValidProcessMetadata, ProcessMetadataTemplate } from "../../src/models/voting-process";
 
 let accounts: TestAccount[]
 let baseAccount: TestAccount

@@ -1,15 +1,17 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
-import { getAccounts, TestAccount, mnemonic } from "../eth-util"
-import { DVoteGateway, CensusGateway, Web3Gateway } from "../../src/net/gateway"
+import { getAccounts, TestAccount } from "../testing-eth-utils"
+import { DVoteGateway, Web3Gateway } from "../../src/net/gateway"
 import { addFile, fetchFileBytes } from "../../src/api/file"
 import { GatewayMock, InteractionMock, GatewayResponse } from "../mocks/gateway"
 import { server as ganacheRpcServer } from "ganache-core"
 import { Buffer } from "buffer"
+import GatewayInfo from "../../src/util/gateway-info";
 
 const port = 8500
-const gatewayUrl = `ws://localhost:${port}`
+const gatewayUri = `ws://localhost:${port}`
+const gatewayInfo = new GatewayInfo(gatewayUri, ["file", "vote", "census"], "https://server/path", "")
 
 let accounts: TestAccount[]
 let baseAccount: TestAccount
@@ -33,37 +35,43 @@ describe("DVoteGateway", () => {
             const gatewayServer = new GatewayMock({ port, responses: [] })
 
             expect(() => {
-                const gw1 = new DVoteGateway("")
+                const gw1 = new DVoteGateway({ uri: "", supportedApis: [], publicKey: "" })
             }).to.throw
 
-            const gw2 = new DVoteGateway(gatewayUrl)
-            expect(await gw2.getUri()).to.equal(gatewayUrl)
+            const gw2 = new DVoteGateway(gatewayInfo)
+            await gw2.connect()
+
+            expect(await gw2.getUri()).to.equal(gatewayInfo.dvote)
 
             gw2.disconnect()
-
             await gatewayServer.stop()
         })
+
         it("Should update the gateway's URI and point to the new location", async () => {
             const port1 = port + 1
-            const gatewayUrl1 = `ws://127.0.0.1:${port1}`
+            const gatewayUri1 = `ws://127.0.0.1:${port1}`
             const gatewayServer1 = new GatewayMock({ port: port1, responses: [defaultDummyResponse] })
             expect(gatewayServer1.interactionCount).to.equal(0)
 
-            const gwClient = new DVoteGateway(gatewayUrl1)
-            expect(await gwClient.getUri()).to.equal(gatewayUrl1)
-            await gwClient.sendMessage({ method: "getVoteStatus", processId: "1234", nullifier: "2345" })
+            const gatewayInfo1 = new GatewayInfo(gatewayUri1, ["file", "vote", "census"], "https://server/path", "")
+            const gwClient = new DVoteGateway(gatewayInfo1)
+            expect(await gwClient.getUri()).to.equal(gatewayInfo1.dvote)
+            await gwClient.connect()
+            await gwClient.sendMessage({ method: "addClaim", processId: "1234", nullifier: "2345" })
 
             await gwClient.disconnect()
             await gatewayServer1.stop()
 
             const port2 = 9000
-            const gatewayUrl2 = `ws://127.0.0.1:${port2}`
+            const gatewayUri2 = `ws://127.0.0.1:${port2}`
+            const gatewayInfo2 = new GatewayInfo(gatewayUri2, ["file", "vote", "census"], "https://server/path", "")
 
             const gatewayServer2 = new GatewayMock({ port: port2, responses: [defaultDummyResponse] })
             expect(gatewayServer2.interactionCount).to.equal(0)
-            await gwClient.connect(gatewayUrl2)
-            expect(await gwClient.getUri()).to.equal(gatewayUrl2)
-            await gwClient.sendMessage({ method: "getVoteStatus", processId: "5678", nullifier: "6789" })
+
+            await gwClient.connect(gatewayInfo2)
+            expect(await gwClient.getUri()).to.equal(gatewayInfo2.dvote)
+            await gwClient.sendMessage({ method: "addClaim", processId: "5678", nullifier: "6789" })
 
             await gwClient.disconnect()
             await gatewayServer2.stop()
@@ -85,11 +93,13 @@ describe("DVoteGateway", () => {
                     { id: "456", response: { request: "456", timestamp: 456, result: "OK 5" }, signature: "456" },
                 ]
             })
-            const gwClient = new DVoteGateway(gatewayUrl)
+            const gatewayInfo = new GatewayInfo(gatewayUri, ["file", "vote", "census"], "https://server/path", "")
+            const gwClient = new DVoteGateway(gatewayInfo)
+            await gwClient.connect()
 
-            const response1 = await gwClient.sendMessage({ method: "getVoteStatus", processId: "1234", nullifier: "2345" })
-            const response2 = await gwClient.sendMessage({ method: "getVoteStatus", processId: "3456", nullifier: "4567" })
-            const response3 = await gwClient.sendMessage({ method: "getVoteStatus", processId: "5678", nullifier: "6789" })
+            const response1 = await gwClient.sendMessage({ method: "addCensus", processId: "1234", nullifier: "2345" })
+            const response2 = await gwClient.sendMessage({ method: "addClaim", processId: "3456", nullifier: "4567" })
+            const response3 = await gwClient.sendMessage({ method: "addClaimBulk", processId: "5678", nullifier: "6789" })
             const response4 = await gwClient.sendMessage({ method: "fetchFile", uri: "12345" })
             const response5 = await gwClient.sendMessage({ method: "fetchFile", uri: "67890" })
 
@@ -99,13 +109,13 @@ describe("DVoteGateway", () => {
             expect(response4.result).to.equal("OK 4")
             expect(response5.result).to.equal("OK 5")
             expect(gatewayServer.interactionCount).to.equal(5)
-            expect(gatewayServer.interactionList[0].actual.request.method).to.equal("getVoteStatus")
+            expect(gatewayServer.interactionList[0].actual.request.method).to.equal("addCensus")
             expect(gatewayServer.interactionList[0].actual.request.processId).to.equal("1234")
             expect(gatewayServer.interactionList[0].actual.request.nullifier).to.equal("2345")
-            expect(gatewayServer.interactionList[1].actual.request.method).to.equal("getVoteStatus")
+            expect(gatewayServer.interactionList[1].actual.request.method).to.equal("addClaim")
             expect(gatewayServer.interactionList[1].actual.request.processId).to.equal("3456")
             expect(gatewayServer.interactionList[1].actual.request.nullifier).to.equal("4567")
-            expect(gatewayServer.interactionList[2].actual.request.method).to.equal("getVoteStatus")
+            expect(gatewayServer.interactionList[2].actual.request.method).to.equal("addClaimBulk")
             expect(gatewayServer.interactionList[2].actual.request.processId).to.equal("5678")
             expect(gatewayServer.interactionList[2].actual.request.nullifier).to.equal("6789")
             expect(gatewayServer.interactionList[3].actual.request.method).to.equal("fetchFile")
@@ -127,24 +137,26 @@ describe("DVoteGateway", () => {
                     { id: "456", error: { request: "456", timestamp: 456, message: "ERROR 5" }, signature: "456" },
                 ]
             })
-            const gwClient = new DVoteGateway(gatewayUrl)
+            const gatewayInfo = new GatewayInfo(gatewayUri, ["file", "vote", "census"], "https://server/path", "")
+            const gwClient = new DVoteGateway(gatewayInfo)
+            await gwClient.connect()
 
             try {
-                await gwClient.sendMessage({ method: "getVoteStatus", processId: "1234", nullifier: "2345" })
+                await gwClient.sendMessage({ method: "addCensus", processId: "1234", nullifier: "2345" })
                 throw new Error("Request did not fail")
             }
             catch (err) {
                 expect(err.message).to.equal("ERROR 1")
             }
             try {
-                await gwClient.sendMessage({ method: "getVoteStatus", processId: "3456", nullifier: "4567" })
+                await gwClient.sendMessage({ method: "addCensus", processId: "3456", nullifier: "4567" })
                 throw new Error("Request did not fail")
             }
             catch (err) {
                 expect(err.message).to.equal("ERROR 2")
             }
             try {
-                await gwClient.sendMessage({ method: "getVoteStatus", processId: "5678", nullifier: "6789" })
+                await gwClient.sendMessage({ method: "addCensus", processId: "5678", nullifier: "6789" })
                 throw new Error("Request did not fail")
             }
             catch (err) {
@@ -166,13 +178,13 @@ describe("DVoteGateway", () => {
             }
 
             expect(gatewayServer.interactionCount).to.equal(5)
-            expect(gatewayServer.interactionList[0].actual.request.method).to.equal("getVoteStatus")
+            expect(gatewayServer.interactionList[0].actual.request.method).to.equal("addCensus")
             expect(gatewayServer.interactionList[0].actual.request.processId).to.equal("1234")
             expect(gatewayServer.interactionList[0].actual.request.nullifier).to.equal("2345")
-            expect(gatewayServer.interactionList[1].actual.request.method).to.equal("getVoteStatus")
+            expect(gatewayServer.interactionList[1].actual.request.method).to.equal("addCensus")
             expect(gatewayServer.interactionList[1].actual.request.processId).to.equal("3456")
             expect(gatewayServer.interactionList[1].actual.request.nullifier).to.equal("4567")
-            expect(gatewayServer.interactionList[2].actual.request.method).to.equal("getVoteStatus")
+            expect(gatewayServer.interactionList[2].actual.request.method).to.equal("addCensus")
             expect(gatewayServer.interactionList[2].actual.request.processId).to.equal("5678")
             expect(gatewayServer.interactionList[2].actual.request.nullifier).to.equal("6789")
             expect(gatewayServer.interactionList[3].actual.request.method).to.equal("fetchFile")
@@ -194,7 +206,7 @@ describe("DVoteGateway", () => {
     //         const gatewayServer = new GatewayMock({ port, responses })
 
     //         // Client
-    //         const gw = new DVoteGateway(gatewayUrl)
+    //         const gw = new DVoteGateway(gatewayUri)
     //         const result1 = await addFile(buffData, "my-file.txt", baseAccount.wallet, gw)
 
     //         expect(gatewayServer.interactionCount).to.equal(1)
@@ -222,7 +234,7 @@ describe("DVoteGateway", () => {
     //         const gatewayServer = new GatewayMock({ port, responses })
 
     //         // Client
-    //         const gw = new DVoteGateway(gatewayUrl)
+    //         const gw = new DVoteGateway(gatewayUri)
     //         const result1 = await addFile(buffData, "my-file.txt", baseAccount.wallet, gw)
     //         expect(result1).to.equal("bzz://2345")
 
@@ -249,7 +261,7 @@ describe("DVoteGateway", () => {
 
     //         // Client
     //         try {
-    //             const gw = new DVoteGateway(gatewayUrl)
+    //             const gw = new DVoteGateway(gatewayUri)
     //             await new Promise(resolve => setTimeout(resolve, 10))
     //             await addFile(buffData, "my-file.txt", null, gw)
     //             throw new Error("Should have thrown an error but didn't")
@@ -277,7 +289,9 @@ describe("DVoteGateway", () => {
             const gatewayServer = new GatewayMock({ port, responses })
 
             // Client
-            const gw = new DVoteGateway(gatewayUrl)
+            const gatewayInfo = new GatewayInfo(gatewayUri, ["file", "vote", "census"], "https://server/path", "")
+            const gw = new DVoteGateway(gatewayInfo)
+            await gw.connect()
             const result1 = await addFile(buffData, "my-file.txt", baseAccount.wallet, gw)
 
             expect(gatewayServer.interactionCount).to.equal(1)
@@ -290,6 +304,7 @@ describe("DVoteGateway", () => {
             expect(result1.length).to.be.ok
             expect(result1).to.equal("ipfs://ipfs/1234")
 
+            gw.disconnect()
             await gatewayServer.stop()
         })
 
@@ -305,12 +320,15 @@ describe("DVoteGateway", () => {
             const gatewayServer = new GatewayMock({ port, responses })
 
             // Client
-            const result1 = await addFile(buffData, "my-file.txt", baseAccount.wallet, gatewayUrl)
+            const gatewayInfo = new GatewayInfo(gatewayUri, ["file"], "https://server/path", "")
+            const gw = new DVoteGateway(gatewayInfo)
+            await gw.connect()
+            
+            const result1 = await addFile(buffData, "my-file.txt", baseAccount.wallet, gw)
             expect(result1).to.equal("ipfs://ipfs/2345")
 
             expect(gatewayServer.interactionCount).to.equal(1)
 
-            const gw = new DVoteGateway(gatewayUrl)
             const result2 = await fetchFileBytes(result1, gw)
             expect(result2.toString()).to.equal(buffData.toString())
 
@@ -319,6 +337,7 @@ describe("DVoteGateway", () => {
             expect(gatewayServer.interactionList[1].actual.request.uri).to.equal(result1)
             expect(gatewayServer.interactionList[1].actual.id).to.match(/^[0-9a-fA-F]{64}$/)
 
+            gw.disconnect()
             await gatewayServer.stop()
         })
         it("Should request to unpin an old file")
@@ -326,17 +345,21 @@ describe("DVoteGateway", () => {
         it("Should enforce authenticated upload requests", async () => {
             const fileContent = "HI THERE"
             const buffData = Buffer.from(fileContent)
-
+            
             // DVoteGateway (server)
             const gatewayServer = new GatewayMock({
                 port, responses: [
                     { id: "123", error: { request: "123", timestamp: 123, message: "Invalid wallet" }, signature: "123" },
                 ]
             })
-
+            
             // Client
+            let gw: DVoteGateway
             try {
-                const gw = new DVoteGateway(gatewayUrl)
+                const gatewayInfo = new GatewayInfo(gatewayUri, ["file"], "https://server/path", "")
+                gw = new DVoteGateway(gatewayInfo)
+                await gw.connect()
+                
                 await new Promise(resolve => setTimeout(resolve, 10))
                 await addFile(buffData, "my-file.txt", baseAccount.wallet, gw)
                 throw new Error("Should have thrown an error but didn't")
@@ -344,6 +367,7 @@ describe("DVoteGateway", () => {
             catch (err) {
                 expect(err.message).to.equal("Invalid wallet")
             }
+            gw.disconnect()
 
             expect(gatewayServer.interactionCount).to.equal(1)
 
@@ -366,8 +390,8 @@ describe("DVoteGateway", () => {
 
             const addr = Object.keys(info.personal_accounts)[0]
 
-            const gatewayUrl = `http://localhost:${port}`
-            const gw = new Web3Gateway({ gatewayUri: gatewayUrl })
+            const gatewayUri = `http://localhost:${port}`
+            const gw = new Web3Gateway(gatewayUri)
             const gwProvider = gw.getProvider()
             const balance = await gwProvider.getBalance(addr)
 
