@@ -2,9 +2,9 @@ import "mocha" // using @types/mocha
 import { expect } from "chai"
 const { Buffer } = require("buffer/")
 
-import ContentUri from "../../src/util/content-uri"
-import ContentHashedUri from "../../src/util/content-hashed-uri"
-import GatewayInfo from "../../src/util/gateway-info"
+import ContentUri from "../../src/wrappers/content-uri"
+import ContentHashedUri from "../../src/wrappers/content-hashed-uri"
+import GatewayInfo from "../../src/wrappers/gateway-info"
 
 describe("Wrappers", () => {
     describe("Content URI", () => {
@@ -103,9 +103,9 @@ describe("Wrappers", () => {
             expect(curi2.web3).to.equal("https://server2/web3")
         })
 
-        it("Should fail if a parameter is empty", () => {
+        it("Should fail if a parameter is invalid", () => {
             expect(() => {
-                new GatewayInfo("", ["census", "file", "vote"], "https://server/web3")
+                new GatewayInfo("", ["census", "file", "vote"], "")
                 throw new Error("The function should have thrown an error but didn't")
             }).to.throw
 
@@ -115,7 +115,8 @@ describe("Wrappers", () => {
             }).to.throw
 
             expect(() => {
-                new GatewayInfo("wss://server/dvote", ["census", "file", "vote"], "")
+                let random: any = 1234
+                new GatewayInfo(random, ["census", "file", "vote"], "")
                 throw new Error("The function should have thrown an error but didn't")
             }).to.throw
         })

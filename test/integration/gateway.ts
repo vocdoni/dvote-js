@@ -7,7 +7,7 @@ import { addFile, fetchFileBytes } from "../../src/api/file"
 import { GatewayMock, InteractionMock, GatewayResponse } from "../mocks/gateway"
 import { server as ganacheRpcServer } from "ganache-core"
 import { Buffer } from "buffer"
-import GatewayInfo from "../../src/util/gateway-info";
+import GatewayInfo from "../../src/wrappers/gateway-info";
 
 const port = 8500
 const gatewayUri = `ws://localhost:${port}`

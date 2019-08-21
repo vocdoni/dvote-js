@@ -20,16 +20,15 @@ import * as Signers from "./util/signers"
 // MODELS
 import * as EntityModel from "./models/entity"
 import * as VotingProcessModel from "./models/voting-process"
+import * as GatewayModel from "./models/gateway"
 
 
 // EXPORTS
 export const API = { File, Entity, Vote, Census }
+export const Models = { Entity: EntityModel, Vote: VotingProcessModel, Gateway: GatewayModel }
 export const Network = { Gateway, Contracts }
 export const Wrappers = { ContentURI, ContentHashedURI, GatewayInfo }
 export const EtherUtils = { Providers, Signers }
-export const Models = { Entity: EntityModel, Vote: VotingProcessModel }
 
 // EXPORT TYPES
-export * from "./models/common"
-export { EntityMetadata } from "./models/entity"
-export { ProcessMetadata } from "./models/voting-process"
+export * from "./types"

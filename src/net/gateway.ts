@@ -23,16 +23,14 @@ const uriPattern = /^([a-z][a-z0-9+.-]+):(\/\/([^@]+@)?([a-z0-9.\-_~]+)(:\d+)?)?
 export function getGatewaysFromBootNode(bootNodeUri: string): Promise<{ [networkId: string]: { dvote: DVoteGateway[], web3: Web3Gateway[] } }> {
     if (!uriPattern.test(bootNodeUri)) throw new Error("Invalid bootNodeUri")
 
-    return axios.get<GatewayBootNodes>(bootNodeUri).then(response => {
-        if (response.status < 200 || response.status >= 300) throw new Error()
-        
+    return fetchFromBootNode(bootNodeUri).then(data => {
         const result: { [networkId: string]: { dvote: DVoteGateway[], web3: Web3Gateway[] } } = {}
-        Object.keys(response.data).forEach(networkId => {
+        Object.keys(data).forEach(networkId => {
             result[networkId] = {
-                dvote: (response.data[networkId].dvote || []).map(item => {
+                dvote: (data[networkId].dvote || []).map(item => {
                     return new DVoteGateway({ uri: item.uri, supportedApis: item.apis, publicKey: item.pubKey })
                 }),
-                web3: (response.data[networkId].web3 || []).map(item => {
+                web3: (data[networkId].web3 || []).map(item => {
                     return new Web3Gateway(item.uri)
                 })
             }
@@ -44,10 +42,25 @@ export function getGatewaysFromBootNode(bootNodeUri: string): Promise<{ [network
 }
 
 /**
+ * Retrieve the list of gateways for a given BootNode endpoint. The set of DVote Gateway instances need that you call `connect()` on them
+ */
+export function fetchFromBootNode(bootNodeUri: string): Promise<GatewayBootNodes> {
+    if (!uriPattern.test(bootNodeUri)) throw new Error("Invalid bootNodeUri")
+
+    return axios.get<GatewayBootNodes>(bootNodeUri).then(response => {
+        if (response.status < 200 || response.status >= 300) throw new Error()
+
+        return response.data
+    }).catch(err => {
+        throw new Error(err && err.message || "Unable to fetch the boot nodes data")
+    })
+}
+
+/**
  * Retrieve a list of curently active gateways for the given entityAddress
  */
-export async function getActiveBaseGateways(entityAddress: string): Promise<GatewayInfo[]> {
-    throw new Error("TODO: unimplemented") // TODO: getActiveBaseGateways()
+export async function getActiveEntityGateways(entityAddress: string): Promise<GatewayInfo[]> {
+    throw new Error("TODO: unimplemented") // TODO: getActiveEntityGateways()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
