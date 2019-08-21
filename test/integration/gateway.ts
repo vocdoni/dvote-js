@@ -284,7 +284,7 @@ describe("DVoteGateway", () => {
 
             // DVoteGateway (server)
             const responses: GatewayResponse[] = [
-                { id: "123", response: { request: "123", timestamp: 123, uri: "ipfs://ipfs/1234" }, signature: "123" }
+                { id: "123", response: { request: "123", timestamp: 123, uri: "1234" }, signature: "123" }
             ]
             const gatewayServer = new GatewayMock({ port, responses })
 
@@ -302,7 +302,7 @@ describe("DVoteGateway", () => {
             expect(gatewayServer.interactionList[0].actual.signature).to.match(/^0x[0-9a-fA-F]{100,}$/)
 
             expect(result1.length).to.be.ok
-            expect(result1).to.equal("ipfs://ipfs/1234")
+            expect(result1).to.equal("ipfs://1234")
 
             gw.disconnect()
             await gatewayServer.stop()
@@ -314,7 +314,7 @@ describe("DVoteGateway", () => {
 
             // DVoteGateway (server)
             const responses: GatewayResponse[] = [
-                { id: "123", response: { request: "123", timestamp: 123, uri: "ipfs://ipfs/2345" }, signature: "123" },
+                { id: "123", response: { request: "123", timestamp: 123, uri: "2345" }, signature: "123" },
                 { id: "234", response: { request: "234", timestamp: 234, content: buffData.toString("base64") }, signature: "234" }
             ]
             const gatewayServer = new GatewayMock({ port, responses })
@@ -325,7 +325,7 @@ describe("DVoteGateway", () => {
             await gw.connect()
             
             const result1 = await addFile(buffData, "my-file.txt", baseAccount.wallet, gw)
-            expect(result1).to.equal("ipfs://ipfs/2345")
+            expect(result1).to.equal("ipfs://2345")
 
             expect(gatewayServer.interactionCount).to.equal(1)
 
