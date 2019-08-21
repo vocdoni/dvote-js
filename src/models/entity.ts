@@ -61,7 +61,6 @@ const entityReferenceSchema = Joi.object().keys({
 
 const entityMetadataSchema = Joi.object().keys({
     version: Joi.string().regex(/^[0-9]\.[0-9]$/).required(),
-    entityId: Joi.string().regex(/^0x[a-z0-9]+$/).required(),
 
     languages: Joi.array().items(Joi.string().regex(/^([a-z]{2}|default)$/)).required(), // TODO: remove default
     name: Joi.object().keys(multiLanguageStringKeys).required(),
@@ -155,7 +154,6 @@ export const TextListRecordKeys = {
  */
 export interface EntityMetadata {
     version: ProtocolVersion,                // Protocol version
-    entityId: EntityId,
     languages: ["default"], // FIXME: Remove in favor of actual language codes
     // languages: string[],                  // Two character language code (en, fr, it, ...)
 
@@ -264,7 +262,6 @@ type EntityReference = {
 
 export const EntityMetadataTemplate: EntityMetadata = {
     version: "1.0",
-    entityId: "0x0000000000000000000000000000000000000000000000000000000000000000",
     languages: [
         "default"
     ],
