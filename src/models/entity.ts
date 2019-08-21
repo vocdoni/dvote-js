@@ -104,19 +104,6 @@ const entityMetadataSchema = Joi.object().keys({
         })
     ).required(),
 
-    gatewayBootNodes: Joi.array().items(
-        Joi.object().keys({
-            fetchUri: Joi.string().required(),
-            heartbeatMessagingUri: Joi.string().required()
-        }),
-    ).required(),
-
-    gatewayUpdate: Joi.object().keys({
-        timeout: Joi.number().integer().min(10000), // milliseconds
-        topic: Joi.string().required(),
-        difficulty: Joi.number().integer().min(0)
-    }).required(),
-
     bootEntities: Joi.array().items(entityReferenceSchema).required(),
 
     fallbackBootNodeEntities: Joi.array().items(entityReferenceSchema).required(),
@@ -179,23 +166,10 @@ export interface EntityMetadata {
     // It may include anything like visiting web sites, uploading pictures, making payments, etc.
     actions: EntityCustomAction[],
 
-    // Entity's boot nodes providing a list of active Gateways
-    gatewayBootNodes: GatewayBootNode[],
-    gatewayUpdate: {
-        timeout: number,                  // milliseconds after which a Gateway is marked as down
-        topic: string,                    // Topic used for the messaging protocol (e.g. "vocdoni-gateway-update")
-        difficulty: number                // Difficulty of the proof of work, to prevent spammers
-    },
-
     bootEntities: EntityReference[],
     fallbackBootNodeEntities: EntityReference[],
     trustedEntities: EntityReference[],
     censusServiceManagedEntities: EntityReference[],
-}
-
-interface GatewayBootNode {
-    fetchUri: URI,                          // Where to fetch the Bootnode Gateways
-    heartbeatMessagingUri: MessagingUriString     // Where Gateways should report their status updates
 }
 
 export type EntityCustomAction = EntityBaseAction & (EntityBrowserAction | EntityImageUploadAction)
@@ -302,12 +276,6 @@ export const EntityMetadataTemplate: EntityMetadata = {
             visible: "https://registry.vocdoni.net/api/actions/status"
         }
     ],
-    gatewayBootNodes: [],
-    gatewayUpdate: {
-        timeout: 60000,
-        topic: "vocdoni-gateway-update",
-        difficulty: 1000
-    },
     bootEntities: [],
     fallbackBootNodeEntities: [],
     trustedEntities: [],

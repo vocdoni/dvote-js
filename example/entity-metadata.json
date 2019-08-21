@@ -40,17 +40,6 @@
             "visible": "https://registry.vocdoni.net/api/actions/status?action=register"
         }
     ],
-    "gatewayBootNodes": [
-        {
-            "fetchUri": "https://bootnode:port/gateways.json",
-            "heartbeatMessagingUri": "pss://publicKey@0x0"
-        }
-    ],
-    "gatewayUpdate": {
-        "timeout": 60000,
-        "topic": "vocdoni-gateway-update",
-        "difficulty": 1000
-    },
     "bootEntities": [],
     "fallbackBootNodeEntities": [],
     "trustedEntities": [],
