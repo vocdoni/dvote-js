@@ -4,7 +4,7 @@ import { DVoteGateway, Web3Gateway } from "../net/gateway"
 import { getEntityResolverContractInstance } from "../net/contracts"
 import { TextRecordKeys } from "../models/entity"
 import { fetchFileString, addFile } from "./file"
-import GatewayInfo from "../util/gateway-info"
+import GatewayInfo from "../wrappers/gateway-info"
 export {
     deployEntityResolverContract,
     getEntityResolverContractInstance

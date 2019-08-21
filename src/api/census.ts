@@ -1,6 +1,6 @@
 import { Wallet, Signer } from "ethers"
 import { DVoteGateway } from "../net/gateway"
-import GatewayInfo from "../util/gateway-info"
+import GatewayInfo from "../wrappers/gateway-info"
 
 export function addCensus(censusId: string, pubKeys: string[], gateway: DVoteGateway, walletOrSigner: Wallet | Signer): Promise<any> {
     if (!censusId || !pubKeys || !pubKeys.length || !gateway) throw new Error("Invalid parameters")

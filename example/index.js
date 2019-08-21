@@ -1,3 +1,5 @@
+const axios = require("axios")
+
 console.log("Reading .env (if present)...")
 require('dotenv').config()
 
@@ -33,6 +35,7 @@ const GATEWAY_DVOTE_URI = process.env.GATEWAY_DVOTE_URI || "wss://myhost/dvote"
 const GATEWAY_WEB3_PROVIDER_URI = process.env.GATEWAY_WEB3_PROVIDER_URI || "https://rpc.slock.it/goerli"
 const ENTITY_RESOLVER_CONTRACT_ADDRESS = process.env.ENTITY_RESOLVER_CONTRACT_ADDRESS || "0x0c9993a6eEF9D52FAe66C503976D842597D9fB6F"
 const VOTING_PROCESS_CONTRACT_ADDRESS = process.env.VOTING_PROCESS_CONTRACT_ADDRESS || "0xFAb948042424b3339CbbeBC0E03ecB7bd2a68033"
+const BOOTNODES_URI = process.env.BOOTNODES_URI || "http://server/file.json"
 
 async function deployEntityResolver() {
     const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
@@ -247,6 +250,38 @@ async function checkSignature() {
     console.log()
 }
 
+async function gatewayHealthCheck() {
+    // SIGNED
+    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+
+    const myEntityAddress = await wallet.getAddress()
+    const myEntityId = getEntityId(myEntityAddress)
+
+    const gws = await Gateway.getGatewaysFromBootNode(BOOTNODES_URI)
+
+    const URL = "https://hnrss.org/newest"
+    const response = await axios.get(URL)
+
+    for (let networkId in gws) {
+        for (let gw of gws[networkId].dvote) {
+            console.log("Checking", gw.uri, "...")
+
+            await gw.connect()
+            const origin = await File.addFile(response.data, "hn-rss.xml", wallet, gw)
+            console.log("STORED ON", origin, "USING", gw.uri)
+            gw.disconnect()
+        }
+
+        for (let gw of gws[networkId].web3) {
+            console.log("Checking Web3 GW...")
+
+            const instance = getEntityResolverContractInstance({ provider: gw.getProvider(), wallet }, ENTITY_RESOLVER_CONTRACT_ADDRESS)
+            const tx = await instance.setText(myEntityId, "dummy", "1234")
+            await tx.wait()
+        }
+    }
+}
+
 async function gatewayRequest() {
     // DVOTE
     const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_PROVIDER_URI, GATEWAY_PUB_KEY)
@@ -285,7 +320,8 @@ async function main() {
     // await readEntity()
     // await createVotingProcess()
     // await checkSignature()
-    await gatewayRequest()
+    await gatewayHealthCheck()
+    // await gatewayRequest()
 }
 
 main()

@@ -1,5 +1,5 @@
 import { getVotingProcessContractInstance } from "../net/contracts"
-import GatewayInfo from "../util/gateway-info"
+import GatewayInfo from "../wrappers/gateway-info"
 import { DVoteGateway, Web3Gateway } from "../net/gateway"
 import { fetchFileString } from "./file"
 // import { utils, Wallet, Signer } from "ethers"

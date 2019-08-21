@@ -8,7 +8,7 @@ import { Buffer } from 'buffer'
 import { Contract, ContractFactory, providers, utils, Wallet, Signer } from "ethers"
 import axios from "axios"
 import { providerFromUri } from "../util/providers"
-import GatewayInfo from "../util/gateway-info"
+import GatewayInfo from "../wrappers/gateway-info"
 import { GatewayBootNodes, DVoteSupportedApi, WsGatewayMethod, fileApiMethods, voteApiMethods, censusApiMethods } from "../models/gateway"
 
 const uriPattern = /^([a-z][a-z0-9+.-]+):(\/\/([^@]+@)?([a-z0-9.\-_~]+)(:\d+)?)?((?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])*)*|(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+)*)?(\?(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?(\#(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?$/i
@@ -24,21 +24,20 @@ export function getGatewaysFromBootNode(bootNodeUri: string): Promise<{ [network
     if (!uriPattern.test(bootNodeUri)) throw new Error("Invalid bootNodeUri")
 
     return axios.get<GatewayBootNodes>(bootNodeUri).then(response => {
-        if (response.status < 200 || response.status >= 300) {
-            const result: { [networkId: string]: { dvote: DVoteGateway[], web3: Web3Gateway[] } } = {}
-            Object.keys(response.data).forEach(networkId => {
-                result[networkId] = {
-                    dvote: (response.data[networkId].dvote || []).map(item => {
-                        return new DVoteGateway({ uri: item.uri, supportedApis: item.apis, publicKey: item.pubKey })
-                    }),
-                    web3: (response.data[networkId].web3 || []).map(item => {
-                        return new Web3Gateway(item.uri)
-                    })
-                }
-            })
-            return result
-        }
-        throw new Error()
+        if (response.status < 200 || response.status >= 300) throw new Error()
+        
+        const result: { [networkId: string]: { dvote: DVoteGateway[], web3: Web3Gateway[] } } = {}
+        Object.keys(response.data).forEach(networkId => {
+            result[networkId] = {
+                dvote: (response.data[networkId].dvote || []).map(item => {
+                    return new DVoteGateway({ uri: item.uri, supportedApis: item.apis, publicKey: item.pubKey })
+                }),
+                web3: (response.data[networkId].web3 || []).map(item => {
+                    return new Web3Gateway(item.uri)
+                })
+            }
+        })
+        return result
     }).catch(err => {
         throw new Error(err && err.message || "Unable to fetch the boot nodes data")
     })

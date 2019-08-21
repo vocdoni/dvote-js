@@ -1,11 +1,11 @@
-import ContentURI from "../util/content-uri"
-import ContentHashedURI from "../util/content-hashed-uri"
+import ContentURI from "../wrappers/content-uri"
+import ContentHashedURI from "../wrappers/content-hashed-uri"
 import { DVoteGateway, DvoteRequestParameters } from "../net/gateway"
 import { fetchIpfsHash } from "../net/ipfs"
 import { Buffer } from 'buffer'
 import axios from "axios"
 import { Wallet, Signer } from "ethers"
-import GatewayInfo from "../util/gateway-info"
+import GatewayInfo from "../wrappers/gateway-info"
 
 /**
  * Fetch the contents of a file and return them as a string
