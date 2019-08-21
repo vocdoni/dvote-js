@@ -1,4 +1,4 @@
-import { getVotingProcessContractInstance } from "../net/contract"
+import { getVotingProcessContractInstance } from "../net/contracts"
 import GatewayInfo from "../util/gateway-info"
 import { DVoteGateway, Web3Gateway } from "../net/gateway"
 import { fetchFileString } from "./file"
@@ -7,7 +7,7 @@ import { fetchFileString } from "./file"
 export {
     deployVotingProcessContract,
     getVotingProcessContractInstance
-} from "../net/contract"
+} from "../net/contracts"
 
 /**
  * Fetch the JSON metadata for the given processId using the given gateway

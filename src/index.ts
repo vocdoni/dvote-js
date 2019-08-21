@@ -6,7 +6,7 @@ import * as Census from "./api/census"
 
 // NETWORK
 import * as Gateway from "./net/gateway"
-import * as Contract from "./net/contract"
+import * as Contracts from "./net/contracts"
 
 // WRAPPERS
 import { default as ContentURI } from "./util/content-uri"
@@ -25,7 +25,7 @@ import * as VotingProcessModel from "./models/voting-process"
 // EXPORTS
 
 export const API = { File, Entity, Vote, Census }
-export const Network = { Gateway, Contract }
+export const Network = { Gateway, Contracts }
 export const Wrappers = { ContentURI, ContentHashedURI, GatewayInfo }
 export const EtherUtils = { Providers, Signers }
 export const Types = { Common, EntityModel, VotingProcessModel }

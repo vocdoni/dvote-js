@@ -7,7 +7,7 @@ import { EntityResolver, EntityResolverContractMethods } from "dvote-solidity"
 const fs = require("fs")
 
 import { getEntityId } from "../../src/api/entity"
-import { deployEntityResolverContract, getEntityResolverContractInstance } from "../../src/net/contract"
+import { deployEntityResolverContract, getEntityResolverContractInstance } from "../../src/net/contracts"
 import { checkValidEntityMetadata } from "../../src/models/entity"
 import EntityBuilder, { DEFAULT_NAME } from "../builders/entity-resolver"
 

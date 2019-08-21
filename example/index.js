@@ -1,19 +1,23 @@
+console.log("Reading .env (if present)...")
 require('dotenv').config()
+
+const {
+    API: { File, Entity, Census, Vote },
+    Network: { Contracts, Gateway },
+    Wrappers: { GatewayInfo, ContentURI, ContentHashedURI },
+    EtherUtils: { Providers, Signers }
+} = require("../dist") // require("dvote-js")
 
 const {
     getEntityResolverContractInstance,
     getVotingProcessContractInstance,
     deployEntityResolverContract,
-    deployVotingProcessContract,
-    getEntityId,
-    DVoteGateway,
-    ContentHashedURI,
-    GatewayInfo,
-    getEntityMetadata,
-    updateEntity,
-    addFile,
-    fetchFileString
-} = require("..") // require("dvote-js")
+    deployVotingProcessContract
+} = Contracts
+
+const { getEntityId, getEntityMetadata, updateEntity } = Entity
+const { DVoteGateway, Web3Gateway } = Gateway
+const { addFile, fetchFileString } = File
 
 const { Wallet, providers, utils } = require("ethers")
 const { Buffer } = require("buffer/")
@@ -26,10 +30,9 @@ const MNEMONIC = process.env.MNEMONIC || "bar bundle start frog dish gauge squar
 const PATH = "m/44'/60'/0'/0/0"
 const GATEWAY_PUB_KEY = process.env.GATEWAY_PUB_KEY || "02325f284f50fa52d53579c7873a480b351cc20f7780fa556929f5017283ad2449"
 const GATEWAY_DVOTE_URI = process.env.GATEWAY_DVOTE_URI || "wss://myhost/dvote"
-const GATEWAY_CENSUS_URI = process.env.GATEWAY_CENSUS_URI || "wss://myhost/census"
 const GATEWAY_WEB3_PROVIDER_URI = process.env.GATEWAY_WEB3_PROVIDER_URI || "https://rpc.slock.it/goerli"
-const ENTITY_RESOLVER_CONTRACT_ADDRESS = process.env.ENTITY_RESOLVER_CONTRACT_ADDRESS || "0xF6B058613DD7C8a55eE07Fd4a0a66CfD662F36E9"
-const VOTING_PROCESS_CONTRACT_ADDRESS = process.env.VOTING_PROCESS_CONTRACT_ADDRESS || "0xea7D210f6975616f2F7B2D6360f91f2378E5E144"
+const ENTITY_RESOLVER_CONTRACT_ADDRESS = process.env.ENTITY_RESOLVER_CONTRACT_ADDRESS || "0x0c9993a6eEF9D52FAe66C503976D842597D9fB6F"
+const VOTING_PROCESS_CONTRACT_ADDRESS = process.env.VOTING_PROCESS_CONTRACT_ADDRESS || "0xFAb948042424b3339CbbeBC0E03ecB7bd2a68033"
 
 async function deployEntityResolver() {
     const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
@@ -114,31 +117,31 @@ async function attachToVotingProcess() {
     console.log("Value stored on the blockchain:", val)
 }
 
-async function createVotingProcess() {
-    const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
-    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+async function fileUpload() {
+    var gw
+    try {
+        const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
-    gw = new DVoteGateway(GATEWAY_DVOTE_URI, GATEWAY_PUB_KEY || null)
+        const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_PROVIDER_URI, GATEWAY_PUB_KEY)
+        gw = new DVoteGateway(gwInfo)
+        await gw.connect()
 
-    console.log("Attaching to contract at", VOTING_PROCESS_CONTRACT_ADDRESS)
-    const contractInstance = await getVotingProcessContractInstance({ provider, wallet }, VOTING_PROCESS_CONTRACT_ADDRESS)
+        console.log("SIGNING FROM ADDRESS", wallet.address)
 
-    console.log("Uploading metadata...")
-    const strData = JSON.stringify(processMetadata)
-    const origin = await addFile(Buffer.from(strData), "process-metadata.json", wallet, gw)
-    console.log("process-metadata.json\nDATA STORED ON:", origin)
+        const strData = fs.readFileSync(__dirname + "/mobile-org-web-action-example.html").toString()
+        console.error("PUTTING STRING OF LENGTH: ", strData.length)
+        const origin = await addFile(Buffer.from(strData), "mobile-org-web-action-example.html", wallet, gw)
+        console.log("DATA STORED ON:", origin)
 
-    const metaCuri = new ContentHashedURI(origin)
-    metaCuri.setHashFrom(strData)
+        console.log("\nReading back", origin)
+        const data = await fetchFileString(origin, gw)
+        console.log("DATA:", data)
 
-    const censusCuri = new ContentHashedURI("http://localhost/")
-    censusCuri.setHashFrom("")
-
-    console.log("Creating process...")
-    const tx = await contractInstance.create(metaCuri, "0x0", censusCuri)
-    const result = await tx.wait()
-
-    console.log("RESULT", result)
+        gw.disconnect()
+    } catch (err) {
+        if (gw) gw.disconnect()
+        console.error(err)
+    }
 }
 
 async function registerEntity() {
@@ -149,7 +152,7 @@ async function registerEntity() {
     const myEntityId = getEntityId(myEntityAddress)
 
     console.log("Entity ID", myEntityId)
-    const gw = new GatewayInfo(GATEWAY_DVOTE_URI, GATEWAY_CENSUS_URI, GATEWAY_WEB3_PROVIDER_URI)
+    const gw = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_PROVIDER_URI, GATEWAY_PUB_KEY)
     const contentUri = await updateEntity(myEntityAddress, ENTITY_RESOLVER_CONTRACT_ADDRESS, entityMetadata, wallet, gw)
 
     // show stored values
@@ -163,36 +166,43 @@ async function readEntity() {
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
     const myEntityAddress = await wallet.getAddress()
-    const gw = new GatewayInfo(GATEWAY_DVOTE_URI, GATEWAY_CENSUS_URI, GATEWAY_WEB3_PROVIDER_URI)
+    const gw = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_PROVIDER_URI, GATEWAY_PUB_KEY)
 
     console.log("ENTITY ID:", getEntityId(myEntityAddress))
     console.log("RESOLVER:", ENTITY_RESOLVER_CONTRACT_ADDRESS)
-    console.log("GW:", GATEWAY_DVOTE_URI, GATEWAY_CENSUS_URI, GATEWAY_WEB3_PROVIDER_URI)
+    console.log("GW:", GATEWAY_DVOTE_URI, GATEWAY_WEB3_PROVIDER_URI)
     const meta = await getEntityMetadata(myEntityAddress, ENTITY_RESOLVER_CONTRACT_ADDRESS, gw)
     console.log("JSON METADATA\n", meta)
 }
 
-async function fileUpload() {
-    var gw
-    try {
-        const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
-        gw = new DVoteGateway(GATEWAY_DVOTE_URI, GATEWAY_PUB_KEY || null)
+async function createVotingProcess() {
+    const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
+    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
-        console.log("SIGNING FROM ADDRESS", wallet.address)
+    const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_PROVIDER_URI, GATEWAY_PUB_KEY)
+    gw = new DVoteGateway(gwInfo)
+    await gw.connect()
 
-        const strData = fs.readFileSync(__dirname + "/mobile-org-web-action-example.html").toString()
-        const origin = await addFile(Buffer.from(strData), "mobile-org-web-action-example.html", wallet, gw)
-        console.log("mobile-org-web-action-example.html\nDATA STORED ON:", origin)
+    console.log("Attaching to contract at", VOTING_PROCESS_CONTRACT_ADDRESS)
+    const contractInstance = await getVotingProcessContractInstance({ provider, wallet }, VOTING_PROCESS_CONTRACT_ADDRESS)
 
-        console.log("\nReading back", origin)
-        const data = await fetchFileString(origin, gw)
-        console.log("DATA:", data)
+    console.log("Uploading metadata...")
+    const strData = JSON.stringify(processMetadata)
+    const origin = await addFile(Buffer.from(strData), "process-metadata.json", wallet, gw)
+    console.log("process-metadata.json\nDATA STORED ON:", origin)
 
-        gw.disconnect()
-    } catch (err) {
-        if (gw) gw.disconnect()
-        console.error(err)
-    }
+    const metaCuri = new ContentHashedURI(`ipfs://${origin}`)
+    metaCuri.setHashFrom(strData)
+
+    const censusCuri = new ContentHashedURI("http://localhost/")
+    censusCuri.setHashFrom("")
+
+    console.log("Creating process with parameters:", metaCuri.toString(), "0x0", censusCuri.toString())
+    const tx = await contractInstance.create(metaCuri.toString(), "0x0", censusCuri.toString())
+    const result = await tx.wait()
+
+    console.log("RESULT", result)
+    gw.disconnect()
 }
 
 async function checkSignature() {
@@ -239,13 +249,20 @@ async function checkSignature() {
 
 async function gatewayRequest() {
     // DVOTE
-    let gw = new DVoteGateway(GATEWAY_DVOTE_URI, GATEWAY_PUB_KEY)
-    console.log("THE VOC GW:", gw.publicKey)
-    // const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+    const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_PROVIDER_URI, GATEWAY_PUB_KEY)
+    gw = new DVoteGateway(gwInfo)
+    await gw.connect()
+    console.log("THE DVOTE GW:", gw.publicKey)
 
-    // const req = { a: 1 }
-    // const r = await gw.sendMessage(req, wallet, 10)
+    // SIGNED
+    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
+    const req = { method: "test" }
+    const timeout = 10
+    const r = await gw.sendMessage(req, wallet, timeout)
+    console.log("RESPONSE:", r)
+
+    // UNSIGNED
     const origin = "ipfs://QmUNZNB1u31eoAw1ooqXRGxGvSQg4Y7MdTTLUwjEp86WnE"
     console.log("\nReading from", GATEWAY_DVOTE_URI)
     console.log("\nReading", origin)
@@ -262,13 +279,13 @@ async function main() {
     // await attachToEntityResolver()
     // await deployVotingProcess()
     // await attachToVotingProcess()
-    await createVotingProcess()
 
+    // await fileUpload()
     // await registerEntity()
     // await readEntity()
-    // await fileUpload()
+    // await createVotingProcess()
     // await checkSignature()
-    // await gatewayRequest()
+    await gatewayRequest()
 }
 
 main()

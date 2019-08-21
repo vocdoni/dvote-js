@@ -1,14 +1,14 @@
 import { utils, Wallet, Signer } from "ethers"
 import { checkValidEntityMetadata, EntityMetadata } from "../models/entity"
 import { DVoteGateway, Web3Gateway } from "../net/gateway"
-import { getEntityResolverContractInstance } from "../net/contract"
+import { getEntityResolverContractInstance } from "../net/contracts"
 import { TextRecordKeys } from "../models/entity"
 import { fetchFileString, addFile } from "./file"
 import GatewayInfo from "../util/gateway-info"
 export {
     deployEntityResolverContract,
     getEntityResolverContractInstance
-} from "../net/contract"
+} from "../net/contracts"
 
 /**
  * Computes the ID of an entity given its address

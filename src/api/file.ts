@@ -148,7 +148,7 @@ export async function fetchFileBytes(contentUri: ContentURI | ContentHashedURI |
  * @param type What type of P2P protocol should be used
  * @param wallet An Ethers.js wallet capable of signing the payload
  * @param gateway A string with the Gateway URI or a DVoteGateway object, set with a URI and a public key
- * @return The URI of the newly added file
+ * @return The Content URI friendly URI of the newly added file (ipfs://<hash>)
  */
 export async function addFile(buffer: Uint8Array | string, name: string, walletOrSigner: Wallet | Signer, gateway: GatewayInfo | DVoteGateway): Promise<string> {
     if (!buffer) throw new Error("Empty payload")
@@ -180,6 +180,6 @@ export async function addFile(buffer: Uint8Array | string, name: string, walletO
 
         if (!response || !response.uri) throw new Error("The data could not be uploaded")
 
-        return response.uri
+        return "ipfs://" + response.uri
     })
 }

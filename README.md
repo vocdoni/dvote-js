@@ -27,7 +27,11 @@ The library depends on [Ethers.js](https://docs.ethers.io/ethers.js/html/) provi
 To upload a file and pin it on IPFS, you need the data as a `String` or o as a `UInt8Array` and a signer. Gateways will probably not let you upload arbitrary data unless you are authorised to do so.
 
 ```javascript
-const { addFile, fetchFileString } = require("dvote-js")
+
+const {
+    API: { File, Entity, Census, Vote }
+} = require("dvote-js")
+const { addFile, fetchFileString } = File
 const { Wallet } = require("ethers")
 
 const GATEWAY_DVOTE_URI = "wss://host:port/dvote"
@@ -56,11 +60,19 @@ console.log("DATA:", data)
 
 ```javascript
 const {
-    getEntityResolverContractInstance,
-    getEntityId,
-    GatewayInfo,
-    updateEntity
+    API: { File, Entity, Census, Vote },
+    // Network: { Contracts, Gateway },
+    Wrappers: { GatewayInfo, ContentURI, ContentHashedURI },
+    // EtherUtils: { Providers, Signers }
 } = require("dvote-js")
+
+const {
+    getEntityResolverContractInstance,
+    // getVotingProcessContractInstance,
+    // deployEntityResolverContract,
+    // deployVotingProcessContract
+} = Contracts
+const { getEntityId, getEntityMetadata, updateEntity } = Entity
 
 const { Wallet, providers } = require("ethers")
 
@@ -81,7 +93,7 @@ const myEntityId = getEntityId(myEntityAddress)
 const jsonMetadata = { ... } // EDIT THIS
 
 // Define the info of the Gateway
-const gw = new GatewayInfo(GATEWAY_DVOTE_URI, GATEWAY_SUPPORTED_APIS, GATEWAY_ETH_PROVIDER_URI)
+const gw = new GatewayInfo(GATEWAY_DVOTE_URI, GATEWAY_SUPPORTED_APIS, GATEWAY_ETH_PROVIDER_URI, GATEWAY_PUBLIC_KEY)
 
 // Request the update
 const contentUri = await updateEntity(myEntityAddress, resolverContractAddress, jsonMetadata, wallet, gw)
@@ -93,14 +105,20 @@ console.log("IPFS ORIGIN:", contentUri)
 
 ```javascript
 const {
-    getEntityResolverContractInstance,
-    getEntityId,
-    GatewayInfo,
-    getEntityMetadata,
-    updateEntity,
-    addFile,
-    fetchFileString
+    API: { File, Entity, Census, Vote },
+    // Network: { Contracts, Gateway },
+    Wrappers: { GatewayInfo, ContentURI, ContentHashedURI },
+    // EtherUtils: { Providers, Signers }
 } = require("dvote-js")
+
+const {
+    getEntityResolverContractInstance,
+    // getVotingProcessContractInstance,
+    // deployEntityResolverContract,
+    // deployVotingProcessContract
+} = Contracts
+const { getEntityId, getEntityMetadata, updateEntity } = Entity
+const { addFile, fetchFileString } = File
 
 const { Wallet, providers } = require("ethers")
 
@@ -124,13 +142,20 @@ console.log("JSON METADATA", meta)
 
 ```javascript
 const {
-    getEntityResolverContractInstance,
-    getEntityId,
-    getEntityMetadata,
-    updateEntity,
-    addFile,
-    fetchFileString
+    API: { File, Entity, Census, Vote },
+    // Network: { Contracts, Gateway },
+    Wrappers: { GatewayInfo, ContentURI, ContentHashedURI },
+    // EtherUtils: { Providers, Signers }
 } = require("dvote-js")
+
+const {
+    getEntityResolverContractInstance,
+    // getVotingProcessContractInstance,
+    // deployEntityResolverContract,
+    // deployVotingProcessContract
+} = Contracts
+const { getEntityId, getEntityMetadata, updateEntity } = Entity
+const { addFile, fetchFileString } = File
 
 const { Wallet, providers } = require("ethers")
 
@@ -236,13 +261,13 @@ When adding new test suites, don't forget to add a call to `addCompletionHooks()
 
 ### Simulating future timestamps
 
-If you need a transaction to happen in a future timestamp, use `test/eth-utils > increaseTimestamp()` instead of forcing your code to wait. 
+If you need a transaction to happen in a future timestamp, use `test/testing-eth-utils > increaseTimestamp()` instead of forcing your code to wait. 
 
 Be aware that from this point, if you use `Date.now()` on the Javascript side, values will not match the timestamp of the blockchain. So make sure to call `getBlockNumber()` and `getBlock(<num>) > timestamp`.
 
 ### Testing accounts
 
-Use `test/eth-utils > getAccounts()` to retrieve a list of 10 funded accounts with the following data schema:
+Use `test/testing-eth-utils > getAccounts()` to retrieve a list of 10 funded accounts with the following data schema:
 
 ```javascript
 {

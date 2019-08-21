@@ -1,5 +1,5 @@
 import { Contract, providers, Wallet, Signer } from "ethers"
-import { Web3Gateway } from "../net/gateway"
+import { Web3Gateway } from "./gateway"
 
 import {
     EntityResolver as EntityContractDefinition,
