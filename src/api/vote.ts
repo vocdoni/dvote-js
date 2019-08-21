@@ -42,90 +42,105 @@ export async function getVoteMetadata(processId: string, votingProcessContractAd
 }
 
 /**
- * Fetch the modulus group of the given process census using the given gateway
+ * Submit the vote envelope to a Gateway
+ * @param voteEnvelope
  * @param processId 
- * @param keyPath
  * @param gateway 
  */
-export async function getMerkleProof(processId: string, keyPath: string, gateway: GatewayInfo): Promise<string> {
-    // const metadata = await getVoteMetadata(processId, gateway.web3)
+export async function submitEnvelope(voteEnvelope: VoteEnvelopeSnark, processId: string, gateway: GatewayInfo): Promise<boolean> {
+    //     throw new Error("unimplemented")
 
-    // TODO: Use the CensusService Object
+    //     if (voteEnvelope.type == "lrs-envelope") {
 
-    // TODO: Check that the vote type == ZK Snarks
-    // TODO:
+    //     }
+    //     else { // snark-envelope
 
-    throw new Error("unimplemented")
+    //     }
+
+    //     // TODO: Encode in base64
+    //     // TODO: Encrypt vote envelope with the public key of the Relay
+    //     const encryptedEnvelope = JSON.stringify(voteEnvelope)
+
+    //     // Ensure we are connected to the right Gateway
+    //     if (!this.gateway) this.gateway = new Gateway(gateway)
+    //     else if (await this.gateway.getUri() != gateway) await this.gateway.connect(gateway)
+
+    //     return this.gateway.request({
+    //         method: "submitEnvelope",
+    //         processId,
+    //         encryptedEnvelope,
+    //     }).then(strData => JSON.parse(strData))
+
+    throw new Error("TODO: unimplemented")
 }
 
-// /**
-//  * Submit the vote envelope to a Gateway
-//  * @param voteEnvelope
-//  * @param processId 
-//  * @param gateway 
-//  */
-// export async function submitVoteEnvelope(voteEnvelope: VoteEnvelopeLRS | VoteEnvelopeSnark, processId: string, gateway: GatewayInfo): Promise<boolean> {
-//     throw new Error("unimplemented")
+/**
+ * 
+ * @param processId 
+ * @param gateway 
+ * @param nullifier
+ */
+export async function getEnvelopeStatus(processId: string, gateway: GatewayInfo, nullifier: string): Promise<boolean> {
+    //     // Ensure we are connected to the right Gateway
+    //     if (!this.gateway) this.gateway = new Gateway(gateway)
+    //     else if (await this.gateway.getUri() != gateway) await this.gateway.connect(gateway)
 
-//     if (voteEnvelope.type == "lrs-envelope") {
+    //     return this.gateway.request({
+    //         method: "getEnvelopeStatus",
+    //         processId,
+    //         nullifier
+    //     }).then(strData => JSON.parse(strData))
 
-//     }
-//     else { // snark-envelope
+    throw new Error("TODO: unimplemented")
+}
 
-//     }
+/**
+ * Fetches the vote envelope for a given processId
+ * @param processId 
+ * @param gateway 
+ * @param batchNumber
+ */
+export async function getEnvelope(processId: string, gateway: GatewayInfo, batchNumber: number): Promise<string> {
 
-//     // TODO: Encode in base64
-//     // TODO: Encrypt vote envelope with the public key of the Relay
-//     const encryptedEnvelope = JSON.stringify(voteEnvelope)
+    throw new Error("TODO: unimplemented")
 
-//     // Ensure we are connected to the right Gateway
-//     if (!this.gateway) this.gateway = new Gateway(gateway)
-//     else if (await this.gateway.getUri() != gateway) await this.gateway.connect(gateway)
+}
 
-//     return this.gateway.request({
-//         method: "submitVoteEnvelope",
-//         processId,
-//         encryptedEnvelope,
-//     }).then(strData => JSON.parse(strData))
-// }
+/**
+ * Fetches the number of vote envelopes for a given processId
+ * @param processId 
+ * @param gateway 
+ * @param batchNumber
+ */
+export async function getEnvelopeHeight(processId: string, gateway: GatewayInfo, batchNumber: number): Promise<string> {
 
-// /**
-//  * 
-//  * @param processId 
-//  * @param gateway 
-//  * @param nullifier
-//  */
-// export async function getVoteStatus(processId: string, gateway: GatewayInfo, nullifier: string): Promise<boolean> {
-//     // Ensure we are connected to the right Gateway
-//     if (!this.gateway) this.gateway = new Gateway(gateway)
-//     else if (await this.gateway.getUri() != gateway) await this.gateway.connect(gateway)
+    throw new Error("TODO: unimplemented")
 
-//     return this.gateway.request({
-//         method: "getVoteStatus",
-//         processId,
-//         nullifier
-//     }).then(strData => JSON.parse(strData))
-// }
+}
 
-// /**
-//  * Fetches the vote batch of a given processId
-//  * @param processId 
-//  * @param gateway 
-//  * @param batchNumber
-//  */
-// export async function fetchVoteBatch(processId: string, gateway: GatewayInfo, batchNumber: number): Promise<string> {
-//     if (!this.contractInstance) throw new Error("Please, attach to an instance or deploy one")
+/**
+ * Fetches the list pf processes for a given entity
+ * @param processId 
+ * @param gateway 
+ * @param batchNumber
+ */
+export async function getProcessList(processId: string, gateway: GatewayInfo, batchNumber: number): Promise<string> {
 
-//     const contentUri = await this.contractInstance.getBatch(processId, batchNumber)
-//     if (!contentUri) throw new Error("A vote batch with the given number does not exist on process " + processId)
+    throw new Error("TODO: unimplemented")
+    
+}
 
-//     // Ensure we are connected to the right Gateway
-//     const gateway = new DVoteGateway(gateway)
-//     gw.connect()
+/**
+ * Fetches the list of envelopes for a given processId
+ * @param processId 
+ * @param gateway 
+ * @param batchNumber
+ */
+export async function getEnvelopeList(processId: string, gateway: GatewayInfo, batchNumber: number): Promise<string> {
+    
+    throw new Error("TODO: unimplemented")
 
-//     const jsonBuffer = await this.gateway.fetchFile(contentUri)
-//     return jsonBuffer.toString("base64")
-// }
+}
 
 // COMPUTATION
 
@@ -179,26 +194,26 @@ export async function getMerkleProof(processId: string, keyPath: string, gateway
 
 // INTERNAL HELPERS
 
-// function packageLrsVote(votePkg: VotePackageLRS, relayPublicKey: string): VoteEnvelopeLRS {
-//     throw new Error("unimplemented")
-// }
-
 function packageSnarkVote(votePkg: VotePackageSnark, relayPublicKey: string): VoteEnvelopeSnark {
     throw new Error("unimplemented")
 }
 
+// function packageLrsVote(votePkg: VotePackageLRS, relayPublicKey: string): VoteEnvelopeLRS {
+//     throw new Error("unimplemented")
+// }
+
 
 // TYPES
 
-// export type VotePackageLRS = {
-//     type: "lrs-package"
-// }
 export type VotePackageSnark = {
     type: "snark-package"
 }
-// export type VoteEnvelopeLRS = {
-//     type: "lrs-envelope"
+// export type VotePackageLRS = {
+//     type: "lrs-package"
 // }
 export type VoteEnvelopeSnark = {
     type: "snark-envelope"
 }
+// export type VoteEnvelopeLRS = {
+//     type: "lrs-envelope"
+// }

@@ -13,7 +13,7 @@ import GatewayInfo from "../util/gateway-info"
  * See https://vocdoni.io/docs/#/architecture/components/gateway?id=file-api
  * 
  * @param contentUri 
- * @param gateway (optional) A Vocdoni Gateway instance
+ * @param gateway (optional) A Vocdoni Gateway to use
  */
 export function fetchFileString(contentUri: ContentURI | ContentHashedURI | string, gateway: GatewayInfo | DVoteGateway = null): Promise<string> {
     let cUri: ContentURI | ContentHashedURI
@@ -31,7 +31,7 @@ export function fetchFileString(contentUri: ContentURI | ContentHashedURI | stri
  * See https://vocdoni.io/docs/#/architecture/components/gateway?id=file-api
  * 
  * @param contentUri 
- * @param gateway (optional) A Vocdoni Gateway instance
+ * @param gateway (optional) A Vocdoni Gateway to use
  */
 export async function fetchFileBytes(contentUri: ContentURI | ContentHashedURI | string, gateway: GatewayInfo | DVoteGateway = null): Promise<Buffer> {
     if (!contentUri) throw new Error("Invalid contentUri")
@@ -182,4 +182,40 @@ export async function addFile(buffer: Uint8Array | string, name: string, walletO
 
         return "ipfs://" + response.uri
     })
+}
+
+/**
+ * Retrieves the list of pinned filed for the current account
+ * @param 1 
+ * @param 2 
+ * @param 3
+ */
+export async function pinList(): Promise<string> {
+
+    throw new Error("TODO: unimplemented")
+
+}
+
+/**
+ * Pins an extenal IPFS hash to that it becomes persistent
+ * @param 1 
+ * @param 2 
+ * @param 3
+ */
+export async function pinFile(): Promise<string> {
+
+    throw new Error("TODO: unimplemented")
+
+}
+
+/**
+ * Requests to remove the pin of a file
+ * @param 1 
+ * @param 2 
+ * @param 3
+ */
+export async function unpinFile(): Promise<string> {
+
+    throw new Error("TODO: unimplemented")
+
 }

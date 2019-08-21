@@ -9,7 +9,7 @@ import { Contract, ContractFactory, providers, utils, Wallet, Signer } from "eth
 import axios from "axios"
 import { providerFromUri } from "../util/providers"
 import GatewayInfo from "../util/gateway-info"
-import { GatewayBootNodes, DVoteSupportedApi, WsGatewayMethod, fileApiMethods, voteApiMethods, censusApiMethods } from "../models/gateway-bootnode"
+import { GatewayBootNodes, DVoteSupportedApi, WsGatewayMethod, fileApiMethods, voteApiMethods, censusApiMethods } from "../models/gateway"
 
 const uriPattern = /^([a-z][a-z0-9+.-]+):(\/\/([^@]+@)?([a-z0-9.\-_~]+)(:\d+)?)?((?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])*)*|(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+)*)?(\?(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?(\#(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?$/i
 
