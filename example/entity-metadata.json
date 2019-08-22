@@ -11,11 +11,6 @@
         "default": "The description of my entity goes here",
         "fr": "La description officielle de mon organisation est ici"
     },
-    "contracts": {
-        "resolverAddress": "0x21f7DcCd9D1ce4C3685A5c50096265A8db4103b4",
-        "votingAddress": "0x1234567890123456789012345678901234567890",
-        "networkId": "goerli"
-    },
     "votingProcesses": {
         "active": [],
         "ended": []

@@ -52,9 +52,8 @@ const multiLanguageStringKeys = {
 }
 
 const entityReferenceSchema = Joi.object().keys({
-    resolverAddress: Joi.string().regex(/^0x[a-zA-Z0-9]{40}$/).required(),
-    networkId: Joi.string().regex(/^[a-z]+$/).required(),
-    entityId: Joi.string().regex(/^0x[a-z0-9]+$/).required()
+    entityId: Joi.string().regex(/^0x[a-z0-9]+$/).required(),
+    entryPoints: Joi.array().items(Joi.string().required())
 })
 
 // MAIN ENTITY SCHEMA
@@ -66,11 +65,6 @@ const entityMetadataSchema = Joi.object().keys({
     name: Joi.object().keys(multiLanguageStringKeys).required(),
     description: Joi.object().keys(multiLanguageStringKeys).required(),
 
-    contracts: Joi.object().keys({
-        resolverAddress: Joi.string().regex(/^0x[a-zA-Z0-9]{40}$/).required(),
-        votingAddress: Joi.string().regex(/^0x[a-zA-Z0-9]{40}$/).required(),
-        networkId: Joi.string().regex(/^[a-z]+$/).required()
-    }).required(),
     votingProcesses: Joi.object().keys({
         active: Joi.array().items(Joi.string().regex(/^0x[a-z0-9]+$/)).required(),
         ended: Joi.array().items(Joi.string().regex(/^0x[a-z0-9]+$/)).required()
@@ -125,7 +119,8 @@ type ProtocolVersion = "1.0"
  */
 export const TextRecordKeys = {
     JSON_METADATA_CONTENT_URI: "vnd.vocdoni.meta",
-    VOCDONI_BOOT_NODES: "vnd.vocdoni.boot"
+    VOCDONI_BOOT_NODES: "vnd.vocdoni.boot-nodes",
+    VOCDONI_GATEWAY_HEARTBEAT: "vnd.vocdoni.gateway-heartbeat"
 }
 
 /**
@@ -148,11 +143,6 @@ export interface EntityMetadata {
     description: MultiLanguage<string>,
 
     newsFeed: MultiLanguage<ContentUriString>,
-    contracts: {
-        resolverAddress: ContractAddress,
-        votingAddress: ContractAddress,
-        networkId: string,
-    },
     votingProcesses: {
         active: ProcessId[],  // Process ID's to query on the Voting Contract
         ended: ProcessId[]
@@ -225,9 +215,8 @@ type ImageUploadSource = {
 }
 
 type EntityReference = {
-    resolverAddress: ContractAddress,
-    networkId: string,
-    entityId: HexString
+    entityId: HexString,
+    entryPoints: string[]
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -246,11 +235,6 @@ export const EntityMetadataTemplate: EntityMetadata = {
     description: {
         default: "The description of my entity goes here",
         // fr: "La description officielle de mon organisation est ici"
-    },
-    contracts: {
-        "resolverAddress": "0x21f7DcCd9D1ce4C3685A5c50096265A8db4103b4",
-        "votingAddress": "0x1234567890123456789012345678901234567890",
-        "networkId": "goerli"
     },
     votingProcesses: {
         active: [],
