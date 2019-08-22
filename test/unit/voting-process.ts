@@ -13,7 +13,7 @@ import { VotingProcessContractMethods } from "dvote-solidity"
 const fs = require("fs")
 
 
-import { deployVotingProcessContract, getVotingProcessContractInstance } from "../../src/api/vote"
+import { deployVotingProcessContract, getVotingProcessInstance } from "../../src/net/contracts"
 import VotingProcessBuilder, {
     DEFAULT_METADATA_CONTENT_HASHED_URI,
     DEFAULT_MERKLE_ROOT,
@@ -64,7 +64,7 @@ describe("Voting Process", () => {
 
             // attach from a new object
 
-            const newInstance = getVotingProcessContractInstance({ provider: entityAccount.provider }, contractInstance.address)
+            const newInstance = await getVotingProcessInstance({ provider: entityAccount.provider }, contractInstance.address)
             expect(newInstance.address).to.equal(contractInstance.address)
 
             const data = await newInstance.get(customProcessId)

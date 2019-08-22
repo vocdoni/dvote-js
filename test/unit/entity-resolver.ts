@@ -7,7 +7,7 @@ import { EntityResolver, EntityResolverContractMethods } from "dvote-solidity"
 const fs = require("fs")
 
 import { getEntityId } from "../../src/api/entity"
-import { deployEntityResolverContract, getEntityResolverContractInstance } from "../../src/net/contracts"
+import { deployEntityResolverContract, getEntityResolverInstance } from "../../src/net/contracts"
 import { checkValidEntityMetadata } from "../../src/models/entity"
 import EntityBuilder, { DEFAULT_NAME } from "../builders/entity-resolver"
 
@@ -43,13 +43,13 @@ describe("Entity Resolver", () => {
 
         it("Should attach to a given instance", async () => {
             contractInstance = await deployEntityResolverContract({ provider: entityAccount.provider, wallet: entityAccount.wallet })
-
+            
             expect(contractInstance.address).to.be.ok
 
             await contractInstance.setText(entityId, "custom-key", "custom value")
             expect(await contractInstance.text(entityId, "custom-key")).to.equal("custom value")
 
-            const newInstance = getEntityResolverContractInstance({ provider: entityAccount.provider }, contractInstance.address)
+            const newInstance = await getEntityResolverInstance({ provider: entityAccount.provider }, contractInstance.address)
 
             expect(newInstance.address).to.equal(contractInstance.address)
             expect(await newInstance.text(entityId, "custom-key")).to.equal("custom value")

@@ -93,10 +93,10 @@ export async function fetchFileBytes(contentUri: ContentURI | ContentHashedURI |
     }
 
     // Attempt 3: fetch from fallback https endpoints
-    for (let uri in cUri.httpsItems) {
+    for (let uri of cUri.httpsItems) {
         try {
             const res = await axios.get(uri)
-            if (!res || !res.data || res.status >= 300) continue
+            if (!res || !res.data || res.status < 200 || res.status >= 300) continue
             else if (cUri.hash) {
                 // TODO: Compute the SHA3-256 hash of the contents
                 console.warn("TO DO: Compute the SHA3-256 hash of the contents")
@@ -115,10 +115,10 @@ export async function fetchFileBytes(contentUri: ContentURI | ContentHashedURI |
     }
 
     // Attempt 4: fetch from fallback http endpoints
-    for (let uri in cUri.httpItems) {
+    for (let uri of cUri.httpItems) {
         try {
             const res = await axios.get(uri)
-            if (!res || !res.data || res.status >= 300) continue
+            if (!res || !res.data || res.status < 200 || res.status >= 300) continue
             else if (cUri.hash) {
                 // TODO: Compute the SHA3-256 hash of the contents
                 console.warn("TO DO: Compute the SHA3-256 hash of the contents")

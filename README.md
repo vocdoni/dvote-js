@@ -67,8 +67,8 @@ const {
 } = require("dvote-js")
 
 const {
-    getEntityResolverContractInstance,
-    // getVotingProcessContractInstance,
+    getEntityResolverInstance,
+    // getVotingProcessInstance,
     // deployEntityResolverContract,
     // deployVotingProcessContract
 } = Contracts
@@ -79,14 +79,13 @@ const { Wallet, providers } = require("ethers")
 const GATEWAY_DVOTE_URI = "wss://host:443/dvote"
 const GATEWAY_SUPPORTED_APIS = ["file", "vote", "census"]
 const GATEWAY_WEB3_PROVIDER_URI = "https://rpc.slock.it/goerli"
-const resolverContractAddress = "0x9fa513Df94fF9EAE4b63669F187928d20bd7cE6F"
 const MNEMONIC = "..." 
 
 const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
 const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
 // Attach to the Entity Resolver contract
-const resolverInstance = await getEntityResolverContractInstance({ provider, wallet }, resolverContractAddress)
+const resolverInstance = await getEntityResolverInstance({ provider, wallet })
 
 const myEntityAddress = await wallet.getAddress()
 const myEntityId = getEntityId(myEntityAddress)
@@ -112,8 +111,8 @@ const {
 } = require("dvote-js")
 
 const {
-    getEntityResolverContractInstance,
-    // getVotingProcessContractInstance,
+    getEntityResolverInstance,
+    // getVotingProcessInstance,
     // deployEntityResolverContract,
     // deployVotingProcessContract
 } = Contracts
@@ -149,8 +148,8 @@ const {
 } = require("dvote-js")
 
 const {
-    getEntityResolverContractInstance,
-    // getVotingProcessContractInstance,
+    getEntityResolverInstance,
+    // getVotingProcessInstance,
     // deployEntityResolverContract,
     // deployVotingProcessContract
 } = Contracts
@@ -160,14 +159,13 @@ const { addFile, fetchFileString } = File
 const { Wallet, providers } = require("ethers")
 
 const GATEWAY_WEB3_PROVIDER_URI = "https://rpc.slock.it/goerli"
-const resolverContractAddress = "0x9fa513Df94fF9EAE4b63669F187928d20bd7cE6F"
 const MNEMONIC = "..." 
 
 const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
 const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
 // Attach to the Entity Resolver contract
-const resolverInstance = await getEntityResolverContractInstance({ provider, wallet }, resolverContractAddress)
+const resolverInstance = await getEntityResolverInstance({ provider, wallet })
 
 const myEntityAddress = await wallet.getAddress()
 const myEntityId = getEntityId(myEntityAddress)

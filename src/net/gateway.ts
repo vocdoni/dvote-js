@@ -8,7 +8,10 @@ import { Buffer } from 'buffer'
 import { Contract, ContractFactory, providers, utils, Wallet, Signer } from "ethers"
 import axios from "axios"
 import { providerFromUri } from "../util/providers"
+import ContentURI from "../wrappers/content-uri"
 import GatewayInfo from "../wrappers/gateway-info"
+import { fetchFileString } from "../api/file"
+import { defaultBootnodeContentUri } from "../constants"
 import { GatewayBootNodes, DVoteSupportedApi, WsGatewayMethod, fileApiMethods, voteApiMethods, censusApiMethods } from "../models/gateway"
 
 const uriPattern = /^([a-z][a-z0-9+.-]+):(\/\/([^@]+@)?([a-z0-9.\-_~]+)(:\d+)?)?((?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])*)*|(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+)*)?(\?(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?(\#(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?$/i
@@ -18,12 +21,21 @@ const uriPattern = /^([a-z][a-z0-9+.-]+):(\/\/([^@]+@)?([a-z0-9.\-_~]+)(:\d+)?)?
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
- * Retrieve the list of gateways for a given BootNode endpoint. The set of DVote Gateway instances need that you call `connect()` on them
+ * Retrieve a list of gateways provided by default by Vocdoni.
+ * The resulting set of `dvote[]` objects may need that you call `connect()` before you use them.
  */
-export function getGatewaysFromBootNode(bootNodeUri: string): Promise<{ [networkId: string]: { dvote: DVoteGateway[], web3: Web3Gateway[] } }> {
-    if (!uriPattern.test(bootNodeUri)) throw new Error("Invalid bootNodeUri")
+export function getDefaultGateways(): Promise<{ [networkId: string]: { dvote: DVoteGateway[], web3: Web3Gateway[] } }> {
+    return getGatewaysFromBootNode(defaultBootnodeContentUri)
+}
 
-    return fetchFromBootNode(bootNodeUri).then(data => {
+/**
+ * Retrieve the list of gateways for a given BootNode(s) Content URI.
+ * The resulting set of `dvote[]` objects may need that you call `connect()` before you use them.
+ */
+export function getGatewaysFromBootNode(bootnodesContentUri: string | ContentURI): Promise<{ [networkId: string]: { dvote: DVoteGateway[], web3: Web3Gateway[] } }> {
+    if (!bootnodesContentUri) throw new Error("Invalid Content URI")
+
+    return fetchFromBootNode(bootnodesContentUri).then(data => {
         const result: { [networkId: string]: { dvote: DVoteGateway[], web3: Web3Gateway[] } } = {}
         Object.keys(data).forEach(networkId => {
             result[networkId] = {
@@ -37,22 +49,33 @@ export function getGatewaysFromBootNode(bootNodeUri: string): Promise<{ [network
         })
         return result
     }).catch(err => {
-        throw new Error(err && err.message || "Unable to fetch the boot nodes data")
+        throw new Error(err && err.message || "Unable to fetch the boot node(s) data")
     })
 }
 
 /**
- * Retrieve the list of gateways for a given BootNode endpoint. The set of DVote Gateway instances need that you call `connect()` on them
+ * Retrieve the list of gateways provided by default by Vocdoni
  */
-export function fetchFromBootNode(bootNodeUri: string): Promise<GatewayBootNodes> {
-    if (!uriPattern.test(bootNodeUri)) throw new Error("Invalid bootNodeUri")
-
-    return axios.get<GatewayBootNodes>(bootNodeUri).then(response => {
-        if (response.status < 200 || response.status >= 300) throw new Error()
-
-        return response.data
+export function fetchDefaultBootNode(): Promise<GatewayBootNodes> {
+    return fetchFileString(defaultBootnodeContentUri).then(strResult => {
+        const result = JSON.parse(strResult)
+        return result
     }).catch(err => {
-        throw new Error(err && err.message || "Unable to fetch the boot nodes data")
+        throw new Error(err && err.message || "Unable to fetch the boot node(s) data")
+    })
+}
+
+/**
+ * Retrieve the list of gateways for a given BootNode(s) Content URI
+ */
+export function fetchFromBootNode(bootnodesContentUri: string | ContentURI): Promise<GatewayBootNodes> {
+    if (!bootnodesContentUri) throw new Error("Invalid bootNodeUri")
+
+    return fetchFileString(bootnodesContentUri).then(strResult => {
+        const result = JSON.parse(strResult)
+        return result
+    }).catch(err => {
+        throw new Error(err && err.message || "Unable to fetch the boot node(s) data")
     })
 }
 

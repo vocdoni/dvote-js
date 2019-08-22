@@ -1,6 +1,6 @@
 import { Contract, providers, Wallet, Signer } from "ethers"
 import { Web3Gateway } from "./gateway"
-
+import { entityResolverEnsDomain, votingProcessEnsDomain } from "../constants"
 import {
     EntityResolver as EntityContractDefinition,
     VotingProcess as VotingContractDefinition,
@@ -79,16 +79,22 @@ export async function deployVotingProcessContract(params: DeployContractParams =
  * - Pass an Ethers.js `provider` connected to a wallet to sign transactions.
  * - Pass an Ethers.js `signer` if you are using Metamask.
  * - Pass an Ethers.js `wallet` if you want to sign locally with a private key. 
- * @param address Address of the contract instance
+ * @param address (optional) Overrides the address of the contract instance, instead of the value from `*.vocdoni.eth`
  * 
  * One of `gateway`/`provider` and `signer`/`wallet` is required
  */
-export function getEntityResolverContractInstance(params: AttachToContractParams = {}, address: string): (Contract & EntityResolverContractMethods) {
+export async function getEntityResolverInstance(params: AttachToContractParams = {}, address: string = null): Promise<(Contract & EntityResolverContractMethods)> {
     let { gateway, provider, signer, wallet } = params
 
     const gw = new Web3Gateway(gateway || provider)
+    const gwProvider = gw.getProvider()
+
+    if (typeof address != "string") {
+        address = await provider.resolveName(entityResolverEnsDomain)
+    }
+
     if (wallet) {
-        if (!wallet.provider) wallet = wallet.connect(gw.getProvider())
+        if (!wallet.provider) wallet = wallet.connect(gwProvider)
         return gw.attach(address, EntityContractDefinition.abi).connect(wallet) as (Contract & EntityResolverContractMethods)
     }
     else if (signer)
@@ -104,16 +110,22 @@ export function getEntityResolverContractInstance(params: AttachToContractParams
  * - Pass an Ethers.js `provider` connected to a wallet to sign transactions.
  * - Pass an Ethers.js `signer` if you are using Metamask.
  * - Pass an Ethers.js `wallet` if you want to sign locally with a private key. 
- * @param address Address of the contract instance
+ * @param address (optional) Overrides the address of the contract instance, instead of the value from `*.vocdoni.eth`
  * 
  * One of `gateway`/`provider` and `signer`/`wallet` is required
  */
-export function getVotingProcessContractInstance(params: AttachToContractParams = {}, address: string): (Contract & VotingProcessContractMethods) {
+export async function getVotingProcessInstance(params: AttachToContractParams = {}, address: string = null): Promise<(Contract & VotingProcessContractMethods)> {
     let { gateway, provider, signer, wallet } = params
 
     const gw = new Web3Gateway(gateway || provider)
+    const gwProvider = gw.getProvider()
+
+    if (typeof address != "string") {
+        address = await provider.resolveName(votingProcessEnsDomain)
+    }
+
     if (wallet) {
-        if (!wallet.provider) wallet = wallet.connect(gw.getProvider())
+        if (!wallet.provider) wallet = wallet.connect(gwProvider)
         return gw.attach(address, VotingContractDefinition.abi).connect(wallet) as (Contract & VotingProcessContractMethods)
     }
     else if (signer)

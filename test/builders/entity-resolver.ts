@@ -1,4 +1,5 @@
-import { getEntityId, deployEntityResolverContract } from "../../src/api/entity"
+import { getEntityId } from "../../src/api/entity"
+import { deployEntityResolverContract } from "../../src/net/contracts"
 // import { TextRecordKeys } from "../../src/models/entity"
 import { EntityResolverContractMethods } from "dvote-solidity"
 import { Contract } from "ethers"

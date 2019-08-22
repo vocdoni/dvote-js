@@ -11,14 +11,14 @@ const {
 } = require("../dist") // require("dvote-js")
 
 const {
-    getEntityResolverContractInstance,
-    getVotingProcessContractInstance,
+    getEntityResolverInstance,
+    getVotingProcessInstance,
     deployEntityResolverContract,
     deployVotingProcessContract
 } = Contracts
 
 const { getEntityId, getEntityMetadata, updateEntity } = Entity
-const { DVoteGateway, Web3Gateway } = Gateway
+const { DVoteGateway, Web3Gateway, getDefaultGateways } = Gateway
 const { addFile, fetchFileString } = File
 
 const { Wallet, providers, utils } = require("ethers")
@@ -32,13 +32,10 @@ const MNEMONIC = process.env.MNEMONIC || "bar bundle start frog dish gauge squar
 const PATH = "m/44'/60'/0'/0/0"
 const GATEWAY_PUB_KEY = process.env.GATEWAY_PUB_KEY || "02325f284f50fa52d53579c7873a480b351cc20f7780fa556929f5017283ad2449"
 const GATEWAY_DVOTE_URI = process.env.GATEWAY_DVOTE_URI || "wss://myhost/dvote"
-const GATEWAY_WEB3_PROVIDER_URI = process.env.GATEWAY_WEB3_PROVIDER_URI || "https://rpc.slock.it/goerli"
-const ENTITY_RESOLVER_CONTRACT_ADDRESS = process.env.ENTITY_RESOLVER_CONTRACT_ADDRESS || "0x0c9993a6eEF9D52FAe66C503976D842597D9fB6F"
-const VOTING_PROCESS_CONTRACT_ADDRESS = process.env.VOTING_PROCESS_CONTRACT_ADDRESS || "0xFAb948042424b3339CbbeBC0E03ecB7bd2a68033"
-const BOOTNODES_URI = process.env.BOOTNODES_URI || "http://server/file.json"
+const GATEWAY_WEB3_URI = process.env.GATEWAY_WEB3_URI || "https://rpc.slock.it/goerli"
 
 async function deployEntityResolver() {
-    const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
+    const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI)
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
     console.log("Deploying Entity Resolver contract...")
@@ -62,11 +59,11 @@ async function deployEntityResolver() {
 }
 
 async function attachToEntityResolver() {
-    const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
+    const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI)
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
-    console.log("Attaching to contract at", ENTITY_RESOLVER_CONTRACT_ADDRESS)
-    const contractInstance = await getEntityResolverContractInstance({ provider, wallet }, ENTITY_RESOLVER_CONTRACT_ADDRESS)
+    console.log("Attaching to contract...")
+    const contractInstance = await getEntityResolverInstance({ provider, wallet })
 
     const myEntityAddress = await wallet.getAddress()
     const myEntityId = getEntityId(myEntityAddress)
@@ -81,7 +78,7 @@ async function attachToEntityResolver() {
 
 async function deployVotingProcess() {
     const CHAIN_ID = 5
-    const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
+    const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI)
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
     console.log("Deploying Voting Process contract...")
@@ -101,11 +98,11 @@ async function deployVotingProcess() {
 }
 
 async function attachToVotingProcess() {
-    const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
+    const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI)
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
-    console.log("Attaching to contract at", VOTING_PROCESS_CONTRACT_ADDRESS)
-    const contractInstance = await getVotingProcessContractInstance({ provider, wallet }, VOTING_PROCESS_CONTRACT_ADDRESS)
+    console.log("Attaching to contract at from", )
+    const contractInstance = await getVotingProcessInstance({ provider, wallet })
 
     console.log("Reading 'genesis'")
     let val = await contractInstance.getGenesis()
@@ -125,7 +122,7 @@ async function fileUpload() {
     try {
         const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
-        const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_PROVIDER_URI, GATEWAY_PUB_KEY)
+        const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
         gw = new DVoteGateway(gwInfo)
         await gw.connect()
 
@@ -148,15 +145,15 @@ async function fileUpload() {
 }
 
 async function registerEntity() {
-    // const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
+    // const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI)
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
     const myEntityAddress = await wallet.getAddress()
     const myEntityId = getEntityId(myEntityAddress)
 
     console.log("Entity ID", myEntityId)
-    const gw = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_PROVIDER_URI, GATEWAY_PUB_KEY)
-    const contentUri = await updateEntity(myEntityAddress, ENTITY_RESOLVER_CONTRACT_ADDRESS, entityMetadata, wallet, gw)
+    const gw = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
+    const contentUri = await updateEntity(myEntityAddress, entityMetadata, wallet, gw)
 
     // show stored values
     console.log("\nEntity registered!\n")
@@ -165,29 +162,28 @@ async function registerEntity() {
 }
 
 async function readEntity() {
-    // const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
+    // const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI)
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
     const myEntityAddress = await wallet.getAddress()
-    const gw = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_PROVIDER_URI, GATEWAY_PUB_KEY)
+    const gw = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
 
     console.log("ENTITY ID:", getEntityId(myEntityAddress))
-    console.log("RESOLVER:", ENTITY_RESOLVER_CONTRACT_ADDRESS)
-    console.log("GW:", GATEWAY_DVOTE_URI, GATEWAY_WEB3_PROVIDER_URI)
-    const meta = await getEntityMetadata(myEntityAddress, ENTITY_RESOLVER_CONTRACT_ADDRESS, gw)
+    console.log("GW:", GATEWAY_DVOTE_URI, GATEWAY_WEB3_URI)
+    const meta = await getEntityMetadata(myEntityAddress, gw)
     console.log("JSON METADATA\n", meta)
 }
 
 async function createVotingProcess() {
-    const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
+    const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI)
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
-    const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_PROVIDER_URI, GATEWAY_PUB_KEY)
+    const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
     gw = new DVoteGateway(gwInfo)
     await gw.connect()
 
-    console.log("Attaching to contract at", VOTING_PROCESS_CONTRACT_ADDRESS)
-    const contractInstance = await getVotingProcessContractInstance({ provider, wallet }, VOTING_PROCESS_CONTRACT_ADDRESS)
+    console.log("Attaching to contract")
+    const contractInstance = await getVotingProcessInstance({ provider, wallet })
 
     console.log("Uploading metadata...")
     const strData = JSON.stringify(processMetadata)
@@ -257,7 +253,7 @@ async function gatewayHealthCheck() {
     const myEntityAddress = await wallet.getAddress()
     const myEntityId = getEntityId(myEntityAddress)
 
-    const gws = await Gateway.getGatewaysFromBootNode(BOOTNODES_URI)
+    const gws = await getDefaultGateways()
 
     const URL = "https://hnrss.org/newest"
     const response = await axios.get(URL)
@@ -275,7 +271,7 @@ async function gatewayHealthCheck() {
         for (let gw of gws[networkId].web3) {
             console.log("Checking Web3 GW...")
 
-            const instance = getEntityResolverContractInstance({ provider: gw.getProvider(), wallet }, ENTITY_RESOLVER_CONTRACT_ADDRESS)
+            const instance = await getEntityResolverInstance({ provider: gw.getProvider(), wallet })
             const tx = await instance.setText(myEntityId, "dummy", "1234")
             await tx.wait()
         }
@@ -284,7 +280,9 @@ async function gatewayHealthCheck() {
 
 async function gatewayRequest() {
     // DVOTE
-    const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_PROVIDER_URI, GATEWAY_PUB_KEY)
+    const gws = await getDefaultGateways()
+    gw = gws.dvote[0]
+    const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
     gw = new DVoteGateway(gwInfo)
     await gw.connect()
     console.log("THE DVOTE GW:", gw.publicKey)

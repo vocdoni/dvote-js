@@ -1,14 +1,10 @@
 import { utils, Wallet, Signer } from "ethers"
 import { checkValidEntityMetadata, EntityMetadata } from "../models/entity"
 import { DVoteGateway, Web3Gateway } from "../net/gateway"
-import { getEntityResolverContractInstance } from "../net/contracts"
+import { getEntityResolverInstance } from "../net/contracts"
 import { TextRecordKeys } from "../models/entity"
 import { fetchFileString, addFile } from "./file"
 import GatewayInfo from "../wrappers/gateway-info"
-export {
-    deployEntityResolverContract,
-    getEntityResolverContractInstance
-} from "../net/contracts"
 
 /**
  * Computes the ID of an entity given its address
@@ -31,14 +27,13 @@ export function checkValidMetadata(entityMetadata: EntityMetadata) {
  * @param entityAddress 
  * @param gatewayInfo Data of the Vocdoni Gateway to fetch the data from
  */
-export async function getEntityMetadata(entityAddress: string, resolverContractAddress: string, gatewayInfo: GatewayInfo): Promise<EntityMetadata> {
+export async function getEntityMetadata(entityAddress: string, gatewayInfo: GatewayInfo): Promise<EntityMetadata> {
     if (!entityAddress) throw new Error("Invalid entityAddress")
-    else if (!resolverContractAddress) throw new Error("Invalid resolverContractAddress")
     else if (!gatewayInfo || !(gatewayInfo instanceof GatewayInfo)) throw new Error("Invalid Gateway URI object")
 
     const web3 = new Web3Gateway(gatewayInfo)
     const entityId = getEntityId(entityAddress)
-    const resolverInstance = getEntityResolverContractInstance({ provider: web3.getProvider() }, resolverContractAddress)
+    const resolverInstance = await getEntityResolverInstance({ provider: web3.getProvider() })
 
     const metadataContentUri = await resolverInstance.text(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI)
     if (!metadataContentUri) throw new Error("The given entity has no metadata defined yet")
@@ -57,7 +52,7 @@ export async function getEntityMetadata(entityAddress: string, resolverContractA
  * NOTE: The JSON metadata may need a few minutes before it can be generally fetched from IPFS
  * @return A content URI with the IPFS origin
  */
-export async function updateEntity(entityAddress: string, resolverContractAddress: string, entityMetadata: EntityMetadata,
+export async function updateEntity(entityAddress: string, entityMetadata: EntityMetadata,
     walletOrSigner: Wallet | Signer, gatewayInfo: GatewayInfo): Promise<string> {
     if (!entityAddress) throw new Error("Invalid entityAddress")
     else if (!entityMetadata) throw new Error("Invalid Entity metadata")
@@ -78,7 +73,7 @@ export async function updateEntity(entityAddress: string, resolverContractAddres
     gw.disconnect()
 
     // Set the IPFS origin on the blockchain
-    const resolverInstance = getEntityResolverContractInstance({ provider: web3.getProvider(), signer: walletOrSigner }, resolverContractAddress)
+    const resolverInstance = await getEntityResolverInstance({ provider: web3.getProvider(), signer: walletOrSigner })
 
     const entityId = getEntityId(entityAddress)
     const tx = await resolverInstance.setText(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI, ipfsUri)

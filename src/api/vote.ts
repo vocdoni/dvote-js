@@ -1,27 +1,20 @@
-import { getVotingProcessContractInstance } from "../net/contracts"
+import { getVotingProcessInstance } from "../net/contracts"
 import GatewayInfo from "../wrappers/gateway-info"
 import { DVoteGateway, Web3Gateway } from "../net/gateway"
 import { fetchFileString } from "./file"
 // import { utils, Wallet, Signer } from "ethers"
 
-export {
-    deployVotingProcessContract,
-    getVotingProcessContractInstance
-} from "../net/contracts"
-
 /**
  * Fetch the JSON metadata for the given processId using the given gateway
  * @param processId 
- * @param votingProcessContractAddress
  * @param gateway
  */
-export async function getVoteMetadata(processId: string, votingProcessContractAddress: string, gatewayInfo: GatewayInfo): Promise<string> {
+export async function getVoteMetadata(processId: string, gatewayInfo: GatewayInfo): Promise<string> {
     if (!processId) throw new Error("Invalid processId")
-    else if (!votingProcessContractAddress) throw new Error("Invalid votingProcessContractAddress")
     else if (!gatewayInfo || !(gatewayInfo instanceof GatewayInfo)) throw new Error("Invalid Gateway Info object")
 
     const web3 = new Web3Gateway(gatewayInfo)
-    const processInstance = getVotingProcessContractInstance({ provider: web3.getProvider() }, votingProcessContractAddress)
+    const processInstance = await getVotingProcessInstance({ provider: web3.getProvider() })
 
     try {
         const data = await processInstance.get(processId)

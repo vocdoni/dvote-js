@@ -1,4 +1,4 @@
-import { deployVotingProcessContract } from "../../src/api/vote"
+import { deployVotingProcessContract } from "../../src/net/contracts"
 import { VotingProcessContractMethods } from "dvote-solidity"
 import { Contract } from "ethers"
 import { getAccounts, TestAccount } from "../testing-eth-utils"
