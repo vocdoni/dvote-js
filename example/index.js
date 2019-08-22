@@ -18,7 +18,7 @@ const {
 } = Contracts
 
 const { getEntityId, getEntityMetadata, updateEntity } = Entity
-const { DVoteGateway, Web3Gateway, getDefaultGateways } = Gateway
+const { DVoteGateway, Web3Gateway, getDefaultGateways, getRandomGatewayInfo } = Gateway
 const { addFile, fetchFileString } = File
 
 const { Wallet, providers, utils } = require("ethers")
@@ -33,6 +33,7 @@ const PATH = "m/44'/60'/0'/0/0"
 const GATEWAY_PUB_KEY = process.env.GATEWAY_PUB_KEY || "02325f284f50fa52d53579c7873a480b351cc20f7780fa556929f5017283ad2449"
 const GATEWAY_DVOTE_URI = process.env.GATEWAY_DVOTE_URI || "wss://myhost/dvote"
 const GATEWAY_WEB3_URI = process.env.GATEWAY_WEB3_URI || "https://rpc.slock.it/goerli"
+const NETWORK_ID = "goerli"
 
 async function deployEntityResolver() {
     const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI)
@@ -101,7 +102,7 @@ async function attachToVotingProcess() {
     const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI)
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
-    console.log("Attaching to contract at from", )
+    console.log("Attaching to contract at from")
     const contractInstance = await getVotingProcessInstance({ provider, wallet })
 
     console.log("Reading 'genesis'")
@@ -280,18 +281,17 @@ async function gatewayHealthCheck() {
 
 async function gatewayRequest() {
     // DVOTE
-    const gws = await getDefaultGateways()
-    gw = gws.dvote[0]
-    const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
-    gw = new DVoteGateway(gwInfo)
-    await gw.connect()
+    const gws = await getRandomGatewayInfo()
+    gw = new DVoteGateway(gws[NETWORK_ID])
     console.log("THE DVOTE GW:", gw.publicKey)
+
+    await gw.connect()
 
     // SIGNED
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
     const req = { method: "test" }
-    const timeout = 10
+    const timeout = 20
     const r = await gw.sendMessage(req, wallet, timeout)
     console.log("RESPONSE:", r)
 
@@ -302,8 +302,6 @@ async function gatewayRequest() {
     const data = await fetchFileString(origin, gw)
     console.log("DATA:", data)
 
-    // console.log("Sending:", req)
-    // console.log("Got:", r)
     gw.disconnect()
 }
 
@@ -318,8 +316,8 @@ async function main() {
     // await readEntity()
     // await createVotingProcess()
     // await checkSignature()
-    await gatewayHealthCheck()
-    // await gatewayRequest()
+    // await gatewayHealthCheck()
+    await gatewayRequest()
 }
 
 main()

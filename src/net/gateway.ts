@@ -54,6 +54,31 @@ export function getGatewaysFromBootNode(bootnodesContentUri: string | ContentURI
 }
 
 /**
+ * Retrieve the parameters of a randomly chosen DVote and Web3 gateway.
+ * If no parameter is provided, the default gateways provided by Vocdoni will be used as the source.
+ * If a Content URI is provided, the choice will be made from its data.
+ */
+export async function getRandomGatewayInfo(bootnodesContentUri?: string | ContentURI): Promise<{ [networkId: string]: GatewayInfo }> {
+    const result: { [networkId: string]: GatewayInfo } = {}
+
+    const gws = bootnodesContentUri ? await fetchFromBootNode(bootnodesContentUri) : await fetchDefaultBootNode()
+
+    for (let networkId in gws) {
+        const dvLen = gws && gws[networkId] && gws[networkId].dvote
+            && gws[networkId].dvote.length || 0
+        if (!dvLen) throw new Error("Could not fetch the Entity metadata")
+        const w3Len = gws && gws[networkId] && gws[networkId].web3
+            && gws[networkId].web3.length || 0
+        if (!w3Len) throw new Error("Could not fetch the Entity metadata")
+
+        const dvGw = gws[networkId].dvote[Math.floor(Math.random() * dvLen)]
+        const w3Gw = gws[networkId].web3[Math.floor(Math.random() * w3Len)]
+        result[networkId] = new GatewayInfo(dvGw.uri, dvGw.apis, w3Gw.uri, dvGw.pubKey)
+    }
+    return result
+}
+
+/**
  * Retrieve the list of gateways provided by default by Vocdoni
  */
 export function fetchDefaultBootNode(): Promise<GatewayBootNodes> {
