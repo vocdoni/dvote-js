@@ -284,7 +284,7 @@ describe("DVoteGateway", () => {
 
             // DVoteGateway (server)
             const responses: GatewayResponse[] = [
-                { id: "123", response: { request: "123", timestamp: 123, uri: "1234" }, signature: "123" }
+                { id: "123", response: { request: "123", timestamp: 123, uri: "ipfs://1234" }, signature: "123" }
             ]
             const gatewayServer = new GatewayMock({ port, responses })
 
@@ -314,7 +314,7 @@ describe("DVoteGateway", () => {
 
             // DVoteGateway (server)
             const responses: GatewayResponse[] = [
-                { id: "123", response: { request: "123", timestamp: 123, uri: "2345" }, signature: "123" },
+                { id: "123", response: { request: "123", timestamp: 123, uri: "ipfs://2345" }, signature: "123" },
                 { id: "234", response: { request: "234", timestamp: 234, content: buffData.toString("base64") }, signature: "234" }
             ]
             const gatewayServer = new GatewayMock({ port, responses })
