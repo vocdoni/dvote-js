@@ -436,6 +436,7 @@ export class DVoteGateway {
         if (typeof responseBody != "string") strBody = JSON.stringify(responseBody)
         else strBody = responseBody
 
+        if (!signature.startsWith("0x")) signature = "0x" + signature
         const actualAddress = utils.verifyMessage(strBody, signature)
 
         return actualAddress && expectedAddress && (actualAddress == expectedAddress)
