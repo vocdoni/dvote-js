@@ -245,7 +245,6 @@ const contractInstance3 = await new EntityBuilder()
     .build()
 
 const contractInstance4 = await new VotingProcessBuilder()
-    .withEntityResolver("0x0123456789012345678901234567890123456789")
     .withVotingPublicKey("...")
     .build(3)  // create 3 voting processess within the new contract
 
