@@ -8,7 +8,7 @@ const { sha3_256 } = require('js-sha3')
 const {
     API: { File, Entity, Census, Vote },
     Network: { Contracts, Gateway },
-    Wrappers: { GatewayInfo, ContentURI, ContentHashedURI },
+    Wrappers: { GatewayInfo, ContentURI, ContentHashedURI, publishCensus, importRemote },
     EtherUtils: { Providers, Signers }
 } = require("../dist") // require("dvote-js")
 
@@ -320,18 +320,35 @@ async function ensResolver() {
 }
 
 async function gwCensusOperations() {
+    // SIGNED
+    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+
+    const myEntityAddress = await wallet.getAddress()
+    const myEntityId = getEntityId(myEntityAddress)
+
     gw = new DVoteGateway({ uri: GATEWAY_DVOTE_URI, supportedApis: ["file", "census"], publicKey: GATEWAY_PUB_KEY })
     console.log("THE DVOTE GW:", gw.publicKey)
 
     await gw.connect()
 
-    // SIGNED
-    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+    const censusName = "My census name 2"
+    const adminPublicKeys = [await wallet.signingKey.publicKey]
+    const pubKeyHashes = ["0x12345678", "0x23456789"].map(v => sha3_256(v))
 
-    const pubKeyHashes1 = ["0x12345678", "0x23456789"].map(v => sha3_256(v))
-    let root = await addCensus(`testing-${Math.random().toString().substr(2)}`, pubKeyHashes1, gw, wallet)
-    console.log("CENSUS MERKLE ROOT:", root)
-    console.log("CENSUS hey hashes:", pubKeyHashes1)
+    // Create a census if it doesn't exist
+    let result = await addCensus(censusName, adminPublicKeys, myEntityId, gw, wallet)
+    console.log("ADD CENSUS RESULT:", result)
+    // { censusId: "0x.../0x...", merkleRoot: "0x0..."}
+
+    // Add claims to the new census
+    const censusId = result.censusId
+    result = await addClaimBulk(censusId, pubKeyHashes, gw, wallet)
+    console.log("ADDED", pubKeyHashes, "TO", censusId)
+    console.log(result)
+
+    result = await publishCensus(censusId, gw)
+    console.log("PUBLISHED", censusId)
+    console.log(result)
 
     gw.disconnect()
 }
