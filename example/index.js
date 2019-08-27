@@ -305,6 +305,17 @@ async function gatewayRequest() {
     gw.disconnect()
 }
 
+async function ensResolver() {
+    // const provider = new providers.EtherscanProvider()
+    const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI)
+
+    const resolverAddr = await provider.resolveName("entity-resolver.vocdoni.eth")
+    const processAddr = await provider.resolveName("voting-process.vocdoni.eth")
+
+    console.log("Entity Resolver contract address", resolverAddr)
+    console.log("Voting Process contract address", processAddr)
+}
+
 async function main() {
     // await deployEntityResolver()
     // await attachToEntityResolver()
@@ -317,7 +328,8 @@ async function main() {
     // await createVotingProcess()
     // await checkSignature()
     // await gatewayHealthCheck()
-    await gatewayRequest()
+    // await gatewayRequest()
+    await ensResolver()
 }
 
 main()
