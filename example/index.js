@@ -2,6 +2,8 @@ const axios = require("axios")
 
 console.log("Reading .env (if present)...")
 require('dotenv').config()
+const { sha3_256 } = require('js-sha3')
+
 
 const {
     API: { File, Entity, Census, Vote },
@@ -18,6 +20,7 @@ const {
 } = Contracts
 
 const { getEntityId, getEntityMetadata, updateEntity } = Entity
+const { getRoot, addCensus, addClaim, addClaimBulk } = Census
 const { DVoteGateway, Web3Gateway, getDefaultGateways, getRandomGatewayInfo } = Gateway
 const { addFile, fetchFileString } = File
 
@@ -316,6 +319,23 @@ async function ensResolver() {
     console.log("Voting Process contract address", processAddr)
 }
 
+async function gwCensusOperations() {
+    gw = new DVoteGateway({ uri: GATEWAY_DVOTE_URI, supportedApis: ["file", "census"], publicKey: GATEWAY_PUB_KEY })
+    console.log("THE DVOTE GW:", gw.publicKey)
+
+    await gw.connect()
+
+    // SIGNED
+    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+
+    const pubKeyHashes1 = ["0x12345678", "0x23456789"].map(v => sha3_256(v))
+    let root = await addCensus(`testing-${Math.random().toString().substr(2)}`, pubKeyHashes1, gw, wallet)
+    console.log("CENSUS MERKLE ROOT:", root)
+    console.log("CENSUS hey hashes:", pubKeyHashes1)
+
+    gw.disconnect()
+}
+
 async function main() {
     // await deployEntityResolver()
     // await attachToEntityResolver()
@@ -329,7 +349,8 @@ async function main() {
     // await checkSignature()
     // await gatewayHealthCheck()
     // await gatewayRequest()
-    await ensResolver()
+    // await ensResolver()
+    await gwCensusOperations()
 }
 
 main()
