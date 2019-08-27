@@ -5,9 +5,9 @@ import { getAccounts, TestAccount } from "../testing-eth-utils"
 import { DVoteGateway, Web3Gateway } from "../../src/net/gateway"
 import { addFile, fetchFileBytes } from "../../src/api/file"
 import { GatewayMock, InteractionMock, GatewayResponse } from "../mocks/gateway"
-import { server as ganacheRpcServer } from "ganache-core"
 import { Buffer } from "buffer"
 import GatewayInfo from "../../src/wrappers/gateway-info";
+const ganacheRpcServer = require("ganache-core").server
 
 const port = 8500
 const gatewayUri = `ws://localhost:${port}`
@@ -284,7 +284,7 @@ describe("DVoteGateway", () => {
 
             // DVoteGateway (server)
             const responses: GatewayResponse[] = [
-                { id: "123", response: { request: "123", timestamp: 123, uri: "1234" }, signature: "123" }
+                { id: "123", response: { request: "123", timestamp: 123, uri: "ipfs://1234" }, signature: "123" }
             ]
             const gatewayServer = new GatewayMock({ port, responses })
 
@@ -314,7 +314,7 @@ describe("DVoteGateway", () => {
 
             // DVoteGateway (server)
             const responses: GatewayResponse[] = [
-                { id: "123", response: { request: "123", timestamp: 123, uri: "2345" }, signature: "123" },
+                { id: "123", response: { request: "123", timestamp: 123, uri: "ipfs://2345" }, signature: "123" },
                 { id: "234", response: { request: "234", timestamp: 234, content: buffData.toString("base64") }, signature: "234" }
             ]
             const gatewayServer = new GatewayMock({ port, responses })
@@ -323,7 +323,7 @@ describe("DVoteGateway", () => {
             const gatewayInfo = new GatewayInfo(gatewayUri, ["file"], "https://server/path", "")
             const gw = new DVoteGateway(gatewayInfo)
             await gw.connect()
-            
+
             const result1 = await addFile(buffData, "my-file.txt", baseAccount.wallet, gw)
             expect(result1).to.equal("ipfs://2345")
 
@@ -345,21 +345,21 @@ describe("DVoteGateway", () => {
         it("Should enforce authenticated upload requests", async () => {
             const fileContent = "HI THERE"
             const buffData = Buffer.from(fileContent)
-            
+
             // DVoteGateway (server)
             const gatewayServer = new GatewayMock({
                 port, responses: [
                     { id: "123", error: { request: "123", timestamp: 123, message: "Invalid wallet" }, signature: "123" },
                 ]
             })
-            
+
             // Client
             let gw: DVoteGateway
             try {
                 const gatewayInfo = new GatewayInfo(gatewayUri, ["file"], "https://server/path", "")
                 gw = new DVoteGateway(gatewayInfo)
                 await gw.connect()
-                
+
                 await new Promise(resolve => setTimeout(resolve, 10))
                 await addFile(buffData, "my-file.txt", baseAccount.wallet, gw)
                 throw new Error("Should have thrown an error but didn't")

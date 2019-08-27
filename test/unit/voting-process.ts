@@ -115,9 +115,9 @@ describe("Voting Process", () => {
     describe("Process creation", () => {
 
         it("Should allow to create voting processess", async () => {
-            const metadata = "ipfs://ipfs/yyyyyyyyyyyy,https://host/file!0987654321"
+            const metadata = "ipfs://yyyyyyyyyyyy,https://host/file!0987654321"
             const merkleRoot = "0x09876543210987654321"
-            const merkleTree = "ipfs://ipfs/zzzzzzzzzzz,https://host/file!1234567812345678"
+            const merkleTree = "ipfs://zzzzzzzzzzz,https://host/file!1234567812345678"
 
             processId = await contractInstance.getNextProcessId(entityAccount.address)
 

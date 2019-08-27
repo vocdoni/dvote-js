@@ -180,7 +180,7 @@ export async function addFile(buffer: Uint8Array | string, name: string, walletO
 
         if (!response || !response.uri) throw new Error("The data could not be uploaded")
 
-        return "ipfs://" + response.uri
+        return response.uri
     })
 }
 
