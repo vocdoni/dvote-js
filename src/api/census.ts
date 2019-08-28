@@ -1,6 +1,7 @@
 import { Wallet, Signer } from "ethers"
 import { DVoteGateway } from "../net/gateway"
 import { sha3_256 } from 'js-sha3'
+import ContentURI from "../wrappers/content-uri"
 // import GatewayInfo from "../wrappers/gateway-info"
 
 /** 
@@ -152,28 +153,31 @@ export function publishCensus(censusId: string, gateway: DVoteGateway): Promise<
 }
 
 /**
- * Fetch the proof of the given index on the process census using the given gateway
- * @param processId 
+ * Fetch the proof of the given claim on the given census merkleTree using the given gateway
+ * @param merkleTreeLink A ContentURI with a link to the Merkle Tree data to fetch from
  * @param claim
  * @param gateway 
  */
-export async function generateProof(censusId: string, claim: string, gateway: DVoteGateway) {
-    // if (!censusId || !claim || !gateway) throw new Error("Invalid parameters")
+export async function generateProof(merkleTreeLink: ContentURI, claim: string, gateway: DVoteGateway) {
+    if (!merkleTreeLink || !claim || !gateway) throw new Error("Invalid parameters")
+    else if (!merkleTreeLink.ipfsHash) throw new Error("The link to the census needs to contain an IPFS link")
 
-    // return gateway.sendMessage({ method: "addClaim", censusId, claimData: pubKeyHash }, walletOrSigner).then(response => {
-    //     if (!response.ok) throw new Error("The claim could not be added")
+    if (merkleTreeLink.ipfsHash) {
+        return gateway.sendMessage({ method: "genProof", /* ... */ }).then(response => {
+            if (!response.siblings) throw new Error("The proof could not be fetched")
+            // TODO: 
 
-    //     return getRoot(censusId, gateway)
-    // })
+            throw new Error("TODO: unimplemented")
+        })
+    }
+    else { // merkleTreeLink.hash
+        return gateway.sendMessage({ method: "genProof", /* ... */ }).then(response => {
+            if (!response.siblings) throw new Error("The proof could not be fetched")
+            // TODO: 
 
-    // const metadata = await getVoteMetadata(processId, gateway.web3)
-
-    // TODO: Use the CensusService Object
-
-    // TODO: Check that the vote type == ZK Snarks
-    // TODO:
-
-    throw new Error("TODO: unimplemented")
+            throw new Error("TODO: unimplemented")
+        })
+    }
 }
 
 export function checkProof() {
