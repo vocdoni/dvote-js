@@ -8,7 +8,7 @@ const { sha3_256 } = require('js-sha3')
 const {
     API: { File, Entity, Census, Vote },
     Network: { Contracts, Gateway },
-    Wrappers: { GatewayInfo, ContentURI, ContentHashedURI, publishCensus, importRemote },
+    Wrappers: { GatewayInfo, ContentURI, ContentHashedURI },
     EtherUtils: { Providers, Signers }
 } = require("../dist") // require("dvote-js")
 
@@ -20,7 +20,7 @@ const {
 } = Contracts
 
 const { getEntityId, getEntityMetadata, updateEntity } = Entity
-const { getRoot, addCensus, addClaim, addClaimBulk } = Census
+const { getRoot, addCensus, addClaim, addClaimBulk, generateCensusId, generateCensusIdSuffix, publishCensus, importRemote } = Census
 const { DVoteGateway, Web3Gateway, getDefaultGateways, getRandomGatewayInfo } = Gateway
 const { addFile, fetchFileString } = File
 
@@ -327,11 +327,10 @@ async function gwCensusOperations() {
     const myEntityId = getEntityId(myEntityAddress)
 
     gw = new DVoteGateway({ uri: GATEWAY_DVOTE_URI, supportedApis: ["file", "census"], publicKey: GATEWAY_PUB_KEY })
-    console.log("THE DVOTE GW:", gw.publicKey)
 
     await gw.connect()
 
-    const censusName = "My census name 2"
+    const censusName = "My census name " + Math.random().toString().substr(2)
     const adminPublicKeys = [await wallet.signingKey.publicKey]
     const pubKeyHashes = ["0x12345678", "0x23456789"].map(v => sha3_256(v))
 
@@ -344,11 +343,13 @@ async function gwCensusOperations() {
     const censusId = result.censusId
     result = await addClaimBulk(censusId, pubKeyHashes, gw, wallet)
     console.log("ADDED", pubKeyHashes, "TO", censusId)
-    console.log(result)
+
+    result = await getRoot(censusId, gw)
+    console.log("MERKLE ROOT", result)  // 0x....
 
     result = await publishCensus(censusId, gw)
     console.log("PUBLISHED", censusId)
-    console.log(result)
+    console.log(result)   // ipfs://....
 
     gw.disconnect()
 }
@@ -372,4 +373,7 @@ async function main() {
 
 main()
     .then(() => console.log("DONE"))
-    .catch(err => console.error(err))
+    .catch(err => {
+        console.error(err)
+        process.exit(1)
+    })

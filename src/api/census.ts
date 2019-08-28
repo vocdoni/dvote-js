@@ -72,7 +72,7 @@ export function addClaim(censusId: string, pubKeyHash: string, gateway: DVoteGat
     // TODO: Normalize the behavior of the Census ID passed to the Gateway
     const censusIdLastTerm = censusId.replace(/^0x[0-9a-zA-Z]+/, "")
 
-    return gateway.sendMessage({ method: "addClaim", censusIdLastTerm, claimData: pubKeyHash }, walletOrSigner).then(response => {
+    return gateway.sendMessage({ method: "addClaim", censusId: censusIdLastTerm, claimData: pubKeyHash }, walletOrSigner).then(response => {
         if (!response.ok) throw new Error("The claim could not be added")
 
         return getRoot(censusId, gateway)
@@ -93,7 +93,7 @@ export function addClaimBulk(censusId: string, pubKeyHashes: string[], gateway: 
     // TODO: Normalize the behavior of the Census ID passed to the Gateway
     const censusIdLastTerm = censusId.replace(/^0x[0-9a-zA-Z]+/, "")
 
-    return gateway.sendMessage({ method: "addClaimBulk", censusIdLastTerm, claimsData: pubKeyHashes }, walletOrSigner).then(response => {
+    return gateway.sendMessage({ method: "addClaimBulk", censusId: censusIdLastTerm, claimsData: pubKeyHashes }, walletOrSigner).then(response => {
         if (!response.ok) throw new Error("The claims could not be added")
 
         return getRoot(censusId, gateway)
