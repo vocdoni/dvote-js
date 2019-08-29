@@ -7,7 +7,7 @@ const { sha3_256 } = require('js-sha3')
 
 const {
     API: { File, Entity, Census, Vote },
-    Network: { Contracts, Gateway },
+    Network: { Bootnodes, Gateway, Contracts },
     Wrappers: { GatewayInfo, ContentURI, ContentHashedURI },
     EtherUtils: { Providers, Signers }
 } = require("../dist") // require("dvote-js")
@@ -21,7 +21,8 @@ const {
 
 const { getEntityId, getEntityMetadata, updateEntity } = Entity
 const { getRoot, addCensus, addClaim, addClaimBulk, generateCensusId, generateCensusIdSuffix, publishCensus, importRemote } = Census
-const { DVoteGateway, Web3Gateway, getDefaultGateways, getRandomGatewayInfo } = Gateway
+const { DVoteGateway, Web3Gateway } = Gateway
+const { getDefaultGateways, getRandomGatewayInfo } = Bootnodes
 const { addFile, fetchFileString } = File
 
 const { Wallet, providers, utils } = require("ethers")
@@ -338,6 +339,11 @@ async function gwCensusOperations() {
     let result = await addCensus(censusName, adminPublicKeys, myEntityId, gw, wallet)
     console.log("ADD CENSUS RESULT:", result)
     // { censusId: "0x.../0x...", merkleRoot: "0x0..."}
+
+    // // Add a claim to the new census
+    // const censusId = result.censusId
+    // result = await addClaim(censusId, pubKeyHashes[0], gw, wallet)
+    // console.log("ADDED", pubKeyHashes[0], "TO", censusId)
 
     // Add claims to the new census
     const censusId = result.censusId

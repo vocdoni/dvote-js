@@ -3,14 +3,17 @@ import { expect } from "chai"
 import { Network } from "../.."
 
 const {
+    DVoteGateway,
+    Web3Gateway
+} = Network.Gateway
+
+const {
     getDefaultGateways,
     getGatewaysFromBootNode,
     getRandomGatewayInfo,
     fetchDefaultBootNode,
-    fetchFromBootNode,
-    DVoteGateway,
-    Web3Gateway
-} = Network.Gateway
+    fetchFromBootNode
+} = Network.Bootnodes
 
 const DEFAULT_BOOTNODES_URL = "https://bootnodes.github.io/gateways.json"
 

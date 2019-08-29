@@ -61,7 +61,7 @@ console.log("DATA:", data)
 ```javascript
 const {
     API: { File, Entity, Census, Vote },
-    // Network: { Contracts, Gateway },
+    Network: { Bootnodes, Gateway, Contracts },
     Wrappers: { GatewayInfo, ContentURI, ContentHashedURI },
     // EtherUtils: { Providers, Signers }
 } = require("dvote-js")
@@ -73,15 +73,17 @@ const {
     // deployVotingProcessContract
 } = Contracts
 const { getEntityId, getEntityMetadata, updateEntity } = Entity
-
+const { DVoteGateway, Web3Gateway } = Gateway
+const { getRandomGatewayInfo } = Bootnodes
 const { Wallet, providers } = require("ethers")
 
-const GATEWAY_DVOTE_URI = "wss://host:443/dvote"
-const GATEWAY_SUPPORTED_APIS = ["file", "vote", "census"]
-const GATEWAY_WEB3_PROVIDER_URI = "https://rpc.slock.it/goerli"
 const MNEMONIC = "..." 
 
-const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
+// Use a random GW from Vocdoni
+const gws = await getRandomGatewayInfo()
+const gw = new DVoteGateway(gws["goerli"])
+
+const provider = new Web3Gateway(gws["goerli"]).getProvider()
 const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
 // Attach to the Entity Resolver contract
@@ -91,11 +93,8 @@ const myEntityAddress = await wallet.getAddress()
 const myEntityId = getEntityId(myEntityAddress)
 const jsonMetadata = { ... } // EDIT THIS
 
-// Define the info of the Gateway
-const gw = new GatewayInfo(GATEWAY_DVOTE_URI, GATEWAY_SUPPORTED_APIS, GATEWAY_ETH_PROVIDER_URI, GATEWAY_PUBLIC_KEY)
-
 // Request the update
-const contentUri = await updateEntity(myEntityAddress, resolverContractAddress, jsonMetadata, wallet, gw)
+const contentUri = await updateEntity(myEntityAddress, jsonMetadata, wallet, gw)
 
 console.log("IPFS ORIGIN:", contentUri)
 ```
@@ -105,7 +104,7 @@ console.log("IPFS ORIGIN:", contentUri)
 ```javascript
 const {
     API: { File, Entity, Census, Vote },
-    // Network: { Contracts, Gateway },
+    Network: { Bootnodes, Gateway, Contracts },
     Wrappers: { GatewayInfo, ContentURI, ContentHashedURI },
     // EtherUtils: { Providers, Signers }
 } = require("dvote-js")
@@ -124,7 +123,6 @@ const { Wallet, providers } = require("ethers")
 const GATEWAY_DVOTE_URI = "wss://host:443/dvote"
 const GATEWAY_SUPPORTED_APIS = ["file", "vote", "census"]
 const GATEWAY_WEB3_PROVIDER_URI = "https://rpc.slock.it/goerli"
-const resolverContractAddress = "0x9fa513Df94fF9EAE4b63669F187928d20bd7cE6F"
 const MNEMONIC = "..." 
 
 const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
@@ -133,7 +131,7 @@ const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 const myEntityAddress = await wallet.getAddress()
 const gw = new GatewayInfo(GATEWAY_DVOTE_URI, GATEWAY_SUPPORTED_APIS, GATEWAY_WEB3_PROVIDER_URI)
 
-const meta = await getEntityMetadata(myEntityAddress, resolverContractAddress, gw)
+const meta = await getEntityMetadata(myEntityAddress, gw)
 console.log("JSON METADATA", meta)
 ```
 
@@ -142,7 +140,7 @@ console.log("JSON METADATA", meta)
 ```javascript
 const {
     API: { File, Entity, Census, Vote },
-    // Network: { Contracts, Gateway },
+    Network: { Bootnodes, Gateway, Contracts },
     Wrappers: { GatewayInfo, ContentURI, ContentHashedURI },
     // EtherUtils: { Providers, Signers }
 } = require("dvote-js")

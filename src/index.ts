@@ -6,6 +6,7 @@ import * as Census from "./api/census"
 
 // NETWORK
 import * as Gateway from "./net/gateway"
+import * as Bootnodes from "./net/gateway-bootnodes"
 import * as Contracts from "./net/contracts"
 
 // WRAPPERS
@@ -26,7 +27,7 @@ import * as GatewayModel from "./models/gateway"
 // EXPORTS
 export const API = { File, Entity, Vote, Census }
 export const Models = { Entity: EntityModel, Vote: VotingProcessModel, Gateway: GatewayModel }
-export const Network = { Gateway, Contracts }
+export const Network = { Bootnodes, Gateway, Contracts }
 export const Wrappers = { ContentURI, ContentHashedURI, GatewayInfo }
 export const EtherUtils = { Providers, Signers }
 
