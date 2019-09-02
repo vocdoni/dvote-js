@@ -5,19 +5,21 @@ import ContentURI from "../wrappers/content-uri"
 // import GatewayInfo from "../wrappers/gateway-info"
 
 /** 
- * A census ID consists of the Entity ID and the hash of the name.
+ * A census ID consists of the Entity Address and the hash of the name.
  * This function returns the full Census ID
  */
-export function generateCensusId(censusName: string, entityId: string) {
-    return entityId + "/" + generateCensusIdSuffix(censusName)
+export function generateCensusId(censusName: string, entityAddress: string) {
+    const prefix = "0x" + entityAddress.toLowerCase().substr(2)
+    const suffix = generateCensusIdSuffix(censusName)
+    return prefix + "/" + suffix
 }
 
 /** 
- * A census ID consists of the Entity ID and the hash of the name.
+ * A census ID consists of the Entity Address and the hash of the name.
  * This function computes the second term
  */
 export function generateCensusIdSuffix(censusName: string) {
-    // A census ID consists of the Entity ID and the hash of the name
+    // A census ID consists of the Entity Address and the hash of the name
     // Now computing the second term
     return "0x" + sha3_256(censusName.toLowerCase().trim())
 }
@@ -30,10 +32,10 @@ export function generateCensusIdSuffix(censusName: string) {
  * @param walletOrSigner 
  * @returns Promise resolving with the new merkleRoot
  */
-export async function addCensus(censusName: string, managerPublicKeys: string[], entityId: string, gateway: DVoteGateway, walletOrSigner: Wallet | Signer): Promise<{ censusId: string, merkleRoot: string }> {
-    if (!censusName || !managerPublicKeys || !managerPublicKeys.length || !entityId || !gateway) throw new Error("Invalid parameters")
+export async function addCensus(censusName: string, managerPublicKeys: string[], gateway: DVoteGateway, walletOrSigner: Wallet | Signer): Promise<{ censusId: string, merkleRoot: string }> {
+    if (!censusName || !managerPublicKeys || !managerPublicKeys.length || !gateway) throw new Error("Invalid parameters")
 
-    const censusId = generateCensusId(censusName, entityId)
+    const censusId = generateCensusId(censusName, await walletOrSigner.getAddress())
 
     // Check if the census already exists
     let existingRoot
@@ -47,16 +49,14 @@ export async function addCensus(censusName: string, managerPublicKeys: string[],
         // If it errors because it doesn't exist, we continue below
     }
 
-    // TODO: normalize the `censusId` parameter value
-    // Pass the full censusId instead of the second term only
-    const censusIdLastTerm = generateCensusIdSuffix(censusName)
+    const censusIdSuffix = generateCensusIdSuffix(censusName)
 
-    const response = await gateway.sendMessage({ method: "addCensus", censusId: censusIdLastTerm, pubKeys: managerPublicKeys }, walletOrSigner)
+    const response = await gateway.sendMessage({ method: "addCensus", censusId: censusIdSuffix, pubKeys: managerPublicKeys }, walletOrSigner)
     if (!response.ok) throw new Error("The census could not be created")
 
     const merkleRoot = await getRoot(censusId, gateway)
 
-    return { censusId, merkleRoot }
+    return { censusId: response.censusId, merkleRoot }
 }
 
 /**
@@ -70,10 +70,7 @@ export async function addCensus(censusName: string, managerPublicKeys: string[],
 export function addClaim(censusId: string, pubKeyHash: string, gateway: DVoteGateway, walletOrSigner: Wallet | Signer): Promise<string> {
     if (!censusId || !pubKeyHash || !pubKeyHash.length || !gateway) throw new Error("Invalid parameters")
 
-    // TODO: Normalize the behavior of the Census ID passed to the Gateway
-    const censusIdLastTerm = censusId.replace(/^0x[0-9a-zA-Z]+/, "")
-
-    return gateway.sendMessage({ method: "addClaim", censusId: censusIdLastTerm, claimData: pubKeyHash }, walletOrSigner).then(response => {
+    return gateway.sendMessage({ method: "addClaim", censusId, claimData: pubKeyHash }, walletOrSigner).then(response => {
         if (!response.ok) throw new Error("The claim could not be added")
 
         return getRoot(censusId, gateway)
@@ -91,10 +88,7 @@ export function addClaim(censusId: string, pubKeyHash: string, gateway: DVoteGat
 export function addClaimBulk(censusId: string, pubKeyHashes: string[], gateway: DVoteGateway, walletOrSigner: Wallet | Signer): Promise<string> {
     if (!censusId || !pubKeyHashes || !pubKeyHashes.length || !gateway) throw new Error("Invalid parameters")
 
-    // TODO: Normalize the behavior of the Census ID passed to the Gateway
-    const censusIdLastTerm = censusId.replace(/^0x[0-9a-zA-Z]+/, "")
-
-    return gateway.sendMessage({ method: "addClaimBulk", censusId: censusIdLastTerm, claimsData: pubKeyHashes }, walletOrSigner).then(response => {
+    return gateway.sendMessage({ method: "addClaimBulk", censusId, claimsData: pubKeyHashes }, walletOrSigner).then(response => {
         if (!response.ok) throw new Error("The claims could not be added")
 
         return getRoot(censusId, gateway)
@@ -110,10 +104,7 @@ export function addClaimBulk(censusId: string, pubKeyHashes: string[], gateway: 
 export function getRoot(censusId: string, gateway: DVoteGateway): Promise<string> {
     if (!censusId || !gateway) throw new Error("Invalid parameters")
 
-    // TODO: Normalize the behavior of the Census ID passed to the Gateway
-    const censusIdLastTerm = censusId.replace(/^0x[0-9a-zA-Z]+/, "")
-
-    return gateway.sendMessage({ method: "getRoot", censusId: censusIdLastTerm }).then(response => {
+    return gateway.sendMessage({ method: "getRoot", censusId }).then(response => {
         if (!response.root) throw new Error("The census merkle root could not be fetched")
         return response.root
     })
@@ -140,13 +131,10 @@ export function importRemote() {
 }
 
 /** Exports and publish the entire census on the storage of the backend (usually IPFS). Returns the URI of the set of claims */
-export function publishCensus(censusId: string, gateway: DVoteGateway): Promise<string> {
+export function publishCensus(censusId: string, gateway: DVoteGateway, walletOrSigner: Wallet | Signer): Promise<string> {
     if (!censusId || !gateway) throw new Error("Invalid parameters")
 
-    // TODO: Normalize the behavior of the Census ID passed to the Gateway
-    const censusIdLastTerm = censusId.replace(/^0x[0-9a-zA-Z]+/, "")
-
-    return gateway.sendMessage({ method: "publish", censusId: censusIdLastTerm }).then(response => {
+    return gateway.sendMessage({ method: "publish", censusId }, walletOrSigner).then(response => {
         if (!response.uri) throw new Error("The census claim URI could not be retrieved")
         return response.uri
     })

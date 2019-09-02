@@ -294,7 +294,7 @@ async function gatewayRequest() {
     // SIGNED
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
-    const req = { method: "test" }
+    const req = { method: "test" }  // Low level raw request
     const timeout = 20
     const r = await gw.sendMessage(req, wallet, timeout)
     console.log("RESPONSE:", r)
@@ -324,19 +324,16 @@ async function gwCensusOperations() {
     // SIGNED
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
-    const myEntityAddress = await wallet.getAddress()
-    const myEntityId = getEntityId(myEntityAddress)
-
-    gw = new DVoteGateway({ uri: GATEWAY_DVOTE_URI, supportedApis: ["file", "census"], publicKey: GATEWAY_PUB_KEY })
+    const gw = new DVoteGateway({ uri: GATEWAY_DVOTE_URI, supportedApis: ["file", "census"], publicKey: GATEWAY_PUB_KEY })
 
     await gw.connect()
 
     const censusName = "My census name " + Math.random().toString().substr(2)
     const adminPublicKeys = [await wallet.signingKey.publicKey]
-    const pubKeyHashes = ["0x12345678", "0x23456789"].map(v => sha3_256(v))
+    const pubKeyHashes = ["0x12345678", "0x23456789"].map(v => sha3_256(v).substr(-62))
 
     // Create a census if it doesn't exist
-    let result = await addCensus(censusName, adminPublicKeys, myEntityId, gw, wallet)
+    let result = await addCensus(censusName, adminPublicKeys, gw, wallet)
     console.log("ADD CENSUS RESULT:", result)
     // { censusId: "0x.../0x...", merkleRoot: "0x0..."}
 
@@ -353,7 +350,7 @@ async function gwCensusOperations() {
     result = await getRoot(censusId, gw)
     console.log("MERKLE ROOT", result)  // 0x....
 
-    result = await publishCensus(censusId, gw)
+    result = await publishCensus(censusId, gw, wallet)
     console.log("PUBLISHED", censusId)
     console.log(result)   // ipfs://....
 
