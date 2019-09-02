@@ -446,8 +446,10 @@ function sortObjectFields(data: any) {
         case "string":
         case "symbol":
         case "undefined":
-            return data;
+            return data
     }
+
+    if (Array.isArray(data)) return data
 
     // Ensure ordered key names
     return Object.keys(data).sort().reduce((prev, cur) => {
