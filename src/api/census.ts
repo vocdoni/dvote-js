@@ -25,6 +25,18 @@ export function generateCensusIdSuffix(censusName: string) {
     return "0x" + sha3_256(censusName.toLowerCase().trim())
 }
 
+/** 
+ * Transforms the given ECDSA public key with a Poseidon hash and returns the
+ * base 64 representation of the result
+ */
+export function digestHexClaim(publicKey: string): string {
+    const hash = createHash(6, 8, 57);
+
+    const pubKeyBigInt = BigInt(publicKey.startsWith("0x") ? publicKey : ("0x" + publicKey))
+    const pubKeyHash: string = hash([pubKeyBigInt]).toString(16)
+    return Buffer.from(pubKeyHash, "hex").toString("base64")
+}
+
 /**
  * Asks the Gateway to create a new census and set the given public key as the ones who can manage it
  * @param censusName Name given to the census. Will be used to generate the census ID by trimming spaces and converting text to lowercase 
@@ -65,21 +77,15 @@ export async function addCensus(censusName: string, managerPublicKeys: string[],
  * NOTE: This function is intended to be called from NodeJS 10+
  * 
  * @param censusId Full Census ID containing the Entity ID and the hash of the original name
- * @param publicKey An array containing a users' public key
+ * @param claimData A stirng containing the digest of the Public Key (see `digestHexClaim()`)
  * @param gateway A DVoteGateway instance already connected to a remote Gateway
  * @param walletOrSigner 
  * @returns Promise resolving with the new merkleRoot
  */
-export function addClaim(censusId: string, publicKey: string, gateway: DVoteGateway, walletOrSigner: Wallet | Signer): Promise<string> {
-    if (!censusId || !publicKey || !publicKey.length || !gateway) throw new Error("Invalid parameters")
+export function addClaim(censusId: string, claimData: string, gateway: DVoteGateway, walletOrSigner: Wallet | Signer): Promise<string> {
+    if (!censusId || !claimData || !claimData.length || !gateway) throw new Error("Invalid parameters")
 
-    const hash = createHash(6, 8, 57);
-
-    const pubKeyBigInt = BigInt(publicKey.startsWith("0x") ? publicKey : ("0x" + publicKey))
-    const pubKeyHash: string = hash([pubKeyBigInt]).toString(16)
-    const pubKeyHash64 = Buffer.from(pubKeyHash, "hex").toString("base64")
-
-    return gateway.sendMessage({ method: "addClaim", censusId, claimData: pubKeyHash64 }, walletOrSigner).then(response => {
+    return gateway.sendMessage({ method: "addClaim", censusId, claimData }, walletOrSigner).then(response => {
         if (!response.ok) throw new Error("The claim could not be added")
 
         return getRoot(censusId, gateway)
@@ -91,23 +97,15 @@ export function addClaim(censusId: string, publicKey: string, gateway: DVoteGate
  * NOTE: This function is intended to be called from NodeJS 10+
  * 
  * @param censusId Full Census ID containing the Entity ID and the hash of the original name
- * @param publicKeys An array containing the users' public keys
+ * @param claimsData A stirng containing the digest of the users' Public Keys (see `digestHexClaim()`)
  * @param gateway A DVoteGateway instance already connected to a remote Gateway
  * @param walletOrSigner 
  * @returns Promise resolving with the new merkleRoot
  */
-export function addClaimBulk(censusId: string, publicKeys: string[], gateway: DVoteGateway, walletOrSigner: Wallet | Signer): Promise<string> {
-    if (!censusId || !publicKeys || !publicKeys.length || !gateway) throw new Error("Invalid parameters")
+export function addClaimBulk(censusId: string, claimsData: string[], gateway: DVoteGateway, walletOrSigner: Wallet | Signer): Promise<string> {
+    if (!censusId || !claimsData || !claimsData.length || !gateway) throw new Error("Invalid parameters")
 
-    const hash = createHash(6, 8, 57);
-
-    const pubKeyHashes64: string[] = publicKeys.map(pubKey => {
-        const pubKeyBigInt = BigInt(pubKey.startsWith("0x") ? pubKey : ("0x" + pubKey))
-        const pubKeyHash = hash([pubKeyBigInt]).toString(16)
-        return Buffer.from(pubKeyHash, "hex").toString("base64")
-    })
-
-    return gateway.sendMessage({ method: "addClaimBulk", censusId, claimsData: pubKeyHashes64 }, walletOrSigner).then(response => {
+    return gateway.sendMessage({ method: "addClaimBulk", censusId, claimsData }, walletOrSigner).then(response => {
         if (!response.ok) throw new Error("The claims could not be added")
 
         return getRoot(censusId, gateway)

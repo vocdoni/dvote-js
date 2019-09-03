@@ -19,7 +19,7 @@ const {
 } = Contracts
 
 const { getEntityId, getEntityMetadata, updateEntity } = Entity
-const { getRoot, addCensus, addClaim, addClaimBulk, generateCensusId, generateCensusIdSuffix, publishCensus, importRemote } = Census
+const { getRoot, addCensus, addClaim, addClaimBulk, digestHexClaim, generateCensusId, generateCensusIdSuffix, publishCensus, importRemote } = Census
 const { DVoteGateway, Web3Gateway } = Gateway
 const { getDefaultGateways, getRandomGatewayInfo } = Bootnodes
 const { addFile, fetchFileString } = File
@@ -335,6 +335,7 @@ async function gwCensusOperations() {
         "04f64bd4dc997f1eed4f20843730c13d926199ff45a9edfad191feff0cea6e3d54de43867463acdeeaae990ee6882138b79ee33e3ae7e4f2c12dc0a52088bbb620",
         "04b9bd5b6f90833586cfcd181d1abe66d14152bb100ed7ec63ff94ecfe48dab18757177cac4551bc56bcf586d056d0f3709443face6b6bac7c55316e54522b4d2b"
     ]
+    const publicKeyDigestedClaims = publicKeys.map(item => digestHexClaim(item))
 
     // Create a census if it doesn't exist
     let result = await addCensus(censusName, adminPublicKeys, gw, wallet)
@@ -343,13 +344,13 @@ async function gwCensusOperations() {
 
     // Add a claim to the new census
     const censusId = result.censusId
-    result = await addClaim(censusId, publicKeys[0], gw, wallet)
-    console.log("ADDED", publicKeys[0], "TO", censusId)
+    result = await addClaim(censusId, publicKeyDigestedClaims[0], gw, wallet)
+    console.log("ADDED", publicKeyDigestedClaims[0], "TO", censusId)
 
     // Add claims to the new census
     // const censusId = result.censusId
-    result = await addClaimBulk(censusId, publicKeys.slice(1), gw, wallet)
-    console.log("ADDED", publicKeys.slice(1), "TO", censusId)
+    result = await addClaimBulk(censusId, publicKeyDigestedClaims.slice(1), gw, wallet)
+    console.log("ADDED", publicKeyDigestedClaims.slice(1), "TO", censusId)
 
     result = await getRoot(censusId, gw)
     console.log("MERKLE ROOT", result)  // 0x....
