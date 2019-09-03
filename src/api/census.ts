@@ -2,6 +2,7 @@ import { Wallet, Signer } from "ethers"
 import { DVoteGateway } from "../net/gateway"
 import { sha3_256 } from 'js-sha3'
 import ContentURI from "../wrappers/content-uri"
+import { createHash } from "circomlib/src/poseidon"
 // import GatewayInfo from "../wrappers/gateway-info"
 
 /** 
@@ -60,17 +61,25 @@ export async function addCensus(censusName: string, managerPublicKeys: string[],
 }
 
 /**
- * Asks the Gateway to add the given public key hashe to a census previously registered on it
+ * Asks the Gateway to add the given public key to a census previously registered on it.
+ * NOTE: This function is intended to be called from NodeJS 10+
+ * 
  * @param censusId Full Census ID containing the Entity ID and the hash of the original name
- * @param pubKeyHash SHA3-256 array generated from a users' public key
+ * @param publicKey An array containing a users' public key
  * @param gateway A DVoteGateway instance already connected to a remote Gateway
  * @param walletOrSigner 
  * @returns Promise resolving with the new merkleRoot
  */
-export function addClaim(censusId: string, pubKeyHash: string, gateway: DVoteGateway, walletOrSigner: Wallet | Signer): Promise<string> {
-    if (!censusId || !pubKeyHash || !pubKeyHash.length || !gateway) throw new Error("Invalid parameters")
+export function addClaim(censusId: string, publicKey: string, gateway: DVoteGateway, walletOrSigner: Wallet | Signer): Promise<string> {
+    if (!censusId || !publicKey || !publicKey.length || !gateway) throw new Error("Invalid parameters")
 
-    return gateway.sendMessage({ method: "addClaim", censusId, claimData: pubKeyHash }, walletOrSigner).then(response => {
+    const hash = createHash(6, 8, 57);
+
+    const pubKeyBigInt = BigInt(publicKey.startsWith("0x") ? publicKey : ("0x" + publicKey))
+    const pubKeyHash: string = hash([pubKeyBigInt]).toString(16)
+    const pubKeyHash64 = Buffer.from(pubKeyHash, "hex").toString("base64")
+
+    return gateway.sendMessage({ method: "addClaim", censusId, claimData: pubKeyHash64 }, walletOrSigner).then(response => {
         if (!response.ok) throw new Error("The claim could not be added")
 
         return getRoot(censusId, gateway)
@@ -78,17 +87,27 @@ export function addClaim(censusId: string, pubKeyHash: string, gateway: DVoteGat
 }
 
 /**
- * Asks the Gateway to add the given public key hashes to a census previously registered on it
+ * Asks the Gateway to add the given public key to a census previously registered on it
+ * NOTE: This function is intended to be called from NodeJS 10+
+ * 
  * @param censusId Full Census ID containing the Entity ID and the hash of the original name
- * @param pubKeyHashes SHA3-256 array generated from the users' public keys
+ * @param publicKeys An array containing the users' public keys
  * @param gateway A DVoteGateway instance already connected to a remote Gateway
  * @param walletOrSigner 
  * @returns Promise resolving with the new merkleRoot
  */
-export function addClaimBulk(censusId: string, pubKeyHashes: string[], gateway: DVoteGateway, walletOrSigner: Wallet | Signer): Promise<string> {
-    if (!censusId || !pubKeyHashes || !pubKeyHashes.length || !gateway) throw new Error("Invalid parameters")
+export function addClaimBulk(censusId: string, publicKeys: string[], gateway: DVoteGateway, walletOrSigner: Wallet | Signer): Promise<string> {
+    if (!censusId || !publicKeys || !publicKeys.length || !gateway) throw new Error("Invalid parameters")
 
-    return gateway.sendMessage({ method: "addClaimBulk", censusId, claimsData: pubKeyHashes }, walletOrSigner).then(response => {
+    const hash = createHash(6, 8, 57);
+
+    const pubKeyHashes64: string[] = publicKeys.map(pubKey => {
+        const pubKeyBigInt = BigInt(pubKey.startsWith("0x") ? pubKey : ("0x" + pubKey))
+        const pubKeyHash = hash([pubKeyBigInt]).toString(16)
+        return Buffer.from(pubKeyHash, "hex").toString("base64")
+    })
+
+    return gateway.sendMessage({ method: "addClaimBulk", censusId, claimsData: pubKeyHashes64 }, walletOrSigner).then(response => {
         if (!response.ok) throw new Error("The claims could not be added")
 
         return getRoot(censusId, gateway)

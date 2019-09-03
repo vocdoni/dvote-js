@@ -2,7 +2,6 @@ const axios = require("axios")
 
 console.log("Reading .env (if present)...")
 require('dotenv').config()
-const { sha3_256 } = require('js-sha3')
 
 
 const {
@@ -283,7 +282,7 @@ async function gatewayHealthCheck() {
     }
 }
 
-async function gatewayRequest() {
+async function gatewayRawRequest() {
     // DVOTE
     const gws = await getRandomGatewayInfo()
     gw = new DVoteGateway(gws[NETWORK_ID])
@@ -330,22 +329,27 @@ async function gwCensusOperations() {
 
     const censusName = "My census name " + Math.random().toString().substr(2)
     const adminPublicKeys = [await wallet.signingKey.publicKey]
-    const pubKeyHashes = ["0x12345678", "0x23456789"].map(v => sha3_256(v).substr(-62))
+    const publicKeys = [
+        "0412d6dc30db7d2a32dddd0ba080d244cc26fcddcc29beb3fcb369564b468b9927445ab996fecbdd6603f6accbc4b3f773a9fe59b66f6e8ef6d9ecf70d8cee5a73",
+        "043980b22e9432aa2884772570c47a6f78a39bcc08b428161a503eeb91f66b1901ece9b82d2624ed5b44fa02922c28080c717f474eca16c54aecd74aba3eb76953",
+        "04f64bd4dc997f1eed4f20843730c13d926199ff45a9edfad191feff0cea6e3d54de43867463acdeeaae990ee6882138b79ee33e3ae7e4f2c12dc0a52088bbb620",
+        "04b9bd5b6f90833586cfcd181d1abe66d14152bb100ed7ec63ff94ecfe48dab18757177cac4551bc56bcf586d056d0f3709443face6b6bac7c55316e54522b4d2b"
+    ]
 
     // Create a census if it doesn't exist
     let result = await addCensus(censusName, adminPublicKeys, gw, wallet)
-    console.log("ADD CENSUS RESULT:", result)
+    console.log(`ADD CENSUS "${censusName}" RESULT:`, result)
     // { censusId: "0x.../0x...", merkleRoot: "0x0..."}
 
-    // // Add a claim to the new census
-    // const censusId = result.censusId
-    // result = await addClaim(censusId, pubKeyHashes[0], gw, wallet)
-    // console.log("ADDED", pubKeyHashes[0], "TO", censusId)
+    // Add a claim to the new census
+    const censusId = result.censusId
+    result = await addClaim(censusId, publicKeys[0], gw, wallet)
+    console.log("ADDED", publicKeys[0], "TO", censusId)
 
     // Add claims to the new census
-    const censusId = result.censusId
-    result = await addClaimBulk(censusId, pubKeyHashes, gw, wallet)
-    console.log("ADDED", pubKeyHashes, "TO", censusId)
+    // const censusId = result.censusId
+    result = await addClaimBulk(censusId, publicKeys.slice(1), gw, wallet)
+    console.log("ADDED", publicKeys.slice(1), "TO", censusId)
 
     result = await getRoot(censusId, gw)
     console.log("MERKLE ROOT", result)  // 0x....
@@ -369,7 +373,7 @@ async function main() {
     // await createVotingProcess()
     // await checkSignature()
     // await gatewayHealthCheck()
-    // await gatewayRequest()
+    // await gatewayRawRequest()
     // await ensResolver()
     await gwCensusOperations()
 }
