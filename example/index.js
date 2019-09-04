@@ -8,6 +8,7 @@ const {
     API: { File, Entity, Census, Vote },
     Network: { Bootnodes, Gateway, Contracts },
     Wrappers: { GatewayInfo, ContentURI, ContentHashedURI },
+    Models: { Entity: { TextRecordKeys } },
     EtherUtils: { Providers, Signers }
 } = require("../dist") // require("dvote-js")
 
@@ -257,7 +258,7 @@ async function gatewayHealthCheck() {
     const myEntityAddress = await wallet.getAddress()
     const myEntityId = getEntityId(myEntityAddress)
 
-    const gws = await getDefaultGateways()
+    const gws = await getDefaultGateways("goerli")
 
     const URL = "https://hnrss.org/newest"
     const response = await axios.get(URL)

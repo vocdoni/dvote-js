@@ -5,16 +5,46 @@
 import ContentURI from "../wrappers/content-uri"
 import GatewayInfo from "../wrappers/gateway-info"
 import { fetchFileString } from "../api/file"
-import { defaultBootnodeContentUri } from "../constants"
+import { vocdoniHomesteadEntityId, vocdoniGoerliEntityId } from "../constants"
+import { getEntityResolverInstance } from "../net/contracts"
+import { TextRecordKeys } from "../models/entity"
 import { GatewayBootNodes } from "../models/gateway"
 import { DVoteGateway, Web3Gateway } from "./gateway"
+import { getDefaultProvider, providers } from "ethers"
+
+type NetworkID = "homestead" | "goerli"
+
+/**
+ * Retrieve the Content URI of the boot nodes Content URI provided by Vocdoni
+ * @param networkId Either "homestead" (mainnet) or "goerli" (test)
+ */
+export function getDefaultBootnodeContentUri(networkId: NetworkID): Promise<ContentURI> {
+    let provider: providers.BaseProvider
+
+    switch (networkId) {
+        case "homestead":
+        case "goerli":
+            provider = getDefaultProvider(networkId)
+            break;
+        default: throw new Error("Invalid Network ID")
+    }
+
+    return getEntityResolverInstance({ provider }).then(instance => {
+        const entityId = networkId == "homestead" ? vocdoniHomesteadEntityId : vocdoniGoerliEntityId
+        return instance.text(entityId, TextRecordKeys.VOCDONI_BOOT_NODES)
+    }).then(uri => {
+        if (!uri) throw new Error("The boot nodes Content URI is not defined on " + networkId)
+        else return new ContentURI(uri)
+    })
+}
 
 /**
  * Retrieve a list of gateways provided by default by Vocdoni.
  * The resulting set of `dvote[]` objects may need that you call `connect()` before you use them.
  */
-export function getDefaultGateways(): Promise<{ [networkId: string]: { dvote: DVoteGateway[], web3: Web3Gateway[] } }> {
-    return getGatewaysFromBootNode(defaultBootnodeContentUri)
+export function getDefaultGateways(networkId: NetworkID): Promise<{ [networkId: string]: { dvote: DVoteGateway[], web3: Web3Gateway[] } }> {
+    return getDefaultBootnodeContentUri(networkId)
+        .then(contentUri => getGatewaysFromBootNode(contentUri))
 }
 
 /**
@@ -47,10 +77,10 @@ export function getGatewaysFromBootNode(bootnodesContentUri: string | ContentURI
  * If no parameter is provided, the default gateways provided by Vocdoni will be used as the source.
  * If a Content URI is provided, the choice will be made from its data.
  */
-export async function getRandomGatewayInfo(bootnodesContentUri?: string | ContentURI): Promise<{ [networkId: string]: GatewayInfo }> {
+export async function getRandomGatewayInfo(networkId: NetworkID, bootnodesContentUri?: string | ContentURI): Promise<{ [networkId: string]: GatewayInfo }> {
     const result: { [networkId: string]: GatewayInfo } = {}
 
-    const gws = bootnodesContentUri ? await fetchFromBootNode(bootnodesContentUri) : await fetchDefaultBootNode()
+    const gws = bootnodesContentUri ? await fetchFromBootNode(bootnodesContentUri) : await fetchDefaultBootNode(networkId)
 
     for (let networkId in gws) {
         const dvLen = gws && gws[networkId] && gws[networkId].dvote
@@ -70,13 +100,17 @@ export async function getRandomGatewayInfo(bootnodesContentUri?: string | Conten
 /**
  * Retrieve the list of gateways provided by default by Vocdoni
  */
-export function fetchDefaultBootNode(): Promise<GatewayBootNodes> {
-    return fetchFileString(defaultBootnodeContentUri).then(strResult => {
-        const result = JSON.parse(strResult)
-        return result
-    }).catch(err => {
-        throw new Error(err && err.message || "Unable to fetch the boot node(s) data")
-    })
+export function fetchDefaultBootNode(networkId: NetworkID): Promise<GatewayBootNodes> {
+    return getDefaultBootnodeContentUri(networkId)
+        .then(contentUri => {
+            return fetchFileString(contentUri)
+        }).then(strResult => {
+            const result = JSON.parse(strResult)
+            return result
+        })
+        .catch(err => {
+            throw new Error(err && err.message || "Unable to fetch the boot node(s) data")
+        })
 }
 
 /**

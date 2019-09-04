@@ -91,6 +91,7 @@ export async function getEntityResolverInstance(params: AttachToContractParams =
 
     if (typeof address != "string") {
         address = await provider.resolveName(entityResolverEnsDomain)
+        if (!address) throw new Error("The contract address can't be determined")
     }
 
     if (wallet) {
@@ -122,6 +123,7 @@ export async function getVotingProcessInstance(params: AttachToContractParams = 
 
     if (typeof address != "string") {
         address = await provider.resolveName(votingProcessEnsDomain)
+        if (!address) throw new Error("The contract address can't be determined")
     }
 
     if (wallet) {

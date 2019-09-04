@@ -20,7 +20,7 @@ const DEFAULT_BOOTNODES_URL = "https://bootnodes.github.io/gateways.json"
 describe("Boot nodes", () => {
 
     it("getDefaultGateways should provide a gateway list", async () => {
-        const bootnodes = await getDefaultGateways()
+        const bootnodes = await getDefaultGateways("goerli")
 
         for (let networkId in bootnodes) {
             expect(typeof networkId).to.equal("string")
@@ -43,7 +43,7 @@ describe("Boot nodes", () => {
         expect(typeof bootnodes["goerli"].web3[0].attach).to.equal("function")
         expect(typeof bootnodes["goerli"].web3[0].deploy).to.equal("function")
         expect(typeof bootnodes["goerli"].web3[0].getProvider).to.equal("function")
-    })
+    }).timeout(6000)
 
     it("getGatewaysFromBootNode should provide a gateway list", async () => {
         const bootnodes = await getGatewaysFromBootNode(DEFAULT_BOOTNODES_URL)
@@ -72,7 +72,7 @@ describe("Boot nodes", () => {
     })
 
     it("getRandomGatewayInfo should provide a gateway for each network ID", async () => {
-        const gw = await getRandomGatewayInfo()
+        const gw = await getRandomGatewayInfo("goerli")
 
         expect(gw["non-existing-network-id"]).to.be.undefined
         expect(gw["goerli"]).to.be.ok
@@ -81,7 +81,7 @@ describe("Boot nodes", () => {
         expect(Array.isArray(gw["goerli"].supportedApis)).to.be.true
         expect(typeof gw["goerli"].web3).to.equal("string")
 
-        const gw2 = await getRandomGatewayInfo(DEFAULT_BOOTNODES_URL)
+        const gw2 = await getRandomGatewayInfo("goerli", DEFAULT_BOOTNODES_URL)
 
         expect(gw2["non-existing-network-id"]).to.be.undefined
         expect(gw2["goerli"]).to.be.ok
@@ -89,10 +89,10 @@ describe("Boot nodes", () => {
         expect(typeof gw2["goerli"].publicKey).to.equal("string")
         expect(Array.isArray(gw2["goerli"].supportedApis)).to.be.true
         expect(typeof gw2["goerli"].web3).to.equal("string")
-    })
+    }).timeout(9000)
 
     it("fetchDefaultBootNode should provide a bootnode JSON structure", async () => {
-        const bootnodes = await fetchDefaultBootNode()
+        const bootnodes = await fetchDefaultBootNode("goerli")
 
         for (let networkId in bootnodes) {
             expect(typeof networkId).to.equal("string")
@@ -104,7 +104,7 @@ describe("Boot nodes", () => {
         expect(Array.isArray(bootnodes["goerli"].dvote[0].apis)).to.be.true
 
         expect(typeof bootnodes["goerli"].web3[0].uri).to.equal("string")
-    })
+    }).timeout(6000)
 
     it("fetchFromBootNode should provide a bootnode JSON structure", async () => {
         const bootnodes = await fetchFromBootNode(DEFAULT_BOOTNODES_URL)
