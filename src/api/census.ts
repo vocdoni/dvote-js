@@ -1,5 +1,5 @@
 import { Wallet, Signer } from "ethers"
-import { DVoteGateway } from "../net/gateway"
+import { DVoteGateway, DvoteRequestParameters } from "../net/gateway"
 import { sha3_256 } from 'js-sha3'
 import ContentURI from "../wrappers/content-uri"
 import { createHash } from "circomlib/src/poseidon"
@@ -102,14 +102,14 @@ export function addClaim(censusId: string, claimData: string, gateway: DVoteGate
  * @param walletOrSigner 
  * @returns Promise resolving with the new merkleRoot
  */
-export function addClaimBulk(censusId: string, claimsData: string[], gateway: DVoteGateway, walletOrSigner: Wallet | Signer): Promise<string> {
-    if (!censusId || !claimsData || !claimsData.length || !gateway) throw new Error("Invalid parameters")
+export async function addClaimBulk(censusId: string, pubKeyHashes: string[], gateway: DVoteGateway, walletOrSigner: Wallet | Signer): Promise<{ merkleRoot: string, invalidClaims: any[] }> {
+    if (!censusId || !pubKeyHashes || !pubKeyHashes.length || !gateway) throw new Error("Invalid parameters")
 
-    return gateway.sendMessage({ method: "addClaimBulk", censusId, claimsData }, walletOrSigner).then(response => {
-        if (!response.ok) throw new Error("The claims could not be added")
-
-        return getRoot(censusId, gateway)
-    })
+    const response = await gateway.sendMessage({ method: "addClaimBulk", censusId, claimsData: pubKeyHashes }, walletOrSigner)
+    if (!response.ok) throw new Error("The claims could not be added")
+    const invalidClaims = ("invalidClaims" in response) ? (response.invalidClaims) : ([])
+    const merkleRoot = await  getRoot(censusId, gateway)
+    return  {merkleRoot, invalidClaims}
 }
 
 /**
@@ -127,14 +127,39 @@ export function getRoot(censusId: string, gateway: DVoteGateway): Promise<string
     })
 }
 
-/** Dumps the entire content of the census as an array of hexStrings rady to be imported to another census service */
-export function dump() {
-    throw new Error("TODO: Unimplemented")
+
+/** Dumps the entire content of the census as an array of hexStrings rady to be imported to another census service 
+ *  
+ * @param censusId Full Census ID containing the Entity ID and the hash of the original name
+ * @param gateway A DVoteGateway instance already connected to a remote Gateway
+ * @param walletOrSigner 
+ * @returns Promise resolving with the a hex array dump of the census claims
+*/
+export async function dump(censusId: string, gateway: DVoteGateway, walletOrSigner: Wallet | Signer, rootHash?: String): Promise<string[]> {
+    if (!censusId || !gateway) throw new Error("Invalid parameters")
+    const msg: DvoteRequestParameters = (rootHash) ? { method: "dump", censusId, rootHash} : {method: "dump", censusId}
+    return gateway.sendMessage(msg, walletOrSigner).then(response => {
+        if (!response.ok) throw new Error("The census merkle root could not be fetched")
+        return response.claimsData
+    })
+
 }
 
-/** Dumps the contents of a census in raw string format. Not valid to use with `importDump` */
-export function dumpPlain() {
-    throw new Error("TODO: Unimplemented")
+/** Dumps the contents of a census in raw string format. Not valid to use with `importDump`
+ *  
+ * @param censusId Full Census ID containing the Entity ID and the hash of the original name
+ * @param gateway A DVoteGateway instance already connected to a remote Gateway
+ * @param walletOrSigner 
+ * @returns Promise resolving with the a raw string dump of the census claims
+*/
+export async function dumpPlain(censusId: string, gateway: DVoteGateway, walletOrSigner: Wallet | Signer, rootHash?: String): Promise<string[]> {
+    if (!censusId || !gateway) throw new Error("Invalid parameters")
+    const msg: DvoteRequestParameters = (rootHash) ? { method: "dumpPlain", censusId, rootHash} : {method: "dumpPlain", censusId}
+    return gateway.sendMessage(msg, walletOrSigner).then(response => {
+        if (!response.ok) throw new Error("The census merkle root could not be fetched")
+        return response.claimsData
+    })
+
 }
 
 /** Only works with specific merkletree format used by dump method. To add a list of plain claims use `addClaimBulk` instead */
