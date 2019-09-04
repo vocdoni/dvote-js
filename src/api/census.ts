@@ -102,14 +102,15 @@ export function addClaim(censusId: string, claimData: string, gateway: DVoteGate
  * @param walletOrSigner 
  * @returns Promise resolving with the new merkleRoot
  */
-export async function addClaimBulk(censusId: string, pubKeyHashes: string[], gateway: DVoteGateway, walletOrSigner: Wallet | Signer): Promise<{ merkleRoot: string, invalidClaims: any[] }> {
-    if (!censusId || !pubKeyHashes || !pubKeyHashes.length || !gateway) throw new Error("Invalid parameters")
+export async function addClaimBulk(censusId: string, claimsData: string[], gateway: DVoteGateway, walletOrSigner: Wallet | Signer): Promise<{ merkleRoot: string, invalidClaims: any[] }> {
+    if (!censusId || !claimsData || !claimsData.length || !gateway) throw new Error("Invalid parameters")
 
-    const response = await gateway.sendMessage({ method: "addClaimBulk", censusId, claimsData: pubKeyHashes }, walletOrSigner)
-    if (!response.ok) throw new Error("The claims could not be added")
-    const invalidClaims = ("invalidClaims" in response) ? (response.invalidClaims) : ([])
-    const merkleRoot = await  getRoot(censusId, gateway)
-    return  {merkleRoot, invalidClaims}
+    const response = await gateway.sendMessage({ method: "addClaimBulk", censusId, claimsData }, walletOrSigner)
+    if (!response.ok) throw new Error("The given claims could not be added")
+    const invalidClaims = ("invalidClaims" in response) ? response.invalidClaims : []
+
+    const merkleRoot = await getRoot(censusId, gateway)
+    return { merkleRoot, invalidClaims }
 }
 
 /**
@@ -135,14 +136,14 @@ export function getRoot(censusId: string, gateway: DVoteGateway): Promise<string
  * @param walletOrSigner 
  * @returns Promise resolving with the a hex array dump of the census claims
 */
-export async function dump(censusId: string, gateway: DVoteGateway, walletOrSigner: Wallet | Signer, rootHash?: String): Promise<string[]> {
+export function dump(censusId: string, gateway: DVoteGateway, walletOrSigner: Wallet | Signer, rootHash?: String): Promise<string[]> {
     if (!censusId || !gateway) throw new Error("Invalid parameters")
-    const msg: DvoteRequestParameters = (rootHash) ? { method: "dump", censusId, rootHash} : {method: "dump", censusId}
+    const msg: DvoteRequestParameters = (rootHash) ? { method: "dump", censusId, rootHash } : { method: "dump", censusId }
+
     return gateway.sendMessage(msg, walletOrSigner).then(response => {
         if (!response.ok) throw new Error("The census merkle root could not be fetched")
         return response.claimsData
     })
-
 }
 
 /** Dumps the contents of a census in raw string format. Not valid to use with `importDump`
@@ -152,9 +153,10 @@ export async function dump(censusId: string, gateway: DVoteGateway, walletOrSign
  * @param walletOrSigner 
  * @returns Promise resolving with the a raw string dump of the census claims
 */
-export async function dumpPlain(censusId: string, gateway: DVoteGateway, walletOrSigner: Wallet | Signer, rootHash?: String): Promise<string[]> {
+export function dumpPlain(censusId: string, gateway: DVoteGateway, walletOrSigner: Wallet | Signer, rootHash?: String): Promise<string[]> {
     if (!censusId || !gateway) throw new Error("Invalid parameters")
-    const msg: DvoteRequestParameters = (rootHash) ? { method: "dumpPlain", censusId, rootHash} : {method: "dumpPlain", censusId}
+    const msg: DvoteRequestParameters = (rootHash) ? { method: "dumpPlain", censusId, rootHash } : { method: "dumpPlain", censusId }
+
     return gateway.sendMessage(msg, walletOrSigner).then(response => {
         if (!response.ok) throw new Error("The census merkle root could not be fetched")
         return response.claimsData
@@ -188,7 +190,7 @@ export function publishCensus(censusId: string, gateway: DVoteGateway, walletOrS
  * @param claim
  * @param gateway 
  */
-export async function generateProof(merkleTreeLink: ContentURI, claim: string, gateway: DVoteGateway) {
+export function generateProof(merkleTreeLink: ContentURI, claim: string, gateway: DVoteGateway) {
     if (!merkleTreeLink || !claim || !gateway) throw new Error("Invalid parameters")
     else if (!merkleTreeLink.ipfsHash) throw new Error("The link to the census needs to contain an IPFS link")
 

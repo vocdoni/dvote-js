@@ -285,7 +285,7 @@ async function gatewayHealthCheck() {
 
 async function gatewayRawRequest() {
     // DVOTE
-    const gws = await getRandomGatewayInfo()
+    const gws = await getRandomGatewayInfo("goerli")
     gw = new DVoteGateway(gws[NETWORK_ID])
     console.log("THE DVOTE GW:", gw.publicKey)
 
