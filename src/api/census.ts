@@ -142,7 +142,7 @@ export function dump(censusId: string, gateway: DVoteGateway, walletOrSigner: Wa
 
     return gateway.sendMessage(msg, walletOrSigner).then(response => {
         if (!response.ok) throw new Error("The census merkle root could not be fetched")
-        return (response.claimsData && response.claimsData.length || [])
+        return (response.claimsData && response.claimsData.length) ? response.claimsData : []
     })
 }
 
