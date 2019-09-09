@@ -1,11 +1,11 @@
+import { Wallet, Signer } from "ethers"
 import { getVotingProcessInstance } from "../net/contracts"
 import GatewayInfo from "../wrappers/gateway-info"
 import { DVoteGateway, Web3Gateway } from "../net/gateway"
 import { fetchFileString, addFile } from "./file"
 import { ProcessMetadata, checkValidProcessMetadata } from "../models/voting-process"
-import { utils, Wallet, Signer } from "ethers"
 import { HexString } from "../models/common"
-import ContentHashedURI from "wrappers/content-hashed-uri"
+import ContentHashedURI from "../wrappers/content-hashed-uri"
 
 /**
  * Use the given JSON metadata to create a new voting process from the Entity ID associated to the given wallet account
