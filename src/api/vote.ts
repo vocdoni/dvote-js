@@ -6,7 +6,7 @@ import { fetchFileString, addFile } from "./file"
 import { ProcessMetadata, checkValidProcessMetadata } from "../models/voting-process"
 import { HexString } from "../models/common"
 import ContentHashedURI from "../wrappers/content-hashed-uri"
-import { getEntityMetadata, updateEntity } from "./entity"
+import { getEntityMetadata, updateEntity, getEntityId } from "./entity"
 
 /**
  * Use the given JSON metadata to create a new voting process from the Entity ID associated to the given wallet account
@@ -24,7 +24,6 @@ export async function createVotingProcess(processMetadata: ProcessMetadata, merk
 
     // throw if not valid
     checkValidProcessMetadata(processMetadata)
-    const strJsonMeta = JSON.stringify(processMetadata)
 
     const gw = new DVoteGateway(gatewayInfo)
     const web3 = new Web3Gateway(gatewayInfo)
@@ -36,9 +35,12 @@ export async function createVotingProcess(processMetadata: ProcessMetadata, merk
         // CHECK THAT THE ENTITY EXISTS
         const entityMeta = await getEntityMetadata(address, gatewayInfo)
         if (!entityMeta) throw new Error("The entity is not yet registered on the blockchain")
+        else if(getEntityId(address) != processMetadata.details.entityId)
+            throw new Error("The EntityId on the metadata does not match the given wallet's address")
 
         // UPLOAD THE METADATA
         await gw.connect()
+        const strJsonMeta = JSON.stringify(processMetadata)
         const processMetaOrigin = await addFile(strJsonMeta, `merkle-root-${merkleRoot}.json`, walletOrSigner, gw)
         gw.disconnect()
         if (!processMetaOrigin) throw new Error("The process metadata could not be uploaded")
