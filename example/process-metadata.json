@@ -4,8 +4,8 @@
     "startBlock": 10000,
     "numberOfBlocks": 400,
     "census": {
-        "censusMerkleRoot": "0x1234...",
-        "censusMerkleTree": "ipfs://12345678,https://server/file!12345678"
+        "merkleRoot": "0x1234...",
+        "merkleTree": "ipfs://12345678,https://server/file!12345678"
     },
     "details": {
         "entityId": "0x1234",

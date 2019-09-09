@@ -61,8 +61,8 @@ const voteMetadataSchema = Joi.object().keys({
     startBlock: Joi.number().integer().min(0).required(),
     numberOfBlocks: Joi.number().integer().min(0).required(),
     census: Joi.object().keys({
-        censusMerkleRoot: Joi.string().regex(/^0x[a-z0-9]+$/).required(),
-        censusMerkleTree: Joi.string().required()
+        merkleRoot: Joi.string().regex(/^0x[a-z0-9]+$/).required(),
+        merkleTree: Joi.string().required()
     }),
     details: {
         entityId: Joi.string().regex(/^0x[a-z0-9]+$/).required(),
@@ -104,8 +104,8 @@ export interface ProcessMetadata {
     startBlock: number, // Block number on the votchain since the process will be open
     numberOfBlocks: number,
     census: {
-        censusMerkleRoot: HexString,
-        censusMerkleTree: ContentHashedUriString
+        merkleRoot: HexString,
+        merkleTree: ContentHashedUriString
     },
     details: {
         entityId: HexString,
@@ -135,8 +135,8 @@ export const ProcessMetadataTemplate: ProcessMetadata = {
     startBlock: 10000, // Block number on the votchain since the process will be open
     numberOfBlocks: 400,
     census: {
-        censusMerkleRoot: "0x1234...",
-        censusMerkleTree: "ipfs://12345678,https://server/file!12345678"
+        merkleRoot: "0x1234...",
+        merkleTree: "ipfs://12345678,https://server/file!12345678"
     },
     details: {
         entityId: "0x1234",
