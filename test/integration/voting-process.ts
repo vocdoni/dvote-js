@@ -6,6 +6,9 @@ describe("Voting Process", () => {
     describe("Process metadata", () => {
         it("Should fetch the metadata of a voting process")
         it("Should allow to upload the JSON metadata of a new Voting Process")
+        it("Should register a new voting process on the blockchain")
+        it("Should fail creating a process if the Entity does not exist")
+        it("Should return the processId after creating it")
     })
 
     // describe("Linkable Ring Signatures", () => {

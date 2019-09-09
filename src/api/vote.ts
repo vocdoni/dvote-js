@@ -6,6 +6,7 @@ import { fetchFileString, addFile } from "./file"
 import { ProcessMetadata, checkValidProcessMetadata } from "../models/voting-process"
 import { HexString } from "../models/common"
 import ContentHashedURI from "../wrappers/content-hashed-uri"
+import { getEntityMetadata, updateEntity } from "./entity"
 
 /**
  * Use the given JSON metadata to create a new voting process from the Entity ID associated to the given wallet account
@@ -30,25 +31,39 @@ export async function createVotingProcess(processMetadata: ProcessMetadata, merk
 
     try {
         const processInstance = await getVotingProcessInstance({ provider: web3.getProvider() })
+        const address = await walletOrSigner.getAddress()
 
+        // CHECK THAT THE ENTITY EXISTS
+        const entityMeta = await getEntityMetadata(address, gatewayInfo)
+        if (!entityMeta) throw new Error("The entity is not yet registered on the blockchain")
+
+        // UPLOAD THE METADATA
         await gw.connect()
-        const origin = await addFile(strJsonMeta, `merkle-root-${merkleRoot}.json`, walletOrSigner, gw)
+        const processMetaOrigin = await addFile(strJsonMeta, `merkle-root-${merkleRoot}.json`, walletOrSigner, gw)
         gw.disconnect()
-        if (!origin) throw new Error("The process metadata could not be uploaded")
+        if (!processMetaOrigin) throw new Error("The process metadata could not be uploaded")
 
-        const tx = await processInstance.create(origin, merkleRoot, merkleTree.toContentUriString())
+        // REGISTER THE NEW PROCESS
+        const tx = await processInstance.create(processMetaOrigin, merkleRoot, merkleTree.toContentUriString())
         if (!tx) throw new Error("Could not start the blockchain transaction")
         await tx.wait()
 
-        const address = await walletOrSigner.getAddress()
         const count = await processInstance.getEntityProcessCount(address)
-        if (!count || count.isZero()) throw new Error("The process cound not be created")
-        return processInstance.getProcessId(address, count.toNumber() - 1)
+        if (!count || count.isZero()) throw new Error("The process could not be created")
+        const processId = await processInstance.getProcessId(address, count.toNumber() - 1)
+
+        // UPDATE THE ENTITY
+        if (!entityMeta.votingProcesses) entityMeta.votingProcesses = { active: [], ended: [] }
+        entityMeta.votingProcesses.active = [processId].concat(entityMeta.votingProcesses.active || [])
+
+        await updateEntity(address, entityMeta, walletOrSigner, gatewayInfo)
+
+        return processId
     }
     catch (err) {
         if (gw) gw.disconnect()
         console.error(err)
-        throw new Error("Could not create the voting process")
+        throw err
     }
 }
 
