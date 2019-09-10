@@ -110,6 +110,8 @@ export async function addClaimBulk(censusId: string, claimsData: string[], gatew
     const invalidClaims = ("invalidClaims" in response) ? response.invalidClaims : []
 
     const merkleRoot = await getRoot(censusId, gateway)
+    console.log("Dvote: new merkleRoot", merkleRoot);
+    
     return { merkleRoot, invalidClaims }
 }
 
@@ -159,7 +161,7 @@ export function dumpPlain(censusId: string, gateway: DVoteGateway, walletOrSigne
 
     return gateway.sendMessage(msg, walletOrSigner).then(response => {
         if (!response.ok) throw new Error("The census merkle root could not be fetched")
-        return response.claimsData
+        return (response.claimsData && response.claimsData.length) ? response.claimsData : []
     })
 
 }
