@@ -8,7 +8,7 @@ const {
     API: { File, Entity, Census, Vote },
     Network: { Bootnodes, Gateway, Contracts },
     Wrappers: { GatewayInfo, ContentURI, ContentHashedURI },
-    Models: { Entity: { TextRecordKeys } },
+    Models: { Entity: { TextRecordKeys, EntityMetadataTemplate }, Vote: { ProcessMetadataTemplate } },
     EtherUtils: { Providers, Signers }
 } = require("../dist") // require("dvote-js")
 
@@ -24,13 +24,11 @@ const { getRoot, addCensus, addClaim, addClaimBulk, digestHexClaim, generateCens
 const { DVoteGateway, Web3Gateway } = Gateway
 const { getDefaultGateways, getRandomGatewayInfo } = Bootnodes
 const { addFile, fetchFileString } = File
+const { createVotingProcess, getVoteMetadata } = Vote
 
 const { Wallet, providers, utils } = require("ethers")
 const { Buffer } = require("buffer/")
 const fs = require("fs")
-
-const entityMetadata = require("./entity-metadata.json")
-const processMetadata = require("./process-metadata.json")
 
 const MNEMONIC = process.env.MNEMONIC || "bar bundle start frog dish gauge square subway load easily south bamboo"
 const PATH = "m/44'/60'/0'/0/0"
@@ -158,6 +156,7 @@ async function registerEntity() {
 
     console.log("Entity ID", myEntityId)
     const gw = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
+    const entityMetadata = Object.assign({}, EntityMetadataTemplate, { name: { default: "TEST ENTITY" } })
     const contentUri = await updateEntity(myEntityAddress, entityMetadata, wallet, gw)
 
     // show stored values
@@ -171,15 +170,66 @@ async function readEntity() {
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
     const myEntityAddress = await wallet.getAddress()
-    const gw = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
+    const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
 
     console.log("ENTITY ID:", getEntityId(myEntityAddress))
     console.log("GW:", GATEWAY_DVOTE_URI, GATEWAY_WEB3_URI)
-    const meta = await getEntityMetadata(myEntityAddress, gw)
+    const meta = await getEntityMetadata(myEntityAddress, gwInfo)
     console.log("JSON METADATA\n", meta)
 }
 
-async function createVotingProcess() {
+async function gwCensusOperations() {
+    // SIGNED
+    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+
+    const gw = new DVoteGateway({ uri: GATEWAY_DVOTE_URI, supportedApis: ["file", "census"], publicKey: GATEWAY_PUB_KEY })
+
+    await gw.connect()
+
+    const censusName = "My census name " + Math.random().toString().substr(2)
+    const adminPublicKeys = [await wallet.signingKey.publicKey]
+    const publicKeys = [
+        "0412d6dc30db7d2a32dddd0ba080d244cc26fcddcc29beb3fcb369564b468b9927445ab996fecbdd6603f6accbc4b3f773a9fe59b66f6e8ef6d9ecf70d8cee5a73",
+        "043980b22e9432aa2884772570c47a6f78a39bcc08b428161a503eeb91f66b1901ece9b82d2624ed5b44fa02922c28080c717f474eca16c54aecd74aba3eb76953",
+        "04f64bd4dc997f1eed4f20843730c13d926199ff45a9edfad191feff0cea6e3d54de43867463acdeeaae990ee6882138b79ee33e3ae7e4f2c12dc0a52088bbb620",
+        "04b9bd5b6f90833586cfcd181d1abe66d14152bb100ed7ec63ff94ecfe48dab18757177cac4551bc56bcf586d056d0f3709443face6b6bac7c55316e54522b4d2b"
+    ]
+    let publicKeyDigestedClaims = publicKeys.map(item => digestHexClaim(item))
+    publicKeyDigestedClaims[publicKeyDigestedClaims.length - 1] = "wrong_value"
+    console.log(publicKeyDigestedClaims);
+
+    // Create a census if it doesn't exist
+    let result = await addCensus(censusName, adminPublicKeys, gw, wallet)
+    console.log(`ADD CENSUS "${censusName}" RESULT:`, result)
+    // { censusId: "0x.../0x...", merkleRoot: "0x0..."}
+
+    // Add a claim to the new census
+    const censusId = result.censusId
+    result = await addClaim(censusId, publicKeyDigestedClaims[0], gw, wallet)
+    console.log("ADDED", publicKeyDigestedClaims[0], "TO", censusId)
+
+    // Add claims to the new census
+    // const censusId = result.censusId
+    result = await addClaimBulk(censusId, publicKeyDigestedClaims.slice(1), gw, wallet)
+    console.log("ADDED", publicKeyDigestedClaims.slice(1), "TO", censusId)
+    if (result.invalidClaims.length > 0) console.log("INVALID CLAIMS", result.invalidClaims)
+    const merkleRoot = await getRoot(censusId, gw)
+    console.log("MERKLE ROOT", merkleRoot)  // 0x....
+
+    const merkleTree = await publishCensus(censusId, gw, wallet)
+    console.log("PUBLISHED", censusId)
+    console.log(merkleTree)   // ipfs://....
+
+    result = await dump(censusId, gw, wallet)
+    console.log("DUMP", result)
+
+    result = await dumpPlain(censusId, gw, wallet)
+    console.log("DUMP PLAIN", result)
+
+    gw.disconnect()
+}
+
+async function createVotingProcessManual() {
     const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI)
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
@@ -191,6 +241,7 @@ async function createVotingProcess() {
     const contractInstance = await getVotingProcessInstance({ provider, wallet })
 
     console.log("Uploading metadata...")
+    const processMetadata = Object.assign({}, ProcessMetadataTemplate, { startBlock: 20000 })
     const strData = JSON.stringify(processMetadata)
     const origin = await addFile(Buffer.from(strData), "process-metadata.json", wallet, gw)
     console.log("process-metadata.json\nDATA STORED ON:", origin)
@@ -207,6 +258,30 @@ async function createVotingProcess() {
 
     console.log("RESULT", result)
     gw.disconnect()
+}
+
+async function createVotingProcessFull() {
+    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+    const myEntityAddress = await wallet.getAddress()
+    const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
+
+    const entityMetaPre = await getEntityMetadata(myEntityAddress, gwInfo)
+
+    const processMetadata = JSON.parse(JSON.stringify(ProcessMetadataTemplate)) // make a copy of the template
+    processMetadata.census.merkleRoot = "0x0000000000000000000000000000000000000000000000000"
+    processMetadata.census.merkleTree = "ipfs://1234123412341234"
+    processMetadata.details.entityId = getEntityId(myEntityAddress)
+
+    const processId = await createVotingProcess(processMetadata, wallet, gwInfo)
+    const entityMetaPost = await getEntityMetadata(myEntityAddress, gwInfo)
+
+    console.log("CREATED", processId)
+    console.log("METADATA BEFORE:", entityMetaPre.votingProcesses.active)
+    console.log("METADATA AFTER:", entityMetaPost.votingProcesses.active)
+
+    // READING BACK:
+    const metadata = await getVoteMetadata(processId, gwInfo)
+    console.log("PROCESS METADATA", metadata)
 }
 
 async function checkSignature() {
@@ -320,57 +395,6 @@ async function ensResolver() {
     console.log("Voting Process contract address", processAddr)
 }
 
-async function gwCensusOperations() {
-    // SIGNED
-    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
-
-    const gw = new DVoteGateway({ uri: GATEWAY_DVOTE_URI, supportedApis: ["file", "census"], publicKey: GATEWAY_PUB_KEY })
-
-    await gw.connect()
-
-    const censusName = "My census name " + Math.random().toString().substr(2)
-    const adminPublicKeys = [await wallet.signingKey.publicKey]
-    const publicKeys = [
-        "0412d6dc30db7d2a32dddd0ba080d244cc26fcddcc29beb3fcb369564b468b9927445ab996fecbdd6603f6accbc4b3f773a9fe59b66f6e8ef6d9ecf70d8cee5a73",
-        "043980b22e9432aa2884772570c47a6f78a39bcc08b428161a503eeb91f66b1901ece9b82d2624ed5b44fa02922c28080c717f474eca16c54aecd74aba3eb76953",
-        "04f64bd4dc997f1eed4f20843730c13d926199ff45a9edfad191feff0cea6e3d54de43867463acdeeaae990ee6882138b79ee33e3ae7e4f2c12dc0a52088bbb620",
-        "04b9bd5b6f90833586cfcd181d1abe66d14152bb100ed7ec63ff94ecfe48dab18757177cac4551bc56bcf586d056d0f3709443face6b6bac7c55316e54522b4d2b"
-    ]
-    let publicKeyDigestedClaims = publicKeys.map(item => digestHexClaim(item))
-    publicKeyDigestedClaims[publicKeyDigestedClaims.length-1] = "wrong_value"
-    console.log(publicKeyDigestedClaims);
-
-    // Create a census if it doesn't exist
-    let result = await addCensus(censusName, adminPublicKeys, gw, wallet)
-    console.log(`ADD CENSUS "${censusName}" RESULT:`, result)
-    // { censusId: "0x.../0x...", merkleRoot: "0x0..."}
-
-    // Add a claim to the new census
-    const censusId = result.censusId
-    result = await addClaim(censusId, publicKeyDigestedClaims[0], gw, wallet)
-    console.log("ADDED", publicKeyDigestedClaims[0], "TO", censusId)
-
-    // Add claims to the new census
-    // const censusId = result.censusId
-    result = await addClaimBulk(censusId, publicKeyDigestedClaims.slice(1), gw, wallet)
-    console.log("ADDED", publicKeyDigestedClaims.slice(1), "TO", censusId)
-    if (result.invalidClaims.length > 0) console.log("INVALID CLAIMS", result.invalidClaims)
-    result = await getRoot(censusId, gw)
-    console.log("MERKLE ROOT", result)  // 0x....
-
-    result = await publishCensus(censusId, gw, wallet)
-    console.log("PUBLISHED", censusId)
-    console.log(result)   // ipfs://....
-
-    result = await dump(censusId, gw, wallet)
-    console.log("DUMP", result)
-
-    result = await dumpPlain(censusId, gw, wallet)
-    console.log("DUMP PLAIN", result)
-
-    gw.disconnect()
-}
-
 async function main() {
     // await deployEntityResolver()
     // await attachToEntityResolver()
@@ -380,12 +404,13 @@ async function main() {
     // await fileUpload()
     // await registerEntity()
     // await readEntity()
-    // await createVotingProcess()
+    // await gwCensusOperations()
+    // await createVotingProcessManual()
+    await createVotingProcessFull()
     // await checkSignature()
     // await gatewayHealthCheck()
     // await gatewayRawRequest()
     // await ensResolver()
-    await gwCensusOperations()
 }
 
 main()

@@ -9,14 +9,14 @@ import ContentHashedURI from "../wrappers/content-hashed-uri"
 import { getEntityMetadata, updateEntity, getEntityId } from "./entity"
 
 /**
- * Use the given JSON metadata to create a new voting process from the Entity ID associated to the given wallet account
+ * Use the given JSON metadata to create a new voting process from the Entity ID associated to the given wallet account.
+ * The Census Merkle Root and Merkle Tree will be published to the blockchain, and the Metadata will be stored on IPFS
  * @param processMetadata JSON object containing the schema defined on  https://vocdoni.io/docs/#/architecture/components/process?id=process-metadata-json
- * @param merkleRoot HexString with the root hash of the census Merkle Tree
- * @param merkleTree Content Hashed URI pointing to the dump of the full Merkle Tree
  * @param walletOrSigner
  * @param gatewayInfo
+ * @returns The process ID
  */
-export async function createVotingProcess(processMetadata: ProcessMetadata, merkleRoot: HexString, merkleTree: ContentHashedURI,
+export async function createVotingProcess(processMetadata: ProcessMetadata,
     walletOrSigner: Wallet | Signer, gatewayInfo: GatewayInfo): Promise<string> {
     if (!processMetadata) throw new Error("Invalid process metadata")
     else if (!walletOrSigner) throw new Error("Invalid Wallet or Signer")
@@ -24,18 +24,24 @@ export async function createVotingProcess(processMetadata: ProcessMetadata, merk
 
     // throw if not valid
     checkValidProcessMetadata(processMetadata)
+    const merkleRoot = processMetadata.census.merkleRoot
+    const merkleTree = new ContentHashedURI(processMetadata.census.merkleTree)
 
     const gw = new DVoteGateway(gatewayInfo)
     const web3 = new Web3Gateway(gatewayInfo)
 
     try {
-        const processInstance = await getVotingProcessInstance({ provider: web3.getProvider() })
+        const processInstance = await getVotingProcessInstance({
+            provider: web3.getProvider(),
+            signer: walletOrSigner instanceof Signer ? walletOrSigner : undefined,
+            wallet: walletOrSigner instanceof Wallet ? walletOrSigner : undefined
+        })
         const address = await walletOrSigner.getAddress()
 
         // CHECK THAT THE ENTITY EXISTS
         const entityMeta = await getEntityMetadata(address, gatewayInfo)
         if (!entityMeta) throw new Error("The entity is not yet registered on the blockchain")
-        else if(getEntityId(address) != processMetadata.details.entityId)
+        else if (getEntityId(address) != processMetadata.details.entityId)
             throw new Error("The EntityId on the metadata does not match the given wallet's address")
 
         // UPLOAD THE METADATA
