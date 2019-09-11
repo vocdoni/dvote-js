@@ -110,7 +110,6 @@ export async function addClaimBulk(censusId: string, claimsData: string[], gatew
     const invalidClaims = ("invalidClaims" in response) ? response.invalidClaims : []
 
     const merkleRoot = await getRoot(censusId, gateway)
-    console.log("Dvote: new merkleRoot", merkleRoot);
     
     return { merkleRoot, invalidClaims }
 }
