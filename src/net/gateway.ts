@@ -9,6 +9,7 @@ import { Contract, ContractFactory, providers, utils, Wallet, Signer } from "eth
 import { providerFromUri } from "../util/providers"
 import GatewayInfo from "../wrappers/gateway-info"
 import { DVoteSupportedApi, WsGatewayMethod, fileApiMethods, voteApiMethods, censusApiMethods } from "../models/gateway"
+import { SIGNATURE_TIMESTAMP_TOLERANCE } from "../constants"
 
 const uriPattern = /^([a-z][a-z0-9+.-]+):(\/\/([^@]+@)?([a-z0-9.\-_~]+)(:\d+)?)?((?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])*)*|(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+)*)?(\?(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?(\#(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?$/i
 
@@ -258,8 +259,8 @@ export class DVoteGateway {
         if (this.publicKey) {
             const timestamp = msg.response ? msg.response.timestamp : (msg.error ? msg.error.timestamp : null)
 
-            const from = Math.floor(Date.now() / 1000) - 10
-            const until = Math.floor(Date.now() / 1000) + 10
+            const from = Math.floor(Date.now() / 1000) - SIGNATURE_TIMESTAMP_TOLERANCE
+            const until = Math.floor(Date.now() / 1000) + SIGNATURE_TIMESTAMP_TOLERANCE
             if (typeof timestamp != "number" || timestamp < from || timestamp > until) {
                 throw new Error("The response does not provide a valid timestamp")
             }

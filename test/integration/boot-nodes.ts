@@ -43,7 +43,7 @@ describe("Boot nodes", () => {
         expect(typeof bootnodes["goerli"].web3[0].attach).to.equal("function")
         expect(typeof bootnodes["goerli"].web3[0].deploy).to.equal("function")
         expect(typeof bootnodes["goerli"].web3[0].getProvider).to.equal("function")
-    }).timeout(6000)
+    }).timeout(15000)
 
     it("getGatewaysFromBootNode should provide a gateway list", async () => {
         const bootnodes = await getGatewaysFromBootNode(DEFAULT_BOOTNODES_URL)
@@ -89,7 +89,7 @@ describe("Boot nodes", () => {
         expect(typeof gw2["goerli"].publicKey).to.equal("string")
         expect(Array.isArray(gw2["goerli"].supportedApis)).to.be.true
         expect(typeof gw2["goerli"].web3).to.equal("string")
-    }).timeout(9000)
+    }).timeout(12000)
 
     it("fetchDefaultBootNode should provide a bootnode JSON structure", async () => {
         const bootnodes = await fetchDefaultBootNode("goerli")
@@ -104,7 +104,7 @@ describe("Boot nodes", () => {
         expect(Array.isArray(bootnodes["goerli"].dvote[0].apis)).to.be.true
 
         expect(typeof bootnodes["goerli"].web3[0].uri).to.equal("string")
-    }).timeout(6000)
+    }).timeout(12000)
 
     it("fetchFromBootNode should provide a bootnode JSON structure", async () => {
         const bootnodes = await fetchFromBootNode(DEFAULT_BOOTNODES_URL)

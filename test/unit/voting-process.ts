@@ -12,15 +12,14 @@ import { getAccounts, increaseTimestamp, TestAccount } from "../testing-eth-util
 import { VotingProcessContractMethods } from "dvote-solidity"
 const fs = require("fs")
 
-
 import { deployVotingProcessContract, getVotingProcessInstance } from "../../src/net/contracts"
+import { checkValidProcessMetadata, ProcessMetadataTemplate } from "../../src/models/voting-process";
 import VotingProcessBuilder, {
     DEFAULT_METADATA_CONTENT_HASHED_URI,
     DEFAULT_MERKLE_ROOT,
     DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI
 } from "../builders/voting-process"
 import { BigNumber } from "ethers/utils"
-import { checkValidProcessMetadata, ProcessMetadataTemplate } from "../../src/models/voting-process";
 
 let accounts: TestAccount[]
 let baseAccount: TestAccount
@@ -495,10 +494,10 @@ describe("Voting Process", () => {
 
     describe("Metadata validator", () => {
         it("Should accept a valid Process Metadata JSON", () => {
-            const processMetadata = fs.readFileSync(__dirname + "/../../example/process-metadata.json")
+            const processMetadata = Object.assign({}, ProcessMetadataTemplate)
 
             expect(() => {
-                checkValidProcessMetadata(JSON.parse(processMetadata))
+                checkValidProcessMetadata(processMetadata)
             }).to.not.throw
 
             expect(() => {
@@ -519,7 +518,7 @@ describe("Voting Process", () => {
             }).to.throw
 
             // Incomplete fields
-            const processMetadata = fs.readFileSync(__dirname + "/../../example/process-metadata.json")
+            const processMetadata = Object.assign({}, ProcessMetadataTemplate)
 
             expect(() => { checkValidProcessMetadata(Object.assign({}, processMetadata, { version: null })) }).to.throw
             expect(() => { checkValidProcessMetadata(Object.assign({}, processMetadata, { type: null })) }).to.throw

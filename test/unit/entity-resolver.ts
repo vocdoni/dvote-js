@@ -8,7 +8,7 @@ const fs = require("fs")
 
 import { getEntityId } from "../../src/api/entity"
 import { deployEntityResolverContract, getEntityResolverInstance } from "../../src/net/contracts"
-import { checkValidEntityMetadata } from "../../src/models/entity"
+import { checkValidEntityMetadata, EntityMetadataTemplate } from "../../src/models/entity"
 import EntityBuilder, { DEFAULT_NAME } from "../builders/entity-resolver"
 
 let accounts: TestAccount[]
@@ -43,7 +43,7 @@ describe("Entity Resolver", () => {
 
         it("Should attach to a given instance", async () => {
             contractInstance = await deployEntityResolverContract({ provider: entityAccount.provider, wallet: entityAccount.wallet })
-            
+
             expect(contractInstance.address).to.be.ok
 
             await contractInstance.setText(entityId, "custom-key", "custom value")
@@ -361,10 +361,10 @@ describe("Entity Resolver", () => {
 
     describe("Metadata validator", () => {
         it("Should accept a valid Entity Metadata JSON", () => {
-            const entityMetadata = fs.readFileSync(__dirname + "/../../example/entity-metadata.json")
+            const entityMetadata = EntityMetadataTemplate
 
             expect(() => {
-                checkValidEntityMetadata(JSON.parse(entityMetadata))
+                checkValidEntityMetadata(entityMetadata)
             }).to.not.throw
         })
 
@@ -381,7 +381,7 @@ describe("Entity Resolver", () => {
             }).to.throw
 
             // Incomplete fields
-            const entityMetadata = fs.readFileSync(__dirname + "/../../example/entity-metadata.json")
+            const entityMetadata = EntityMetadataTemplate
 
             expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { version: null })) }).to.throw
             expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { languages: null })) }).to.throw
