@@ -80,7 +80,7 @@ export async function createVotingProcess(processMetadata: ProcessMetadata,
  * @param processId 
  * @param gateway
  */
-export async function getVoteMetadata(processId: string, gatewayInfo: GatewayInfo): Promise<string> {
+export async function getVoteMetadata(processId: string, gatewayInfo: GatewayInfo): Promise<ProcessMetadata> {
     if (!processId) throw new Error("Invalid processId")
     else if (!gatewayInfo || !(gatewayInfo instanceof GatewayInfo)) throw new Error("Invalid Gateway Info object")
 
@@ -103,6 +103,18 @@ export async function getVoteMetadata(processId: string, gatewayInfo: GatewayInf
         console.error(err)
         throw new Error("Could not fetch the process data")
     }
+}
+
+/**
+ * Fetch the JSON metadata for a set of process ID's using the given gateway
+ * @param processIds
+ * @param gateway
+ */
+export function getVotesMetadata(processIds: string[], gatewayInfo: GatewayInfo): Promise<ProcessMetadata[]> {
+    if (!Array.isArray(processIds)) Promise.reject(new Error("Invalid processIds"))
+    else if (!gatewayInfo || !(gatewayInfo instanceof GatewayInfo)) Promise.reject(new Error("Invalid Gateway Info object"))
+
+    return Promise.all(processIds.map(id => getVoteMetadata(id, gatewayInfo)))
 }
 
 /**
