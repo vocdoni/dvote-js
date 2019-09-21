@@ -52,7 +52,7 @@ const multiLanguageStringKeys = {
 
 // MAIN ENTITY SCHEMA
 
-const processTypes = ["snark-vote", "snark-poll", "snark-petition"]
+const processTypes = ["snark-vote", "poll-vote", "petition-sign"]
 const questionTypes = ["single-choice"]
 
 const voteMetadataSchema = Joi.object().keys({
@@ -91,7 +91,7 @@ const voteMetadataSchema = Joi.object().keys({
 ///////////////////////////////////////////////////////////////////////////////
 
 type ProtocolVersion = "1.0"
-type ProcessType = "snark-vote" | "snark-poll" | "snark-petition"
+type ProcessType = "snark-vote" | "poll-vote" | "petition-sign"
 type QuestionType = "single-choice"
 
 /**
