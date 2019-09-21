@@ -20,7 +20,7 @@ const {
 } = Contracts
 
 const { getEntityId, getEntityMetadata, updateEntity } = Entity
-const { getRoot, addCensus, addClaim, addClaimBulk, digestHexClaim, generateCensusId, generateCensusIdSuffix, publishCensus, importRemote, dump, dumpPlain } = Census
+const { getRoot, addCensus, addClaim, addClaimBulk, digestHexClaim, generateCensusId, generateCensusIdSuffix, publishCensus, importRemote, generateProof, dump, dumpPlain } = Census
 const { DVoteGateway, Web3Gateway } = Gateway
 const { getDefaultGateways, getRandomGatewayInfo } = Bootnodes
 const { addFile, fetchFileString } = File
@@ -326,6 +326,17 @@ async function checkSignature() {
     console.log()
 }
 
+async function fetchMerkleProof() {
+    const gws = await getRandomGatewayInfo("goerli")
+    gw = new DVoteGateway(gws[NETWORK_ID])
+
+    console.log("FETCHING CLAIM", process.env.BASE64_CLAIM_DATA)
+    console.log("on Merkle Tree", process.env.CENSUS_MERKLE_ROOT)
+
+    const siblings = await generateProof(process.env.CENSUS_MERKLE_ROOT, process.env.BASE64_CLAIM_DATA, gw)
+    console.log("SIBLINGS:", siblings)
+}
+
 async function gatewayHealthCheck() {
     // SIGNED
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
@@ -406,7 +417,8 @@ async function main() {
     // await readEntity()
     // await gwCensusOperations()
     // await createVotingProcessManual()
-    await createVotingProcessFull()
+    // await createVotingProcessFull()
+    await fetchMerkleProof()
     // await checkSignature()
     // await gatewayHealthCheck()
     // await gatewayRawRequest()

@@ -110,7 +110,7 @@ export async function addClaimBulk(censusId: string, claimsData: string[], gatew
     const invalidClaims = ("invalidClaims" in response) ? response.invalidClaims : []
 
     const merkleRoot = await getRoot(censusId, gateway)
-    
+
     return { merkleRoot, invalidClaims }
 }
 
@@ -187,30 +187,21 @@ export function publishCensus(censusId: string, gateway: DVoteGateway, walletOrS
 
 /**
  * Fetch the proof of the given claim on the given census merkleTree using the given gateway
- * @param merkleTreeLink A ContentURI with a link to the Merkle Tree data to fetch from
- * @param claim
+ * @param censusMerkleRoot The Merkle Root of the Census to query
+ * @param base64Claim Base64-encoded claim of the leaf to request
  * @param gateway 
  */
-export function generateProof(merkleTreeLink: ContentURI, claim: string, gateway: DVoteGateway) {
-    if (!merkleTreeLink || !claim || !gateway) throw new Error("Invalid parameters")
-    else if (!merkleTreeLink.ipfsHash) throw new Error("The link to the census needs to contain an IPFS link")
+export function generateProof(censusMerkleRoot: string, base64Claim: string, gateway: DVoteGateway) {
+    if (!censusMerkleRoot || !base64Claim || !gateway) throw new Error("Invalid parameters")
 
-    if (merkleTreeLink.ipfsHash) {
-        return gateway.sendMessage({ method: "genProof", /* ... */ }).then(response => {
-            if (!response.siblings) throw new Error("The proof could not be fetched")
-            // TODO: 
-
-            throw new Error("TODO: unimplemented")
-        })
-    }
-    else { // merkleTreeLink.hash
-        return gateway.sendMessage({ method: "genProof", /* ... */ }).then(response => {
-            if (!response.siblings) throw new Error("The proof could not be fetched")
-            // TODO: 
-
-            throw new Error("TODO: unimplemented")
-        })
-    }
+    return gateway.sendMessage({
+        method: "genProof",
+        censusId: censusMerkleRoot,
+        claimData: base64Claim,
+    }).then(response => {
+        if (Array.isArray(response.siblings)) throw new Error("The Merkle Proof could not be fetched")
+        return response.siblings
+    })
 }
 
 export function checkProof() {
