@@ -2,7 +2,10 @@ import { Wallet, Signer } from "ethers"
 import { DVoteGateway, DvoteRequestParameters } from "../net/gateway"
 import { sha3_256 } from 'js-sha3'
 import ContentURI from "../wrappers/content-uri"
-import { createHash } from "circomlib/src/poseidon"
+import { hashBuffer } from "../util/hashing"
+const { Buffer } = require("buffer/")
+import * as ArrayBuffToString from 'arraybuffer-to-string'
+
 // import GatewayInfo from "../wrappers/gateway-info"
 
 /** 
@@ -26,15 +29,16 @@ export function generateCensusIdSuffix(censusName: string) {
 }
 
 /** 
- * Transforms the given ECDSA public key with a Poseidon hash and returns the
- * base 64 representation of the result
+ * Hashes the given hex string ECDSA public key and returns the
+ * base 64 representation of the resulting big int
  */
 export function digestHexClaim(publicKey: string): string {
-    const hash = createHash(6, 8, 57);
+    const pubKeyBytes = hexStringToBuffer(publicKey)
+    let hashNumHex: string = hashBuffer(pubKeyBytes).toString(16)
+    if (hashNumHex.length % 2 != 0) hashNumHex = "0" + hashNumHex
 
-    const pubKeyBigInt = BigInt(publicKey.startsWith("0x") ? publicKey : ("0x" + publicKey))
-    const pubKeyHash: string = hash([pubKeyBigInt]).toString(16)
-    return Buffer.from(pubKeyHash, "hex").toString("base64")
+    const hashBuff = hexStringToBuffer(hashNumHex)
+    return ArrayBuffToString(hashBuff, "base64")
 }
 
 /**
@@ -110,7 +114,7 @@ export async function addClaimBulk(censusId: string, claimsData: string[], gatew
     const invalidClaims = ("invalidClaims" in response) ? response.invalidClaims : []
 
     const merkleRoot = await getRoot(censusId, gateway)
-    
+
     return { merkleRoot, invalidClaims }
 }
 
@@ -215,4 +219,19 @@ export function generateProof(merkleTreeLink: ContentURI, claim: string, gateway
 
 export function checkProof() {
     throw new Error("TODO: Unimplemented")
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// INTERNAL HELPERS
+///////////////////////////////////////////////////////////////////////////////
+
+function hexStringToBuffer(hexString: string): Buffer {
+    if (!/^(0x)?[0-9a-fA-F]+$/.test(hexString)) throw new Error("Invalid hex string")
+    hexString = hexString.replace(/^0x/, "")
+
+    const result = new Buffer(Math.ceil(hexString.length / 2));
+    for (let i = 0; i < result.length; i++) {
+        result[i] = parseInt(hexString.substr(i * 2, 2), 16)
+    }
+    return result
 }
