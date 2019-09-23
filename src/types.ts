@@ -9,3 +9,6 @@ export {
     WsGatewayMethod,
     GatewayBootNodes
 } from "./models/gateway"
+export {
+    JsonFeed
+} from "./models/json-feed"
