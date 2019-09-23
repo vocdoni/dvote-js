@@ -128,7 +128,7 @@ export function getRoot(censusId: string, gateway: DVoteGateway): Promise<string
     if (!censusId || !gateway) throw new Error("Invalid parameters")
 
     return gateway.sendMessage({ method: "getRoot", censusId }).then(response => {
-        if (!response.root) throw new Error("The census merkle root could not be fetched")
+        if (!response.ok || !response.root) throw new Error("The census merkle root could not be fetched")
         return response.root
     })
 }
@@ -143,7 +143,7 @@ export function getCensusSize(censusMerkleRootHash: string, dvoteGw: DVoteGatewa
     if (!censusMerkleRootHash || !dvoteGw) throw new Error("Invalid parameters")
 
     return dvoteGw.sendMessage({ method: "getSize", censusId: censusMerkleRootHash }).then(response => {
-        if (isNaN(response.size)) throw new Error("The census size could not be retrieved")
+        if (!response.ok || isNaN(response.size)) throw new Error("The census size could not be retrieved")
         return response.size
     })
 }

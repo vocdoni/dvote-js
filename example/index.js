@@ -24,7 +24,7 @@ const { getRoot, addCensus, addClaim, addClaimBulk, digestHexClaim, getCensusSiz
 const { DVoteGateway, Web3Gateway } = Gateway
 const { getDefaultGateways, getRandomGatewayInfo } = Bootnodes
 const { addFile, fetchFileString } = File
-const { createVotingProcess, getVoteMetadata, getBlockHeight, getEnvelopeHeight, getTimeUntilStart, getTimeUntilEnd, getTimeForBlock, getBlockNumberForTime } = Vote
+const { createVotingProcess, getVoteMetadata, packagePollEnvelope, submitEnvelope, getBlockHeight, getEnvelopeHeight, getTimeUntilStart, getTimeUntilEnd, getTimeForBlock, getBlockNumberForTime } = Vote
 
 const { Wallet, providers, utils } = require("ethers")
 const { Buffer } = require("buffer/")
@@ -299,22 +299,27 @@ async function createVotingProcessFull() {
     console.log("PROCESS METADATA", metadata)
 }
 
-async function readVoteApi() {
+async function useVoteApi() {
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
     const myEntityAddress = await wallet.getAddress()
-    const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file", "vote"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
+    const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file", "vote", "census"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
     const dvoteGw = new DVoteGateway(gwInfo)
 
     const entityMeta = await getEntityMetadata(myEntityAddress, gwInfo)
-    const processId = entityMeta.votingProcesses.active[0]
+    console.log("- Active processes:", entityMeta.votingProcesses.active)
+    const processId = entityMeta.votingProcesses.active[entityMeta.votingProcesses.active.length - 1]
+    // const processId = "0xf36b729d6226b8257922a60cea6ab80e47686c3f86edbd0749b1c3291e2651ed"
     const processMeta = await getVoteMetadata(processId, gwInfo)
+
+    const censusMerkleRoot = process.env.CENSUS_MERKLE_ROOT // TODO: use the one below
+    // const censusMerkleRoot = processMeta.census.merkleRoot
 
     console.log("Reading", processId)
 
-    console.log("BLOCKCHAIN INFO:")
+    console.log("BLOCKCHAIN INFO:\n")
     console.log("- Process startBlock:", processMeta.startBlock)
     console.log("- Process endBlock:", processMeta.startBlock + processMeta.numberOfBlocks)
-    console.log("- Census size:", await getCensusSize(processMeta.census.merkleRoot, dvoteGw))
+    console.log("- Census size:", await getCensusSize(censusMerkleRoot, dvoteGw))
     console.log("- Block height:", await getBlockHeight(dvoteGw))
     console.log("- Envelope height:", await getEnvelopeHeight(processId, dvoteGw))
     let remainingSeconds = await getTimeUntilStart(processId, processMeta.startBlock, dvoteGw)
@@ -323,6 +328,16 @@ async function readVoteApi() {
     console.log("- Seconds until end:", remainingSeconds == 0 ? "[already ended]" : remainingSeconds)
     console.log("- Time at block 500:", await getTimeForBlock(processId, 500, dvoteGw))
     console.log("- Block on 10/10/2019:", await getBlockNumberForTime(processId, new Date(2019, 9, 10), dvoteGw))
+
+    const publicKeyHash = digestHexClaim(wallet["signingKey"].publicKey)
+    const merkleProof = await generateProof(censusMerkleRoot, publicKeyHash, dvoteGw)
+    const votes = [1, 2, 1]
+    const voteEnvelope = await packagePollEnvelope(votes, merkleProof, processId, wallet)
+
+    console.log("- Poll Envelope:", voteEnvelope)
+
+    console.log("- Submitting vote envelope")
+    await submitEnvelope(voteEnvelope, dvoteGw)
 
     dvoteGw.disconnect()
 }
@@ -462,7 +477,7 @@ async function main() {
     // await gwCensusOperations()
     // await createVotingProcessManual()
     // await createVotingProcessFull()
-    await readVoteApi()
+    await useVoteApi()
     // await fetchMerkleProof()
     // await checkSignature()
     // await gatewayHealthCheck()

@@ -1,4 +1,4 @@
-import { Wallet, Signer } from "ethers"
+import { Wallet, Signer, utils } from "ethers"
 import { getVotingProcessInstance } from "../net/contracts"
 import GatewayInfo from "../wrappers/gateway-info"
 import { DVoteGateway, Web3Gateway } from "../net/gateway"
@@ -8,6 +8,8 @@ import { ProcessMetadata, checkValidProcessMetadata } from "../models/voting-pro
 import ContentHashedURI from "../wrappers/content-hashed-uri"
 import { getEntityMetadata, updateEntity, getEntityId } from "./entity"
 import { VOCHAIN_BLOCK_TIME } from "../constants"
+import { signJsonBody } from "../util/json-sign"
+import { getArrayBufferFromString, getBase64StringFromArrayBuffer } from "../util/convert"
 
 /**
  * Use the given JSON metadata to create a new voting process from the Entity ID associated to the given wallet account.
@@ -137,34 +139,19 @@ export function getBlockHeight(gateway: DVoteGateway): Promise<number> {
 /**
  * Submit the vote envelope to a Gateway
  * @param voteEnvelope
- * @param processId 
  * @param gateway 
  */
-export async function submitEnvelope(voteEnvelope: SnarkVoteEnvelope | PollVoteEnvelope, processId: string, gateway: DVoteGateway): Promise<boolean> {
-    //     throw new Error("unimplemented")
+export async function submitEnvelope(voteEnvelope: SnarkVoteEnvelope | PollVoteEnvelope, gateway: DVoteGateway): Promise<void> {
+    if (!voteEnvelope || !gateway) throw new Error("Invalid parameters")
 
-    //     if (voteEnvelope.type == "lrs-envelope") {
-
-    //     }
-    //     else { // snark-envelope
-
-    //     }
-
-    //     // TODO: Encode in base64
-    //     // TODO: Encrypt vote envelope with the public key of the Relay
-    //     const encryptedEnvelope = JSON.stringify(voteEnvelope)
-
-    //     // Ensure we are connected to the right Gateway
-    //     if (!this.gateway) this.gateway = new Gateway(gateway)
-    //     else if (await this.gateway.getUri() != gateway) await this.gateway.connect(gateway)
-
-    //     return this.gateway.request({
-    //         method: "submitEnvelope",
-    //         processId,
-    //         encryptedEnvelope,
-    //     }).then(strData => JSON.parse(strData))
-
-    throw new Error("TODO: unimplemented")
+    return gateway.sendMessage({
+        method: "submitEnvelope",
+        payload: voteEnvelope
+    }).then(res => {
+        if (!res || !res["ok"]) throw new Error("Could not submit the vote envelope")
+    }).catch(err => {
+        throw new Error("Could not submit the vote envelope")
+    })
 }
 
 /**
@@ -322,24 +309,63 @@ export async function getEnvelopeList(processId: string, gateway: GatewayInfo, b
 
 // TODO: SEE https://vocdoni.io/docs/#/architecture/components/process?id=vote-envelope
 
-export function packageSnarkEnvelope(param1: any, etc): SnarkVoteEnvelope {
+export function packageSnarkEnvelope(votes: number[],
+    merkleProof: string, processId: string, voteEncryptionPublicKey: string, walletOrSigner: Wallet | Signer): SnarkVoteEnvelope {
 
-    // TODO: use packageSnarkVote
+    // TODO: use packageSnarkVote()
     throw new Error("TODO: unimplemented")
 }
 
-export function packagePollEnvelope(param1: any, etc): PollVoteEnvelope {
+export async function packagePollEnvelope(votes: number[],
+    merkleProof: string, processId: string, walletOrSigner: Wallet | Signer): Promise<PollVoteEnvelope> {
+    if (!votes || !merkleProof || !processId || !walletOrSigner) throw new Error("Invalid parameters");
+    try {
+        const nonce = utils.keccak256('0x' + Date.now().toString(16)).substr(2)
 
-    // TODO: use packagePollVote
-    throw new Error("TODO: unimplemented")
+        const votePackage: string = packagePollVote(votes)
+        const pkg: PollVoteEnvelope = {
+            processId: processId,
+            proof: merkleProof,
+            nonce,
+            "vote-package": votePackage
+            // signature is still empty
+        }
+
+        pkg.signature = await signJsonBody(pkg, walletOrSigner)
+
+        return pkg
+    } catch (error) {
+        throw "Poll vote Envelope could not be generated";
+    }
 }
 
-export function packageSnarkVote(param1: any, etc): String {
-    throw new Error("TODO: unimplemented")
+export function packageSnarkVote(votes: number[], voteEncryptionPublicKey: string): string {
+    // if (!Array.isArray(votes)) throw new Error("Invalid votes")
+    // const nonce = utils.keccak256('0x' + Date.now().toString(16)).substr(2)
+
+    // const payload: SnarkVotePackage = {
+    //     type: "snark-vote",
+    //     nonce,
+    //     votes
+    // }
+
+    // // TODO: ENCRYPT WITH voteEncryptionPublicKey
+    // const buff = getArrayBufferFromString(JSON.stringify(payload))
+    // return getBase64StringFromArrayBuffer(buff)
+    throw new Error("Unimplemented")
 }
 
-export function packagePollVote(param1: any, etc): String {
-    throw new Error("TODO: unimplemented")
+export function packagePollVote(votes: number[]): string {
+    if (!Array.isArray(votes)) throw new Error("Invalid votes")
+    const nonce = utils.keccak256('0x' + Date.now().toString(16)).substr(2)
+
+    const payload: PollVotePackage = {
+        type: "poll-vote",
+        nonce,
+        votes
+    }
+    const buff = getArrayBufferFromString(JSON.stringify(payload))
+    return getBase64StringFromArrayBuffer(buff)
 }
 
 
@@ -364,7 +390,7 @@ export type PollVoteEnvelope = {
     proof: string,  // Merkle Proof
     nonce: string,  // Unique number per vote attempt, so that replay attacks can't reuse this payload
     "vote-package": string,  // base64(json(votePackage))
-    signature: string
+    signature?: string
 }
 export type PollVotePackage = {
     type: "poll-vote", // One of: snark-vote, poll-vote, petition-sign

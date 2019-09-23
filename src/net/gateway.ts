@@ -10,6 +10,7 @@ import { providerFromUri } from "../util/providers"
 import GatewayInfo from "../wrappers/gateway-info"
 import { DVoteSupportedApi, WsGatewayMethod, fileApiMethods, voteApiMethods, censusApiMethods } from "../models/gateway"
 import { SIGNATURE_TIMESTAMP_TOLERANCE } from "../constants"
+import { signJsonBody, isSignatureValid } from "../util/json-sign"
 
 const uriPattern = /^([a-z][a-z0-9+.-]+):(\/\/([^@]+@)?([a-z0-9.\-_~]+)(:\d+)?)?((?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])*)*|(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+)*)?(\?(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?(\#(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?$/i
 
@@ -230,7 +231,7 @@ export class DVoteGateway {
             signature: ""
         }
         if (wallet) {
-            content.signature = await signRequestBody(requestBody, wallet)
+            content.signature = await signJsonBody(requestBody, wallet)
         }
 
         const reqPromise = new Promise((resolve, reject) => {
@@ -266,12 +267,12 @@ export class DVoteGateway {
             }
 
             if (msg.response) {
-                if (!this.isSignatureValid(msg.signature, msg.response)) {
+                if (!isSignatureValid(msg.signature, this.publicKey, msg.response)) {
                     throw new Error("The signature of the response does not match the expected one")
                 }
             }
             else if (msg.error) {
-                if (!this.isSignatureValid(msg.signature, msg.error)) {
+                if (!isSignatureValid(msg.signature, this.publicKey, msg.error)) {
                     throw new Error("The signature of the response does not match the expected one")
                 }
             }
@@ -319,29 +320,6 @@ export class DVoteGateway {
         // The request payload is handled in `sendMessage`
         request.resolve(response)
         delete request.resolve
-    }
-
-    /**
-     * 
-     * @param signature Hex encoded signature (created with the Ethereum prefix)
-     * @param responseBody JSON object of the `response` or `error` fields
-     */
-    private isSignatureValid(signature: string, responseBody: any): boolean {
-        if (!this.publicKey) return true
-        else if (!signature) return false
-
-        const gwPublicKey = this.publicKey.startsWith("0x") ? this.publicKey : "0x" + this.publicKey
-        const expectedAddress = utils.computeAddress(gwPublicKey)
-
-        responseBody = sortObjectFields(responseBody)
-        let strBody: string
-        if (typeof responseBody != "string") strBody = JSON.stringify(responseBody)
-        else strBody = responseBody
-
-        if (!signature.startsWith("0x")) signature = "0x" + signature
-        const actualAddress = utils.verifyMessage(strBody, signature)
-
-        return actualAddress && expectedAddress && (actualAddress == expectedAddress)
     }
 }
 
@@ -423,38 +401,4 @@ export class Web3Gateway {
     public getProvider() {
         return this.provider
     }
-}
-
-
-///////////////////////////////////////////////////////////////////////////////
-// INTERNAL HELPERS
-///////////////////////////////////////////////////////////////////////////////
-
-function signRequestBody(request: DvoteRequestParameters, walletOrSigner: Wallet | Signer): Promise<string> {
-    if (!walletOrSigner) throw new Error("Invalid wallet/signer")
-
-    request = sortObjectFields(request)
-    const msg = JSON.stringify(request)
-    return walletOrSigner.signMessage(msg)
-}
-
-function sortObjectFields(data: any) {
-    switch (typeof data) {
-        case "bigint":
-        case "boolean":
-        case "function":
-        case "number":
-        case "string":
-        case "symbol":
-        case "undefined":
-            return data
-    }
-
-    if (Array.isArray(data)) return data
-
-    // Ensure ordered key names
-    return Object.keys(data).sort().reduce((prev, cur) => {
-        prev[cur] = sortObjectFields(data[cur])
-        return prev
-    }, {})
 }
