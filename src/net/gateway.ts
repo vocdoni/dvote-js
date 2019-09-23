@@ -227,7 +227,7 @@ export class DVoteGateway {
         const content: MessageRequestContent = {
             id: requestId,
             request: requestBody,
-            signature: undefined
+            signature: ""
         }
         if (wallet) {
             content.signature = await signRequestBody(requestBody, wallet)

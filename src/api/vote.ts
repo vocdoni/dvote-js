@@ -4,9 +4,10 @@ import GatewayInfo from "../wrappers/gateway-info"
 import { DVoteGateway, Web3Gateway } from "../net/gateway"
 import { fetchFileString, addFile } from "./file"
 import { ProcessMetadata, checkValidProcessMetadata } from "../models/voting-process"
-import { HexString } from "../models/common"
+// import { HexString } from "../models/common"
 import ContentHashedURI from "../wrappers/content-hashed-uri"
 import { getEntityMetadata, updateEntity, getEntityId } from "./entity"
+import { VOCHAIN_BLOCK_TIME } from "../constants"
 
 /**
  * Use the given JSON metadata to create a new voting process from the Entity ID associated to the given wallet account.
@@ -118,12 +119,23 @@ export function getVotesMetadata(processIds: string[], gatewayInfo: GatewayInfo)
 }
 
 /**
+ * Retrieves the number of blocks on the Vochain
+ * @param gateway 
+ */
+export async function getBlockHeight(gateway: DVoteGateway): Promise<number> {
+
+
+    throw new Error("TODO: unimplemented")
+
+}
+
+/**
  * Submit the vote envelope to a Gateway
  * @param voteEnvelope
  * @param processId 
  * @param gateway 
  */
-export async function submitEnvelope(voteEnvelope: VoteEnvelopeSnark, processId: string, gateway: GatewayInfo): Promise<boolean> {
+export async function submitEnvelope(voteEnvelope: VoteEnvelopeSnark, processId: string, gateway: DVoteGateway): Promise<boolean> {
     //     throw new Error("unimplemented")
 
     //     if (voteEnvelope.type == "lrs-envelope") {
@@ -156,7 +168,7 @@ export async function submitEnvelope(voteEnvelope: VoteEnvelopeSnark, processId:
  * @param gateway 
  * @param nullifier
  */
-export async function getEnvelopeStatus(processId: string, gateway: GatewayInfo, nullifier: string): Promise<boolean> {
+export async function getEnvelopeStatus(processId: string, gateway: DVoteGateway, nullifier: string): Promise<boolean> {
     //     // Ensure we are connected to the right Gateway
     //     if (!this.gateway) this.gateway = new Gateway(gateway)
     //     else if (await this.gateway.getUri() != gateway) await this.gateway.connect(gateway)
@@ -174,9 +186,9 @@ export async function getEnvelopeStatus(processId: string, gateway: GatewayInfo,
  * Fetches the vote envelope for a given processId
  * @param processId 
  * @param gateway 
- * @param batchNumber
+ * @param nullifier
  */
-export async function getEnvelope(processId: string, gateway: GatewayInfo, batchNumber: number): Promise<string> {
+export async function getEnvelope(processId: string, gateway: DVoteGateway, nullifier: string): Promise<string> {
 
     throw new Error("TODO: unimplemented")
 
@@ -186,9 +198,37 @@ export async function getEnvelope(processId: string, gateway: GatewayInfo, batch
  * Fetches the number of vote envelopes for a given processId
  * @param processId 
  * @param gateway 
- * @param batchNumber
  */
-export async function getEnvelopeHeight(processId: string, gateway: GatewayInfo, batchNumber: number): Promise<string> {
+export async function getEnvelopeHeight(processId: string, gateway: DVoteGateway): Promise<number> {
+
+
+    throw new Error("TODO: unimplemented")
+
+}
+
+/**
+ * Retrieves the number of seconds left before the given process starts.
+ * Returns 0 if it already started
+ * @param processId 
+ * @param gateway 
+ */
+export async function getTimeUntilStart(processId: string, gateway: DVoteGateway): Promise<number> {
+
+    // use VOCHAIN_BLOCK_TIME
+
+    throw new Error("TODO: unimplemented")
+
+}
+
+/**
+ * Retrieves the number of seconds left before the given process ends.
+ * Returns 0 if it already ended
+ * @param processId 
+ * @param gateway 
+ */
+export async function getTimeUntilEnd(processId: string, gateway: DVoteGateway): Promise<number> {
+
+    // use VOCHAIN_BLOCK_TIME
 
     throw new Error("TODO: unimplemented")
 
@@ -198,9 +238,8 @@ export async function getEnvelopeHeight(processId: string, gateway: GatewayInfo,
  * Fetches the list pf processes for a given entity
  * @param processId 
  * @param gateway 
- * @param batchNumber
  */
-export async function getProcessList(processId: string, gateway: GatewayInfo, batchNumber: number): Promise<string> {
+export async function getProcessList(processId: string, gateway: GatewayInfo): Promise<string> {
 
     throw new Error("TODO: unimplemented")
 
