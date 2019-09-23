@@ -178,6 +178,21 @@ async function readEntity() {
     console.log("JSON METADATA\n", meta)
 }
 
+async function modifyEntityValues() {
+    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+
+    const myEntityAddress = await wallet.getAddress()
+    const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
+
+    console.log("UPDATING ENTITY ID:", getEntityId(myEntityAddress))
+    const meta = await getEntityMetadata(myEntityAddress, gwInfo)
+
+    meta.votingProcesses.active = []  // Discard voting processes
+    meta.votingProcesses.ended = []  // Discard voting processes
+    await updateEntity(myEntityAddress, meta, wallet, gwInfo)
+    console.log("updated")
+}
+
 async function gwCensusOperations() {
     // SIGNED
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
@@ -414,11 +429,12 @@ async function main() {
 
     // await fileUpload()
     // await registerEntity()
-    // await readEntity()
+    await modifyEntityValues()
+    await readEntity()
     // await gwCensusOperations()
     // await createVotingProcessManual()
     // await createVotingProcessFull()
-    await fetchMerkleProof()
+    // await fetchMerkleProof()
     // await checkSignature()
     // await gatewayHealthCheck()
     // await gatewayRawRequest()
