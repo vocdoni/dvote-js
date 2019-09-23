@@ -306,17 +306,24 @@ async function readVoteApi() {
     const dvoteGw = new DVoteGateway(gwInfo)
 
     const entityMeta = await getEntityMetadata(myEntityAddress, gwInfo)
-
     const processId = entityMeta.votingProcesses.active[0]
+    const processMeta = await getVoteMetadata(processId, gwInfo)
+
     console.log("Reading", processId)
 
     console.log("BLOCKCHAIN INFO:")
+    console.log("- Process startBlock:", processMeta.startBlock)
+    console.log("- Process endBlock:", processMeta.startBlock + processMeta.numberOfBlocks)
     console.log("- Block height:", await getBlockHeight(dvoteGw))
     console.log("- Envelope height:", await getEnvelopeHeight(processId, dvoteGw))
-    console.log("- Seconds until start:", await getTimeUntilStart(processId, 123, dvoteGw))
-    console.log("- Seconds until end:", await getTimeUntilEnd(processId, 123, 500, dvoteGw))
+    let remainingSeconds = await getTimeUntilStart(processId, processMeta.startBlock, dvoteGw)
+    console.log("- Seconds until start:", remainingSeconds == 0 ? "[already started]" : remainingSeconds)
+    remainingSeconds = await getTimeUntilEnd(processId, processMeta.startBlock, processMeta.numberOfBlocks, dvoteGw)
+    console.log("- Seconds until end:", remainingSeconds == 0 ? "[already ended]" : remainingSeconds)
     console.log("- Time at block 500:", await getTimeForBlock(processId, 500, dvoteGw))
     console.log("- Block on 10/10/2019:", await getBlockNumberForTime(processId, new Date(2019, 9, 10), dvoteGw))
+
+    dvoteGw.disconnect()
 }
 
 async function checkSignature() {
@@ -450,7 +457,7 @@ async function main() {
     // await fileUpload()
     // await registerEntity()
     // await modifyEntityValues()
-    await readEntity()
+    // await readEntity()
     // await gwCensusOperations()
     // await createVotingProcessManual()
     // await createVotingProcessFull()
