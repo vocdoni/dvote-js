@@ -123,11 +123,15 @@ export function getVotesMetadata(processIds: string[], gatewayInfo: GatewayInfo)
  * Retrieves the number of blocks on the Vochain
  * @param gateway 
  */
-export async function getBlockHeight(gateway: DVoteGateway): Promise<number> {
+export function getBlockHeight(gateway: DVoteGateway): Promise<number> {
+    if (!gateway || !(gateway instanceof DVoteGateway)) Promise.reject(new Error("Invalid Gateway object"))    
 
-
-    throw new Error("TODO: unimplemented")
-
+    return gateway.sendMessage({ method: "getBlockHeight"})
+    .then(response => {
+        if (!response.ok) throw new Error("The block height could not be retrieved")
+        if (!response.height || isNaN(response.height)) throw new Error("The gateway response is not correct")
+        return response.height
+    })
 }
 
 /**
@@ -200,11 +204,16 @@ export async function getEnvelope(processId: string, gateway: DVoteGateway, null
  * @param processId 
  * @param gateway 
  */
-export async function getEnvelopeHeight(processId: string, gateway: DVoteGateway): Promise<number> {
-
-
-    throw new Error("TODO: unimplemented")
-
+export function getEnvelopeHeight(processId: string, gateway: DVoteGateway): Promise<number> {
+    if (!gateway || !processId ) return Promise.reject(new Error("No process ID provided"))    
+    if (!(gateway instanceof DVoteGateway)) return Promise.reject(new Error("Invalid Gateway object"))  
+    
+    return gateway.sendMessage({ method: "getEnvelopeHeight", processId})
+    .then(response => {
+        if (!response.ok) throw new Error("The envelope height could not be retrieved")
+        if (!response.height || isNaN(response.height)) throw new Error("The gateway response is not correct")
+        return response.height
+    })
 }
 
 /**
