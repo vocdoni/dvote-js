@@ -17,7 +17,9 @@ import { checkValidProcessMetadata, ProcessMetadataTemplate } from "../../src/mo
 import VotingProcessBuilder, {
     DEFAULT_METADATA_CONTENT_HASHED_URI,
     DEFAULT_MERKLE_ROOT,
-    DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI
+    DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI,
+    DEFAULT_NUMBER_OF_BLOCKS,
+    DEFAULT_START_BLOCK
 } from "../builders/voting-process"
 import { BigNumber } from "ethers/utils"
 
@@ -59,7 +61,8 @@ describe("Voting Process", () => {
             expect(contractInstance.address).to.be.ok
             const customProcessId = await contractInstance.getNextProcessId(entityAccount.address)
 
-            await contractInstance.create(DEFAULT_METADATA_CONTENT_HASHED_URI, DEFAULT_MERKLE_ROOT, DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI)
+            await contractInstance.create(DEFAULT_METADATA_CONTENT_HASHED_URI, DEFAULT_MERKLE_ROOT, DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI,
+                DEFAULT_START_BLOCK, DEFAULT_NUMBER_OF_BLOCKS)
 
             // attach from a new object
 
@@ -73,6 +76,8 @@ describe("Voting Process", () => {
             expect(data.entityAddress).to.equal(entityAccount.address)
             expect(data.voteEncryptionPrivateKey).to.equal("")
             expect(data.canceled).to.equal(false)
+            expect(data.startBlock.toNumber()).to.equal(DEFAULT_START_BLOCK)
+            expect(data.numberOfBlocks.toNumber()).to.equal(DEFAULT_NUMBER_OF_BLOCKS)
         })
 
         // it("Should compute process ID's in the same way as the on-chain version", async () => {
@@ -117,10 +122,12 @@ describe("Voting Process", () => {
             const metadata = "ipfs://yyyyyyyyyyyy,https://host/file!0987654321"
             const merkleRoot = "0x09876543210987654321"
             const merkleTree = "ipfs://zzzzzzzzzzz,https://host/file!1234567812345678"
+            const startBlock = 12341234
+            const numberOfBlocks = 500000
 
             processId = await contractInstance.getNextProcessId(entityAccount.address)
 
-            await contractInstance.create(metadata, merkleRoot, merkleTree)
+            await contractInstance.create(metadata, merkleRoot, merkleTree, startBlock, numberOfBlocks)
 
             const data = await contractInstance.get(processId)
             expect(data.entityAddress).to.equal(entityAccount.address)
@@ -129,6 +136,8 @@ describe("Voting Process", () => {
             expect(data.censusMerkleTree).to.equal(merkleTree)
             expect(data.voteEncryptionPrivateKey).to.equal("")
             expect(data.canceled).to.equal(false)
+            expect(data.startBlock.toNumber()).to.equal(startBlock)
+            expect(data.numberOfBlocks.toNumber()).to.equal(numberOfBlocks)
         })
 
         it("Should notify creation events", async () => {
@@ -138,7 +147,8 @@ describe("Voting Process", () => {
                 contractInstance.on("ProcessCreated", (entityAddress: string, processId: string) => {
                     resolve({ entityAddress, processId })
                 })
-                contractInstance.create(DEFAULT_METADATA_CONTENT_HASHED_URI, DEFAULT_MERKLE_ROOT, DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI)
+                contractInstance.create(DEFAULT_METADATA_CONTENT_HASHED_URI, DEFAULT_MERKLE_ROOT, DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI,
+                    DEFAULT_START_BLOCK, DEFAULT_NUMBER_OF_BLOCKS)
                     .catch(reject)
             })
 

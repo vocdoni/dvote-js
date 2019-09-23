@@ -9,6 +9,8 @@ import { getAccounts, TestAccount } from "../testing-eth-utils"
 export const DEFAULT_METADATA_CONTENT_HASHED_URI = "ipfs://1234,https://server/uri!0987654321"
 export const DEFAULT_MERKLE_ROOT = "0x123456789"
 export const DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI = "ipfs://1234,https://server/uri!1234567812345678"
+export const DEFAULT_START_BLOCK = 12341234
+export const DEFAULT_NUMBER_OF_BLOCKS = 500000
 
 // BUILDER
 export default class VotingProcessBuilder {
@@ -18,6 +20,8 @@ export default class VotingProcessBuilder {
     metadata: string = DEFAULT_METADATA_CONTENT_HASHED_URI
     merkleRoot: string = DEFAULT_MERKLE_ROOT
     merkleTree: string = DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI
+    startBlock: number = DEFAULT_START_BLOCK
+    numberOfBlocks: number = DEFAULT_NUMBER_OF_BLOCKS
     chainId: number = 0
 
     constructor() {
@@ -36,7 +40,8 @@ export default class VotingProcessBuilder {
             let processId = await contractInstance.getProcessId(this.entityAccount.address, i)
             processIds.push(processId)
 
-            await contractInstance.create(this.metadata, this.merkleRoot, this.merkleTree)
+            await contractInstance.create(this.metadata, this.merkleRoot, this.merkleTree,
+                this.startBlock, this.numberOfBlocks)
         }
 
         return contractInstance
