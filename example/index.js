@@ -20,7 +20,7 @@ const {
 } = Contracts
 
 const { getEntityId, getEntityMetadata, updateEntity } = Entity
-const { getRoot, addCensus, addClaim, addClaimBulk, digestHexClaim, generateCensusId, generateCensusIdSuffix, publishCensus, importRemote, generateProof, dump, dumpPlain } = Census
+const { getRoot, addCensus, addClaim, addClaimBulk, digestHexClaim, getCensusSize, generateCensusId, generateCensusIdSuffix, publishCensus, importRemote, generateProof, dump, dumpPlain } = Census
 const { DVoteGateway, Web3Gateway } = Gateway
 const { getDefaultGateways, getRandomGatewayInfo } = Bootnodes
 const { addFile, fetchFileString } = File
@@ -314,6 +314,7 @@ async function readVoteApi() {
     console.log("BLOCKCHAIN INFO:")
     console.log("- Process startBlock:", processMeta.startBlock)
     console.log("- Process endBlock:", processMeta.startBlock + processMeta.numberOfBlocks)
+    console.log("- Census size:", await getCensusSize(processMeta.census.merkleRoot, dvoteGw))
     console.log("- Block height:", await getBlockHeight(dvoteGw))
     console.log("- Envelope height:", await getEnvelopeHeight(processId, dvoteGw))
     let remainingSeconds = await getTimeUntilStart(processId, processMeta.startBlock, dvoteGw)

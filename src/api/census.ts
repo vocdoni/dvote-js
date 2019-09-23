@@ -82,7 +82,7 @@ export async function addCensus(censusName: string, managerPublicKeys: string[],
  * 
  * @param censusId Full Census ID containing the Entity ID and the hash of the original name
  * @param claimData A stirng containing the digest of the Public Key (see `digestHexClaim()`)
- * @param gateway A DVoteGateway instance already connected to a remote Gateway
+ * @param gateway A DVoteGateway instance pointing to a remote Gateway
  * @param walletOrSigner 
  * @returns Promise resolving with the new merkleRoot
  */
@@ -102,7 +102,7 @@ export function addClaim(censusId: string, claimData: string, gateway: DVoteGate
  * 
  * @param censusId Full Census ID containing the Entity ID and the hash of the original name
  * @param claimsData A stirng containing the digest of the users' Public Keys (see `digestHexClaim()`)
- * @param gateway A DVoteGateway instance already connected to a remote Gateway
+ * @param gateway A DVoteGateway instance pointing to a remote Gateway
  * @param walletOrSigner 
  * @returns Promise resolving with the new merkleRoot
  */
@@ -121,7 +121,7 @@ export async function addClaimBulk(censusId: string, claimsData: string[], gatew
 /**
  * Asks the Gateway to fetch 
  * @param censusId The full Census ID to fetch from the Gateway
- * @param gateway A DVoteGateway instance already connected to a remote Gateway
+ * @param gateway A DVoteGateway instance pointing to a remote Gateway
  * @returns Promise resolving with the merkleRoot
  */
 export function getRoot(censusId: string, gateway: DVoteGateway): Promise<string> {
@@ -133,11 +133,25 @@ export function getRoot(censusId: string, gateway: DVoteGateway): Promise<string
     })
 }
 
+/**
+ * Get the number of people in the census with the given Merkle Root Hash
+ * @param censusMerkleRootHash The Merkle Root of the census to fetch from the Gateway
+ * @param dvoteGw A DVoteGateway instance pointing to a remote Gateway
+ * @returns Promise resolving with the census size
+ */
+export function getCensusSize(censusMerkleRootHash: string, dvoteGw: DVoteGateway): Promise<string> {
+    if (!censusMerkleRootHash || !dvoteGw) throw new Error("Invalid parameters")
+
+    return dvoteGw.sendMessage({ method: "getSize", censusId: censusMerkleRootHash }).then(response => {
+        if (isNaN(response.size)) throw new Error("The census size could not be retrieved")
+        return response.size
+    })
+}
 
 /** Dumps the entire content of the census as an array of hexStrings rady to be imported to another census service 
  *  
  * @param censusId Full Census ID containing the Entity ID and the hash of the original name
- * @param gateway A DVoteGateway instance already connected to a remote Gateway
+ * @param gateway A DVoteGateway instance pointing to a remote Gateway
  * @param walletOrSigner 
  * @returns Promise resolving with the a hex array dump of the census claims
 */
@@ -154,7 +168,7 @@ export function dump(censusId: string, gateway: DVoteGateway, walletOrSigner: Wa
 /** Dumps the contents of a census in raw string format. Not valid to use with `importDump`
  *  
  * @param censusId Full Census ID containing the Entity ID and the hash of the original name
- * @param gateway A DVoteGateway instance already connected to a remote Gateway
+ * @param gateway A DVoteGateway instance pointing to a remote Gateway
  * @param walletOrSigner 
  * @returns Promise resolving with the a raw string dump of the census claims
 */
