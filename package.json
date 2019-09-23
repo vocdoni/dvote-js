@@ -25,7 +25,7 @@
     "axios": "^0.19.0",
     "buffer": "^5.2.1",
     "circomlib": "0.0.14",
-    "dvote-solidity": "^0.3.2",
+    "dvote-solidity": "^0.4.0",
     "ethers": "^4.0.33",
     "iso-language-codes": "^1.0.3",
     "isomorphic-ws": "^4.0.1",

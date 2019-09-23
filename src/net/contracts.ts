@@ -96,12 +96,12 @@ export async function getEntityResolverInstance(params: AttachToContractParams =
 
     if (wallet) {
         if (!wallet.provider) wallet = wallet.connect(gwProvider)
-        return gw.attach(address, EntityContractDefinition.abi).connect(wallet) as (Contract & EntityResolverContractMethods)
+        return gw.attach(address, EntityContractDefinition.abi as any).connect(wallet) as (Contract & EntityResolverContractMethods)
     }
     else if (signer)
-        return gw.attach(address, EntityContractDefinition.abi).connect(signer) as (Contract & EntityResolverContractMethods)
+        return gw.attach(address, EntityContractDefinition.abi as any).connect(signer) as (Contract & EntityResolverContractMethods)
     else
-        return gw.attach(address, EntityContractDefinition.abi)
+        return gw.attach(address, EntityContractDefinition.abi as any)
 }
 
 /**
@@ -128,10 +128,10 @@ export async function getVotingProcessInstance(params: AttachToContractParams = 
 
     if (wallet) {
         if (!wallet.provider) wallet = wallet.connect(gwProvider)
-        return gw.attach(address, VotingContractDefinition.abi).connect(wallet) as (Contract & VotingProcessContractMethods)
+        return gw.attach(address, VotingContractDefinition.abi as any).connect(wallet) as (Contract & VotingProcessContractMethods)
     }
     else if (signer)
-        return gw.attach(address, VotingContractDefinition.abi).connect(signer) as (Contract & VotingProcessContractMethods)
+        return gw.attach(address, VotingContractDefinition.abi as any).connect(signer) as (Contract & VotingProcessContractMethods)
     else
-        return gw.attach(address, VotingContractDefinition.abi)
+        return gw.attach(address, VotingContractDefinition.abi as any)
 }
