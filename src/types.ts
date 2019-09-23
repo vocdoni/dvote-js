@@ -10,5 +10,6 @@ export {
     GatewayBootNodes
 } from "./models/gateway"
 export {
-    JsonFeed
+    JsonFeed,
+    JsonFeedPost
 } from "./models/json-feed"

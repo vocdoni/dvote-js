@@ -78,22 +78,24 @@ export interface JsonFeed {
     favicon?: string,
     expired?: boolean,
 
-    items: {
-        id?: string,
-        title: string,
-        summary?: string,
-        content_text?: string,
-        content_html?: string,
-        url?: string,
-        image?: string,
-        tags?: string[],
-        date_published?: string,
-        date_modified?: string,
-        author?: {
-            name?: string,
-            url?: string
-        }
-    }[]
+    items: JsonFeedPost[]
+}
+
+export interface JsonFeedPost {
+    id?: string,
+    title: string,
+    summary?: string,
+    content_text?: string,
+    content_html?: string,
+    url?: string,
+    image?: string,
+    tags?: string[],
+    date_published?: string,
+    date_modified?: string,
+    author?: {
+        name?: string,
+        url?: string
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
