@@ -310,13 +310,11 @@ async function readVoteApi() {
     const processId = entityMeta.votingProcesses.active[0]
     console.log("Reading", processId)
 
-    // const metadata = await getVoteMetadata(processId, gwInfo)
-
     console.log("BLOCKCHAIN INFO:")
     console.log("- Block height:", await getBlockHeight(dvoteGw))
     console.log("- Envelope height:", await getEnvelopeHeight(processId, dvoteGw))
-    console.log("- Seconds until start:", await getTimeUntilStart(processId, dvoteGw))
-    console.log("- Seconds until end:", await getTimeUntilEnd(processId, dvoteGw))
+    console.log("- Seconds until start:", await getTimeUntilStart(processId, 123, dvoteGw))
+    console.log("- Seconds until end:", await getTimeUntilEnd(processId, 123, 500, dvoteGw))
     console.log("- Time at block 500:", await getTimeForBlock(processId, 500, dvoteGw))
     console.log("- Block on 10/10/2019:", await getBlockNumberForTime(processId, new Date(2019, 9, 10), dvoteGw))
 }
@@ -452,7 +450,7 @@ async function main() {
     // await fileUpload()
     // await registerEntity()
     // await modifyEntityValues()
-    // await readEntity()
+    await readEntity()
     // await gwCensusOperations()
     // await createVotingProcessManual()
     // await createVotingProcessFull()
