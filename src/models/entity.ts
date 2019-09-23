@@ -36,6 +36,7 @@ export function checkValidEntityMetadata(entityMetadata: EntityMetadata) {
     if (!result || result.error) {
         throw new Error("Metadata validation error: " + result.error.toString())
     }
+    return result.value
 }
 
 // INTERMEDIATE SCHEMAS

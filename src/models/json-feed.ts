@@ -25,11 +25,12 @@ export function checkValidJsonFeed(jsonFeed: JsonFeed) {
     if (!result || result.error) {
         throw new Error("JSON Feed validation error: " + result.error.toString())
     }
+    return result.value
 }
 
 // MAIN ENTITY SCHEMA
 
-const jsonFeedSchema = Joi.object().keys({
+const jsonFeedSchema = Joi.object({
     version: Joi.string(),
     title: Joi.string(),
     home_page_url: Joi.string(),
@@ -40,7 +41,7 @@ const jsonFeedSchema = Joi.object().keys({
     expired: Joi.boolean(),
 
     items: Joi.array().items(
-        Joi.object().keys({
+        Joi.object({
             id: Joi.string(),
             title: Joi.string(),
             summary: Joi.string(),
@@ -51,13 +52,13 @@ const jsonFeedSchema = Joi.object().keys({
             tags: Joi.array().items(Joi.string()),
             date_published: Joi.string(),
             date_modified: Joi.string(),
-            author: Joi.object().keys({
+            author: Joi.object({
                 name: Joi.string(),
                 url: Joi.string()
             })
         })
     )
-}).unknown(true) // allow deprecated or unknown fields beyond the required ones
+}).unknown(true).options({ stripUnknown: true }) // allow deprecated or unknown fields beyond the required ones
 
 ///////////////////////////////////////////////////////////////////////////////
 // TYPE DEFINITIONS
