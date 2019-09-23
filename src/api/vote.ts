@@ -124,14 +124,14 @@ export function getVotesMetadata(processIds: string[], gatewayInfo: GatewayInfo)
  * @param gateway 
  */
 export function getBlockHeight(gateway: DVoteGateway): Promise<number> {
-    if (!gateway || !(gateway instanceof DVoteGateway)) Promise.reject(new Error("Invalid Gateway object"))    
+    if (!gateway || !(gateway instanceof DVoteGateway)) Promise.reject(new Error("Invalid Gateway object"))
 
-    return gateway.sendMessage({ method: "getBlockHeight"})
-    .then(response => {
-        if (!response.ok) throw new Error("The block height could not be retrieved")
-        if (!response.height || isNaN(response.height)) throw new Error("The gateway response is not correct")
-        return response.height
-    })
+    return gateway.sendMessage({ method: "getBlockHeight" })
+        .then(response => {
+            if (!response.ok) throw new Error("The block height could not be retrieved")
+            if (!response.height || isNaN(response.height)) throw new Error("The gateway response is not correct")
+            return response.height
+        })
 }
 
 /**
@@ -205,15 +205,15 @@ export async function getEnvelope(processId: string, gateway: DVoteGateway, null
  * @param gateway 
  */
 export function getEnvelopeHeight(processId: string, gateway: DVoteGateway): Promise<number> {
-    if (!gateway || !processId ) return Promise.reject(new Error("No process ID provided"))    
-    if (!(gateway instanceof DVoteGateway)) return Promise.reject(new Error("Invalid Gateway object"))  
-    
-    return gateway.sendMessage({ method: "getEnvelopeHeight", processId})
-    .then(response => {
-        if (!response.ok) throw new Error("The envelope height could not be retrieved")
-        if (!response.height || isNaN(response.height)) throw new Error("The gateway response is not correct")
-        return response.height
-    })
+    if (!gateway || !processId) return Promise.reject(new Error("No process ID provided"))
+    if (!(gateway instanceof DVoteGateway)) return Promise.reject(new Error("Invalid Gateway object"))
+
+    return gateway.sendMessage({ method: "getEnvelopeHeight", processId })
+        .then(response => {
+            if (!response.ok) throw new Error("The envelope height could not be retrieved")
+            if (!response.height || isNaN(response.height)) throw new Error("The gateway response is not correct")
+            return response.height
+        })
 }
 
 /**
@@ -251,6 +251,44 @@ export function getTimeUntilEnd(processId: string, startBlock: number, numberOfB
         const remainingBlocks = (startBlock + numberOfBlocks) - currentHeight
         if (remainingBlocks <= 0) return 0
         else return remainingBlocks * VOCHAIN_BLOCK_TIME
+    }).catch(err => {
+        console.error(err)
+        throw new Error("The process deadline could not be determined")
+    })
+}
+
+/**
+ * Returns the DateTime at which the given block number is expected to be mined
+ * @param processId ID of the voting process
+ * @param blockNumber Number of block to compute the date for
+ * @param gateway DVote Gateway instance
+ */
+export function getTimeForBlock(processId: string, blockNumber: number, dvoteGw: DVoteGateway): Promise<Date> {
+    if (!processId || isNaN(blockNumber) || !dvoteGw) throw new Error("Invalid parameters")
+
+    return getBlockHeight(dvoteGw).then(currentHeight => {
+        const blockDifference = blockNumber - currentHeight
+        const now = Date.now()
+        return new Date(now + (blockDifference * VOCHAIN_BLOCK_TIME * 1000))
+    }).catch(err => {
+        console.error(err)
+        throw new Error("The process deadline could not be determined")
+    })
+}
+
+/**
+ * Returns the block number that is expected to be mined at the given date and time
+ * @param processId ID of the voting process
+ * @param date The date and time to compute the block number for
+ * @param gateway DVote Gateway instance
+ */
+export function getBlockNumberForTime(processId: string, dateTime: Date, dvoteGw: DVoteGateway): Promise<number> {
+    if (!processId || !(dateTime instanceof Date) || !dvoteGw) throw new Error("Invalid parameters")
+
+    return getBlockHeight(dvoteGw).then(currentHeight => {
+        const blockDiff = Math.floor((dateTime.getTime() - Date.now()) / 1000 / VOCHAIN_BLOCK_TIME)
+
+        return Math.max(currentHeight + blockDiff, 0)
     }).catch(err => {
         console.error(err)
         throw new Error("The process deadline could not be determined")

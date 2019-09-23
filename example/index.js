@@ -24,7 +24,7 @@ const { getRoot, addCensus, addClaim, addClaimBulk, digestHexClaim, generateCens
 const { DVoteGateway, Web3Gateway } = Gateway
 const { getDefaultGateways, getRandomGatewayInfo } = Bootnodes
 const { addFile, fetchFileString } = File
-const { createVotingProcess, getVoteMetadata } = Vote
+const { createVotingProcess, getVoteMetadata, getBlockHeight, getEnvelopeHeight, getTimeUntilStart, getTimeUntilEnd, getTimeForBlock, getBlockNumberForTime } = Vote
 
 const { Wallet, providers, utils } = require("ethers")
 const { Buffer } = require("buffer/")
@@ -299,6 +299,28 @@ async function createVotingProcessFull() {
     console.log("PROCESS METADATA", metadata)
 }
 
+async function readVoteApi() {
+    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+    const myEntityAddress = await wallet.getAddress()
+    const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file", "vote"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
+    const dvoteGw = new DVoteGateway(gwInfo)
+
+    const entityMeta = await getEntityMetadata(myEntityAddress, gwInfo)
+
+    const processId = entityMeta.votingProcesses.active[0]
+    console.log("Reading", processId)
+
+    // const metadata = await getVoteMetadata(processId, gwInfo)
+
+    console.log("BLOCKCHAIN INFO:")
+    console.log("- Block height:", await getBlockHeight(dvoteGw))
+    console.log("- Envelope height:", await getEnvelopeHeight(processId, dvoteGw))
+    console.log("- Seconds until start:", await getTimeUntilStart(processId, dvoteGw))
+    console.log("- Seconds until end:", await getTimeUntilEnd(processId, dvoteGw))
+    console.log("- Time at block 500:", await getTimeForBlock(processId, 500, dvoteGw))
+    console.log("- Block on 10/10/2019:", await getBlockNumberForTime(processId, new Date(2019, 9, 10), dvoteGw))
+}
+
 async function checkSignature() {
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
     const message = "Hello dapp"
@@ -429,11 +451,12 @@ async function main() {
 
     // await fileUpload()
     // await registerEntity()
-    await modifyEntityValues()
-    await readEntity()
+    // await modifyEntityValues()
+    // await readEntity()
     // await gwCensusOperations()
     // await createVotingProcessManual()
     // await createVotingProcessFull()
+    await readVoteApi()
     // await fetchMerkleProof()
     // await checkSignature()
     // await gatewayHealthCheck()
