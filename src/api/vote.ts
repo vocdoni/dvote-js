@@ -136,7 +136,7 @@ export async function getBlockHeight(gateway: DVoteGateway): Promise<number> {
  * @param processId 
  * @param gateway 
  */
-export async function submitEnvelope(voteEnvelope: VoteEnvelopeSnark, processId: string, gateway: DVoteGateway): Promise<boolean> {
+export async function submitEnvelope(voteEnvelope: SnarkVoteEnvelope | PollVoteEnvelope, processId: string, gateway: DVoteGateway): Promise<boolean> {
     //     throw new Error("unimplemented")
 
     //     if (voteEnvelope.type == "lrs-envelope") {
@@ -210,29 +210,42 @@ export async function getEnvelopeHeight(processId: string, gateway: DVoteGateway
 /**
  * Retrieves the number of seconds left before the given process starts.
  * Returns 0 if it already started
- * @param processId 
- * @param gateway 
+ * @param processId ID of the voting process
+ * @param startBlock Tendermint block on which the process starts
+ * @param gateway DVote Gateway instance
  */
-export async function getTimeUntilStart(processId: string, gateway: DVoteGateway): Promise<number> {
+export function getTimeUntilStart(processId: string, startBlock: number, dvoteGw: DVoteGateway): Promise<number> {
+    if (!processId || !startBlock || !dvoteGw) throw new Error("Invalid parameters")
 
-    // use VOCHAIN_BLOCK_TIME
-
-    throw new Error("TODO: unimplemented")
-
+    return getBlockHeight(dvoteGw).then(currentHeight => {
+        const remainingBlocks = startBlock - currentHeight
+        if (remainingBlocks <= 0) return 0
+        else return remainingBlocks * VOCHAIN_BLOCK_TIME
+    }).catch(err => {
+        console.error(err)
+        throw new Error("The process start block could not be determined")
+    })
 }
 
 /**
  * Retrieves the number of seconds left before the given process ends.
  * Returns 0 if it already ended
- * @param processId 
- * @param gateway 
+ * @param processId ID of the voting process
+ * @param startBlock Tendermint block on which the process starts
+ * @param numberOfBlocks Number of Tendermint blocks that the voting process is active
+ * @param gateway DVote Gateway instance
  */
-export async function getTimeUntilEnd(processId: string, gateway: DVoteGateway): Promise<number> {
+export function getTimeUntilEnd(processId: string, startBlock: number, numberOfBlocks: number, dvoteGw: DVoteGateway): Promise<number> {
+    if (!processId || !startBlock || !numberOfBlocks || !dvoteGw) throw new Error("Invalid parameters")
 
-    // use VOCHAIN_BLOCK_TIME
-
-    throw new Error("TODO: unimplemented")
-
+    return getBlockHeight(dvoteGw).then(currentHeight => {
+        const remainingBlocks = (startBlock + numberOfBlocks) - currentHeight
+        if (remainingBlocks <= 0) return 0
+        else return remainingBlocks * VOCHAIN_BLOCK_TIME
+    }).catch(err => {
+        console.error(err)
+        throw new Error("The process deadline could not be determined")
+    })
 }
 
 /**
@@ -260,76 +273,54 @@ export async function getEnvelopeList(processId: string, gateway: GatewayInfo, b
 
 // COMPUTATION
 
-// export function packageVote(votePkg: VotePackageLRS | VotePackageSnark, relayPublicKey: string): VoteEnvelopeLRS | VoteEnvelopeSnark {
-//     if (votePkg.type == "lrs-package") {
-//         return this.packageLrsVote(votePkg, relayPublicKey)
-//     }
-//     else if (votePkg.type == "snark-package") {
-//         return this.packageSnarkVote(votePkg, relayPublicKey)
-//     }
-//     throw new Error("Unsupported vote type")
-// }
+// TODO: SEE https://vocdoni.io/docs/#/architecture/components/process?id=vote-envelope
 
-// // LRS OUTDATED FUNCTIONS
+export function packageSnarkEnvelope(param1: any, etc): SnarkVoteEnvelope {
 
-// /**
-//  * Compute the derived public key given a processId
-//  * @param publicKey 
-//  * @param processId 
-//  */
-// export function derivePublicKey(publicKey: string, processId: string): string {
-//     throw new Error("TODO: unimplemented")
-// }
-
-// /**
-//  * Compute the derived private key given a processId
-//  * @param privateKey 
-//  * @param processId 
-//  */
-// export function derivePrivateKey(privateKey: string, processId: string): string {
-//     throw new Error("TODO: unimplemented")
-// }
-
-// /**
-//  * Fetch the modulus group of the given process census using the given gateway
-//  * @param processId 
-//  * @param gateway 
-//  * @param publicKeyModulus
-//  */
-// export async function getVotingRing(processId: string, gateway: GatewayInfo, publicKeyModulus: number): Promise<boolean> {
-//     // Ensure we are connected to the right Gateway
-//     if (!this.gateway) this.gateway = new Gateway(gateway)
-//     else if (await this.gateway.getUri() != gateway) await this.gateway.connect(gateway)
-
-//     return this.gateway.request({
-//         method: "getVotingRing",
-//         processId,
-//         publicKeyModulus
-//     }).then(strData => JSON.parse(strData))
-// }
-
-// INTERNAL HELPERS
-
-function packageSnarkVote(votePkg: VotePackageSnark, relayPublicKey: string): VoteEnvelopeSnark {
-    throw new Error("unimplemented")
+    // TODO: use packageSnarkVote
+    throw new Error("TODO: unimplemented")
 }
 
-// function packageLrsVote(votePkg: VotePackageLRS, relayPublicKey: string): VoteEnvelopeLRS {
-//     throw new Error("unimplemented")
-// }
+export function packagePollEnvelope(param1: any, etc): PollVoteEnvelope {
+
+    // TODO: use packagePollVote
+    throw new Error("TODO: unimplemented")
+}
+
+export function packageSnarkVote(param1: any, etc): String {
+    throw new Error("TODO: unimplemented")
+}
+
+export function packagePollVote(param1: any, etc): String {
+    throw new Error("TODO: unimplemented")
+}
 
 
 // TYPES
 
-export type VotePackageSnark = {
-    type: "snark-package"
+// SNARK
+export type SnarkVoteEnvelope = {
+    processId: string,
+    proof: string,  // ZK Proof
+    nullifier: string,   // Hash of the private key
+    "vote-package": string  // base64(jsonString) is encrypted
 }
-// export type VotePackageLRS = {
-//     type: "lrs-package"
-// }
-export type VoteEnvelopeSnark = {
-    type: "snark-envelope"
+export type SnarkVotePackage = {
+    type: "snark-vote", // One of: snark-vote, poll-vote, petition-sign
+    nonce: string, // random number to prevent guessing the encrypted payload before the key is revealed
+    votes: number[]  // Direclty mapped to the `questions` field of the metadata
 }
-// export type VoteEnvelopeLRS = {
-//     type: "lrs-envelope"
-// }
+
+// POLL
+export type PollVoteEnvelope = {
+    processId: string,
+    proof: string,  // Merkle Proof
+    nonce: string,  // Unique number per vote attempt, so that replay attacks can't reuse this payload
+    "vote-package": string,  // base64(json(votePackage))
+    signature: string
+}
+export type PollVotePackage = {
+    type: "poll-vote", // One of: snark-vote, poll-vote, petition-sign
+    nonce: string, // (optional) random number to prevent guessing the encrypted payload before the key is revealed
+    votes: number[]  // Direclty mapped to the `questions` field of the metadata
+}
