@@ -217,7 +217,7 @@ export function generateProof(censusMerkleRoot: string, base64Claim: string, gat
         censusId: censusMerkleRoot,
         claimData: base64Claim,
     }).then(response => {
-        if (Array.isArray(response.siblings)) throw new Error("The Merkle Proof could not be fetched")
+        if (!Array.isArray(response.siblings)) throw new Error("The Merkle Proof could not be fetched")
         return response.siblings
     })
 }
