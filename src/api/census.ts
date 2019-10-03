@@ -209,7 +209,7 @@ export function publishCensus(censusId: string, gateway: DVoteGateway, walletOrS
  * @param base64Claim Base64-encoded claim of the leaf to request
  * @param gateway 
  */
-export function generateProof(censusMerkleRoot: string, base64Claim: string, gateway: DVoteGateway) {
+export function generateProof(censusMerkleRoot: string, base64Claim: string, gateway: DVoteGateway): Promise<string> {
     if (!censusMerkleRoot || !base64Claim || !gateway) throw new Error("Invalid parameters")
 
     return gateway.sendMessage({
@@ -217,14 +217,14 @@ export function generateProof(censusMerkleRoot: string, base64Claim: string, gat
         censusId: censusMerkleRoot,
         claimData: base64Claim,
     }).then(response => {
-        if (!Array.isArray(response.siblings)) throw new Error("The Merkle Proof could not be fetched")
+        if (typeof response.siblings != "string" || !response.siblings.length) throw new Error("The Merkle Proof could not be fetched")
         return response.siblings
     })
 }
 
-export function checkProof() {
-    throw new Error("TODO: Unimplemented")
-}
+// export function checkProof() {
+//     throw new Error("TODO: Unimplemented")
+// }
 
 ///////////////////////////////////////////////////////////////////////////////
 // INTERNAL HELPERS
