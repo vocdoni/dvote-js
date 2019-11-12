@@ -145,10 +145,13 @@ describe("Voting Process", () => {
         })
 
         it("Should notify creation events", async () => {
+            // Skip the event of the process created by beforeEach()
+            const prevProcessId = await contractInstance.getProcessId(entityAccount.address, 0)
             processId = await contractInstance.getNextProcessId(entityAccount.address)
 
             const result: { entityAddress: string, processId: string } = await new Promise((resolve, reject) => {
                 contractInstance.on("ProcessCreated", (entityAddress: string, processId: string) => {
+                    if (processId === prevProcessId) return // skip the previous process's event
                     resolve({ entityAddress, processId })
                 })
                 contractInstance.create(DEFAULT_PROCESS_TYPE, DEFAULT_METADATA_CONTENT_HASHED_URI, DEFAULT_MERKLE_ROOT, DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI,
