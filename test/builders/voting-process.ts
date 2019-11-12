@@ -6,6 +6,7 @@ import { getAccounts, TestAccount } from "../testing-eth-utils"
 // import { BigNumber } from "ethers/utils"
 
 // DEFAULT VALUES
+export const DEFAULT_PROCESS_TYPE = "snark-vote"
 export const DEFAULT_METADATA_CONTENT_HASHED_URI = "ipfs://1234,https://server/uri!0987654321"
 export const DEFAULT_MERKLE_ROOT = "0x123456789"
 export const DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI = "ipfs://1234,https://server/uri!1234567812345678"
@@ -40,7 +41,7 @@ export default class VotingProcessBuilder {
             let processId = await contractInstance.getProcessId(this.entityAccount.address, i)
             processIds.push(processId)
 
-            await contractInstance.create(this.metadata, this.merkleRoot, this.merkleTree,
+            await contractInstance.create(DEFAULT_PROCESS_TYPE, this.metadata, this.merkleRoot, this.merkleTree,
                 this.startBlock, this.numberOfBlocks)
         }
 

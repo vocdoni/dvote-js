@@ -268,7 +268,7 @@ async function createVotingProcessManual() {
     censusCuri.setHashFrom("")
 
     console.log("Creating process with parameters:", metaCuri.toString(), "0x0", censusCuri.toString())
-    const tx = await contractInstance.create(metaCuri.toString(), "0x0", censusCuri.toString())
+    const tx = await contractInstance.create("poll-vote", metaCuri.toString(), "0x0", censusCuri.toString())
     const result = await tx.wait()
 
     console.log("RESULT", result)
