@@ -181,9 +181,14 @@ export async function getEnvelopeStatus(processId: string, gateway: DVoteGateway
  * @param nullifier
  */
 export async function getEnvelope(processId: string, gateway: DVoteGateway, nullifier: string): Promise<string> {
+    if (!gateway || !processId) return Promise.reject(new Error("No process ID provided"))
+    if (!(gateway instanceof DVoteGateway)) return Promise.reject(new Error("Invalid Gateway object"))
 
-    throw new Error("TODO: unimplemented")
-
+    return gateway.sendMessage({ method: "getEnvelope", nullifier, processId })
+        .then(response => {
+            if (!response.ok || !response.payload) throw new Error("The envelope could not be retrieved")
+            return response.payload
+        })
 }
 
 /**
