@@ -42,20 +42,20 @@ const jsonFeedSchema = Joi.object({
 
     items: Joi.array().items(
         Joi.object({
-            id: Joi.string(),
+            id: Joi.string().optional(),
             title: Joi.string(),
             summary: Joi.string(),
             content_text: Joi.string(),
             content_html: Joi.string(),
-            url: Joi.string(),
+            url: Joi.string().optional(),
             image: Joi.string(),
-            tags: Joi.array().items(Joi.string()),
+            tags: Joi.array().items(Joi.string()).optional(),
             date_published: Joi.string(),
             date_modified: Joi.string(),
             author: Joi.object({
                 name: Joi.string(),
                 url: Joi.string()
-            })
+            }).optional()
         })
     )
 }).unknown(true).options({ stripUnknown: true }) // allow deprecated or unknown fields beyond the required ones
