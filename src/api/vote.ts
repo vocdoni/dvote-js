@@ -155,23 +155,23 @@ export async function submitEnvelope(voteEnvelope: SnarkVoteEnvelope | PollVoteE
 }
 
 /**
- * 
- * @param processId 
- * @param gateway 
+ * Get status of envelope (submitted or not)
+ * @param processId
  * @param nullifier
+ * @param gateway
  */
-export async function getEnvelopeStatus(processId: string, gateway: DVoteGateway, nullifier: string): Promise<boolean> {
-    //     // Ensure we are connected to the right Gateway
-    //     if (!this.gateway) this.gateway = new Gateway(gateway)
-    //     else if (await this.gateway.getUri() != gateway) await this.gateway.connect(gateway)
+export function getEnvelopeStatus(processId: string, nullifier: string, gateway: DVoteGateway): Promise<boolean> {
+    if (!processId || !nullifier) return Promise.reject(new Error("Invalid parameters"))
+    if (!(gateway instanceof DVoteGateway)) return Promise.reject(new Error("Invalid Gateway object"))
 
-    //     return this.gateway.request({
-    //         method: "getEnvelopeStatus",
-    //         processId,
-    //         nullifier
-    //     }).then(strData => JSON.parse(strData))
-
-    throw new Error("TODO: unimplemented")
+    return gateway.sendMessage({ method: "getEnvelopeStatus", processId, nullifier })
+    .then(response => {
+        if (!response.ok || !Boolean(response.registered)) throw new Error("Invalid response received from the gateway")
+        return response.registered
+    }).catch(err => {
+        console.error(err)
+        throw new Error("The envelope status could not be retrieved")
+    })
 }
 
 /**
