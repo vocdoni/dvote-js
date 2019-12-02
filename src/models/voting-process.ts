@@ -132,7 +132,7 @@ export interface ProcessMetadata {
 
 export const ProcessMetadataTemplate: ProcessMetadata = {
     version: "1.0",
-    type: "snark-vote",
+    type: "poll-vote",
     startBlock: 10000, // Block number on the votchain since the process will be open
     numberOfBlocks: 400,
     census: {

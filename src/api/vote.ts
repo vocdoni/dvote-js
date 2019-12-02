@@ -333,7 +333,7 @@ export async function packagePollEnvelope(votes: number[],
             proof: merkleProof,
             nonce,
             "vote-package": votePackage
-            // signature is still empty
+            // signature:  Must be unset because the body must be singed without the  signature
         }
 
         pkg.signature = await signJsonBody(pkg, walletOrSigner)
@@ -380,13 +380,14 @@ export function packagePollVote(votes: number[]): string {
 export type SnarkVoteEnvelope = {
     processId: string,
     proof: string,  // ZK Proof
+    nonce: string,  // Unique number per vote attempt, so that replay attacks can't reuse this payload
     nullifier: string,   // Hash of the private key
     "vote-package": string  // base64(jsonString) is encrypted
 }
 export type SnarkVotePackage = {
-    type: "snark-vote", // One of: snark-vote, poll-vote, petition-sign
+    type: "snark-vote",
     nonce: string, // random number to prevent guessing the encrypted payload before the key is revealed
-    votes: number[]  // Direclty mapped to the `questions` field of the metadata
+    votes: number[]  // Directly mapped to the `questions` field of the metadata
 }
 
 // POLL
@@ -395,10 +396,10 @@ export type PollVoteEnvelope = {
     proof: string,  // Merkle Proof
     nonce: string,  // Unique number per vote attempt, so that replay attacks can't reuse this payload
     "vote-package": string,  // base64(json(votePackage))
-    signature?: string
+    signature?: string //  Signature including all the rest of the envelope (processId, proof, nonce, vote-package)
 }
 export type PollVotePackage = {
-    type: "poll-vote", // One of: snark-vote, poll-vote, petition-sign
+    type: "poll-vote",
     nonce: string, // (optional) random number to prevent guessing the encrypted payload before the key is revealed
-    votes: number[]  // Direclty mapped to the `questions` field of the metadata
+    votes: number[]  // Directly mapped to the `questions` field of the metadata
 }
