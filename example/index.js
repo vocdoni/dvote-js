@@ -19,7 +19,7 @@ const {
     deployVotingProcessContract
 } = Contracts
 
-const { getEntityId, getEntityMetadataByAddressByAddress, updateEntity } = Entity
+const { getEntityId, getEntityMetadataByAddress, updateEntity } = Entity
 const { getRoot, addCensus, addClaim, addClaimBulk, digestHexClaim, getCensusSize, generateCensusId, generateCensusIdSuffix, publishCensus, importRemote, generateProof, dump, dumpPlain } = Census
 const { DVoteGateway, Web3Gateway } = Gateway
 const { getDefaultGateways, getRandomGatewayInfo } = Bootnodes
@@ -174,7 +174,7 @@ async function readEntity() {
 
     console.log("ENTITY ID:", getEntityId(myEntityAddress))
     console.log("GW:", GATEWAY_DVOTE_URI, GATEWAY_WEB3_URI)
-    const meta = await getEntityMetadataByAddressByAddress(myEntityAddress, gwInfo)
+    const meta = await getEntityMetadataByAddress(myEntityAddress, gwInfo)
     console.log("JSON METADATA\n", meta)
 }
 
@@ -185,7 +185,7 @@ async function modifyEntityValues() {
     const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
 
     console.log("UPDATING ENTITY ID:", getEntityId(myEntityAddress))
-    const meta = await getEntityMetadataByAddressByAddress(myEntityAddress, gwInfo)
+    const meta = await getEntityMetadataByAddress(myEntityAddress, gwInfo)
 
     meta.votingProcesses.active = []  // Discard voting processes
     meta.votingProcesses.ended = []  // Discard voting processes
@@ -280,7 +280,7 @@ async function createVotingProcessFull() {
     const myEntityAddress = await wallet.getAddress()
     const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
 
-    const entityMetaPre = await getEntityMetadataByAddressByAddress(myEntityAddress, gwInfo)
+    const entityMetaPre = await getEntityMetadataByAddress(myEntityAddress, gwInfo)
 
     const processMetadata = JSON.parse(JSON.stringify(ProcessMetadataTemplate)) // make a copy of the template
     processMetadata.census.merkleRoot = "0x0000000000000000000000000000000000000000000000000"
@@ -288,7 +288,7 @@ async function createVotingProcessFull() {
     processMetadata.details.entityId = getEntityId(myEntityAddress)
 
     const processId = await createVotingProcess(processMetadata, wallet, gwInfo)
-    const entityMetaPost = await getEntityMetadataByAddressByAddress(myEntityAddress, gwInfo)
+    const entityMetaPost = await getEntityMetadataByAddress(myEntityAddress, gwInfo)
 
     console.log("CREATED", processId)
     console.log("METADATA BEFORE:", entityMetaPre.votingProcesses.active)
@@ -305,7 +305,7 @@ async function useVoteApi() {
     const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file", "vote", "census"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
     const dvoteGw = new DVoteGateway(gwInfo)
 
-    const entityMeta = await getEntityMetadataByAddressByAddress(myEntityAddress, gwInfo)
+    const entityMeta = await getEntityMetadataByAddress(myEntityAddress, gwInfo)
     console.log("- Active processes:", entityMeta.votingProcesses.active)
     const processId = entityMeta.votingProcesses.active[entityMeta.votingProcesses.active.length - 1]
     // const processId = "0xf36b729d6226b8257922a60cea6ab80e47686c3f86edbd0749b1c3291e2651ed"
