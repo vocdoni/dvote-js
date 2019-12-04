@@ -24,15 +24,14 @@ export function checkValidMetadata(entityMetadata: EntityMetadata) {
 
 /**
  * Fetch the JSON metadata file for the given entityAddress using the given gateway
- * @param entityAddress 
+ * @param entityId 
  * @param gatewayInfo Data of the Vocdoni Gateway to fetch the data from
  */
-export async function getEntityMetadata(entityAddress: string, gatewayInfo: GatewayInfo): Promise<EntityMetadata> {
-    if (!entityAddress) throw new Error("Invalid entityAddress")
+export async function getEntityMetadata(entityId: string, gatewayInfo: GatewayInfo): Promise<EntityMetadata> {
+    if (!entityId) throw new Error("Invalid entityAddress")
     else if (!gatewayInfo || !(gatewayInfo instanceof GatewayInfo)) throw new Error("Invalid Gateway URI object")
 
     const web3 = new Web3Gateway(gatewayInfo)
-    const entityId = getEntityId(entityAddress)
     const resolverInstance = await getEntityResolverInstance({ provider: web3.getProvider() })
 
     const metadataContentUri = await resolverInstance.text(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI)
@@ -44,6 +43,19 @@ export async function getEntityMetadata(entityAddress: string, gatewayInfo: Gate
     gw.disconnect()
 
     return JSON.parse(jsonBuffer.toString())
+}
+
+/**
+ * Fetch the JSON metadata file for the given entityAddress using the given gateway
+ * @param entityAddress 
+ * @param gatewayInfo Data of the Vocdoni Gateway to fetch the data from
+ */
+export function getEntityMetadataByAddress(entityAddress: string, gatewayInfo: GatewayInfo): Promise<EntityMetadata> {
+    if (!entityAddress) throw new Error("Invalid entityAddress")
+    else if (!gatewayInfo || !(gatewayInfo instanceof GatewayInfo)) throw new Error("Invalid Gateway URI object")
+
+    const entityId = getEntityId(entityAddress)
+    return getEntityMetadata(entityId, gatewayInfo)
 }
 
 /**

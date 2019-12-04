@@ -72,7 +72,7 @@ const {
     // deployEntityResolverContract,
     // deployVotingProcessContract
 } = Contracts
-const { getEntityId, getEntityMetadata, updateEntity } = Entity
+const { getEntityId, getEntityMetadataByAddress, updateEntity } = Entity
 const { DVoteGateway, Web3Gateway } = Gateway
 const { getRandomGatewayInfo } = Bootnodes
 const { Wallet, providers } = require("ethers")
@@ -115,7 +115,7 @@ const {
     // deployEntityResolverContract,
     // deployVotingProcessContract
 } = Contracts
-const { getEntityId, getEntityMetadata, updateEntity } = Entity
+const { getEntityId, getEntityMetadataByAddress, updateEntity } = Entity
 const { addFile, fetchFileString } = File
 
 const { Wallet, providers } = require("ethers")
@@ -131,7 +131,7 @@ const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 const myEntityAddress = await wallet.getAddress()
 const gw = new GatewayInfo(GATEWAY_DVOTE_URI, GATEWAY_SUPPORTED_APIS, GATEWAY_WEB3_PROVIDER_URI)
 
-const meta = await getEntityMetadata(myEntityAddress, gw)
+const meta = await getEntityMetadataByAddress(myEntityAddress, gw)
 console.log("JSON METADATA", meta)
 ```
 
@@ -151,7 +151,7 @@ const {
     // deployEntityResolverContract,
     // deployVotingProcessContract
 } = Contracts
-const { getEntityId, getEntityMetadata, updateEntity } = Entity
+const { getEntityId, getEntityMetadataByAddress, updateEntity } = Entity
 const { addFile, fetchFileString } = File
 
 const { Wallet, providers } = require("ethers")

@@ -6,7 +6,7 @@ import { fetchFileString, addFile } from "./file"
 import { ProcessMetadata, checkValidProcessMetadata } from "../models/voting-process"
 // import { HexString } from "../models/common"
 import ContentHashedURI from "../wrappers/content-hashed-uri"
-import { getEntityMetadata, updateEntity, getEntityId } from "./entity"
+import { getEntityMetadataByAddress, updateEntity, getEntityId } from "./entity"
 import { VOCHAIN_BLOCK_TIME } from "../constants"
 import { signJsonBody } from "../util/json-sign"
 import { getArrayBufferFromString, getBase64StringFromArrayBuffer } from "../util/convert"
@@ -42,7 +42,7 @@ export async function createVotingProcess(processMetadata: ProcessMetadata,
         const address = await walletOrSigner.getAddress()
 
         // CHECK THAT THE ENTITY EXISTS
-        const entityMeta = await getEntityMetadata(address, gatewayInfo)
+        const entityMeta = await getEntityMetadataByAddress(address, gatewayInfo)
         if (!entityMeta) throw new Error("The entity is not yet registered on the blockchain")
         else if (getEntityId(address) != processMetadata.details.entityId)
             throw new Error("The EntityId on the metadata does not match the given wallet's address")
@@ -131,7 +131,7 @@ export function getBlockHeight(gateway: DVoteGateway): Promise<number> {
     return gateway.sendMessage({ method: "getBlockHeight" })
         .then(response => {
             if (!response.ok) throw new Error("The block height could not be retrieved")
-            if (!response.height || isNaN(response.height)) throw new Error("The gateway response is not correct")
+            if (!(typeof response.height === 'number') || response.height <0 ) throw new Error("The gateway response is not correct")
             return response.height
         })
 }
@@ -203,7 +203,7 @@ export function getEnvelopeHeight(processId: string, gateway: DVoteGateway): Pro
     return gateway.sendMessage({ method: "getEnvelopeHeight", processId })
         .then(response => {
             if (!response.ok) throw new Error("The envelope height could not be retrieved")
-            if (!response.height || isNaN(response.height)) throw new Error("The gateway response is not correct")
+            if (!(typeof response.height === 'number') || response.height <0 ) throw new Error("The gateway response is not correct")
             return response.height
         })
 }
