@@ -1,7 +1,7 @@
 const axios = require("axios")
 
 console.log("Reading .env (if present)...")
-require('dotenv').config()
+require('dotenv').config({ path: __dirname + "/.env" })
 
 
 const {
@@ -344,45 +344,49 @@ async function useVoteApi() {
 
 async function submitVoteBatch() {
     const fromAccountIdx = 0
-    const toAccountIdx = 10
+    const toAccountIdx = 3
 
     // const myEntityId = "0x180dd5765d9f7ecef810b565a2e5bd14a3ccd536c442b3de74867df552855e85"
     // const entityMeta = await getEntityMetadata(myEntityAddress, gwInfo)
     // const processId = entityMeta.votingProcesses.active[entityMeta.votingProcesses.active.length - 1]
-    
+
     const processId = "0x68c6dd5d0005f6b10296ea21dd7d7b28f3cef6c00f995d98cbca0852a3a80c3d"
+
+    const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file", "vote", "census"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
+    const dvoteGw = new DVoteGateway(gwInfo)
+
     const processMeta = await getVoteMetadata(processId, gwInfo)
     const censusMerkleRoot = processMeta.census.merkleRoot
 
     console.log("On Process", processId)
 
-    if (!require('fs').existsSync("./user-accounts.json")) throw new Error("File user-accounts.json does not exist")
-    var censusAccounts = require("./user-accounts.json")
+    // Load a set of registered accounts that can vote on the process
+    if (!require('fs').existsSync(__dirname + "/user-accounts.json")) throw new Error("File user-accounts.json does not exist")
+    var censusAccounts = require(__dirname + "/user-accounts.json")
     if (!Array.isArray(censusAccounts)) throw new Error("File user-accounts.json does not contain a valid array")
+    else if (toAccountIdx >= censusAccounts.length) throw new Error("'toAccountIdx' is greater than the size of the user accounts array")
 
-    // Use only a subset
-    censusAccounts = censusAccounts.slice(fromAccountIdx, toAccountIdx)
+    for (let idx = fromAccountIdx; idx < toAccountIdx; idx++) {
+        try {
+            const { mnemonic, publicKey, address } = censusAccounts[idx]
+            console.log("Using account", idx, publicKey)
 
-    const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file", "vote", "census"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
-    const dvoteGw = new DVoteGateway(gwInfo)
+            const wallet = Wallet.fromMnemonic(mnemonic, PATH)
+            // const myEntityAddress = await wallet.getAddress()
 
-    await Promise.all(censusAccounts.map(async account => {
-        const wallet = Wallet.fromMnemonic(account.mnemonic, PATH)
-        // const myEntityAddress = await wallet.getAddress()
+            const publicKeyHash = digestHexClaim(wallet["signingKey"].publicKey)
+            const merkleProof = await generateProof(censusMerkleRoot, publicKeyHash, dvoteGw)
+            const votes = [1]
+            const voteEnvelope = await packagePollEnvelope(votes, merkleProof, processId, wallet)
 
-        const publicKeyHash = digestHexClaim(wallet["signingKey"].publicKey)
-        const merkleProof = await generateProof(censusMerkleRoot, publicKeyHash, dvoteGw)
-        const votes = [1, 2, 1]
-        const voteEnvelope = await packagePollEnvelope(votes, merkleProof, processId, wallet)
+            console.log("- Submitting vote envelope")
+            await submitEnvelope(voteEnvelope, dvoteGw)
 
-        console.log("- Submitting vote envelope")
-        await submitEnvelope(voteEnvelope, dvoteGw)
-
-        console.log("- Envelope height is now:", await getEnvelopeHeight(processId, dvoteGw))
-    })).catch(err => {
-        console.error("Failed:", err)
-        dvoteGw.disconnect()
-    })
+            console.log("- Envelope height is now:", await getEnvelopeHeight(processId, dvoteGw))
+        } catch (err) {
+            console.error("- Failed:", err)
+        }
+    }
 
     dvoteGw.disconnect()
 }
@@ -517,12 +521,13 @@ async function main() {
 
     // await fileUpload()
     // await registerEntity()
-    await readEntity()
+    // await readEntity()
     // await modifyEntityValues()
     // await gwCensusOperations()
     // await createVotingProcessManual()
     // await createVotingProcessFull()
     // await useVoteApi()
+    await submitVoteBatch()
     // await fetchMerkleProof()
     // await checkSignature()
     // await gatewayHealthCheck()
