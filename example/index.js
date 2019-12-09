@@ -342,6 +342,51 @@ async function useVoteApi() {
     dvoteGw.disconnect()
 }
 
+async function submitVoteBatch() {
+    const fromAccountIdx = 0
+    const toAccountIdx = 10
+
+    // const myEntityId = "0x180dd5765d9f7ecef810b565a2e5bd14a3ccd536c442b3de74867df552855e85"
+    // const entityMeta = await getEntityMetadata(myEntityAddress, gwInfo)
+    // const processId = entityMeta.votingProcesses.active[entityMeta.votingProcesses.active.length - 1]
+    
+    const processId = "0x68c6dd5d0005f6b10296ea21dd7d7b28f3cef6c00f995d98cbca0852a3a80c3d"
+    const processMeta = await getVoteMetadata(processId, gwInfo)
+    const censusMerkleRoot = processMeta.census.merkleRoot
+
+    console.log("On Process", processId)
+
+    if (!require('fs').existsSync("./user-accounts.json")) throw new Error("File user-accounts.json does not exist")
+    var censusAccounts = require("./user-accounts.json")
+    if (!Array.isArray(censusAccounts)) throw new Error("File user-accounts.json does not contain a valid array")
+
+    // Use only a subset
+    censusAccounts = censusAccounts.slice(fromAccountIdx, toAccountIdx)
+
+    const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file", "vote", "census"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
+    const dvoteGw = new DVoteGateway(gwInfo)
+
+    await Promise.all(censusAccounts.map(async account => {
+        const wallet = Wallet.fromMnemonic(account.mnemonic, PATH)
+        // const myEntityAddress = await wallet.getAddress()
+
+        const publicKeyHash = digestHexClaim(wallet["signingKey"].publicKey)
+        const merkleProof = await generateProof(censusMerkleRoot, publicKeyHash, dvoteGw)
+        const votes = [1, 2, 1]
+        const voteEnvelope = await packagePollEnvelope(votes, merkleProof, processId, wallet)
+
+        console.log("- Submitting vote envelope")
+        await submitEnvelope(voteEnvelope, dvoteGw)
+
+        console.log("- Envelope height is now:", await getEnvelopeHeight(processId, dvoteGw))
+    })).catch(err => {
+        console.error("Failed:", err)
+        dvoteGw.disconnect()
+    })
+
+    dvoteGw.disconnect()
+}
+
 async function checkSignature() {
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
     const message = "Hello dapp"
