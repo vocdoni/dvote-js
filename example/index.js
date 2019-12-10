@@ -343,14 +343,14 @@ async function useVoteApi() {
 }
 
 async function submitVoteBatch() {
-    const fromAccountIdx = 0
-    const toAccountIdx = 3
+    const fromAccountIdx = 6
+    const toAccountIdx = 9
 
     // const myEntityId = "0x180dd5765d9f7ecef810b565a2e5bd14a3ccd536c442b3de74867df552855e85"
     // const entityMeta = await getEntityMetadata(myEntityAddress, gwInfo)
     // const processId = entityMeta.votingProcesses.active[entityMeta.votingProcesses.active.length - 1]
 
-    const processId = "0x68c6dd5d0005f6b10296ea21dd7d7b28f3cef6c00f995d98cbca0852a3a80c3d"
+    const processId = "0xfbfdb1795eadc8fb8b0249e8a597ab7cc4a6a2a5f3a87db454eadda818cba014"
 
     const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file", "vote", "census"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
     const dvoteGw = new DVoteGateway(gwInfo)
