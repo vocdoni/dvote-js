@@ -187,6 +187,7 @@ export async function getEnvelope(processId: string, gateway: DVoteGateway, null
     return gateway.sendMessage({ method: "getEnvelope", nullifier, processId })
         .then(response => {
             if (!response.ok || !response.payload) throw new Error("The envelope could not be retrieved")
+            // if (!(response.payload instanceof String)) throw new Error("Envlope content not correct")
             return response.payload
         })
 }
@@ -216,7 +217,7 @@ export function getEnvelopeHeight(processId: string, gateway: DVoteGateway): Pro
  * @param gateway DVote Gateway instance
  */
 export function getTimeUntilStart(processId: string, startBlock: number, dvoteGw: DVoteGateway): Promise<number> {
-    if (!processId || !startBlock || !dvoteGw) throw new Error("Invalid parameters")
+    if (!processId || isNaN(startBlock) || !dvoteGw) throw new Error("Invalid parameters")
 
     return getBlockHeight(dvoteGw).then(currentHeight => {
         const remainingBlocks = startBlock - currentHeight
@@ -237,7 +238,7 @@ export function getTimeUntilStart(processId: string, startBlock: number, dvoteGw
  * @param gateway DVote Gateway instance
  */
 export function getTimeUntilEnd(processId: string, startBlock: number, numberOfBlocks: number, dvoteGw: DVoteGateway): Promise<number> {
-    if (!processId || !startBlock || !numberOfBlocks || !dvoteGw) throw new Error("Invalid parameters")
+    if (!processId || isNaN(startBlock) || isNaN(numberOfBlocks) || !dvoteGw) throw new Error("Invalid parameters")
 
     return getBlockHeight(dvoteGw).then(currentHeight => {
         const remainingBlocks = (startBlock + numberOfBlocks) - currentHeight
@@ -304,10 +305,16 @@ export async function getProcessList(processId: string, gateway: GatewayInfo): P
  * @param gateway 
  * @param batchNumber
  */
-export async function getEnvelopeList(processId: string, gateway: GatewayInfo, batchNumber: number): Promise<string> {
-
-    throw new Error("TODO: unimplemented")
-
+export async function getEnvelopeList(processId: string,
+    from: number, listSize: number, dvoteGw: DVoteGateway): Promise<string[]> {
+    if (!processId || isNaN(from) ||  isNaN(listSize) || !dvoteGw) throw new Error("Invalid parameters")
+    
+    return dvoteGw.sendMessage({ method: "getEnvelopeList", processId, from, listSize })
+        .then(response => {
+            if (!response.ok) throw new Error("The envelope list could not be retrieved")
+            if (!Array.isArray(response.nullifiers)) throw new Error("The gateway response is not correct")
+            return response.nullifiers
+        })
 }
 
 // COMPUTATION

@@ -24,7 +24,7 @@ const { getRoot, addCensus, addClaim, addClaimBulk, digestHexClaim, getCensusSiz
 const { DVoteGateway, Web3Gateway } = Gateway
 const { getDefaultGateways, getRandomGatewayInfo } = Bootnodes
 const { addFile, fetchFileString } = File
-const { createVotingProcess, getVoteMetadata, packagePollEnvelope, submitEnvelope, getBlockHeight, getEnvelopeHeight, getTimeUntilStart, getTimeUntilEnd, getTimeForBlock, getBlockNumberForTime } = Vote
+const { createVotingProcess, getVoteMetadata, packagePollEnvelope, submitEnvelope, getBlockHeight, getEnvelopeHeight, getTimeUntilStart, getTimeUntilEnd, getTimeForBlock, getBlockNumberForTime, getEnvelopeList, getEnvelope } = Vote
 
 const { Wallet, providers, utils } = require("ethers")
 const { Buffer } = require("buffer/")
@@ -338,6 +338,11 @@ async function useVoteApi() {
 
     console.log("- Submitting vote envelope")
     await submitEnvelope(voteEnvelope, dvoteGw)
+
+    const envelopeList = await getEnvelopeList(processId, 0, 100, dvoteGw)
+    console.log("- Envelope list:", envelopeList);
+    if (envelopeList.length > 0)
+        console.log("- Retrieved Vote:",await getEnvelope(processId, dvoteGw, envelopeList[envelopeList.length-1]))
 
     dvoteGw.disconnect()
 }
