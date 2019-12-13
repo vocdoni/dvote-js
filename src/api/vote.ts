@@ -130,7 +130,6 @@ export function getBlockHeight(gateway: DVoteGateway): Promise<number> {
 
     return gateway.sendMessage({ method: "getBlockHeight" })
         .then(response => {
-            if (!response.ok) throw new Error("The block height could not be retrieved")
             if (!(typeof response.height === 'number') || response.height <0 ) throw new Error("The gateway response is not correct")
             return response.height
         })
@@ -166,7 +165,7 @@ export function getEnvelopeStatus(processId: string, nullifier: string, gateway:
 
     return gateway.sendMessage({ method: "getEnvelopeStatus", processId, nullifier })
     .then(response => {
-        if (!response.ok || !Boolean(response.registered)) throw new Error("Invalid response received from the gateway")
+        if (!Boolean(response.registered)) throw new Error("Invalid response received from the gateway")
         return response.registered
     }).catch(err => {
         console.error(err)
@@ -186,7 +185,7 @@ export async function getEnvelope(processId: string, gateway: DVoteGateway, null
 
     return gateway.sendMessage({ method: "getEnvelope", nullifier, processId })
         .then(response => {
-            if (!response.ok || !response.payload) throw new Error("The envelope could not be retrieved")
+            if (!response.payload) throw new Error("The envelope could not be retrieved")
             // if (!(response.payload instanceof String)) throw new Error("Envlope content not correct")
             return response.payload
         })
@@ -203,7 +202,6 @@ export function getEnvelopeHeight(processId: string, gateway: DVoteGateway): Pro
 
     return gateway.sendMessage({ method: "getEnvelopeHeight", processId })
         .then(response => {
-            if (!response.ok) throw new Error("The envelope height could not be retrieved")
             if (!(typeof response.height === 'number') || response.height <0 ) throw new Error("The gateway response is not correct")
             return response.height
         })
@@ -302,8 +300,10 @@ export async function getProcessList(processId: string, gateway: GatewayInfo): P
 /**
  * Fetches the list of envelopes for a given processId
  * @param processId 
+ * @param from
+ * @param listSize
  * @param gateway 
- * @param batchNumber
+ * @returns List of submited votes nullifiers
  */
 export async function getEnvelopeList(processId: string,
     from: number, listSize: number, dvoteGw: DVoteGateway): Promise<string[]> {
@@ -311,7 +311,6 @@ export async function getEnvelopeList(processId: string,
     
     return dvoteGw.sendMessage({ method: "getEnvelopeList", processId, from, listSize })
         .then(response => {
-            if (!response.ok) throw new Error("The envelope list could not be retrieved")
             if (!Array.isArray(response.nullifiers)) throw new Error("The gateway response is not correct")
             return response.nullifiers
         })
