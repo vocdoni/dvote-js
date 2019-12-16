@@ -1,6 +1,6 @@
 import ContentURI from "../wrappers/content-uri"
 import ContentHashedURI from "../wrappers/content-hashed-uri"
-import { DVoteGateway, DvoteRequestParameters } from "../net/gateway"
+import { DVoteGateway, IDvoteRequestParameters } from "../net/gateway"
 import { fetchIpfsHash } from "../net/ipfs"
 import { Buffer } from 'buffer'
 import axios from "axios"
@@ -167,7 +167,7 @@ export async function addFile(buffer: Uint8Array | string, name: string, walletO
     }
     else throw new Error("Invalid Gateway provided")
 
-    const requestBody: DvoteRequestParameters = {
+    const requestBody: IDvoteRequestParameters = {
         method: "addFile",
         type: "ipfs",
         name,

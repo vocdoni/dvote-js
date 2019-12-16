@@ -18,8 +18,13 @@ const uriPattern = /^([a-z][a-z0-9+.-]+):(\/\/([^@]+@)?([a-z0-9.\-_~]+)(:\d+)?)?
 // DVOTE GATEWAY
 ///////////////////////////////////////////////////////////////////////////////
 
+// Export the class typings as an interface
+type MyClassInterface<T> = { [P in keyof T]: T[P] }
+export interface IDVoteGateway extends MyClassInterface<DVoteGateway> { }
+export interface IWeb3Gateway extends MyClassInterface<Web3Gateway> { }
+
 /** Parameters sent by the function caller */
-export interface DvoteRequestParameters {
+export interface IDvoteRequestParameters {
     // Common
     method: WsGatewayMethod,
     timestamp?: number,
@@ -38,7 +43,7 @@ type WsRequest = {
 /** What is actually sent by sendMessage() to the Gateway */
 type MessageRequestContent = {
     id: string,
-    request: DvoteRequestParameters,
+    request: IDvoteRequestParameters,
     signature?: string
 }
 
@@ -203,7 +208,7 @@ export class DVoteGateway {
      * @param wallet (optional) The wallet to use for signing (default: null)
      * @param timeout (optional) Timeout in seconds to wait before failing (default: 50)
      */
-    public async sendMessage(requestBody: DvoteRequestParameters, wallet: Wallet | Signer = null, timeout: number = 50): Promise<any> {
+    public async sendMessage(requestBody: IDvoteRequestParameters, wallet: Wallet | Signer = null, timeout: number = 50): Promise<any> {
         if (typeof requestBody != "object") return Promise.reject(new Error("The payload should be a javascript object"))
         else if (typeof wallet != "object") return Promise.reject(new Error("The wallet is required"))
 

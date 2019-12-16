@@ -5,8 +5,11 @@ import {
     EntityResolver as EntityContractDefinition,
     VotingProcess as VotingContractDefinition,
     EntityResolverContractMethods,
-    VotingProcessContractMethods,
+    VotingProcessContractMethods
 } from "dvote-solidity"
+
+export interface IEntityResolverContract extends Contract, EntityResolverContractMethods { }
+export interface IVotingProcessContract extends Contract, VotingProcessContractMethods { }
 
 type DeployContractParams = { gateway?: string, provider?: providers.Provider, signer?: Signer; wallet?: Wallet; }
 type AttachToContractParams = { gateway?: string, provider?: providers.Provider, signer?: Signer; wallet?: Wallet; }
@@ -25,18 +28,18 @@ type AttachToContractParams = { gateway?: string, provider?: providers.Provider,
  * 
  * One of `gateway`/`provider` and `signer`/`wallet` is required
  */
-export async function deployEntityResolverContract(params: DeployContractParams = {}): Promise<Contract & EntityResolverContractMethods> {
+export async function deployEntityResolverContract(params: DeployContractParams = {}): Promise<IEntityResolverContract> {
     let { gateway, provider, signer, wallet } = params
 
     const gw = new Web3Gateway(gateway || provider)
     const instance = await gw.deploy<EntityResolverContractMethods>(EntityContractDefinition.abi, EntityContractDefinition.bytecode, { signer, wallet })
 
     if (signer) {
-        return instance.connect(signer) as Contract & EntityResolverContractMethods
+        return instance.connect(signer) as IEntityResolverContract
     }
     else { // if we reach this point, then wallet myst have been set
         if (!wallet.provider) wallet = wallet.connect(gw.getProvider())
-        return instance.connect(wallet) as Contract & EntityResolverContractMethods
+        return instance.connect(wallet) as IEntityResolverContract
     }
 }
 
@@ -50,7 +53,7 @@ export async function deployEntityResolverContract(params: DeployContractParams 
  * 
  * One of `gateway`/`provider` and `signer`/`wallet` is required
  */
-export async function deployVotingProcessContract(params: DeployContractParams = {}, deployArguments: [number]): Promise<Contract & VotingProcessContractMethods> {
+export async function deployVotingProcessContract(params: DeployContractParams = {}, deployArguments: [number]): Promise<IVotingProcessContract> {
     if (!deployArguments || !deployArguments.length) throw new Error("Invalid deploy arguments")
     else if (typeof deployArguments[0] != "number") throw new Error("Invalid Chain ID")
 
@@ -60,11 +63,11 @@ export async function deployVotingProcessContract(params: DeployContractParams =
     const instance = await gw.deploy<VotingProcessContractMethods>(VotingContractDefinition.abi, VotingContractDefinition.bytecode, { signer, wallet }, deployArguments)
 
     if (signer) {
-        return instance.connect(signer) as Contract & VotingProcessContractMethods
+        return instance.connect(signer) as IVotingProcessContract
     }
     else { // if we reach this point, then wallet myst have been set
         if (!wallet.provider) wallet = wallet.connect(gw.getProvider())
-        return instance.connect(wallet) as Contract & VotingProcessContractMethods
+        return instance.connect(wallet) as IVotingProcessContract
     }
 }
 
@@ -83,7 +86,7 @@ export async function deployVotingProcessContract(params: DeployContractParams =
  * 
  * One of `gateway`/`provider` and `signer`/`wallet` is required
  */
-export async function getEntityResolverInstance(params: AttachToContractParams = {}, address: string = null): Promise<(Contract & EntityResolverContractMethods)> {
+export async function getEntityResolverInstance(params: AttachToContractParams = {}, address: string = null): Promise<(IEntityResolverContract)> {
     let { gateway, provider, signer, wallet } = params
 
     const gw = new Web3Gateway(gateway || provider)
@@ -96,10 +99,10 @@ export async function getEntityResolverInstance(params: AttachToContractParams =
 
     if (wallet) {
         if (!wallet.provider) wallet = wallet.connect(gwProvider)
-        return gw.attach(address, EntityContractDefinition.abi as any).connect(wallet) as (Contract & EntityResolverContractMethods)
+        return gw.attach(address, EntityContractDefinition.abi as any).connect(wallet) as (IEntityResolverContract)
     }
     else if (signer)
-        return gw.attach(address, EntityContractDefinition.abi as any).connect(signer) as (Contract & EntityResolverContractMethods)
+        return gw.attach(address, EntityContractDefinition.abi as any).connect(signer) as (IEntityResolverContract)
     else
         return gw.attach(address, EntityContractDefinition.abi as any)
 }
@@ -115,7 +118,7 @@ export async function getEntityResolverInstance(params: AttachToContractParams =
  * 
  * One of `gateway`/`provider` and `signer`/`wallet` is required
  */
-export async function getVotingProcessInstance(params: AttachToContractParams = {}, address: string = null): Promise<(Contract & VotingProcessContractMethods)> {
+export async function getVotingProcessInstance(params: AttachToContractParams = {}, address: string = null): Promise<(IVotingProcessContract)> {
     let { gateway, provider, signer, wallet } = params
 
     const gw = new Web3Gateway(gateway || provider)
@@ -128,10 +131,10 @@ export async function getVotingProcessInstance(params: AttachToContractParams = 
 
     if (wallet) {
         if (!wallet.provider) wallet = wallet.connect(gwProvider)
-        return gw.attach(address, VotingContractDefinition.abi as any).connect(wallet) as (Contract & VotingProcessContractMethods)
+        return gw.attach(address, VotingContractDefinition.abi as any).connect(wallet) as (IVotingProcessContract)
     }
     else if (signer)
-        return gw.attach(address, VotingContractDefinition.abi as any).connect(signer) as (Contract & VotingProcessContractMethods)
+        return gw.attach(address, VotingContractDefinition.abi as any).connect(signer) as (IVotingProcessContract)
     else
         return gw.attach(address, VotingContractDefinition.abi as any)
 }

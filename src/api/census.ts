@@ -1,7 +1,7 @@
 import { Wallet, Signer } from "ethers"
-import { DVoteGateway, DvoteRequestParameters } from "../net/gateway"
+import { DVoteGateway, IDvoteRequestParameters } from "../net/gateway"
 import { sha3_256 } from 'js-sha3'
-import ContentURI from "../wrappers/content-uri"
+// import ContentURI from "../wrappers/content-uri"
 import { hashBuffer } from "../util/hashing"
 const { Buffer } = require("buffer/")
 import * as ArrayBuffToString from 'arraybuffer-to-string'
@@ -157,7 +157,7 @@ export function getCensusSize(censusMerkleRootHash: string, dvoteGw: DVoteGatewa
 */
 export function dump(censusId: string, gateway: DVoteGateway, walletOrSigner: Wallet | Signer, rootHash?: String): Promise<string[]> {
     if (!censusId || !gateway) throw new Error("Invalid parameters")
-    const msg: DvoteRequestParameters = (rootHash) ? { method: "dump", censusId, rootHash } : { method: "dump", censusId }
+    const msg: IDvoteRequestParameters = (rootHash) ? { method: "dump", censusId, rootHash } : { method: "dump", censusId }
 
     return gateway.sendMessage(msg, walletOrSigner).then(response => {
         if (!response.ok) throw new Error("The census merkle root could not be fetched")
@@ -174,7 +174,7 @@ export function dump(censusId: string, gateway: DVoteGateway, walletOrSigner: Wa
 */
 export function dumpPlain(censusId: string, gateway: DVoteGateway, walletOrSigner: Wallet | Signer, rootHash?: String): Promise<string[]> {
     if (!censusId || !gateway) throw new Error("Invalid parameters")
-    const msg: DvoteRequestParameters = (rootHash) ? { method: "dumpPlain", censusId, rootHash } : { method: "dumpPlain", censusId }
+    const msg: IDvoteRequestParameters = (rootHash) ? { method: "dumpPlain", censusId, rootHash } : { method: "dumpPlain", censusId }
 
     return gateway.sendMessage(msg, walletOrSigner).then(response => {
         if (!response.ok) throw new Error("The census merkle root could not be fetched")
