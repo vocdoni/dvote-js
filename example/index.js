@@ -561,13 +561,17 @@ async function ensResolver() {
 }
 
 async function main() {
+    // Ethereum
+
     // await deployEntityResolver()
     // await attachToEntityResolver()
     // await deployVotingProcess()
     // await attachToVotingProcess()
 
-    // await checkGatewayStatus()
-    await fileUpload()
+    // Vocdoni API's
+    
+    await checkGatewayStatus()
+    // await fileUpload()
     // await registerEntity()
     // await readEntity()
     // await modifyEntityValues()
@@ -578,8 +582,9 @@ async function main() {
     // await submitVoteBatch()
     // await fetchMerkleProof()
     // await checkSignature()
-    // await gatewayHealthCheck()
     // await gatewayRawRequest()
+
+    // await gatewayHealthCheck()
     // await ensResolver()
 }
 

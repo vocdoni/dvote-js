@@ -58,13 +58,6 @@ type GatewayResponse = {
     signature: string
 }
 
-type GatewayStatus = {
-    census: boolean,
-    vote: boolean,
-    file: boolean,
-    private: boolean
-}
-
 /**
  * This class provides access to Vocdoni Gateways sending JSON payloads over Web Sockets
  * intended to interact within voting processes
@@ -337,11 +330,14 @@ export class DVoteGateway {
      * Retrieves the status of the given gateway and returns an object indicating the services it provides.
      * If there is no connection open, the method returns null.
      */
-    public async getStatus(): Promise<GatewayStatus> {
+    public async getStatus(): Promise<DVoteSupportedApi[]> {
         if (!this.isConnected()) return null
 
         try {
-            return this.sendMessage({ method: "getGatewayInfo" })
+            const result = await this.sendMessage({ method: "getGatewayInfo" })
+            if (!result.ok) throw new Error("Not OK")
+            else if (!Array.isArray(result.apiList)) throw new Error("apiList is not an array")
+            return result.apiList
         }
         catch (err) {
             console.error(err)
