@@ -1,6 +1,5 @@
 import { Wallet, Signer, utils } from "ethers"
 import { getVotingProcessInstance } from "../net/contracts"
-import GatewayInfo from "../wrappers/gateway-info"
 import { DVoteGateway, Web3Gateway } from "../net/gateway"
 import { fetchFileString, addFile } from "./file"
 import { ProcessMetadata, checkValidProcessMetadata } from "../models/voting-process"
@@ -16,42 +15,38 @@ import { getArrayBufferFromString, getBase64StringFromArrayBuffer } from "../uti
  * The Census Merkle Root and Merkle Tree will be published to the blockchain, and the Metadata will be stored on IPFS
  * @param processMetadata JSON object containing the schema defined on  https://vocdoni.io/docs/#/architecture/components/process?id=process-metadata-json
  * @param walletOrSigner
- * @param gatewayInfo
+ * @param web3Gateway
+ * @param dboteGateway
  * @returns The process ID
  */
 export async function createVotingProcess(processMetadata: ProcessMetadata,
-    walletOrSigner: Wallet | Signer, gatewayInfo: GatewayInfo): Promise<string> {
+    walletOrSigner: Wallet | Signer, web3Gateway: Web3Gateway, dvoteGateway: DVoteGateway): Promise<string> {
     if (!processMetadata) throw new Error("Invalid process metadata")
     else if (!walletOrSigner) throw new Error("Invalid Wallet or Signer")
-    else if (!gatewayInfo || !(gatewayInfo instanceof GatewayInfo)) throw new Error("Invalid Gateway Info object")
+    else if (!(web3Gateway instanceof Web3Gateway) || !(dvoteGateway instanceof DVoteGateway)) throw new Error("Invalid Gateway object")
 
     // throw if not valid
     checkValidProcessMetadata(processMetadata)
     const merkleRoot = processMetadata.census.merkleRoot
     const merkleTree = new ContentHashedURI(processMetadata.census.merkleTree)
 
-    const gw = new DVoteGateway(gatewayInfo)
-    const web3 = new Web3Gateway(gatewayInfo)
-
     try {
         const processInstance = await getVotingProcessInstance({
-            provider: web3.getProvider(),
+            provider: web3Gateway.getProvider(),
             signer: walletOrSigner instanceof Signer ? walletOrSigner : undefined,
             wallet: walletOrSigner instanceof Wallet ? walletOrSigner : undefined
         })
         const address = await walletOrSigner.getAddress()
 
         // CHECK THAT THE ENTITY EXISTS
-        const entityMeta = await getEntityMetadataByAddress(address, gatewayInfo)
+        const entityMeta = await getEntityMetadataByAddress(address, web3Gateway, dvoteGateway)
         if (!entityMeta) throw new Error("The entity is not yet registered on the blockchain")
         else if (getEntityId(address) != processMetadata.details.entityId)
             throw new Error("The EntityId on the metadata does not match the given wallet's address")
 
         // UPLOAD THE METADATA
-        await gw.connect()
         const strJsonMeta = JSON.stringify(processMetadata)
-        const processMetaOrigin = await addFile(strJsonMeta, `merkle-root-${merkleRoot}.json`, walletOrSigner, gw)
-        gw.disconnect()
+        const processMetaOrigin = await addFile(strJsonMeta, `merkle-root-${merkleRoot}.json`, walletOrSigner, dvoteGateway)
         if (!processMetaOrigin) throw new Error("The process metadata could not be uploaded")
 
         // REGISTER THE NEW PROCESS
@@ -68,12 +63,11 @@ export async function createVotingProcess(processMetadata: ProcessMetadata,
         if (!entityMeta.votingProcesses) entityMeta.votingProcesses = { active: [], ended: [] }
         entityMeta.votingProcesses.active = [processId].concat(entityMeta.votingProcesses.active || [])
 
-        await updateEntity(address, entityMeta, walletOrSigner, gatewayInfo)
+        await updateEntity(address, entityMeta, walletOrSigner, web3Gateway, dvoteGateway)
 
         return processId
     }
     catch (err) {
-        if (gw) gw.disconnect()
         console.error(err)
         throw err
     }
@@ -84,22 +78,18 @@ export async function createVotingProcess(processMetadata: ProcessMetadata,
  * @param processId 
  * @param gateway
  */
-export async function getVoteMetadata(processId: string, gatewayInfo: GatewayInfo): Promise<ProcessMetadata> {
+export async function getVoteMetadata(processId: string, web3Gateway: Web3Gateway, dvoteGateway: DVoteGateway): Promise<ProcessMetadata> {
     if (!processId) throw new Error("Invalid processId")
-    else if (!gatewayInfo || !(gatewayInfo instanceof GatewayInfo)) throw new Error("Invalid Gateway Info object")
+    else if (!(web3Gateway instanceof Web3Gateway) || !(dvoteGateway instanceof DVoteGateway)) throw new Error("Invalid Gateway object")
 
-    const web3 = new Web3Gateway(gatewayInfo)
-    const processInstance = await getVotingProcessInstance({ provider: web3.getProvider() })
+    const processInstance = await getVotingProcessInstance({ provider: web3Gateway.getProvider() })
 
     try {
         const data = await processInstance.get(processId)
 
         if (!data.metadata) throw new Error("The given voting process has no metadata")
 
-        const gw = new DVoteGateway(gatewayInfo)
-        await gw.connect()
-        const jsonBuffer = await fetchFileString(data.metadata, gw)
-        gw.disconnect()
+        const jsonBuffer = await fetchFileString(data.metadata, dvoteGateway)
 
         return JSON.parse(jsonBuffer.toString())
     }
@@ -114,11 +104,11 @@ export async function getVoteMetadata(processId: string, gatewayInfo: GatewayInf
  * @param processIds
  * @param gateway
  */
-export function getVotesMetadata(processIds: string[], gatewayInfo: GatewayInfo): Promise<ProcessMetadata[]> {
+export function getVotesMetadata(processIds: string[], web3Gateway: Web3Gateway, dvoteGateway: DVoteGateway): Promise<ProcessMetadata[]> {
     if (!Array.isArray(processIds)) Promise.reject(new Error("Invalid processIds"))
-    else if (!gatewayInfo || !(gatewayInfo instanceof GatewayInfo)) Promise.reject(new Error("Invalid Gateway Info object"))
+    else if (!(web3Gateway instanceof Web3Gateway) || !(dvoteGateway instanceof DVoteGateway)) Promise.reject(new Error("Invalid Gateway object"))
 
-    return Promise.all(processIds.map(id => getVoteMetadata(id, gatewayInfo)))
+    return Promise.all(processIds.map(id => getVoteMetadata(id, web3Gateway, dvoteGateway)))
 }
 
 /**
@@ -130,7 +120,8 @@ export function getBlockHeight(gateway: DVoteGateway): Promise<number> {
 
     return gateway.sendMessage({ method: "getBlockHeight" })
         .then(response => {
-            if (!(typeof response.height === 'number') || response.height <0 ) throw new Error("The gateway response is not correct")
+            if (!response || !response["ok"]) throw new Error("Could not retrieve the number of blocks")
+            else if (!(typeof response.height === 'number') || response.height < 0) throw new Error("The gateway response is not correct")
             return response.height
         })
 }
@@ -141,7 +132,8 @@ export function getBlockHeight(gateway: DVoteGateway): Promise<number> {
  * @param gateway 
  */
 export async function submitEnvelope(voteEnvelope: SnarkVoteEnvelope | PollVoteEnvelope, gateway: DVoteGateway): Promise<void> {
-    if (!voteEnvelope || !gateway) throw new Error("Invalid parameters")
+    if (!voteEnvelope) throw new Error("Invalid parameters")
+    else if (!gateway || !(gateway instanceof DVoteGateway)) Promise.reject(new Error("Invalid Gateway object"))
 
     return gateway.sendMessage({
         method: "submitEnvelope",
@@ -164,13 +156,14 @@ export function getEnvelopeStatus(processId: string, nullifier: string, gateway:
     if (!(gateway instanceof DVoteGateway)) return Promise.reject(new Error("Invalid Gateway object"))
 
     return gateway.sendMessage({ method: "getEnvelopeStatus", processId, nullifier })
-    .then(response => {
-        if (!Boolean(response.registered)) throw new Error("Invalid response received from the gateway")
-        return response.registered
-    }).catch(err => {
-        console.error(err)
-        throw new Error("The envelope status could not be retrieved")
-    })
+        .then(response => {
+            if (!response || !response["ok"]) throw new Error("Could not check the envelope status")
+            else if (typeof response.registered != "boolean") throw new Error("Invalid response received from the gateway")
+            return response.registered
+        }).catch(err => {
+            console.error(err)
+            throw new Error("The envelope status could not be retrieved")
+        })
 }
 
 /**
@@ -185,7 +178,8 @@ export async function getEnvelope(processId: string, gateway: DVoteGateway, null
 
     return gateway.sendMessage({ method: "getEnvelope", nullifier, processId })
         .then(response => {
-            if (!response.payload) throw new Error("The envelope could not be retrieved")
+            if (!response || !response["ok"]) throw new Error("Could not get the envelope data")
+            else if (!response.payload) throw new Error("The envelope could not be retrieved")
             // if (!(response.payload instanceof String)) throw new Error("Envlope content not correct")
             return response.payload
         })
@@ -196,13 +190,14 @@ export async function getEnvelope(processId: string, gateway: DVoteGateway, null
  * @param processId 
  * @param gateway 
  */
-export function getEnvelopeHeight(processId: string, gateway: DVoteGateway): Promise<number> {
-    if (!gateway || !processId) return Promise.reject(new Error("No process ID provided"))
-    if (!(gateway instanceof DVoteGateway)) return Promise.reject(new Error("Invalid Gateway object"))
+export function getEnvelopeHeight(processId: string, dvoteGw: DVoteGateway): Promise<number> {
+    if (!dvoteGw || !processId) return Promise.reject(new Error("No process ID provided"))
+    else if (!(dvoteGw instanceof DVoteGateway)) return Promise.reject(new Error("Invalid Gateway object"))
 
-    return gateway.sendMessage({ method: "getEnvelopeHeight", processId })
+    return dvoteGw.sendMessage({ method: "getEnvelopeHeight", processId })
         .then(response => {
-            if (!(typeof response.height === 'number') || response.height <0 ) throw new Error("The gateway response is not correct")
+            if (!response || !response["ok"]) throw new Error("Could not get the envelope height")
+            else if (!(typeof response.height === 'number') || response.height < 0) throw new Error("The gateway response is not correct")
             return response.height
         })
 }
@@ -215,7 +210,8 @@ export function getEnvelopeHeight(processId: string, gateway: DVoteGateway): Pro
  * @param gateway DVote Gateway instance
  */
 export function getTimeUntilStart(processId: string, startBlock: number, dvoteGw: DVoteGateway): Promise<number> {
-    if (!processId || isNaN(startBlock) || !dvoteGw) throw new Error("Invalid parameters")
+    if (!processId || isNaN(startBlock)) throw new Error("Invalid parameters")
+    else if (!(dvoteGw instanceof DVoteGateway)) return Promise.reject(new Error("Invalid Gateway object"))
 
     return getBlockHeight(dvoteGw).then(currentHeight => {
         const remainingBlocks = startBlock - currentHeight
@@ -236,7 +232,8 @@ export function getTimeUntilStart(processId: string, startBlock: number, dvoteGw
  * @param gateway DVote Gateway instance
  */
 export function getTimeUntilEnd(processId: string, startBlock: number, numberOfBlocks: number, dvoteGw: DVoteGateway): Promise<number> {
-    if (!processId || isNaN(startBlock) || isNaN(numberOfBlocks) || !dvoteGw) throw new Error("Invalid parameters")
+    if (!processId || isNaN(startBlock) || isNaN(numberOfBlocks)) throw new Error("Invalid parameters")
+    else if (!(dvoteGw instanceof DVoteGateway)) return Promise.reject(new Error("Invalid Gateway object"))
 
     return getBlockHeight(dvoteGw).then(currentHeight => {
         const remainingBlocks = (startBlock + numberOfBlocks) - currentHeight
@@ -255,7 +252,8 @@ export function getTimeUntilEnd(processId: string, startBlock: number, numberOfB
  * @param gateway DVote Gateway instance
  */
 export function getTimeForBlock(processId: string, blockNumber: number, dvoteGw: DVoteGateway): Promise<Date> {
-    if (!processId || isNaN(blockNumber) || !dvoteGw) throw new Error("Invalid parameters")
+    if (!processId || isNaN(blockNumber)) throw new Error("Invalid parameters")
+    else if (!(dvoteGw instanceof DVoteGateway)) return Promise.reject(new Error("Invalid Gateway object"))
 
     return getBlockHeight(dvoteGw).then(currentHeight => {
         const blockDifference = blockNumber - currentHeight
@@ -274,7 +272,8 @@ export function getTimeForBlock(processId: string, blockNumber: number, dvoteGw:
  * @param gateway DVote Gateway instance
  */
 export function getBlockNumberForTime(processId: string, dateTime: Date, dvoteGw: DVoteGateway): Promise<number> {
-    if (!processId || !(dateTime instanceof Date) || !dvoteGw) throw new Error("Invalid parameters")
+    if (!processId || !(dateTime instanceof Date)) throw new Error("Invalid parameters")
+    else if (!(dvoteGw instanceof DVoteGateway)) return Promise.reject(new Error("Invalid Gateway object"))
 
     return getBlockHeight(dvoteGw).then(currentHeight => {
         const blockDiff = Math.floor((dateTime.getTime() - Date.now()) / 1000 / VOCHAIN_BLOCK_TIME)
@@ -291,7 +290,7 @@ export function getBlockNumberForTime(processId: string, dateTime: Date, dvoteGw
  * @param processId 
  * @param gateway 
  */
-export async function getProcessList(processId: string, gateway: GatewayInfo): Promise<string> {
+export async function getProcessList(processId: string, web3Gateway: Web3Gateway, dvoteGw: DVoteGateway): Promise<string> {
 
     throw new Error("TODO: unimplemented")
 
@@ -307,11 +306,12 @@ export async function getProcessList(processId: string, gateway: GatewayInfo): P
  */
 export async function getEnvelopeList(processId: string,
     from: number, listSize: number, dvoteGw: DVoteGateway): Promise<string[]> {
-    if (!processId || isNaN(from) ||  isNaN(listSize) || !dvoteGw) throw new Error("Invalid parameters")
-    
+    if (!processId || isNaN(from) || isNaN(listSize) || !dvoteGw) throw new Error("Invalid parameters")
+
     return dvoteGw.sendMessage({ method: "getEnvelopeList", processId, from, listSize })
         .then(response => {
-            if (!Array.isArray(response.nullifiers)) throw new Error("The gateway response is not correct")
+            if (!response || !response["ok"]) throw new Error("Could not get the envelope height")
+            else if (!Array.isArray(response.nullifiers)) throw new Error("The gateway response is not correct")
             return response.nullifiers
         })
 }

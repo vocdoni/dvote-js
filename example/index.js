@@ -121,28 +121,27 @@ async function attachToVotingProcess() {
 }
 
 async function fileUpload() {
-    var gw
+    var dvoteGw
     try {
         const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
-        const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
-        gw = new DVoteGateway(gwInfo)
-        await gw.connect()
+        dvoteGw = new DVoteGateway({ uri: GATEWAY_DVOTE_URI, supportedApis: ["file"], publicKey: GATEWAY_PUB_KEY })
+        await dvoteGw.connect()
 
         console.log("SIGNING FROM ADDRESS", wallet.address)
 
         const strData = fs.readFileSync(__dirname + "/mobile-org-web-action-example.html").toString()
         console.error("PUTTING STRING OF LENGTH: ", strData.length)
-        const origin = await addFile(Buffer.from(strData), "mobile-org-web-action-example.html", wallet, gw)
+        const origin = await addFile(Buffer.from(strData), "mobile-org-web-action-example.html", wallet, dvoteGw)
         console.log("DATA STORED ON:", origin)
 
         console.log("\nReading back", origin)
-        const data = await fetchFileString(origin, gw)
+        const data = await fetchFileString(origin, dvoteGw)
         console.log("DATA:", data)
 
-        gw.disconnect()
+        dvoteGw.disconnect()
     } catch (err) {
-        if (gw) gw.disconnect()
+        if (dvoteGw) dvoteGw.disconnect()
         console.error(err)
     }
 }
@@ -155,14 +154,20 @@ async function registerEntity() {
     const myEntityId = getEntityId(myEntityAddress)
 
     console.log("Entity ID", myEntityId)
-    const gw = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
+    const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
+    const web3Gateway = new Web3Gateway(gwInfo)
+    const dvoteGateway = new DVoteGateway(gwInfo)
+    await dvoteGateway.connect()
+
     const entityMetadata = Object.assign({}, EntityMetadataTemplate, { name: { default: "TEST ENTITY" } })
-    const contentUri = await updateEntity(myEntityAddress, entityMetadata, wallet, gw)
+    const contentUri = await updateEntity(myEntityAddress, entityMetadata, wallet, web3Gateway, dvoteGateway)
 
     // show stored values
     console.log("\nEntity registered!\n")
     console.log("The JSON metadata should become generally available in a few minutes")
     console.log(contentUri)
+
+    dvoteGateway.disconnect()
 }
 
 async function readEntity() {
@@ -171,11 +176,16 @@ async function readEntity() {
 
     const myEntityAddress = await wallet.getAddress()
     const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
+    const web3Gateway = new Web3Gateway(gwInfo)
+    const dvoteGateway = new DVoteGateway(gwInfo)
+    await dvoteGateway.connect()
 
     console.log("ENTITY ID:", getEntityId(myEntityAddress))
     console.log("GW:", GATEWAY_DVOTE_URI, GATEWAY_WEB3_URI)
-    const meta = await getEntityMetadataByAddress(myEntityAddress, gwInfo)
+    const meta = await getEntityMetadataByAddress(myEntityAddress, web3Gateway, dvoteGateway)
     console.log("JSON METADATA\n", meta)
+
+    dvoteGateway.disconnect()
 }
 
 async function modifyEntityValues() {
@@ -183,14 +193,19 @@ async function modifyEntityValues() {
 
     const myEntityAddress = await wallet.getAddress()
     const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
+    const web3Gateway = new Web3Gateway(gwInfo)
+    const dvoteGateway = new DVoteGateway(gwInfo)
+    await dvoteGateway.connect()
 
     console.log("UPDATING ENTITY ID:", getEntityId(myEntityAddress))
-    const meta = await getEntityMetadataByAddress(myEntityAddress, gwInfo)
+    const meta = await getEntityMetadataByAddress(myEntityAddress, web3Gateway, dvoteGateway)
 
     meta.votingProcesses.active = []  // Discard voting processes
     meta.votingProcesses.ended = []  // Discard voting processes
     await updateEntity(myEntityAddress, meta, wallet, gwInfo)
     console.log("updated")
+
+    dvoteGateway.disconnect()
 }
 
 async function gwCensusOperations() {
@@ -248,8 +263,7 @@ async function createVotingProcessManual() {
     const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI)
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
-    const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
-    gw = new DVoteGateway(gwInfo)
+    const gw = new DVoteGateway({ uri: GATEWAY_DVOTE_URI, supportedApis: ["file"], publicKey: GATEWAY_PUB_KEY })
     await gw.connect()
 
     console.log("Attaching to contract")
@@ -270,8 +284,8 @@ async function createVotingProcessManual() {
     console.log("Creating process with parameters:", metaCuri.toString(), "0x0", censusCuri.toString())
     const tx = await contractInstance.create("poll-vote", metaCuri.toString(), "0x0", censusCuri.toString())
     const result = await tx.wait()
-
     console.log("RESULT", result)
+
     gw.disconnect()
 }
 
@@ -279,37 +293,45 @@ async function createVotingProcessFull() {
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
     const myEntityAddress = await wallet.getAddress()
     const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
+    const web3Gateway = new Web3Gateway(gwInfo)
+    const dvoteGateway = new DVoteGateway(gwInfo)
+    await dvoteGateway.connect()
 
-    const entityMetaPre = await getEntityMetadataByAddress(myEntityAddress, gwInfo)
+    const entityMetaPre = await getEntityMetadataByAddress(myEntityAddress, web3Gateway, dvoteGateway)
 
     const processMetadata = JSON.parse(JSON.stringify(ProcessMetadataTemplate)) // make a copy of the template
     processMetadata.census.merkleRoot = "0x0000000000000000000000000000000000000000000000000"
     processMetadata.census.merkleTree = "ipfs://1234123412341234"
     processMetadata.details.entityId = getEntityId(myEntityAddress)
 
-    const processId = await createVotingProcess(processMetadata, wallet, gwInfo)
-    const entityMetaPost = await getEntityMetadataByAddress(myEntityAddress, gwInfo)
+    const processId = await createVotingProcess(processMetadata, wallet, web3Gateway, dvoteGateway)
+    const entityMetaPost = await getEntityMetadataByAddress(myEntityAddress, web3Gateway, dvoteGateway)
 
     console.log("CREATED", processId)
     console.log("METADATA BEFORE:", entityMetaPre.votingProcesses.active)
     console.log("METADATA AFTER:", entityMetaPost.votingProcesses.active)
 
     // READING BACK:
-    const metadata = await getVoteMetadata(processId, gwInfo)
+    const metadata = await getVoteMetadata(processId, web3Gateway, dvoteGateway)
     console.log("PROCESS METADATA", metadata)
+
+    dvoteGateway.disconnect()
 }
 
 async function useVoteApi() {
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
     const myEntityAddress = await wallet.getAddress()
-    const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file", "vote", "census"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
-    const dvoteGw = new DVoteGateway(gwInfo)
 
-    const entityMeta = await getEntityMetadataByAddress(myEntityAddress, gwInfo)
+    const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file", "vote", "census"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
+    const web3Gateway = new Web3Gateway(gwInfo)
+    const dvoteGw = new DVoteGateway(gwInfo)
+    await dvoteGw.connect()
+
+    const entityMeta = await getEntityMetadataByAddress(myEntityAddress, web3Gateway, dvoteGw)
     console.log("- Active processes:", entityMeta.votingProcesses.active)
     const processId = entityMeta.votingProcesses.active[entityMeta.votingProcesses.active.length - 1]
     // const processId = "0xf36b729d6226b8257922a60cea6ab80e47686c3f86edbd0749b1c3291e2651ed"
-    const processMeta = await getVoteMetadata(processId, gwInfo)
+    const processMeta = await getVoteMetadata(processId, web3Gateway, dvoteGw)
 
     const censusMerkleRoot = process.env.CENSUS_MERKLE_ROOT // TODO: use the one below
     // const censusMerkleRoot = processMeta.census.merkleRoot
@@ -342,7 +364,7 @@ async function useVoteApi() {
     const envelopeList = await getEnvelopeList(processId, 0, 100, dvoteGw)
     console.log("- Envelope list:", envelopeList);
     if (envelopeList.length > 0)
-        console.log("- Retrieved Vote:",await getEnvelope(processId, dvoteGw, envelopeList[envelopeList.length-1]))
+        console.log("- Retrieved Vote:", await getEnvelope(processId, dvoteGw, envelopeList[envelopeList.length - 1]))
 
     dvoteGw.disconnect()
 }
@@ -357,8 +379,8 @@ async function submitVoteBatch() {
 
     const processId = "0xfbfdb1795eadc8fb8b0249e8a597ab7cc4a6a2a5f3a87db454eadda818cba014"
 
-    const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file", "vote", "census"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
-    const dvoteGw = new DVoteGateway(gwInfo)
+    const dvoteGw = new DVoteGateway({ uri: GATEWAY_DVOTE_URI, supportedApis: ["file", "vote", "census"], publicKey: GATEWAY_PUB_KEY })
+    await dvoteGw.connect()
 
     const processMeta = await getVoteMetadata(processId, gwInfo)
     const censusMerkleRoot = processMeta.census.merkleRoot
@@ -440,13 +462,16 @@ async function checkSignature() {
 
 async function fetchMerkleProof() {
     const gws = await getRandomGatewayInfo("goerli")
-    gw = new DVoteGateway(gws[NETWORK_ID])
+    const dvoteGw = new DVoteGateway(gws[NETWORK_ID])
+    await dvoteGw.connect()
 
     console.log("FETCHING CLAIM", process.env.BASE64_CLAIM_DATA)
     console.log("on Merkle Tree", process.env.CENSUS_MERKLE_ROOT)
 
-    const siblings = await generateProof(process.env.CENSUS_MERKLE_ROOT, process.env.BASE64_CLAIM_DATA, gw)
+    const siblings = await generateProof(process.env.CENSUS_MERKLE_ROOT, process.env.BASE64_CLAIM_DATA, dvoteGw)
     console.log("SIBLINGS:", siblings)
+
+    dvoteGw.disconnect()
 }
 
 async function gatewayHealthCheck() {
@@ -524,7 +549,7 @@ async function main() {
     // await deployVotingProcess()
     // await attachToVotingProcess()
 
-    // await fileUpload()
+    await fileUpload()
     // await registerEntity()
     // await readEntity()
     // await modifyEntityValues()
@@ -532,7 +557,7 @@ async function main() {
     // await createVotingProcessManual()
     // await createVotingProcessFull()
     // await useVoteApi()
-    await submitVoteBatch()
+    // await submitVoteBatch()
     // await fetchMerkleProof()
     // await checkSignature()
     // await gatewayHealthCheck()

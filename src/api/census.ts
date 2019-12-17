@@ -6,8 +6,6 @@ import { hashBuffer } from "../util/hashing"
 const { Buffer } = require("buffer/")
 import * as ArrayBuffToString from 'arraybuffer-to-string'
 
-// import GatewayInfo from "../wrappers/gateway-info"
-
 /** 
  * A census ID consists of the Entity Address and the hash of the name.
  * This function returns the full Census ID
