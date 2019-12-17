@@ -120,6 +120,23 @@ async function attachToVotingProcess() {
     console.log("Value stored on the blockchain:", val)
 }
 
+async function checkGatewayStatus() {
+    var gw
+    try {
+        const gwInfo = await getRandomGatewayInfo("goerli")
+        gw = new DVoteGateway(gwInfo["goerli"])
+        await gw.connect()
+
+        const status = await gw.getStatus()
+        console.log("Gateway status", status)
+        gw.disconnect()
+    }
+    catch (err) {
+        if (gw) gw.disconnect()
+        console.error("The gateway can't be reached", err)
+    }
+}
+
 async function fileUpload() {
     var dvoteGw
     try {
@@ -549,6 +566,7 @@ async function main() {
     // await deployVotingProcess()
     // await attachToVotingProcess()
 
+    // await checkGatewayStatus()
     await fileUpload()
     // await registerEntity()
     // await readEntity()

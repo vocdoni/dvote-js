@@ -1,5 +1,5 @@
 import { Wallet, Signer } from "ethers"
-import { DVoteGateway, IDvoteRequestParameters } from "../net/gateway"
+import { IDVoteGateway, IDvoteRequestParameters } from "../net/gateway"
 import { sha3_256 } from 'js-sha3'
 // import ContentURI from "../wrappers/content-uri"
 import { hashBuffer } from "../util/hashing"
@@ -47,7 +47,7 @@ export function digestHexClaim(publicKey: string): string {
  * @param walletOrSigner 
  * @returns Promise resolving with the new merkleRoot
  */
-export async function addCensus(censusName: string, managerPublicKeys: string[], gateway: DVoteGateway, walletOrSigner: Wallet | Signer): Promise<{ censusId: string, merkleRoot: string }> {
+export async function addCensus(censusName: string, managerPublicKeys: string[], gateway: IDVoteGateway, walletOrSigner: Wallet | Signer): Promise<{ censusId: string, merkleRoot: string }> {
     if (!censusName || !managerPublicKeys || !managerPublicKeys.length || !gateway) throw new Error("Invalid parameters")
 
     const censusId = generateCensusId(censusName, await walletOrSigner.getAddress())
@@ -84,7 +84,7 @@ export async function addCensus(censusName: string, managerPublicKeys: string[],
  * @param walletOrSigner 
  * @returns Promise resolving with the new merkleRoot
  */
-export function addClaim(censusId: string, claimData: string, gateway: DVoteGateway, walletOrSigner: Wallet | Signer): Promise<string> {
+export function addClaim(censusId: string, claimData: string, gateway: IDVoteGateway, walletOrSigner: Wallet | Signer): Promise<string> {
     if (!censusId || !claimData || !claimData.length || !gateway) throw new Error("Invalid parameters")
 
     return gateway.sendMessage({ method: "addClaim", censusId, claimData }, walletOrSigner).then(response => {
@@ -104,7 +104,7 @@ export function addClaim(censusId: string, claimData: string, gateway: DVoteGate
  * @param walletOrSigner 
  * @returns Promise resolving with the new merkleRoot
  */
-export async function addClaimBulk(censusId: string, claimsData: string[], gateway: DVoteGateway, walletOrSigner: Wallet | Signer): Promise<{ merkleRoot: string, invalidClaims: any[] }> {
+export async function addClaimBulk(censusId: string, claimsData: string[], gateway: IDVoteGateway, walletOrSigner: Wallet | Signer): Promise<{ merkleRoot: string, invalidClaims: any[] }> {
     if (!censusId || !claimsData || !claimsData.length || !gateway) throw new Error("Invalid parameters")
 
     const response = await gateway.sendMessage({ method: "addClaimBulk", censusId, claimsData }, walletOrSigner)
@@ -122,7 +122,7 @@ export async function addClaimBulk(censusId: string, claimsData: string[], gatew
  * @param gateway A DVoteGateway instance pointing to a remote Gateway
  * @returns Promise resolving with the merkleRoot
  */
-export function getRoot(censusId: string, gateway: DVoteGateway): Promise<string> {
+export function getRoot(censusId: string, gateway: IDVoteGateway): Promise<string> {
     if (!censusId || !gateway) throw new Error("Invalid parameters")
 
     return gateway.sendMessage({ method: "getRoot", censusId }).then(response => {
@@ -137,7 +137,7 @@ export function getRoot(censusId: string, gateway: DVoteGateway): Promise<string
  * @param dvoteGw A DVoteGateway instance pointing to a remote Gateway
  * @returns Promise resolving with the census size
  */
-export function getCensusSize(censusMerkleRootHash: string, dvoteGw: DVoteGateway): Promise<string> {
+export function getCensusSize(censusMerkleRootHash: string, dvoteGw: IDVoteGateway): Promise<string> {
     if (!censusMerkleRootHash || !dvoteGw) throw new Error("Invalid parameters")
 
     return dvoteGw.sendMessage({ method: "getSize", censusId: censusMerkleRootHash }).then(response => {
@@ -153,7 +153,7 @@ export function getCensusSize(censusMerkleRootHash: string, dvoteGw: DVoteGatewa
  * @param walletOrSigner 
  * @returns Promise resolving with the a hex array dump of the census claims
 */
-export function dump(censusId: string, gateway: DVoteGateway, walletOrSigner: Wallet | Signer, rootHash?: String): Promise<string[]> {
+export function dump(censusId: string, gateway: IDVoteGateway, walletOrSigner: Wallet | Signer, rootHash?: String): Promise<string[]> {
     if (!censusId || !gateway) throw new Error("Invalid parameters")
     const msg: IDvoteRequestParameters = (rootHash) ? { method: "dump", censusId, rootHash } : { method: "dump", censusId }
 
@@ -170,7 +170,7 @@ export function dump(censusId: string, gateway: DVoteGateway, walletOrSigner: Wa
  * @param walletOrSigner 
  * @returns Promise resolving with the a raw string dump of the census claims
 */
-export function dumpPlain(censusId: string, gateway: DVoteGateway, walletOrSigner: Wallet | Signer, rootHash?: String): Promise<string[]> {
+export function dumpPlain(censusId: string, gateway: IDVoteGateway, walletOrSigner: Wallet | Signer, rootHash?: String): Promise<string[]> {
     if (!censusId || !gateway) throw new Error("Invalid parameters")
     const msg: IDvoteRequestParameters = (rootHash) ? { method: "dumpPlain", censusId, rootHash } : { method: "dumpPlain", censusId }
 
@@ -192,7 +192,7 @@ export function importRemote() {
 }
 
 /** Exports and publish the entire census on the storage of the backend (usually IPFS). Returns the URI of the set of claims */
-export function publishCensus(censusId: string, gateway: DVoteGateway, walletOrSigner: Wallet | Signer): Promise<string> {
+export function publishCensus(censusId: string, gateway: IDVoteGateway, walletOrSigner: Wallet | Signer): Promise<string> {
     if (!censusId || !gateway) throw new Error("Invalid parameters")
 
     return gateway.sendMessage({ method: "publish", censusId }, walletOrSigner).then(response => {
@@ -207,7 +207,7 @@ export function publishCensus(censusId: string, gateway: DVoteGateway, walletOrS
  * @param base64Claim Base64-encoded claim of the leaf to request
  * @param gateway 
  */
-export function generateProof(censusMerkleRoot: string, base64Claim: string, gateway: DVoteGateway): Promise<string> {
+export function generateProof(censusMerkleRoot: string, base64Claim: string, gateway: IDVoteGateway): Promise<string> {
     if (!censusMerkleRoot || !base64Claim || !gateway) throw new Error("Invalid parameters")
 
     return gateway.sendMessage({

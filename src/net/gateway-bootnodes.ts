@@ -9,7 +9,7 @@ import { vocdoniHomesteadEntityId, vocdoniGoerliEntityId } from "../constants"
 import { getEntityResolverInstance } from "../net/contracts"
 import { TextRecordKeys } from "../models/entity"
 import { GatewayBootNodes } from "../models/gateway"
-import { DVoteGateway, Web3Gateway } from "./gateway"
+import { DVoteGateway, Web3Gateway, IDVoteGateway, IWeb3Gateway } from "./gateway"
 import { getDefaultProvider, providers } from "ethers"
 
 type NetworkID = "homestead" | "goerli"
@@ -42,7 +42,7 @@ export function getDefaultBootnodeContentUri(networkId: NetworkID): Promise<Cont
  * Retrieve a list of gateways provided by default by Vocdoni.
  * The resulting set of `dvote[]` objects may need that you call `connect()` before you use them.
  */
-export function getDefaultGateways(networkId: NetworkID): Promise<{ [networkId: string]: { dvote: DVoteGateway[], web3: Web3Gateway[] } }> {
+export function getDefaultGateways(networkId: NetworkID): Promise<{ [networkId: string]: { dvote: IDVoteGateway[], web3: IWeb3Gateway[] } }> {
     return getDefaultBootnodeContentUri(networkId)
         .then(contentUri => getGatewaysFromBootNode(contentUri))
 }
@@ -51,11 +51,11 @@ export function getDefaultGateways(networkId: NetworkID): Promise<{ [networkId: 
  * Retrieve the list of gateways for a given BootNode(s) Content URI.
  * The resulting set of `dvote[]` objects may need that you call `connect()` before you use them.
  */
-export function getGatewaysFromBootNode(bootnodesContentUri: string | ContentURI): Promise<{ [networkId: string]: { dvote: DVoteGateway[], web3: Web3Gateway[] } }> {
+export function getGatewaysFromBootNode(bootnodesContentUri: string | ContentURI): Promise<{ [networkId: string]: { dvote: IDVoteGateway[], web3: IWeb3Gateway[] } }> {
     if (!bootnodesContentUri) throw new Error("Invalid Content URI")
 
     return fetchFromBootNode(bootnodesContentUri).then(data => {
-        const result: { [networkId: string]: { dvote: DVoteGateway[], web3: Web3Gateway[] } } = {}
+        const result: { [networkId: string]: { dvote: IDVoteGateway[], web3: IWeb3Gateway[] } } = {}
         Object.keys(data).forEach(networkId => {
             result[networkId] = {
                 dvote: (data[networkId].dvote || []).map(item => {

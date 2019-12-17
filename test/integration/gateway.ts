@@ -2,7 +2,7 @@ import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
 import { getAccounts, TestAccount } from "../testing-eth-utils"
-import { DVoteGateway, Web3Gateway } from "../../src/net/gateway"
+import { DVoteGateway, Web3Gateway, IDVoteGateway } from "../../src/net/gateway"
 import { addFile, fetchFileBytes } from "../../src/api/file"
 import { GatewayMock, InteractionMock, GatewayResponse } from "../mocks/gateway"
 import { Buffer } from "buffer"
@@ -354,7 +354,7 @@ describe("DVoteGateway", () => {
             })
 
             // Client
-            let gw: DVoteGateway
+            let gw: IDVoteGateway
             try {
                 const gatewayInfo = new GatewayInfo(gatewayUri, ["file"], "https://server/path", "")
                 gw = new DVoteGateway(gatewayInfo)

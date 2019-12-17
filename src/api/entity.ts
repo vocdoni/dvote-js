@@ -1,6 +1,6 @@
 import { utils, Wallet, Signer } from "ethers"
 import { checkValidEntityMetadata, EntityMetadata } from "../models/entity"
-import { DVoteGateway, Web3Gateway } from "../net/gateway"
+import { DVoteGateway, Web3Gateway, IDVoteGateway, IWeb3Gateway } from "../net/gateway"
 import { getEntityResolverInstance } from "../net/contracts"
 import { TextRecordKeys } from "../models/entity"
 import { fetchFileString, addFile } from "./file"
@@ -27,7 +27,7 @@ export function checkValidMetadata(entityMetadata: EntityMetadata) {
  * @param web3Gateway Web3Gateway instance already connected
  * @param dboteGateway DVoteGateway instance already connected to an active service
  */
-export async function getEntityMetadata(entityId: string, web3Gateway: Web3Gateway, dvoteGateway: DVoteGateway): Promise<EntityMetadata> {
+export async function getEntityMetadata(entityId: string, web3Gateway: IWeb3Gateway, dvoteGateway: IDVoteGateway): Promise<EntityMetadata> {
     if (!entityId) throw new Error("Invalid entityAddress")
     else if (!(web3Gateway instanceof Web3Gateway) || !(dvoteGateway instanceof DVoteGateway)) throw new Error("Invalid Gateway object")
 
@@ -47,7 +47,7 @@ export async function getEntityMetadata(entityId: string, web3Gateway: Web3Gatew
  * @param web3Gateway Web3Gateway instance already connected
  * @param dboteGateway DVoteGateway instance already connected to an active service
  */
-export function getEntityMetadataByAddress(entityAddress: string, web3Gateway: Web3Gateway, dvoteGateway: DVoteGateway): Promise<EntityMetadata> {
+export function getEntityMetadataByAddress(entityAddress: string, web3Gateway: IWeb3Gateway, dvoteGateway: IDVoteGateway): Promise<EntityMetadata> {
     if (!entityAddress) throw new Error("Invalid entityAddress")
 
     const entityId = getEntityId(entityAddress)
@@ -61,7 +61,7 @@ export function getEntityMetadataByAddress(entityAddress: string, web3Gateway: W
  * @return A content URI with the IPFS origin
  */
 export async function updateEntity(entityAddress: string, entityMetadata: EntityMetadata,
-    walletOrSigner: Wallet | Signer, web3Gateway: Web3Gateway, dvoteGw: DVoteGateway): Promise<string> {
+    walletOrSigner: Wallet | Signer, web3Gateway: IWeb3Gateway, dvoteGw: IDVoteGateway): Promise<string> {
     if (!entityAddress) throw new Error("Invalid entityAddress")
     else if (!entityMetadata) throw new Error("Invalid Entity metadata")
 

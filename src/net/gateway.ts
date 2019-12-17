@@ -19,9 +19,8 @@ const uriPattern = /^([a-z][a-z0-9+.-]+):(\/\/([^@]+@)?([a-z0-9.\-_~]+)(:\d+)?)?
 ///////////////////////////////////////////////////////////////////////////////
 
 // Export the class typings as an interface
-type MyClassInterface<T> = { [P in keyof T]: T[P] }
-export interface IDVoteGateway extends MyClassInterface<DVoteGateway> { }
-export interface IWeb3Gateway extends MyClassInterface<Web3Gateway> { }
+export type IDVoteGateway = InstanceType<typeof DVoteGateway>
+export type IWeb3Gateway = InstanceType<typeof Web3Gateway>
 
 /** Parameters sent by the function caller */
 export interface IDvoteRequestParameters {
@@ -57,6 +56,13 @@ type GatewayResponse = {
     },
     response?: any,
     signature: string
+}
+
+type GatewayStatus = {
+    census: boolean,
+    vote: boolean,
+    file: boolean,
+    private: boolean
 }
 
 /**
@@ -325,6 +331,22 @@ export class DVoteGateway {
         // The request payload is handled in `sendMessage`
         request.resolve(response)
         delete request.resolve
+    }
+
+    /**
+     * Retrieves the status of the given gateway and returns an object indicating the services it provides.
+     * If there is no connection open, the method returns null.
+     */
+    public async getStatus(): Promise<GatewayStatus> {
+        if (!this.isConnected()) return null
+
+        try {
+            return this.sendMessage({ method: "getGatewayInfo" })
+        }
+        catch (err) {
+            console.error(err)
+            throw new Error("The status of the gateway could not be retrieved")
+        }
     }
 }
 

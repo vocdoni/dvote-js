@@ -1,6 +1,6 @@
 import ContentURI from "../wrappers/content-uri"
 import ContentHashedURI from "../wrappers/content-hashed-uri"
-import { DVoteGateway, IDvoteRequestParameters } from "../net/gateway"
+import { DVoteGateway, IDVoteGateway, IDvoteRequestParameters } from "../net/gateway"
 import { fetchIpfsHash } from "../net/ipfs"
 import { Buffer } from 'buffer'
 import axios from "axios"
@@ -14,7 +14,7 @@ import { Wallet, Signer } from "ethers"
  * @param contentUri 
  * @param gateway (optional) A Vocdoni Gateway to use
  */
-export function fetchFileString(contentUri: ContentURI | ContentHashedURI | string, gateway: DVoteGateway = null): Promise<string> {
+export function fetchFileString(contentUri: ContentURI | ContentHashedURI | string, gateway: IDVoteGateway = null): Promise<string> {
     let cUri: ContentURI | ContentHashedURI
     if (typeof contentUri == "string") cUri = new ContentURI(contentUri)
     else cUri = contentUri
@@ -32,7 +32,7 @@ export function fetchFileString(contentUri: ContentURI | ContentHashedURI | stri
  * @param contentUri 
  * @param gateway (optional) A Vocdoni Gateway to use
  */
-export async function fetchFileBytes(contentUri: ContentURI | ContentHashedURI | string, gateway: DVoteGateway = null): Promise<Buffer> {
+export async function fetchFileBytes(contentUri: ContentURI | ContentHashedURI | string, gateway: IDVoteGateway = null): Promise<Buffer> {
     if (!contentUri) throw new Error("Invalid contentUri")
 
     let cUri: ContentHashedURI
@@ -137,7 +137,7 @@ export async function fetchFileBytes(contentUri: ContentURI | ContentHashedURI |
  * @param gateway A string with the Gateway URI or a DVoteGateway object, set with a URI and a public key
  * @return The Content URI friendly URI of the newly added file (ipfs://<hash>)
  */
-export async function addFile(buffer: Uint8Array | string, name: string, walletOrSigner: Wallet | Signer, gateway: DVoteGateway): Promise<string> {
+export async function addFile(buffer: Uint8Array | string, name: string, walletOrSigner: Wallet | Signer, gateway: IDVoteGateway): Promise<string> {
     if (!buffer) throw new Error("Empty payload")
     else if (!walletOrSigner) throw new Error("Wallet is required")
     else if (!(gateway instanceof DVoteGateway)) throw new Error("A gateway is required")

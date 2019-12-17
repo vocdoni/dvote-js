@@ -3,7 +3,8 @@ export type DVoteSupportedApi = "file" | "vote" | "census"
 export type FileApiMethod = "fetchFile" | "addFile" | "pinList" | "pinFile" | "unpinFile"
 export type VoteApiMethod = "submitEnvelope" | "getEnvelopeStatus" | "getEnvelope" | "getEnvelopeHeight" | "getProcessList" | "getEnvelopeList" | "getBlockHeight"
 export type CensusApiMethod = "addCensus" | "addClaim" | "addClaimBulk" | "getRoot" | "genProof" | "getSize" | "checkProof" | "dump" | "dumpPlain" | "importDump" | "publish" | "importRemote"
-export type WsGatewayMethod = FileApiMethod | VoteApiMethod | CensusApiMethod
+export type GatewayApiMethod = "getGatewayInfo"
+export type WsGatewayMethod = FileApiMethod | VoteApiMethod | CensusApiMethod | GatewayApiMethod
 
 export const fileApiMethods: FileApiMethod[] = ["fetchFile", "addFile", "pinList", "pinFile", "unpinFile"]
 export const voteApiMethods: VoteApiMethod[] = ["submitEnvelope", "getEnvelopeStatus", "getEnvelope", "getEnvelopeHeight", "getProcessList", "getEnvelopeList", "getBlockHeight"]

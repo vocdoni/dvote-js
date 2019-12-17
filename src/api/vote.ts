@@ -1,6 +1,6 @@
 import { Wallet, Signer, utils } from "ethers"
 import { getVotingProcessInstance } from "../net/contracts"
-import { DVoteGateway, Web3Gateway } from "../net/gateway"
+import { DVoteGateway, Web3Gateway, IDVoteGateway, IWeb3Gateway } from "../net/gateway"
 import { fetchFileString, addFile } from "./file"
 import { ProcessMetadata, checkValidProcessMetadata } from "../models/voting-process"
 // import { HexString } from "../models/common"
@@ -20,7 +20,7 @@ import { getArrayBufferFromString, getBase64StringFromArrayBuffer } from "../uti
  * @returns The process ID
  */
 export async function createVotingProcess(processMetadata: ProcessMetadata,
-    walletOrSigner: Wallet | Signer, web3Gateway: Web3Gateway, dvoteGateway: DVoteGateway): Promise<string> {
+    walletOrSigner: Wallet | Signer, web3Gateway: IWeb3Gateway, dvoteGateway: IDVoteGateway): Promise<string> {
     if (!processMetadata) throw new Error("Invalid process metadata")
     else if (!walletOrSigner) throw new Error("Invalid Wallet or Signer")
     else if (!(web3Gateway instanceof Web3Gateway) || !(dvoteGateway instanceof DVoteGateway)) throw new Error("Invalid Gateway object")
@@ -78,7 +78,7 @@ export async function createVotingProcess(processMetadata: ProcessMetadata,
  * @param processId 
  * @param gateway
  */
-export async function getVoteMetadata(processId: string, web3Gateway: Web3Gateway, dvoteGateway: DVoteGateway): Promise<ProcessMetadata> {
+export async function getVoteMetadata(processId: string, web3Gateway: IWeb3Gateway, dvoteGateway: IDVoteGateway): Promise<ProcessMetadata> {
     if (!processId) throw new Error("Invalid processId")
     else if (!(web3Gateway instanceof Web3Gateway) || !(dvoteGateway instanceof DVoteGateway)) throw new Error("Invalid Gateway object")
 
@@ -104,7 +104,7 @@ export async function getVoteMetadata(processId: string, web3Gateway: Web3Gatewa
  * @param processIds
  * @param gateway
  */
-export function getVotesMetadata(processIds: string[], web3Gateway: Web3Gateway, dvoteGateway: DVoteGateway): Promise<ProcessMetadata[]> {
+export function getVotesMetadata(processIds: string[], web3Gateway: IWeb3Gateway, dvoteGateway: IDVoteGateway): Promise<ProcessMetadata[]> {
     if (!Array.isArray(processIds)) Promise.reject(new Error("Invalid processIds"))
     else if (!(web3Gateway instanceof Web3Gateway) || !(dvoteGateway instanceof DVoteGateway)) Promise.reject(new Error("Invalid Gateway object"))
 
@@ -115,7 +115,7 @@ export function getVotesMetadata(processIds: string[], web3Gateway: Web3Gateway,
  * Retrieves the number of blocks on the Vochain
  * @param gateway 
  */
-export function getBlockHeight(gateway: DVoteGateway): Promise<number> {
+export function getBlockHeight(gateway: IDVoteGateway): Promise<number> {
     if (!gateway || !(gateway instanceof DVoteGateway)) Promise.reject(new Error("Invalid Gateway object"))
 
     return gateway.sendMessage({ method: "getBlockHeight" })
@@ -131,7 +131,7 @@ export function getBlockHeight(gateway: DVoteGateway): Promise<number> {
  * @param voteEnvelope
  * @param gateway 
  */
-export async function submitEnvelope(voteEnvelope: SnarkVoteEnvelope | PollVoteEnvelope, gateway: DVoteGateway): Promise<void> {
+export async function submitEnvelope(voteEnvelope: SnarkVoteEnvelope | PollVoteEnvelope, gateway: IDVoteGateway): Promise<void> {
     if (!voteEnvelope) throw new Error("Invalid parameters")
     else if (!gateway || !(gateway instanceof DVoteGateway)) Promise.reject(new Error("Invalid Gateway object"))
 
@@ -151,7 +151,7 @@ export async function submitEnvelope(voteEnvelope: SnarkVoteEnvelope | PollVoteE
  * @param nullifier
  * @param gateway
  */
-export function getEnvelopeStatus(processId: string, nullifier: string, gateway: DVoteGateway): Promise<boolean> {
+export function getEnvelopeStatus(processId: string, nullifier: string, gateway: IDVoteGateway): Promise<boolean> {
     if (!processId || !nullifier) return Promise.reject(new Error("Invalid parameters"))
     if (!(gateway instanceof DVoteGateway)) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -172,7 +172,7 @@ export function getEnvelopeStatus(processId: string, nullifier: string, gateway:
  * @param gateway 
  * @param nullifier
  */
-export async function getEnvelope(processId: string, gateway: DVoteGateway, nullifier: string): Promise<string> {
+export async function getEnvelope(processId: string, gateway: IDVoteGateway, nullifier: string): Promise<string> {
     if (!gateway || !processId) return Promise.reject(new Error("No process ID provided"))
     if (!(gateway instanceof DVoteGateway)) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -190,7 +190,7 @@ export async function getEnvelope(processId: string, gateway: DVoteGateway, null
  * @param processId 
  * @param gateway 
  */
-export function getEnvelopeHeight(processId: string, dvoteGw: DVoteGateway): Promise<number> {
+export function getEnvelopeHeight(processId: string, dvoteGw: IDVoteGateway): Promise<number> {
     if (!dvoteGw || !processId) return Promise.reject(new Error("No process ID provided"))
     else if (!(dvoteGw instanceof DVoteGateway)) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -209,7 +209,7 @@ export function getEnvelopeHeight(processId: string, dvoteGw: DVoteGateway): Pro
  * @param startBlock Tendermint block on which the process starts
  * @param gateway DVote Gateway instance
  */
-export function getTimeUntilStart(processId: string, startBlock: number, dvoteGw: DVoteGateway): Promise<number> {
+export function getTimeUntilStart(processId: string, startBlock: number, dvoteGw: IDVoteGateway): Promise<number> {
     if (!processId || isNaN(startBlock)) throw new Error("Invalid parameters")
     else if (!(dvoteGw instanceof DVoteGateway)) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -231,7 +231,7 @@ export function getTimeUntilStart(processId: string, startBlock: number, dvoteGw
  * @param numberOfBlocks Number of Tendermint blocks that the voting process is active
  * @param gateway DVote Gateway instance
  */
-export function getTimeUntilEnd(processId: string, startBlock: number, numberOfBlocks: number, dvoteGw: DVoteGateway): Promise<number> {
+export function getTimeUntilEnd(processId: string, startBlock: number, numberOfBlocks: number, dvoteGw: IDVoteGateway): Promise<number> {
     if (!processId || isNaN(startBlock) || isNaN(numberOfBlocks)) throw new Error("Invalid parameters")
     else if (!(dvoteGw instanceof DVoteGateway)) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -251,7 +251,7 @@ export function getTimeUntilEnd(processId: string, startBlock: number, numberOfB
  * @param blockNumber Number of block to compute the date for
  * @param gateway DVote Gateway instance
  */
-export function getTimeForBlock(processId: string, blockNumber: number, dvoteGw: DVoteGateway): Promise<Date> {
+export function getTimeForBlock(processId: string, blockNumber: number, dvoteGw: IDVoteGateway): Promise<Date> {
     if (!processId || isNaN(blockNumber)) throw new Error("Invalid parameters")
     else if (!(dvoteGw instanceof DVoteGateway)) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -271,7 +271,7 @@ export function getTimeForBlock(processId: string, blockNumber: number, dvoteGw:
  * @param date The date and time to compute the block number for
  * @param gateway DVote Gateway instance
  */
-export function getBlockNumberForTime(processId: string, dateTime: Date, dvoteGw: DVoteGateway): Promise<number> {
+export function getBlockNumberForTime(processId: string, dateTime: Date, dvoteGw: IDVoteGateway): Promise<number> {
     if (!processId || !(dateTime instanceof Date)) throw new Error("Invalid parameters")
     else if (!(dvoteGw instanceof DVoteGateway)) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -290,7 +290,7 @@ export function getBlockNumberForTime(processId: string, dateTime: Date, dvoteGw
  * @param processId 
  * @param gateway 
  */
-export async function getProcessList(processId: string, web3Gateway: Web3Gateway, dvoteGw: DVoteGateway): Promise<string> {
+export async function getProcessList(processId: string, web3Gateway: IWeb3Gateway, dvoteGw: IDVoteGateway): Promise<string> {
 
     throw new Error("TODO: unimplemented")
 
@@ -305,7 +305,7 @@ export async function getProcessList(processId: string, web3Gateway: Web3Gateway
  * @returns List of submited votes nullifiers
  */
 export async function getEnvelopeList(processId: string,
-    from: number, listSize: number, dvoteGw: DVoteGateway): Promise<string[]> {
+    from: number, listSize: number, dvoteGw: IDVoteGateway): Promise<string[]> {
     if (!processId || isNaN(from) || isNaN(listSize) || !dvoteGw) throw new Error("Invalid parameters")
 
     return dvoteGw.sendMessage({ method: "getEnvelopeList", processId, from, listSize })
