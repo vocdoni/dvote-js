@@ -107,7 +107,7 @@ export function addClaim(censusId: string, claimData: string, gateway: IDVoteGat
 export async function addClaimBulk(censusId: string, claimsData: string[], gateway: IDVoteGateway, walletOrSigner: Wallet | Signer): Promise<{ merkleRoot: string, invalidClaims: any[] }> {
     if (!censusId || !claimsData || !claimsData.length || !gateway) throw new Error("Invalid parameters")
 
-    const response = await gateway.sendMessage({ method: "addClaimBulk", censusId, claimsData }, walletOrSigner)
+    const response = await gateway.sendMessage({ method: "addClaimBulk", censusId, claimsData }, walletOrSigner, 120)
     if (!response.ok) throw new Error("The given claims could not be added")
     const invalidClaims = ("invalidClaims" in response) ? response.invalidClaims : []
 
