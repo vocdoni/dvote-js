@@ -5,6 +5,8 @@ import { sha3_256 } from 'js-sha3'
 import { hashBuffer } from "../util/hashing"
 const { Buffer } = require("buffer/")
 import * as ArrayBuffToString from 'arraybuffer-to-string'
+import { CENSUS_MAXIMUM_BULK_CLAIMS } from "../constants"
+
 
 /** 
  * A census ID consists of the Entity Address and the hash of the name.
@@ -106,14 +108,27 @@ export function addClaim(censusId: string, claimData: string, gateway: IDVoteGat
  */
 export async function addClaimBulk(censusId: string, claimsData: string[], gateway: IDVoteGateway, walletOrSigner: Wallet | Signer): Promise<{ merkleRoot: string, invalidClaims: any[] }> {
     if (!censusId || !claimsData || !claimsData.length || !gateway) throw new Error("Invalid parameters")
-
-    const response = await gateway.sendMessage({ method: "addClaimBulk", censusId, claimsData }, walletOrSigner, 120)
-    if (!response.ok) throw new Error("The given claims could not be added")
-    const invalidClaims = ("invalidClaims" in response) ? response.invalidClaims : []
+    
+    let invalidClaims = []
+    while(claimsData.length) {
+        const claims  = claimsData.splice(0,CENSUS_MAXIMUM_BULK_CLAIMS)
+        const partialInvalidClaims = await addClaimBulkHelper(censusId, claims, gateway, walletOrSigner)
+        invalidClaims = invalidClaims.concat(partialInvalidClaims)
+    }
 
     const merkleRoot = await getRoot(censusId, gateway)
 
     return { merkleRoot, invalidClaims }
+}
+
+async function addClaimBulkHelper(censusId: string, claimsData: string[], gateway: IDVoteGateway, walletOrSigner: Wallet | Signer): Promise<any[]> {
+    if (!censusId || !claimsData || !claimsData.length || !gateway) throw new Error("Invalid parameters")
+
+    const response = await gateway.sendMessage({ method: "addClaimBulk", censusId, claimsData }, walletOrSigner)
+    if (!response.ok) throw new Error("The given claims could not be added")
+    const invalidClaims = ("invalidClaims" in response) ? response.invalidClaims : []
+
+    return invalidClaims
 }
 
 /**
