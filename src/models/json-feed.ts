@@ -33,29 +33,29 @@ export function checkValidJsonFeed(jsonFeed: JsonFeed) {
 const jsonFeedSchema = Joi.object({
     version: Joi.string(),
     title: Joi.string(),
-    home_page_url: Joi.string(),
-    description: Joi.string(),
-    feed_url: Joi.string(),
-    icon: Joi.string(),
-    favicon: Joi.string(),
+    home_page_url: Joi.string().allow("").optional(),
+    description: Joi.string().allow("").optional(),
+    feed_url: Joi.string().allow("").optional(),
+    icon: Joi.string().allow("").optional(),
+    favicon: Joi.string().allow("").optional(),
     expired: Joi.boolean(),
 
     items: Joi.array().items(
         Joi.object({
-            id: Joi.string().optional(),
+            id: Joi.string().allow("").optional(),
             title: Joi.string(),
-            summary: Joi.string(),
+            summary: Joi.string().allow("").optional(),
             content_text: Joi.string(),
             content_html: Joi.string(),
             url: Joi.string().optional(),
-            image: Joi.string(),
+            image: Joi.string().allow("").optional(),
             tags: Joi.array().items(Joi.string()).optional(),
             date_published: Joi.string(),
             date_modified: Joi.string(),
             author: Joi.object({
-                name: Joi.string(),
-                url: Joi.string()
-            }).optional()
+                name: Joi.string().allow("").optional(),
+                url: Joi.string().allow("").optional(),
+            }).optional(),
         })
     )
 }).unknown(true).options({ stripUnknown: true }) // allow deprecated or unknown fields beyond the required ones
@@ -76,7 +76,7 @@ export interface JsonFeed {
     feed_url?: string,
     icon?: string,
     favicon?: string,
-    expired?: boolean,
+    expired: boolean,
 
     items: JsonFeedPost[]
 }
@@ -90,11 +90,11 @@ export interface JsonFeedPost {
     url?: string,
     image?: string,
     tags?: string[],
-    date_published?: string,
-    date_modified?: string,
+    date_published: string,
+    date_modified: string,
     author?: {
         name?: string,
-        url?: string
+        url: string
     }
 }
 

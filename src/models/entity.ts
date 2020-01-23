@@ -242,7 +242,7 @@ export const EntityMetadataTemplate: EntityMetadata = {
         ended: []
     },
     newsFeed: {
-        default: "https://hipsterpixel.co/feed.json",
+        default: "ipfs://QmWybQwdBwF81Dt71bNTDDr8PBpW9kNbWtQ64arswaBz1C",
         // fr: "https://feed2json.org/convert?url=http://www.intertwingly.net/blog/index.atom"
     },
     media: {
