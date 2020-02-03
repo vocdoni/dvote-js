@@ -92,8 +92,9 @@ const voteMetadataSchema = Joi.object().keys({
 ///////////////////////////////////////////////////////////////////////////////
 
 type ProtocolVersion = "1.0"
-type ProcessType = "snark-vote" | "poll-vote" | "petition-sign"
+export type ProcessType = "snark-vote" | "poll-vote" | "petition-sign"
 type QuestionType = "single-choice"
+export type VochainProcessState = "scheduled" | "active" | "paused" | "finished" | "canceled"
 
 /**
  * JSON metadata. Intended to be stored on IPFS or similar.
@@ -114,16 +115,29 @@ export interface ProcessMetadata {
         title: MultiLanguage<string>,
         description: MultiLanguage<string>,
         headerImage: ContentUriString,
-        questions: {
+        questions: Array<{
             type: QuestionType, // Defines how the UI should allow to choose among the votingOptions.
             question: MultiLanguage<string>,
             description: MultiLanguage<string>,
-            voteOptions: {
+            voteOptions: Array<{
                 title: MultiLanguage<string>,
-                value: string
-            }[]
-        }[]
+                value: string,
+            }>,
+        }>,
     }
+}
+
+export interface ProcessResults {
+    questions: ProcessResultItem[],
+}
+
+export interface ProcessResultItem {
+    type: ProcessType, // Defines how the UI should allow to choose among the votingOptions.
+    question: MultiLanguage<string>,
+    voteResults: Array<{
+        title: MultiLanguage<string>,
+        votes: number,
+    }>,
 }
 
 ///////////////////////////////////////////////////////////////////////////////

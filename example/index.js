@@ -24,7 +24,7 @@ const { getRoot, addCensus, addClaim, addClaimBulk, digestHexClaim, getCensusSiz
 const { DVoteGateway, Web3Gateway } = Gateway
 const { getDefaultGateways, getRandomGatewayInfo } = Bootnodes
 const { addFile, fetchFileString } = File
-const { createVotingProcess, getVoteMetadata, packagePollEnvelope, submitEnvelope, getBlockHeight, getEnvelopeHeight, getTimeUntilStart, getTimeUntilEnd, getTimeForBlock, getBlockNumberForTime, getEnvelopeList, getEnvelope } = Vote
+const { createVotingProcess, getVoteMetadata, packagePollEnvelope, submitEnvelope, getBlockHeight, getEnvelopeHeight, getTimeUntilStart, getTimeUntilEnd, getTimeForBlock, getBlockNumberForTime, getEnvelopeList, getEnvelope, getRawResults, getResultsDigest } = Vote
 
 const { Wallet, providers, utils } = require("ethers")
 const { Buffer } = require("buffer/")
@@ -150,6 +150,64 @@ async function fileUpload() {
         const strData = fs.readFileSync(__dirname + "/mobile-org-web-action-example.html").toString()
         console.error("PUTTING STRING OF LENGTH: ", strData.length)
         const origin = await addFile(Buffer.from(strData), "mobile-org-web-action-example.html", wallet, dvoteGw)
+        console.log("DATA STORED ON:", origin)
+
+        console.log("\nReading back", origin)
+        const data = await fetchFileString(origin, dvoteGw)
+        console.log("DATA:", data)
+
+        dvoteGw.disconnect()
+    } catch (err) {
+        if (dvoteGw) dvoteGw.disconnect()
+        console.error(err)
+    }
+}
+
+async function fileDownload(address) {
+    var dvoteGw
+    try {
+        const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+
+        const gws = await getRandomGatewayInfo("goerli")
+        dvoteGw = new DVoteGateway(gws[NETWORK_ID])
+        await dvoteGw.connect()
+
+        console.log("SIGNING FROM ADDRESS", wallet.address)
+        const data = await fetchFileString(address, dvoteGw)
+        console.log("DATA:", JSON.stringify(JSON.parse(data),null,2))
+
+        dvoteGw.disconnect()
+    } catch (err) {
+        if (dvoteGw) dvoteGw.disconnect()
+        console.error(err)
+    }
+}
+
+async function emptyFeedUpload() {
+    const feed = {
+        "version": "https://jsonfeed.org/version/1",
+        "title": "News Feed",
+        "home_page_url": "",
+        "description": "",
+        "feed_url": "",
+        "icon": "",
+        "favicon": "",
+        "expired": false,
+        "items": []
+      }
+    var dvoteGw
+    try {
+        const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+
+        const gws = await getRandomGatewayInfo("goerli")
+        dvoteGw = new DVoteGateway(gws[NETWORK_ID])
+        await dvoteGw.connect()
+
+        console.log("SIGNING FROM ADDRESS", wallet.address)
+
+        const strData = JSON.stringify(feed)
+        console.error("PUTTING STRING OF LENGTH: ", strData.length)
+        const origin = await addFile(Buffer.from(strData), "feed-template.json", wallet, dvoteGw)
         console.log("DATA STORED ON:", origin)
 
         console.log("\nReading back", origin)
@@ -383,6 +441,8 @@ async function useVoteApi() {
     if (envelopeList.length > 0)
         console.log("- Retrieved Vote:", await getEnvelope(processId, dvoteGw, envelopeList[envelopeList.length - 1]))
 
+        console.log("getRawRawResults",await getRawResults(processId, dvoteGw))
+        console.log("getResultsDigest",JSON.stringify(await getResultsDigest(processId, web3Gateway, dvoteGw), null, 2))
     dvoteGw.disconnect()
 }
 
@@ -571,6 +631,8 @@ async function main() {
     // Vocdoni API's
     
     await checkGatewayStatus()
+    // await fileDownload("ipfs://QmXLgWLYfa826DSCawfb1R34XBQYzs1z4xiLoChu7hUZyL")
+    // await emptyFeedUpload()
     // await fileUpload()
     // await registerEntity()
     // await readEntity()

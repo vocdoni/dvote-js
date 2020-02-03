@@ -1,7 +1,7 @@
 export type DVoteSupportedApi = "file" | "vote" | "census"
 
 export type FileApiMethod = "fetchFile" | "addFile" | "pinList" | "pinFile" | "unpinFile"
-export type VoteApiMethod = "submitEnvelope" | "getEnvelopeStatus" | "getEnvelope" | "getEnvelopeHeight" | "getProcessList" | "getEnvelopeList" | "getBlockHeight"
+export type VoteApiMethod = "submitEnvelope" | "getEnvelopeStatus" | "getEnvelope" | "getEnvelopeHeight" | "getProcessList" | "getEnvelopeList" | "getBlockHeight" | "getResults"
 export type CensusApiMethod = "addCensus" | "addClaim" | "addClaimBulk" | "getRoot" | "genProof" | "getSize" | "checkProof" | "dump" | "dumpPlain" | "importDump" | "publish" | "importRemote"
 export type GatewayApiMethod = "getGatewayInfo"
 export type WsGatewayMethod = FileApiMethod | VoteApiMethod | CensusApiMethod | GatewayApiMethod

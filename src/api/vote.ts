@@ -2,7 +2,7 @@ import { Wallet, Signer, utils } from "ethers"
 import { getVotingProcessInstance } from "../net/contracts"
 import { DVoteGateway, Web3Gateway, IDVoteGateway, IWeb3Gateway } from "../net/gateway"
 import { fetchFileString, addFile } from "./file"
-import { ProcessMetadata, checkValidProcessMetadata } from "../models/voting-process"
+import { ProcessMetadata, checkValidProcessMetadata, ProcessResults, ProcessType, VochainProcessState } from "../models/voting-process"
 // import { HexString } from "../models/common"
 import ContentHashedURI from "../wrappers/content-hashed-uri"
 import { getEntityMetadataByAddress, updateEntity, getEntityId } from "./entity"
@@ -272,7 +272,7 @@ export function getTimeForBlock(processId: string, blockNumber: number, dvoteGw:
  * @param gateway DVote Gateway instance
  */
 export function getBlockNumberForTime(processId: string, dateTime: Date, dvoteGw: IDVoteGateway): Promise<number> {
-    if (!processId || !(dateTime instanceof Date)) throw new Error("Invalid parameters")
+    if (!processId || !(dateTime instanceof Date)) return Promise.reject(new Error("Invalid parameters"))
     else if (!(dvoteGw instanceof DVoteGateway)) return Promise.reject(new Error("Invalid Gateway object"))
 
     return getBlockHeight(dvoteGw).then(currentHeight => {
@@ -304,15 +304,76 @@ export async function getProcessList(processId: string, web3Gateway: IWeb3Gatewa
  * @param gateway 
  * @returns List of submited votes nullifiers
  */
-export async function getEnvelopeList(processId: string,
+export function getEnvelopeList(processId: string,
     from: number, listSize: number, dvoteGw: IDVoteGateway): Promise<string[]> {
-    if (!processId || isNaN(from) || isNaN(listSize) || !dvoteGw) throw new Error("Invalid parameters")
+    if (!processId || isNaN(from) || isNaN(listSize) || !dvoteGw)
+        return Promise.reject(new Error("Invalid parameters"))
 
     return dvoteGw.sendMessage({ method: "getEnvelopeList", processId, from, listSize })
         .then(response => {
             if (!response || !response["ok"]) throw new Error("Could not get the envelope height")
             else if (!Array.isArray(response.nullifiers)) throw new Error("The gateway response is not correct")
             return response.nullifiers
+        })
+}
+
+/**
+ * Fetches the results for a given processId
+ * @param processId
+ * @param dvoteGateway
+ * @returns Results, vote process  type, vote process state
+ */
+export function getRawResults(processId: string, dvoteGateway: IDVoteGateway): Promise<{ results: number[][], type: ProcessType, state: VochainProcessState }> {
+    if (!dvoteGateway || !processId)
+        return Promise.reject(new Error("No process ID provided"))
+    else if (!(dvoteGateway instanceof DVoteGateway))
+        return Promise.reject(new Error("Invalid Gateway object"))
+
+    return dvoteGateway.sendMessage({ method: "getResults", processId })
+        .then(response => {
+            if (!response || !response["ok"]) throw new Error("Could not fetch the process results")
+            else if (!Array.isArray(response.results)) throw new Error("The gateway response is not valid")
+            const results = (Array.isArray(response.results) && response.results.length) ? response.results : []
+            const type = response.type || ""
+            const state = response.state || ""
+            return { results, type, state }
+        })
+}
+
+/**
+ * Fetches the results for a given processId
+ * @param processId
+ * @param dvoteGateway
+ * @returns Results, vote process  type, vote process state
+ */
+export function getResultsDigest(processId: string, web3Gateway: IWeb3Gateway, dvoteGateway: IDVoteGateway): Promise<ProcessResults> {
+    if (!web3Gateway || !dvoteGateway || !processId)
+        return Promise.reject(new Error("No process ID provided"))
+    else if (!(dvoteGateway instanceof DVoteGateway) || !(web3Gateway instanceof Web3Gateway))
+        return Promise.reject(new Error("Invalid Gateway object"))
+
+    var voteMetadata
+    const pid = processId.startsWith("0x") ? processId : "0x" + processId
+    return getVoteMetadata(pid, web3Gateway, dvoteGateway)
+        .then(meta => {
+            voteMetadata = meta
+            return getRawResults(processId, dvoteGateway)
+        }).then(({ results, type, state }) => {
+
+            const resultsDigest: ProcessResults = { questions: [] }
+            const zippedQuestions = voteMetadata.details.questions.map((e, i) => ({ meta: e, result: results[i] }))
+            resultsDigest.questions = zippedQuestions.map((zippedEntry) => {
+                const zippedOptions = zippedEntry.meta.voteOptions.map((e, i) => ({ title: e.title, value: zippedEntry.result[i] }))
+                return {
+                    question: zippedEntry.meta.question,
+                    type,
+                    voteResults: zippedOptions.map((option) => ({
+                        title: option.title,
+                        votes: option.value,
+                    })),
+                }
+            })
+            return resultsDigest
         })
 }
 
