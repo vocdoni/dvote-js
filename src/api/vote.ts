@@ -369,7 +369,7 @@ export function getResultsDigest(processId: string, web3Gateway: IWeb3Gateway, d
                     type,
                     voteResults: zippedOptions.map((option) => ({
                         title: option.title,
-                        votes: option.value,
+                        votes: option.value || 0,
                     })),
                 }
             })
