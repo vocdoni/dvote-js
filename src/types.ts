@@ -4,7 +4,7 @@
 
 export * from "./models/common"
 export { EntityMetadata } from "./models/entity"
-export { ProcessMetadata, ProcessResults, ProcessType, VochainProcessState } from "./models/voting-process"
+export { ProcessMetadata, ProcessResults, ProcessType, ProcessResultItem, VochainProcessState } from "./models/voting-process"
 export {
     DVoteSupportedApi,
     FileApiMethod,
