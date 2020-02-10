@@ -133,7 +133,7 @@ async function checkGatewayStatus() {
         // await gw.connect()
 
         const status = await dvoteGateway.getStatus()
-        console.log("Gateway status", status)
+        // console.log("Gateway status", status)
         // gw.disconnect()
     }
     catch (err) {
@@ -148,22 +148,23 @@ async function fileUpload() {
         const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
         dvoteGw = new DVoteGateway({ uri: GATEWAY_DVOTE_URI, supportedApis: ["file"], publicKey: GATEWAY_PUB_KEY })
-        await dvoteGw.connect()
+        // await dvoteGw.connect()
 
-        console.log("SIGNING FROM ADDRESS", wallet.address)
+        // console.log("SIGNING FROM ADDRESS", wallet.address)
 
-        const strData = fs.readFileSync(__dirname + "/mobile-org-web-action-example.html").toString()
-        console.error("PUTTING STRING OF LENGTH: ", strData.length)
-        const origin = await addFile(Buffer.from(strData), "mobile-org-web-action-example.html", wallet, dvoteGw)
-        console.log("DATA STORED ON:", origin)
+        // const strData = fs.readFileSync(__dirname + "/mobile-org-web-action-example.html").toString()
+        // console.error("PUTTING STRING OF LENGTH: ", strData.length)
+        const strData = Math.random().toString() + Math.random.toString() + Math.random().toString()
+        const origin = await addFile(Buffer.from(strData), "random-delete-me.txt", wallet, dvoteGw)
+        // console.log("DATA STORED ON:", origin)
 
-        console.log("\nReading back", origin)
+        // console.log("\nReading back", origin)
         const data = await fetchFileString(origin, dvoteGw)
-        console.log("DATA:", data)
+        // console.log("DATA:", data)
 
-        dvoteGw.disconnect()
+        // dvoteGw.disconnect()
     } catch (err) {
-        if (dvoteGw) dvoteGw.disconnect()
+        // if (dvoteGw) dvoteGw.disconnect()
         console.error(err)
     }
 }
@@ -178,9 +179,9 @@ async function fileDownload(address) {
         // await dvoteGw.connect()
 
         // console.log("SIGNING FROM ADDRESS", wallet.address)
-        console.log("Fetching", address)
+        // console.log("Fetching", address)
         const data = await fetchFileString(address, dvoteGw)
-        console.log("DATA:", JSON.stringify(JSON.parse(data), null, 2).length, "bytes")
+        // console.log("DATA:", JSON.stringify(JSON.parse(data), null, 2).length, "bytes")
 
         // dvoteGw.disconnect()
     } catch (err) {
@@ -261,10 +262,15 @@ async function readEntity() {
     // const dvoteGateway = new DVoteGateway(gwInfo)
     // await dvoteGateway.connect()
 
-    console.log("ENTITY ID:", getEntityId(myEntityAddress))
-    console.log("GW:", GATEWAY_DVOTE_URI, GATEWAY_WEB3_URI)
-    const meta = await getEntityMetadataByAddress(myEntityAddress, web3Gateway, dvoteGateway)
-    console.log("JSON METADATA\n", Object.keys(meta))
+    try {
+        // console.log("ENTITY ID:", getEntityId(myEntityAddress))
+        // console.log("GW:", GATEWAY_DVOTE_URI, GATEWAY_WEB3_URI)
+        const meta = await getEntityMetadataByAddress(myEntityAddress, web3Gateway, dvoteGateway)
+        if (!meta || Object.keys(meta).length == 0) throw new Error("Empty metaƒ")
+        // console.log("JSON METADATA\n", Object.keys(meta))
+    } catch (err) {
+        console.error(err)
+    }
 
     // dvoteGateway.disconnect()
 }
@@ -296,49 +302,56 @@ async function gwCensusOperations() {
     // const gw = new DVoteGateway({ uri: GATEWAY_DVOTE_URI, supportedApis: ["file", "census"], publicKey: GATEWAY_PUB_KEY })
     // await gw.connect()
 
-    const gw = dvoteGateway
+    try {
+        const gw = dvoteGateway
 
-    const censusName = "My census name " + Math.random().toString().substr(2)
-    const adminPublicKeys = [await wallet.signingKey.publicKey]
-    const publicKeys = [
-        "0412d6dc30db7d2a32dddd0ba080d244cc26fcddcc29beb3fcb369564b468b9927445ab996fecbdd6603f6accbc4b3f773a9fe59b66f6e8ef6d9ecf70d8cee5a73",
-        "043980b22e9432aa2884772570c47a6f78a39bcc08b428161a503eeb91f66b1901ece9b82d2624ed5b44fa02922c28080c717f474eca16c54aecd74aba3eb76953",
-        "04f64bd4dc997f1eed4f20843730c13d926199ff45a9edfad191feff0cea6e3d54de43867463acdeeaae990ee6882138b79ee33e3ae7e4f2c12dc0a52088bbb620",
-        "04b9bd5b6f90833586cfcd181d1abe66d14152bb100ed7ec63ff94ecfe48dab18757177cac4551bc56bcf586d056d0f3709443face6b6bac7c55316e54522b4d2b"
-    ]
-    let publicKeyDigestedClaims = publicKeys.map(item => digestHexClaim(item))
-    publicKeyDigestedClaims[publicKeyDigestedClaims.length - 1] = "wrong_value"
-    console.log(publicKeyDigestedClaims);
+        const censusName = "My census name " + Math.random().toString().substr(2) + Math.random().toString().substr(2)
+        const adminPublicKeys = [await wallet.signingKey.publicKey]
+        const publicKeys = []
 
-    // Create a census if it doesn't exist
-    let result = await addCensus(censusName, adminPublicKeys, gw, wallet)
-    console.log(`ADD CENSUS "${censusName}" RESULT:`)
-    // { censusId: "0x.../0x...", merkleRoot: "0x0..."}
+        for (let i = 0; i < 100; i++) {
+            const newK = "04" + Math.random().toString().substr(2) + Math.random().toString().substr(2) + Math.random().toString().substr(2) +
+                Math.random().toString().substr(2) + Math.random().toString().substr(2) + Math.random().toString().substr(2) +
+                Math.random().toString().substr(2) + Math.random().toString().substr(2) + Math.random().toString().substr(2)
+            publicKeys.push(newK.substr(0, 128))
+        }
 
-    // Add a claim to the new census
-    const censusId = result.censusId
-    result = await addClaim(censusId, publicKeyDigestedClaims[0], gw, wallet)
-    console.log("ADDED", publicKeyDigestedClaims[0], "TO", censusId)
+        let publicKeyDigestedClaims = publicKeys.map(item => digestHexClaim(item))
+        publicKeyDigestedClaims[publicKeyDigestedClaims.length - 1] = "wrong_value"
+        // console.log(publicKeyDigestedClaims);
 
-    // Add claims to the new census
-    // const censusId = result.censusId
-    result = await addClaimBulk(censusId, publicKeyDigestedClaims.slice(1), gw, wallet)
-    console.log("ADDED", publicKeyDigestedClaims.slice(1), "TO", censusId)
-    if (result.invalidClaims.length > 0) console.log("INVALID CLAIMS", result.invalidClaims)
-    const merkleRoot = await getRoot(censusId, gw)
-    console.log("MERKLE ROOT", merkleRoot)  // 0x....
+        // Create a census if it doesn't exist
+        let result = await addCensus(censusName, adminPublicKeys, gw, wallet)
+        // console.log(`ADD CENSUS "${censusName}" RESULT:`)
+        // { censusId: "0x.../0x...", merkleRoot: "0x0..."}
 
-    const merkleTree = await publishCensus(censusId, gw, wallet)
-    console.log("PUBLISHED", censusId)
-    console.log(merkleTree)   // ipfs://....
+        // Add a claim to the new census
+        const censusId = result.censusId
+        result = await addClaim(censusId, publicKeyDigestedClaims[0], gw, wallet)
+        // console.log("ADDED", publicKeyDigestedClaims[0], "TO", censusId)
 
-    result = await dump(censusId, gw, wallet)
-    console.log("DUMP", result)
+        // Add claims to the new census
+        // const censusId = result.censusId
+        result = await addClaimBulk(censusId, publicKeyDigestedClaims.slice(1), gw, wallet)
+        // console.log("ADDED", publicKeyDigestedClaims.slice(1), "TO", censusId)
+        if (result.invalidClaims.length > 0) throw new Error("INVALID CLAIMS", result.invalidClaims)
+        const merkleRoot = await getRoot(censusId, gw)
+        // console.log("MERKLE ROOT", merkleRoot)  // 0x....
 
-    result = await dumpPlain(censusId, gw, wallet)
-    console.log("DUMP PLAIN", result)
+        const merkleTree = await publishCensus(censusId, gw, wallet)
+        // console.log("PUBLISHED", censusId)
+        // console.log(merkleTree)   // ipfs://....
 
-    // gw.disconnect()
+        result = await dump(censusId, gw, wallet)
+        // console.log("DUMP", result)
+
+        result = await dumpPlain(censusId, gw, wallet)
+        // console.log("DUMP PLAIN", result)
+
+        // gw.disconnect()
+    } catch (err) {
+        console.error(err)
+    }
 }
 
 async function createVotingProcessManual() {
@@ -404,54 +417,59 @@ async function useVoteApi() {
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
     const myEntityAddress = await wallet.getAddress()
 
-    // const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file", "vote", "census"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
-    // const web3Gateway = new Web3Gateway(gwInfo)
-    // const dvoteGw = new DVoteGateway(gwInfo)
-    // await dvoteGw.connect()
-    const dvoteGw = dvoteGateway
+    try {
+        // const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file", "vote", "census"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
+        // const web3Gateway = new Web3Gateway(gwInfo)
+        // const dvoteGw = new DVoteGateway(gwInfo)
+        // await dvoteGw.connect()
+        const dvoteGw = dvoteGateway
 
-    const entityMeta = await getEntityMetadataByAddress(myEntityAddress, web3Gateway, dvoteGw)
-    console.log("- Active processes:", entityMeta.votingProcesses.active.length)
-    const processId = entityMeta.votingProcesses.active[entityMeta.votingProcesses.active.length - 1]
-    // const processId = "0xf36b729d6226b8257922a60cea6ab80e47686c3f86edbd0749b1c3291e2651ed"
-    const processMeta = await getVoteMetadata(processId, web3Gateway, dvoteGw)
+        const entityMeta = await getEntityMetadataByAddress(myEntityAddress, web3Gateway, dvoteGw)
+        // console.log("- Active processes:", entityMeta.votingProcesses.active.length)
+        const processId = entityMeta.votingProcesses.active[entityMeta.votingProcesses.active.length - 1]
+        // const processId = "0xf36b729d6226b8257922a60cea6ab80e47686c3f86edbd0749b1c3291e2651ed"
+        const processMeta = await getVoteMetadata(processId, web3Gateway, dvoteGw)
 
-    // const censusMerkleRoot = process.env.CENSUS_MERKLE_ROOT // TODO: use the one below
-    const censusMerkleRoot = processMeta.census.merkleRoot
+        // const censusMerkleRoot = process.env.CENSUS_MERKLE_ROOT // TODO: use the one below
+        const censusMerkleRoot = processMeta.census.merkleRoot
 
-    console.log("Reading", processId)
+        // console.log("Reading", processId)
 
-    console.log("BLOCKCHAIN INFO:\n")
-    console.log("- Process startBlock:", processMeta.startBlock)
-    console.log("- Process endBlock:", processMeta.startBlock + processMeta.numberOfBlocks)
-    console.log("- Census size:", await getCensusSize(censusMerkleRoot, dvoteGw))
-    console.log("- Block height:", await getBlockHeight(dvoteGw))
-    console.log("- Envelope height:", await getEnvelopeHeight(processId, dvoteGw))
-    let remainingSeconds = await getTimeUntilStart(processId, processMeta.startBlock, dvoteGw)
-    console.log("- Seconds until start:", remainingSeconds == 0 ? "[already started]" : remainingSeconds)
-    remainingSeconds = await getTimeUntilEnd(processId, processMeta.startBlock, processMeta.numberOfBlocks, dvoteGw)
-    console.log("- Seconds until end:", remainingSeconds == 0 ? "[already ended]" : remainingSeconds)
-    console.log("- Time at block 500:", await getTimeForBlock(processId, 500, dvoteGw))
-    console.log("- Block on 10/10/2019:", await getBlockNumberForTime(processId, new Date(2019, 9, 10), dvoteGw))
+        // console.log("BLOCKCHAIN INFO:\n")
+        // console.log("- Process startBlock:", processMeta.startBlock)
+        // console.log("- Process endBlock:", processMeta.startBlock + processMeta.numberOfBlocks)
+        // console.log("- Census size:", await getCensusSize(censusMerkleRoot, dvoteGw))
+        // console.log("- Block height:", await getBlockHeight(dvoteGw))
+        // console.log("- Envelope height:", await getEnvelopeHeight(processId, dvoteGw))
+        let remainingSeconds = await getTimeUntilStart(processId, processMeta.startBlock, dvoteGw)
+        // console.log("- Seconds until start:", remainingSeconds == 0 ? "[already started]" : remainingSeconds)
+        remainingSeconds = await getTimeUntilEnd(processId, processMeta.startBlock, processMeta.numberOfBlocks, dvoteGw)
+        // console.log("- Seconds until end:", remainingSeconds == 0 ? "[already ended]" : remainingSeconds)
+        // console.log("- Time at block 500:", await getTimeForBlock(processId, 500, dvoteGw))
+        // console.log("- Block on 10/10/2019:", await getBlockNumberForTime(processId, new Date(2019, 9, 10), dvoteGw))
 
-    // const publicKeyHash = digestHexClaim(wallet["signingKey"].publicKey)
-    // const merkleProof = await generateProof(censusMerkleRoot, publicKeyHash, dvoteGw)
-    // const votes = [1, 2, 1]
-    // const voteEnvelope = await packagePollEnvelope(votes, merkleProof, processId, wallet)
+        // const publicKeyHash = digestHexClaim(wallet["signingKey"].publicKey)
+        // const merkleProof = await generateProof(censusMerkleRoot, publicKeyHash, dvoteGw)
+        // const votes = [1, 2, 1]
+        // const voteEnvelope = await packagePollEnvelope(votes, merkleProof, processId, wallet)
 
-    // console.log("- Poll Envelope:", voteEnvelope)
+        // console.log("- Poll Envelope:", voteEnvelope)
 
-    // console.log("- Submitting vote envelope")
-    // await submitEnvelope(voteEnvelope, dvoteGw)
+        // console.log("- Submitting vote envelope")
+        // await submitEnvelope(voteEnvelope, dvoteGw)
 
-    // const envelopeList = await getEnvelopeList(processId, 0, 100, dvoteGw)
-    // console.log("- Envelope list:", envelopeList);
-    // if (envelopeList.length > 0)
-    //     console.log("- Retrieved Vote:", await getEnvelope(processId, dvoteGw, envelopeList[envelopeList.length - 1]))
+        // const envelopeList = await getEnvelopeList(processId, 0, 100, dvoteGw)
+        // console.log("- Envelope list:", envelopeList);
+        // if (envelopeList.length > 0)
+        //     console.log("- Retrieved Vote:", await getEnvelope(processId, dvoteGw, envelopeList[envelopeList.length - 1]))
 
-    //     console.log("getRawRawResults",await getRawResults(processId, dvoteGw))
-    //     console.log("getResultsDigest",JSON.stringify(await getResultsDigest(processId, web3Gateway, dvoteGw), null, 2))
-    // dvoteGw.disconnect()
+        //     console.log("getRawRawResults",await getRawResults(processId, dvoteGw))
+        //     console.log("getResultsDigest",JSON.stringify(await getResultsDigest(processId, web3Gateway, dvoteGw), null, 2))
+        // dvoteGw.disconnect()
+    }
+    catch (err) {
+        console.error(err)
+    }
 }
 
 async function submitVoteBatch() {
@@ -550,11 +568,11 @@ async function fetchMerkleProof() {
     // const dvoteGateway = new DVoteGateway(gws[NETWORK_ID])
     // await dvoteGateway.connect()
 
-    console.log("FETCHING CLAIM", process.env.BASE64_CLAIM_DATA)
-    console.log("on Merkle Tree", process.env.CENSUS_MERKLE_ROOT)
+    // console.log("FETCHING CLAIM", process.env.BASE64_CLAIM_DATA)
+    // console.log("on Merkle Tree", process.env.CENSUS_MERKLE_ROOT)
 
     const siblings = await generateProof(process.env.CENSUS_MERKLE_ROOT, process.env.BASE64_CLAIM_DATA, dvoteGateway)
-    console.log("SIBLINGS:", siblings)
+    // console.log("SIBLINGS:", siblings)
 
     // dvoteGateway.disconnect()
 }
@@ -563,31 +581,36 @@ async function gatewayHealthCheck() {
     // SIGNED
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
-    const myEntityAddress = await wallet.getAddress()
-    const myEntityId = getEntityId(myEntityAddress)
+    try {
+        const myEntityAddress = await wallet.getAddress()
+        const myEntityId = getEntityId(myEntityAddress)
 
-    const gws = await getDefaultGateways("goerli")
+        const gws = await getDefaultGateways("goerli")
 
-    const URL = "https://hnrss.org/newest"
-    const response = await axios.get(URL)
+        const URL = "https://hnrss.org/newest"
+        const response = await axios.get(URL)
 
-    for (let networkId in gws) {
-        for (let gw of gws[networkId].dvote) {
-            console.log("Checking", gw.uri, "...")
+        for (let networkId in gws) {
+            for (let gw of gws[networkId].dvote) {
+                // console.log("Checking", gw.uri, "...")
 
-            await gw.connect()
-            const origin = await File.addFile(response.data, "hn-rss.xml", wallet, gw)
-            console.log("STORED ON", origin, "USING", gw.uri)
-            gw.disconnect()
+                await gw.connect()
+                const origin = await File.addFile(response.data, "hn-rss.xml", wallet, gw)
+                // console.log("STORED ON", origin, "USING", gw.uri)
+                gw.disconnect()
+            }
+
+            for (let gw of gws[networkId].web3) {
+                // console.log("Checking Web3 GW...")
+
+                const instance = await getEntityResolverInstance({ provider: gw.getProvider(), wallet })
+                const tx = await instance.setText(myEntityId, "dummy", "1234")
+                await tx.wait()
+            }
         }
-
-        for (let gw of gws[networkId].web3) {
-            console.log("Checking Web3 GW...")
-
-            const instance = await getEntityResolverInstance({ provider: gw.getProvider(), wallet })
-            const tx = await instance.setText(myEntityId, "dummy", "1234")
-            await tx.wait()
-        }
+    }
+    catch (err) {
+        console.error(err)
     }
 }
 
@@ -598,36 +621,40 @@ async function gatewayRawRequest() {
     // console.log("THE DVOTE GW:", gw.publicKey)
     const gw = dvoteGateway
 
-    // await gw.connect()
+    try {
+        // await gw.connect()
 
-    // SIGNED
-    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+        // SIGNED
+        const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
-    const req = { method: "test" }  // Low level raw request
-    const timeout = 20
-    const r = await gw.sendMessage(req, wallet, timeout)
-    console.log("RESPONSE:", r)
+        const req = { method: "test" }  // Low level raw request
+        const timeout = 20
+        const r = await gw.sendMessage(req, wallet, timeout)
+        // console.log("RESPONSE:", r)
 
-    // UNSIGNED
-    var origin = "ipfs://QmUNZNB1u31eoAw1ooqXRGxGvSQg4Y7MdTTLUwjEp86WnE"
-    console.log("\nReading from", GATEWAY_DVOTE_URI)
-    console.log("\nReading", origin)
-    var data = await fetchFileString(origin, gw)
-    console.log("DATA:", data.length, "bytes")
+        // UNSIGNED
+        var origin = "ipfs://QmUNZNB1u31eoAw1ooqXRGxGvSQg4Y7MdTTLUwjEp86WnE"
+        // console.log("\nReading from", GATEWAY_DVOTE_URI)
+        // console.log("\nReading", origin)
+        var data = await fetchFileString(origin, gw)
+        // console.log("DATA:", data.length, "bytes")
 
-    origin = "ipfs://QmVtLegYaQhBErsAVgtbaVe7HCYL7ue1rArPbHwPTcoTCi"
-    console.log("\nReading from", GATEWAY_DVOTE_URI)
-    console.log("\nReading", origin)
-    data = await fetchFileString(origin, gw)
-    console.log("DATA:", data.length, "bytes")
+        origin = "ipfs://QmVtLegYaQhBErsAVgtbaVe7HCYL7ue1rArPbHwPTcoTCi"
+        // console.log("\nReading from", GATEWAY_DVOTE_URI)
+        // console.log("\nReading", origin)
+        data = await fetchFileString(origin, gw)
+        // console.log("DATA:", data.length, "bytes")
 
-    origin = "ipfs://QmXLgWLYfa826DSCawfb1R34XBQYzs1z4xiLoChu7hUZyL"
-    console.log("\nReading from", GATEWAY_DVOTE_URI)
-    console.log("\nReading", origin)
-    data = await fetchFileString(origin, gw)
-    console.log("DATA:", data.length, "bytes")
+        origin = "ipfs://QmXLgWLYfa826DSCawfb1R34XBQYzs1z4xiLoChu7hUZyL"
+        // console.log("\nReading from", GATEWAY_DVOTE_URI)
+        // console.log("\nReading", origin)
+        data = await fetchFileString(origin, gw)
+        // console.log("DATA:", data.length, "bytes")
 
-    // gw.disconnect()
+        // gw.disconnect()
+    } catch (err) {
+        console.error(err)
+    }
 }
 
 async function ensResolver() {
@@ -651,22 +678,31 @@ async function round() {
 
     // Vocdoni API's
 
+    console.log("checkGatewayStatus()")
     await checkGatewayStatus()
-    await fileDownload("ipfs://QmXLgWLYfa826DSCawfb1R34XBQYzs1z4xiLoChu7hUZyL")
+    console.log("fileUpload(random)")
+    await fileUpload()
+    // console.log("fileDownload()")
+    // await fileDownload("ipfs://QmXLgWLYfa826DSCawfb1R34XBQYzs1z4xiLoChu7hUZyL")
     // await emptyFeedUpload()
-    // await fileUpload()
     // await registerEntity()
+    console.log("readEntity()")
     await readEntity()
     // await modifyEntityValues()
+    console.log("gwCensusOperations()")
     await gwCensusOperations()
     // await createVotingProcessManual()
     // await createVotingProcessFull()
+    console.log("useVoteApi()")
     await useVoteApi()
     // await submitVoteBatch()
+    console.log("fetchMerkleProof()")
     await fetchMerkleProof()
     // await checkSignature()
+    console.log("gatewayRawRequest()")
     await gatewayRawRequest()
 
+    console.log("gatewayHealthCheck()")
     await gatewayHealthCheck()
     // await ensResolver()
 }
