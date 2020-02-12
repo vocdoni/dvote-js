@@ -139,30 +139,30 @@ export class DVoteGateway {
                 this.uri = newUri
                 this.supportedApis = newSupportedApis
                 this.pubKey = newPublicKey
-
-                ws.onmessage = msg => {
-                    // Detect behavior on Browser/NodeJS
-                    if (!msg || !msg.data) throw new Error("Invalid response message")
-
-                    if (typeof msg.data == "string") {
-                        this.gotWebSocketMessage(msg.data)
-                    }
-                    else if (msg.data instanceof Buffer || msg.data instanceof Uint8Array) {
-                        this.gotWebSocketMessage(msg.data.toString())
-                    }
-                    else if (typeof Blob != "undefined" && msg.data instanceof Blob) {
-                        const reader = new FileReader()
-                        reader.onload = () => {
-                            this.gotWebSocketMessage(reader.result as string)
-                        }
-                        reader.readAsText(msg.data) // JSON
-                    }
-                    else {
-                        console.error("Unsupported response", typeof msg.data, msg.data)
-                    }
-                }
+                
                 this.connectionPromise = null
                 resolve()
+            }
+            ws.onmessage = msg => {
+                // Detect behavior on Browser/NodeJS
+                if (!msg || !msg.data) throw new Error("Invalid response message")
+
+                if (typeof msg.data == "string") {
+                    this.gotWebSocketMessage(msg.data)
+                }
+                else if (msg.data instanceof Buffer || msg.data instanceof Uint8Array) {
+                    this.gotWebSocketMessage(msg.data.toString())
+                }
+                else if (typeof Blob != "undefined" && msg.data instanceof Blob) {
+                    const reader = new FileReader()
+                    reader.onload = () => {
+                        this.gotWebSocketMessage(reader.result as string)
+                    }
+                    reader.readAsText(msg.data) // JSON
+                }
+                else {
+                    console.error("Unsupported response", typeof msg.data, msg.data)
+                }
             }
             ws.onerror = (err) => reject(err)
             ws.onclose = () => reject(new Error("Connection closed"))
