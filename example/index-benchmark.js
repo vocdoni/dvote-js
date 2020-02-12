@@ -334,7 +334,8 @@ async function gwCensusOperations() {
         // const censusId = result.censusId
         result = await addClaimBulk(censusId, publicKeyDigestedClaims.slice(1), gw, wallet)
         // console.log("ADDED", publicKeyDigestedClaims.slice(1), "TO", censusId)
-        if (result.invalidClaims.length > 0) throw new Error("INVALID CLAIMS", result.invalidClaims)
+        if (result.invalidClaims.length != 1) throw new Error("INVALID CLAIMS", result.invalidClaims)
+        else if (result.invalidClaims[0] != 98) throw new Error("INVALID CLAIMS", result.invalidClaims)
         const merkleRoot = await getRoot(censusId, gw)
         // console.log("MERKLE ROOT", merkleRoot)  // 0x....
 
@@ -668,7 +669,7 @@ async function ensResolver() {
     console.log("Voting Process contract address", processAddr)
 }
 
-async function round() {
+async function round(idx) {
     // Ethereum
 
     // await deployEntityResolver()
@@ -678,45 +679,45 @@ async function round() {
 
     // Vocdoni API's
 
-    console.log("checkGatewayStatus()")
+    console.log(idx, "> checkGatewayStatus()")
     await checkGatewayStatus()
-    console.log("fileUpload(random)")
+    console.log(idx, "> fileUpload(random)")
     await fileUpload()
     // console.log("fileDownload()")
     // await fileDownload("ipfs://QmXLgWLYfa826DSCawfb1R34XBQYzs1z4xiLoChu7hUZyL")
     // await emptyFeedUpload()
     // await registerEntity()
-    console.log("readEntity()")
+    console.log(idx, "> readEntity()")
     await readEntity()
     // await modifyEntityValues()
-    console.log("gwCensusOperations()")
+    console.log(idx, "> gwCensusOperations()")
     await gwCensusOperations()
     // await createVotingProcessManual()
     // await createVotingProcessFull()
-    console.log("useVoteApi()")
+    console.log(idx, "> useVoteApi()")
     await useVoteApi()
     // await submitVoteBatch()
-    console.log("fetchMerkleProof()")
+    console.log(idx, "> fetchMerkleProof()")
     await fetchMerkleProof()
     // await checkSignature()
-    console.log("gatewayRawRequest()")
+    console.log(idx, "> gatewayRawRequest()")
     await gatewayRawRequest()
 
-    console.log("gatewayHealthCheck()")
+    console.log(idx, "> gatewayHealthCheck()")
     await gatewayHealthCheck()
     // await ensResolver()
 }
 
 (async function () {
     while (true) {
-        const roundSize = 500
+        const roundSize = 50
         const proms = []
         console.log("Launching", roundSize, "executions")
-        for (let i = 0; i < roundSize; i++) proms.push(round())
+        for (let i = 0; i < roundSize; i++) proms.push(round(i))
 
         await Promise.all(proms)
             .then(() => console.log("ROUND DONE -----"))
-            .catch(err => console.error("@@@@@@@@@@@@@@@@@@@@@@\nERR: ", err.message, "\n@@@@@@@@@@@@@@@\n"))
+            .catch(err => console.error("@@@@@@@@@@@@@@@@@@@@\nERR: ", err.message, "\n@@@@@@@@@@@@@@@@@@@@\n"))
 
         console.log("--------\n--------\n--------\n--------\n--------\n--------\n--------\n--------\n--------\n--------\n--------\n--------\n")
     }
