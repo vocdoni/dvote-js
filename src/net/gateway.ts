@@ -231,7 +231,8 @@ export class DVoteGateway {
         do {
             rand = Math.random().toString(16).split('.')[1]
             requestId = utils.keccak256('0x' + rand).substr(2)
-        } while (this.requestList.filter(r => r.id === rand).length > 0)
+        // } while (this.requestList.filter(r => r.id === rand).length > 0)
+        } while (this.requestList.some(r => r.id === rand))
         const content: MessageRequestContent = {
             id: requestId,
             request: requestBody,
