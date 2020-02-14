@@ -187,7 +187,10 @@ export class DVoteGateway {
     public async isConnected(): Promise<boolean> {
         if (this.connectionPromise) await this.connectionPromise
 
-        return this.webSocket != null && this.uri != null
+        return this.webSocket != null &&
+                this.webSocket.readyState !== this.webSocket.CLOSING &&
+                this.webSocket.readyState !== this.webSocket.CLOSED &&
+                this.uri != null
     }
 
     /**
