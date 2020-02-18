@@ -105,11 +105,11 @@ export interface JsonFeedPost {
 export const JsonFeedTemplate: JsonFeed = {
     version: "1.0",
     title: "Example",
-    home_page_url: "http://www.com",
+    home_page_url: "", // http://www.com
     description: "This is the description",
-    feed_url: "http://www.com/item.json",
-    icon: "http://www.com/icon.png",
-    favicon: "http://www.com/favicon.ico",
+    feed_url: "", // http://www.com/item.json
+    icon: "", // http://www.com/icon.png
+    favicon: "", // http://www.com/favicon.ico
     expired: false,
 
     items: [{
@@ -118,8 +118,8 @@ export const JsonFeedTemplate: JsonFeed = {
         summary: "Summary 1, 2, 3",
         content_text: "Once upon a time, there was a JSON Feed...",
         content_html: "<p>Once upon a time, there was a JSON Feed...</p>",
-        url: "http://link.item/1234",
-        image: "http://www.com/image.jpg",
+        url: "", // http://link.item/1234
+        image: "", // http://www.com/image.jpg
         tags: ["hello", "world"],
         date_published: "2010-02-07T14:04:00-05:00",
         date_modified: "2010-02-07T14:04:00-05:00",
