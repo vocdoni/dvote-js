@@ -174,7 +174,7 @@ async function fileDownload(address) {
 
         console.log("SIGNING FROM ADDRESS", wallet.address)
         const data = await fetchFileString(address, dvoteGw)
-        console.log("DATA:", JSON.stringify(JSON.parse(data),null,2))
+        console.log("DATA:", JSON.stringify(JSON.parse(data), null, 2))
 
         dvoteGw.disconnect()
     } catch (err) {
@@ -194,7 +194,7 @@ async function emptyFeedUpload() {
         "favicon": "",
         "expired": false,
         "items": []
-      }
+    }
     var dvoteGw
     try {
         const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
@@ -275,9 +275,10 @@ async function modifyEntityValues() {
     console.log("UPDATING ENTITY ID:", getEntityId(myEntityAddress))
     const meta = await getEntityMetadataByAddress(myEntityAddress, web3Gateway, dvoteGateway)
 
-    meta.votingProcesses.active = []  // Discard voting processes
-    meta.votingProcesses.ended = []  // Discard voting processes
-    await updateEntity(myEntityAddress, meta, wallet, gwInfo)
+    // meta.votingProcesses.active = []  // Unlist voting processes
+    // meta.votingProcesses.ended = []  // Unlist voting processes
+    // meta.actions[0].url = "https://registry.vocdoni.net/api/registrations"
+    await updateEntity(myEntityAddress, meta, wallet, web3Gateway, dvoteGateway)
     console.log("updated")
 
     dvoteGateway.disconnect()
@@ -441,8 +442,8 @@ async function useVoteApi() {
     if (envelopeList.length > 0)
         console.log("- Retrieved Vote:", await getEnvelope(processId, dvoteGw, envelopeList[envelopeList.length - 1]))
 
-        console.log("getRawRawResults",await getRawResults(processId, dvoteGw))
-        console.log("getResultsDigest",JSON.stringify(await getResultsDigest(processId, web3Gateway, dvoteGw), null, 2))
+    console.log("getRawRawResults", await getRawResults(processId, dvoteGw))
+    console.log("getResultsDigest", JSON.stringify(await getResultsDigest(processId, web3Gateway, dvoteGw), null, 2))
     dvoteGw.disconnect()
 }
 
@@ -629,14 +630,14 @@ async function main() {
     // await attachToVotingProcess()
 
     // Vocdoni API's
-    
-    await checkGatewayStatus()
+
+    // await checkGatewayStatus()
     // await fileDownload("ipfs://QmXLgWLYfa826DSCawfb1R34XBQYzs1z4xiLoChu7hUZyL")
     // await emptyFeedUpload()
     // await fileUpload()
     // await registerEntity()
     // await readEntity()
-    // await modifyEntityValues()
+    await modifyEntityValues()
     // await gwCensusOperations()
     // await createVotingProcessManual()
     // await createVotingProcessFull()

@@ -257,8 +257,8 @@ export const EntityMetadataTemplate: EntityMetadata = {
                 default: "Sign up",
                 // fr: "S'inscrire"
             },
-            url: "https://registry.vocdoni.net/register.html?entityId=0x0",
-            visible: "https://registry.vocdoni.net/api/actions/status"
+            url: "https://registry.vocdoni.net/api/actions/register",
+            visible: "https://registry.vocdoni.net/api/actions/register/visible?entityId=0x0"
         }
     ],
     bootEntities: [],
