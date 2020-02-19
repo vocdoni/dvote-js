@@ -4,6 +4,7 @@
 // - A metadata JSON template
 
 import * as Joi from "joi-browser"
+export { JsonFeedTemplate } from "./templates/json-feed"
 
 // LOCAL TYPE ALIASES
 type ContentUriString = string
@@ -96,36 +97,4 @@ export interface JsonFeedPost {
         name?: string,
         url: string
     }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// JSON TEMPLATE
-///////////////////////////////////////////////////////////////////////////////
-
-export const JsonFeedTemplate: JsonFeed = {
-    version: "1.0",
-    title: "Example",
-    home_page_url: "", // http://www.com
-    description: "This is the description",
-    feed_url: "", // http://www.com/item.json
-    icon: "", // http://www.com/icon.png
-    favicon: "", // http://www.com/favicon.ico
-    expired: false,
-
-    items: [{
-        id: "1234",
-        title: "Hello world",
-        summary: "Summary 1, 2, 3",
-        content_text: "Once upon a time, there was a JSON Feed...",
-        content_html: "<p>Once upon a time, there was a JSON Feed...</p>",
-        url: "", // http://link.item/1234
-        image: "", // http://www.com/image.jpg
-        tags: ["hello", "world"],
-        date_published: "2010-02-07T14:04:00-05:00",
-        date_modified: "2010-02-07T14:04:00-05:00",
-        author: {
-            name: "John Smith",
-            url: "http://john.smith"
-        }
-    }]
 }

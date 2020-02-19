@@ -278,6 +278,7 @@ async function modifyEntityValues() {
     // meta.votingProcesses.active = []  // Unlist voting processes
     // meta.votingProcesses.ended = []  // Unlist voting processes
     // meta.actions[0].url = "https://registry.vocdoni.net/api/registrations"
+    // meta.actions[0].visible = "https://registry.vocdoni.net/api/actions/status";
     await updateEntity(myEntityAddress, meta, wallet, web3Gateway, dvoteGateway)
     console.log("updated")
 

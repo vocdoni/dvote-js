@@ -15,6 +15,7 @@ import {
 } from "./common"
 import * as Joi from "joi-browser"
 import { by639_1 } from 'iso-language-codes'
+export { EntityMetadataTemplate } from "./templates/entity"
 
 // LOCAL TYPE ALIASES
 type ContentUriString = string
@@ -80,13 +81,13 @@ const entityMetadataSchema = Joi.object().keys({
     actions: Joi.array().items(
         Joi.object().keys({
             // Common
-            type: Joi.string().regex(/^(browser|image)$/),
+            type: Joi.string().regex(/^(register|browser|submitMedia)$/),
+            actionKey: Joi.string().required(),
             name: Joi.object().keys(multiLanguageStringKeys).required(),
             visible: Joi.string().required(),
 
             // Optional
             url: Joi.string().optional(),
-            register: Joi.boolean().optional(),
             imageSources: Joi.array().items(
                 Joi.object().keys({
                     type: Joi.string().regex(/^(front-camera|back-camera|gallery)$/).required(),
@@ -137,7 +138,7 @@ export const TextListRecordKeys = {
  */
 export interface EntityMetadata {
     version: ProtocolVersion,                // Protocol version
-    languages: ["default"], // FIXME: Remove in favor of actual language codes
+    languages: ["default"],                  // FIXME: Remove in favor of actual language codes
     // languages: string[],                  // Two character language code (en, fr, it, ...)
 
     name: MultiLanguage<string>,
@@ -163,10 +164,16 @@ export interface EntityMetadata {
     censusServiceManagedEntities: EntityReference[],
 }
 
-export type EntityCustomAction = EntityBaseAction & (EntityBrowserAction | EntityImageUploadAction)
+export type EntityCustomAction = EntityBaseAction & (EntityRegisterAction | EntityBrowserAction | EntityImageUploadAction)
 
 // The common fields of any action
 interface EntityBaseAction {
+    // type: string => overridden by subtypes
+
+    // A name to identify this action when querying for visibility 
+    // and sending requests
+    actionKey: string,
+
     // Localized Call To Action to appear on the app
     name: MultiLanguage<string>,
 
@@ -176,20 +183,25 @@ interface EntityBaseAction {
     visible: URI | "always"
 }
 
+// Open a register form within the client app
+interface EntityRegisterAction {
+    type: "register",
+
+    // The URL to POST the provided data to
+    url: URI
+}
+
 // Opening an interactive web browser
 interface EntityBrowserAction {
     type: "browser",
-    register: boolean,
 
     // The URI to navigate to
-    // - The embedded web site can send messages to the host app
-    // - Messages can request the public key, or a signature
     url: URI
 }
 
 // App-driven image upload example
 interface EntityImageUploadAction {
-    type: "image",
+    type: "submitMedia",
 
     // Requested image types to provide
     imageSources: ImageUploadSource[],
@@ -201,9 +213,7 @@ interface EntityImageUploadAction {
     //   ...
     // }
     //
-    // The URI will receive the following query string parameters:
-    // - signature = sign(hash(jsonBody), privateKey)
-    // - publicKey
+    // The URL to POST the provided data to
     url: URI
 }
 
@@ -218,51 +228,4 @@ type ImageUploadSource = {
 type EntityReference = {
     entityId: HexString,
     entryPoints: string[]
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// JSON TEMPLATE
-///////////////////////////////////////////////////////////////////////////////
-
-export const EntityMetadataTemplate: EntityMetadata = {
-    version: "1.0",
-    languages: [
-        "default"
-    ],
-    name: {
-        default: "My official entity",
-        // fr: "Mon organisation officielle"
-    },
-    description: {
-        default: "The description of my entity goes here",
-        // fr: "La description officielle de mon organisation est ici"
-    },
-    votingProcesses: {
-        active: [],
-        ended: []
-    },
-    newsFeed: {
-        default: "ipfs://QmWybQwdBwF81Dt71bNTDDr8PBpW9kNbWtQ64arswaBz1C",
-        // fr: "https://feed2json.org/convert?url=http://www.intertwingly.net/blog/index.atom"
-    },
-    media: {
-        avatar: "https://host/image.png",
-        header: "https://host/image.png"
-    },
-    actions: [
-        {
-            type: "browser",
-            register: true,
-            name: {
-                default: "Sign up",
-                // fr: "S'inscrire"
-            },
-            url: "https://registry.vocdoni.net/api/actions/register",
-            visible: "https://registry.vocdoni.net/api/actions/register/visible?entityId=0x0"
-        }
-    ],
-    bootEntities: [],
-    fallbackBootNodeEntities: [],
-    trustedEntities: [],
-    censusServiceManagedEntities: []
 }
