@@ -17,6 +17,7 @@ import { default as GatewayInfo } from "./wrappers/gateway-info"
 // UTIL
 import * as Providers from "./util/providers"
 import * as Signers from "./util/signers"
+import * as JsonSign from "./util/json-sign"
 
 // MODELS
 import * as EntityModel from "./models/entity"
@@ -31,6 +32,7 @@ export const Models = { Entity: EntityModel, Vote: VotingProcessModel, Gateway: 
 export const Network = { Bootnodes, Gateway, Contracts }
 export const Wrappers = { ContentURI, ContentHashedURI, GatewayInfo }
 export const EtherUtils = { Providers, Signers }
+export { JsonSign }
 
 // EXPORT TYPES
 export * from "./types"

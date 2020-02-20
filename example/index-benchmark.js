@@ -132,7 +132,7 @@ async function checkGatewayStatus() {
         // gw = new DVoteGateway(gwInfo["goerli"])
         // await gw.connect()
 
-        const status = await dvoteGateway.getStatus()
+        const status = await dvoteGateway.getGatewayInfo()
         // console.log("Gateway status", status)
         // gw.disconnect()
     }

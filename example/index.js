@@ -9,7 +9,8 @@ const {
     Network: { Bootnodes, Gateway, Contracts },
     Wrappers: { GatewayInfo, ContentURI, ContentHashedURI },
     Models: { Entity: { TextRecordKeys, EntityMetadataTemplate }, Vote: { ProcessMetadataTemplate } },
-    EtherUtils: { Providers, Signers }
+    EtherUtils: { Providers, Signers },
+    JsonSign: { signJsonBody, isSignatureValid, recoverSignerPublicKey }
 } = require("../dist") // require("dvote-js")
 
 const {
@@ -127,7 +128,7 @@ async function checkGatewayStatus() {
         gw = new DVoteGateway(gwInfo["goerli"])
         await gw.connect()
 
-        const status = await gw.getStatus()
+        const status = await gw.getGatewayInfo()
         console.log("Gateway status", status)
         gw.disconnect()
     }
@@ -277,8 +278,8 @@ async function modifyEntityValues() {
 
     // meta.votingProcesses.active = []  // Unlist voting processes
     // meta.votingProcesses.ended = []  // Unlist voting processes
-    // meta.actions[0].url = "https://registry.vocdoni.net/api/registrations"
-    // meta.actions[0].visible = "https://registry.vocdoni.net/api/actions/status";
+    // meta.actions[0].url = "https://registry.vocdoni.net/api/actions/register"
+    // meta.actions[0].visible = "https://registry.vocdoni.net/api/actions/status"
     await updateEntity(myEntityAddress, meta, wallet, web3Gateway, dvoteGateway)
     console.log("updated")
 
@@ -499,8 +500,10 @@ async function submitVoteBatch() {
 
 async function checkSignature() {
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
-    const message = "Hello dapp"
-    const signature = await wallet.signMessage(message)
+    const body = { "method": "getVisibility", "timestamp": 1582196988554 }
+    const message = JSON.stringify(body)
+    const signature = await signJsonBody(body, wallet)
+
     const expectedAddress = await wallet.getAddress()
     const expectedPublicKey = wallet.signingKey.publicKey
 
@@ -511,14 +514,24 @@ async function checkSignature() {
     console.log()
 
     // Approach 1
-    const actualAddress = utils.verifyMessage(message, signature)
+    const isValid = isSignatureValid(signature, expectedPublicKey, body)
+    const actualPubKey = recoverSignerPublicKey(body, signature)
 
     console.log("APPROACH 1")
+    console.log("EXPECTED PUB K: ", expectedPublicKey)
+    console.log("ACTUAL PUB K:   ", actualPubKey)
+    console.log("SIGNATURE VALID: ", isValid)
+    console.log()
+
+    // Approach 2
+    const actualAddress = utils.verifyMessage(message, signature)
+
+    console.log("APPROACH 2")
     console.log("EXPECTED ADDR: ", expectedAddress)
     console.log("ACTUAL ADDR:   ", actualAddress)
     console.log()
 
-    // Approach 2
+    // Approach 3
     const msgHash = utils.hashMessage(message);
     const msgHashBytes = utils.arrayify(msgHash);
 
@@ -526,16 +539,16 @@ async function checkSignature() {
     const recoveredPubKey = utils.recoverPublicKey(msgHashBytes, signature);
     const recoveredAddress = utils.recoverAddress(msgHashBytes, signature);
 
-    const matches = expectedPublicKey === recoveredPubKey
+    const signaturesMatch = expectedPublicKey === recoveredPubKey
 
-    console.log("APPROACH 2")
+    console.log("APPROACH 3")
     console.log("EXPECTED ADDR:    ", expectedAddress)
     console.log("RECOVERED ADDR:   ", recoveredAddress)
 
     console.log("EXPECTED PUB K:   ", expectedPublicKey)
     console.log("RECOVERED PUB K:  ", recoveredPubKey)
 
-    console.log("SIGNATURE VALID:  ", matches)
+    console.log("SIGNATURE VALID:  ", signaturesMatch)
     console.log()
 }
 
@@ -638,14 +651,14 @@ async function main() {
     // await fileUpload()
     // await registerEntity()
     // await readEntity()
-    await modifyEntityValues()
+    // await modifyEntityValues()
     // await gwCensusOperations()
     // await createVotingProcessManual()
     // await createVotingProcessFull()
     // await useVoteApi()
     // await submitVoteBatch()
     // await fetchMerkleProof()
-    // await checkSignature()
+    await checkSignature()
     // await gatewayRawRequest()
 
     // await gatewayHealthCheck()

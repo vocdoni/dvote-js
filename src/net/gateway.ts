@@ -337,7 +337,7 @@ export class DVoteGateway {
      * Retrieves the status of the given gateway and returns an object indicating the services it provides.
      * If there is no connection open, the method returns null.
      */
-    public async getStatus(): Promise<DVoteSupportedApi[]> {
+    public async getGatewayInfo(): Promise<DVoteSupportedApi[]> {
         if (!this.isConnected()) return null
 
         try {

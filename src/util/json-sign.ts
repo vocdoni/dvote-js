@@ -1,7 +1,8 @@
 import { Wallet, Signer, utils } from "ethers"
 
 /**
- * Sign a JSON payload using the given Ethers wallet or signer
+ * Sign a JSON payload using the given Ethers wallet or signer. 
+ * Ensures that the object keys are alphabetically sorted.
  * @param request 
  * @param walletOrSigner 
  */
@@ -14,7 +15,8 @@ export function signJsonBody(request: any, walletOrSigner: Wallet | Signer): Pro
 }
 
 /**
- * 
+ * Checks whether the given public key signed the given JSON with its fields
+ * sorted alphabetically
  * @param signature Hex encoded signature (created with the Ethereum prefix)
  * @param publicKey
  * @param responseBody JSON object of the `response` or `error` fields
@@ -37,6 +39,27 @@ export function isSignatureValid(signature: string, publicKey: string, responseB
     return actualAddress && expectedAddress && (actualAddress == expectedAddress)
 }
 
+/**
+ * Returns the public key that signed the given JSON data, with its fields sorted alphabetically
+ * 
+ * @param signature Hex encoded signature (created with the Ethereum prefix)
+ * @param responseBody JSON object of the `response` or `error` fields
+ */
+export function recoverSignerPublicKey(responseBody: any, signature: string): string {
+    if (!signature) throw new Error("Invalid signature")
+    else if (!responseBody) throw new Error("Invalid body")
+
+    responseBody = sortObjectFields(responseBody)
+    const message = JSON.stringify(responseBody)
+    const msgHash = utils.hashMessage(message)
+    const msgHashBytes = utils.arrayify(msgHash)
+    return utils.recoverPublicKey(msgHashBytes, signature)
+}
+
+/**
+ * Sort JSON data so that signatures are 100% reproduceable
+ * @param data
+ */
 export function sortObjectFields(data: any) {
     switch (typeof data) {
         case "bigint":
