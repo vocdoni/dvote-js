@@ -73,4 +73,20 @@ describe("JSON signing", () => {
         expect(recoveredPubKey1).to.equal(wallet["signingKey"].publicKey)
         expect(recoveredPubKey1).to.equal("0x04cb3cabb521d84fc998b5649d6b59e27a3e27633d31cc0ca6083a00d68833d5caeaeb67fbce49e44f089a28f46a4d815abd51bc5fc122065518ea4adb199ba780")
     })
+    it("Should recover the public key from a JSON with UTF-8 data and a signature", async () => {
+        let wallet = new Wallet("8d7d56a9efa4158d232edbeaae601021eb3477ad77b5f3c720601fd74e8e04bb")
+
+        const jsonBody1 = { a: "àèìòù", b: "áéíóú" }
+        const jsonBody2 = { b: "áéíóú", a: "àèìòù" }
+
+        const signature1 = await signJsonBody(jsonBody1, wallet)
+        const signature2 = await signJsonBody(jsonBody2, wallet)
+
+        const recoveredPubKey1 = recoverSignerPublicKey(jsonBody1, signature1)
+        const recoveredPubKey2 = recoverSignerPublicKey(jsonBody2, signature2)
+
+        expect(recoveredPubKey1).to.equal(recoveredPubKey2)
+        expect(recoveredPubKey1).to.equal(wallet["signingKey"].publicKey)
+        expect(recoveredPubKey1).to.equal("0x04cb3cabb521d84fc998b5649d6b59e27a3e27633d31cc0ca6083a00d68833d5caeaeb67fbce49e44f089a28f46a4d815abd51bc5fc122065518ea4adb199ba780")
+    })
 })
