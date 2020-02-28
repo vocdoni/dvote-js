@@ -9,9 +9,10 @@ import { Wallet, Signer, utils } from "ethers"
 export function signJsonBody(request: any, walletOrSigner: Wallet | Signer): Promise<string> {
     if (!walletOrSigner) throw new Error("Invalid wallet/signer")
 
-    request = sortObjectFields(request)
-    const msg = JSON.stringify(request)
-    return walletOrSigner.signMessage(msg)
+    const sortedRequest = sortObjectFields(request)
+    const msg = JSON.stringify(sortedRequest)
+    const msgBytes = utils.toUtf8Bytes(msg)
+    return walletOrSigner.signMessage(msgBytes)
 }
 
 /**
@@ -28,13 +29,11 @@ export function isSignatureValid(signature: string, publicKey: string, responseB
     const gwPublicKey = publicKey.startsWith("0x") ? publicKey : "0x" + publicKey
     const expectedAddress = utils.computeAddress(gwPublicKey)
 
-    responseBody = sortObjectFields(responseBody)
-    let strBody: string
-    if (typeof responseBody != "string") strBody = JSON.stringify(responseBody)
-    else strBody = responseBody
+    const sortedResponseBody = sortObjectFields(responseBody)
+    const bodyBytes = utils.toUtf8Bytes(JSON.stringify(sortedResponseBody))
 
     if (!signature.startsWith("0x")) signature = "0x" + signature
-    const actualAddress = utils.verifyMessage(strBody, signature)
+    const actualAddress = utils.verifyMessage(bodyBytes, signature)
 
     return actualAddress && expectedAddress && (actualAddress == expectedAddress)
 }
@@ -50,8 +49,9 @@ export function recoverSignerPublicKey(responseBody: any, signature: string): st
     else if (!responseBody) throw new Error("Invalid body")
 
     responseBody = sortObjectFields(responseBody)
-    const message = JSON.stringify(responseBody)
-    const msgHash = utils.hashMessage(message)
+    const strBody = JSON.stringify(responseBody)
+    const bodyBytes = utils.toUtf8Bytes(strBody)
+    const msgHash = utils.hashMessage(bodyBytes)
     const msgHashBytes = utils.arrayify(msgHash)
     return utils.recoverPublicKey(msgHashBytes, signature)
 }

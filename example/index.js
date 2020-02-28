@@ -499,56 +499,73 @@ async function submitVoteBatch() {
 }
 
 async function checkSignature() {
-    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
-    const body = { "method": "getVisibility", "timestamp": 1582196988554 }
-    const message = JSON.stringify(body)
-    const signature = await signJsonBody(body, wallet)
+    //const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+    const wallet = Wallet.fromMnemonic("poverty castle step need baby chair measure leader dress print cruise baby avoid fee sock shoulder rate opinion", PATH)
+    // const expectedPublicKey = "0x04d811f8ade566618a667715c637a7f3019f46ae0ffc8b2ec3b16b1f72999e2e2f9e9b50c78ca34175d78942de88798cce5d53569f96579a95ec9bab17c0131d4f"
+    // const expectedAddress = "0xe3A0ba4B2Ec804869d9D78857C5c4c6aA493aD00"
+    // const body = { "method": "getVisibility", "timestamp": Date.now()}
+    //const message = JSON.stringify(body)
+    //const signature = await signJsonBody(body, wallet)
 
     const expectedAddress = await wallet.getAddress()
     const expectedPublicKey = wallet.signingKey.publicKey
 
-    console.log("ISSUING SIGNATURE")
-    console.log("ADDR:    ", expectedAddress)
-    console.log("PUB K:   ", expectedPublicKey)
-    console.log("SIG      ", signature)
+    // let body = { "actionKey": "register", "dateOfBirth": "1975-01-25T12:00:00.000Z", "email": "john@me.com", "entityId": "0xf6515536038e12212adc96395021ad1f1f089a239f0ba4c139d364ededd00c54", "firstName": "John", "lastName": "Mayer", "method": "register", "phone": "5555555", "timestamp": 1582821257721 }
+    // let signature = "0x3086bf3de0d22d2d51f274d4618ea963b60b1e590f5ef0b1a2df17447746d4503f595e87330fb9cc9387c321acc9e476baedfd0681d864f68f4f1bc84548725c1b"
+
+    // let body = { "actionKey": "register", "dateOfBirth": "1975-01-23T12:00:00.000Z", "email": "ferran@me.com", "entityId": "0xf6515536038e12212adc96395021ad1f1f089a239f0ba4c139d364ededd00c54", "firstName": "Ferran", "lastName": "Adrià", "method": "register", "phone": "5555555555", "timestamp": 1582820811597 }
+    // let givenSignature = "0x12d77e67c734022f7ab66231377621b75b454d724303bb158019549cf9f02d384d9af1d33266ca017248d8914b111cbb68b7cc9f045e95ccbde5ce389254450f1b"
+
+    const message = JSON.stringify(body)
+
+    const computedSignature = await signJsonBody(body, wallet)
+
+    console.log("Issuing signature\n")
+    console.log("- ADDR:        ", expectedAddress)
+    console.log("- PUB K:       ", expectedPublicKey)
+    console.log("- SIG (given)  ", givenSignature)
+    console.log("- SIG (comp)   ", computedSignature)
     console.log()
 
     // Approach 1
-    const isValid = isSignatureValid(signature, expectedPublicKey, body)
-    const actualPubKey = recoverSignerPublicKey(body, signature)
+    const isValid = isSignatureValid(givenSignature, expectedPublicKey, body)
+    const actualPubKey = recoverSignerPublicKey(body, givenSignature)
 
-    console.log("APPROACH 1")
-    console.log("EXPECTED PUB K: ", expectedPublicKey)
-    console.log("ACTUAL PUB K:   ", actualPubKey)
-    console.log("SIGNATURE VALID: ", isValid)
+    console.log("Approach 1")
+    console.log("- Expected PUB K:   ", expectedPublicKey)
+    console.log("- Actual PUB K:     ", actualPubKey)
+    console.log("- Signature valid:  ", isValid)
     console.log()
 
     // Approach 2
-    const actualAddress = utils.verifyMessage(message, signature)
+    const actualAddress = utils.verifyMessage(utils.toUtf8Bytes(message), givenSignature)
 
-    console.log("APPROACH 2")
-    console.log("EXPECTED ADDR: ", expectedAddress)
-    console.log("ACTUAL ADDR:   ", actualAddress)
+    console.log("Approach 2")
+    console.log("- Expected addr:    ", expectedAddress)
+    console.log("- Actual addr:      ", actualAddress)
     console.log()
 
     // Approach 3
-    const msgHash = utils.hashMessage(message);
+
+    const msgBytes = utils.toUtf8Bytes(message);
+    const msgHash = utils.hashMessage(msgBytes);
     const msgHashBytes = utils.arrayify(msgHash);
 
     // Now you have the digest,
-    const recoveredPubKey = utils.recoverPublicKey(msgHashBytes, signature);
-    const recoveredAddress = utils.recoverAddress(msgHashBytes, signature);
+    const recoveredPubKey = utils.recoverPublicKey(msgHashBytes, givenSignature);
+    const recoveredAddress = utils.recoverAddress(msgHashBytes, givenSignature);
 
     const signaturesMatch = expectedPublicKey === recoveredPubKey
 
-    console.log("APPROACH 3")
-    console.log("EXPECTED ADDR:    ", expectedAddress)
-    console.log("RECOVERED ADDR:   ", recoveredAddress)
+    console.log("Approach 3")
+    console.log("- Expected addr:    ", expectedAddress)
+    console.log("- Recovered addr:   ", recoveredAddress)
 
-    console.log("EXPECTED PUB K:   ", expectedPublicKey)
-    console.log("RECOVERED PUB K:  ", recoveredPubKey)
+    console.log("- Expected PUB K:   ", expectedPublicKey)
+    console.log("- Recovered PUB K:  ", recoveredPubKey)
 
-    console.log("SIGNATURE VALID:  ", signaturesMatch)
+    console.log("- SIGNATURE:        ", computedSignature)
+    console.log("- Signature OK?     ", signaturesMatch)
     console.log()
 }
 
