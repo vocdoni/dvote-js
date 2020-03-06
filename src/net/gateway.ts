@@ -11,6 +11,8 @@ import GatewayInfo from "../wrappers/gateway-info"
 import { DVoteSupportedApi, WsGatewayMethod, fileApiMethods, voteApiMethods, censusApiMethods } from "../models/gateway"
 import { SIGNATURE_TIMESTAMP_TOLERANCE } from "../constants"
 import { signJsonBody, isSignatureValid } from "../util/json-sign"
+import axios from "axios"
+import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
 
 const uriPattern = /^([a-z][a-z0-9+.-]+):(\/\/([^@]+@)?([a-z0-9.\-_~]+)(:\d+)?)?((?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])*)*|(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+)*)?(\?(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?(\#(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?$/i
 
@@ -139,7 +141,7 @@ export class DVoteGateway {
                 this.uri = newUri
                 this.supportedApis = newSupportedApis
                 this.pubKey = newPublicKey
-                
+
                 this.connectionPromise = null
                 resolve()
             }
@@ -188,9 +190,9 @@ export class DVoteGateway {
         if (this.connectionPromise) await this.connectionPromise
 
         return this.webSocket != null &&
-                this.webSocket.readyState !== this.webSocket.CLOSING &&
-                this.webSocket.readyState !== this.webSocket.CLOSED &&
-                this.uri != null
+            this.webSocket.readyState !== this.webSocket.CLOSING &&
+            this.webSocket.readyState !== this.webSocket.CLOSED &&
+            this.uri != null
     }
 
     /**
@@ -234,7 +236,7 @@ export class DVoteGateway {
         do {
             rand = Math.random().toString(16).split('.')[1]
             requestId = utils.keccak256('0x' + rand).substr(2)
-        // } while (this.requestList.filter(r => r.id === rand).length > 0)
+            // } while (this.requestList.filter(r => r.id === rand).length > 0)
         } while (this.requestList.some(r => r.id === rand))
         const content: MessageRequestContent = {
             id: requestId,
@@ -300,6 +302,106 @@ export class DVoteGateway {
         return msg.response
     }
 
+    /**
+     * Retrieves the status of the given gateway and returns an object indicating the services it provides.
+     * If there is no connection open, the method returns null.
+     */
+    public async getGatewayInfo(timeout?: number): Promise<DVoteSupportedApi[]> {
+        if (!this.isConnected()) return null
+
+        try {
+            let result
+            if (timeout)
+                result = await this.sendMessage({ method: "getGatewayInfo" }, null, timeout)
+            else
+                result = await this.sendMessage({ method: "getGatewayInfo" })
+            if (!result.ok) throw new Error("Not OK")
+            else if (!Array.isArray(result.apiList)) throw new Error("apiList is not an array")
+            return result.apiList
+        }
+        catch (err) {
+            console.error(err)
+            throw new Error("The status of the gateway could not be retrieved")
+        }
+    }
+
+    /**
+     * Checks the health of the current Gateway by calling isUp
+     * @returns the necessary parameters to create a GatewayInfo object
+     */
+    public async isUp(): Promise<{ result: boolean, dvoteUri?: string, supportedApis?: DVoteSupportedApi[], pubKey?: string }> {
+        const url = this.uri
+        const uri = parseURL(this.uri)
+
+        // if (!(uri instanceof Url]) || uri.host.length === 0) {
+        // TODO Check that parsing worked correctly
+        if ( uri.host.length === 0) {
+            throw new Error("Invalid Gateway URL")
+        }
+        return new Promise((resolve, reject) => {
+            setTimeout(() => {
+                // Check ping and then status
+                this.checkPing()
+                    .then(async (isUp) => {
+                        if (isUp !== true) {
+                            resolve({ result: false })
+                            return
+                        }
+                        await this.connect()
+                        return this.getGatewayInfo(GATEWAY_SELECTION_TIMEOUT)
+                            .then(async (response) => {
+                                await this.disconnect()
+                                if (response) {
+                                    resolve({ result: true, dvoteUri: url, supportedApis: response, pubKey: this.pubKey })
+                                } else {
+                                    resolve({ result: false })
+                                }
+                                return
+                            })
+                    }).catch((err) => {
+                        console.error(err)
+                        reject(err)
+                        return
+                    })
+                } , GATEWAY_SELECTION_TIMEOUT)
+        })
+    }
+
+    /**
+     * Checks the ping response of the gateway
+     * @returns A boolean representing wheter the gateway responded correctly or not
+     */
+    public async checkPing(): Promise<boolean> {
+        const uri = parseURL(this.uri)
+        // console.log("starting ping")
+        let pingUrl: string = uri.port
+            ? `https://${uri.host}:${uri.port}/ping`
+            : `https://${uri.host}/ping`
+
+        try {
+            let response = await axios.get(pingUrl)
+            if (response != null &&
+                response.status === 200 &&
+                response.data === "pong") {
+                // console.log('ping');
+                return true;
+            }
+
+            // HTTP fallback
+            pingUrl = uri.port
+                ? `http://${uri.host}:${uri.port}/ping`
+                : `http://${uri.host}/ping`
+
+            response = await axios.get(pingUrl)
+            return (response != null &&
+                response.status === 200 &&
+                response.data === "pong")
+        } catch (err) {
+            // console.error(err)
+            return false;
+        }
+    }
+
     // PRIVATE METHODS
 
     /**
@@ -333,26 +435,7 @@ export class DVoteGateway {
         delete request.resolve
     }
 
-    /**
-     * Retrieves the status of the given gateway and returns an object indicating the services it provides.
-     * If there is no connection open, the method returns null.
-     */
-    public async getGatewayInfo(): Promise<DVoteSupportedApi[]> {
-        if (!this.isConnected()) return null
-
-        try {
-            const result = await this.sendMessage({ method: "getGatewayInfo" })
-            if (!result.ok) throw new Error("Not OK")
-            else if (!Array.isArray(result.apiList)) throw new Error("apiList is not an array")
-            return result.apiList
-        }
-        catch (err) {
-            console.error(err)
-            throw new Error("The status of the gateway could not be retrieved")
-        }
-    }
 }
-
 /**
  * A Web3 wrapped client with utility methods to deploy and attach to Ethereum contracts.
  */

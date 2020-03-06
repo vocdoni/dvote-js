@@ -11,6 +11,7 @@ import { TextRecordKeys } from "../models/entity"
 import { GatewayBootNodes } from "../models/gateway"
 import { DVoteGateway, Web3Gateway, IDVoteGateway, IWeb3Gateway } from "./gateway"
 import { getDefaultProvider, providers } from "ethers"
+import { JsonRpcProvider } from "ethers/providers"
 
 type NetworkID = "homestead" | "goerli"
 
@@ -130,6 +131,45 @@ export function fetchFromBootNode(bootnodesContentUri: string | ContentURI): Pro
 /**
  * Retrieve a list of curently active gateways for the given entityAddress
  */
-export async function getActiveEntityGateways(entityAddress: string): Promise<GatewayInfo[]> {
+export async function getActiveEntityGateways(entityAddress: string): Promise<GatewayInfo> {
     throw new Error("TODO: unimplemented") // TODO: getActiveEntityGateways()
+}
+
+/**
+ * @param networkId The Ethereum network to which the gateway should be associated
+ * @returns A GatewayInfo object
+ */
+export async function getWorkingGatewayInfo(networkId: NetworkID): Promise<GatewayInfo> {
+    const defaultGateways = await getDefaultGateways(networkId)
+    const dvoteNodes: DVoteGateway[] = defaultGateways[networkId].dvote
+    const web3Nodes: Web3Gateway[] = defaultGateways[networkId].web3
+
+    if (!dvoteNodes.length)
+        throw new Error(`The Dvote gateway list is empty of ${networkId}`)
+
+    const web3Provider = web3Nodes[Math.floor(Math.random() * web3Nodes.length)].getProvider() as JsonRpcProvider
+    const web3Url = web3Provider.connection.url
+
+    let workingDvoteGateways: GatewayInfo[] = []
+    let found = false
+
+    return Promise.all(dvoteNodes
+        .map((node) =>
+            node.isUp()
+                .then(async ({ result, dvoteUri, supportedApis, pubKey }) => {
+                    await node.disconnect()
+                    if (result) {
+                        found = true
+                        workingDvoteGateways.push(new GatewayInfo(dvoteUri, supportedApis, web3Url, pubKey))
+                    }
+                }).catch((err) => {
+                    console.error(err)
+                })
+        ))
+        .then(() => {
+            if (!found) {
+                throw new Error("None of the gateways is available")
+            }
+            return workingDvoteGateways[0]
+        })
 }

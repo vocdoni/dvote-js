@@ -23,7 +23,7 @@ const {
 const { getEntityId, getEntityMetadataByAddress, updateEntity } = Entity
 const { getRoot, addCensus, addClaim, addClaimBulk, digestHexClaim, getCensusSize, generateCensusId, generateCensusIdSuffix, publishCensus, importRemote, generateProof, dump, dumpPlain } = Census
 const { DVoteGateway, Web3Gateway } = Gateway
-const { getDefaultGateways, getRandomGatewayInfo } = Bootnodes
+const { getDefaultGateways, getRandomGatewayInfo, getWorkingGatewayInfo } = Bootnodes
 const { addFile, fetchFileString } = File
 const { createVotingProcess, getVoteMetadata, packagePollEnvelope, submitEnvelope, getBlockHeight, getEnvelopeHeight, getTimeUntilStart, getTimeUntilEnd, getTimeForBlock, getBlockNumberForTime, getEnvelopeList, getEnvelope, getRawResults, getResultsDigest } = Vote
 
@@ -652,6 +652,11 @@ async function ensResolver() {
     console.log("Voting Process contract address", processAddr)
 }
 
+async function workingGatewayInfo(){
+    let gwInfo = await getWorkingGatewayInfo("goerli")
+    console.log(JSON.stringify(gwInfo))
+}
+
 async function main() {
     // Ethereum
 
@@ -663,7 +668,7 @@ async function main() {
     // Vocdoni API's
 
     // await checkGatewayStatus()
-    // await fileDownload("ipfs://QmXLgWLYfa826DSCawfb1R34XBQYzs1z4xiLoChu7hUZyL")
+    // await fileDownload("ipfs://QmXLgWLYfa826DSCawfb1R34XBQYzs1z4xiLoChu7hUZyM")
     // await emptyFeedUpload()
     // await fileUpload()
     // await registerEntity()
@@ -675,11 +680,12 @@ async function main() {
     // await useVoteApi()
     // await submitVoteBatch()
     // await fetchMerkleProof()
-    await checkSignature()
+    // await checkSignature()
     // await gatewayRawRequest()
 
     // await gatewayHealthCheck()
     // await ensResolver()
+    await workingGatewayInfo()
 }
 
 main()
