@@ -362,7 +362,7 @@ export class DVoteGateway {
                     reject(err)
                     return
                 })
-            setTimeout(() => {reject()} , GATEWAY_SELECTION_TIMEOUT)
+            setTimeout(() => reject("timeout") , GATEWAY_SELECTION_TIMEOUT)
         })
     }
 

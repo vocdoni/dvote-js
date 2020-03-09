@@ -145,7 +145,7 @@ export async function getWorkingGatewayInfo(networkId: NetworkID): Promise<Gatew
     const web3Nodes: Web3Gateway[] = defaultGateways[networkId].web3
 
     if (!dvoteNodes.length)
-        throw new Error(`The Dvote gateway list is empty of ${networkId}`)
+        Promise.reject(new Error(`The Dvote gateway list is empty of ${networkId}`))
 
     const web3Provider = web3Nodes[Math.floor(Math.random() * web3Nodes.length)].getProvider() as JsonRpcProvider
     const web3Url = web3Provider.connection.url
@@ -163,7 +163,7 @@ export async function getWorkingGatewayInfo(networkId: NetworkID): Promise<Gatew
                         workingDvoteGateways.push(new GatewayInfo(dvoteUri, supportedApis, web3Url, pubKey))
                     }
                 }).catch((err) => {
-                    console.error(err)
+                    // console.error(err)
                 })
         ))
         .then(() => {
