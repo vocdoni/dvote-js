@@ -339,31 +339,30 @@ export class DVoteGateway {
             throw new Error("Invalid Gateway URL")
         }
         return new Promise((resolve, reject) => {
-            setTimeout(() => {
-                // Check ping and then status
-                this.checkPing()
-                    .then(async (isUp) => {
-                        if (isUp !== true) {
-                            resolve({ result: false })
-                            return
-                        }
-                        await this.connect()
-                        return this.getGatewayInfo(GATEWAY_SELECTION_TIMEOUT)
-                            .then(async (response) => {
-                                await this.disconnect()
-                                if (response) {
-                                    resolve({ result: true, dvoteUri: url, supportedApis: response, pubKey: this.pubKey })
-                                } else {
-                                    resolve({ result: false })
-                                }
-                                return
-                            })
-                    }).catch((err) => {
-                        console.error(err)
-                        reject(err)
+            // Check ping and then status
+            this.checkPing()
+                .then(async (isUp) => {
+                    if (isUp !== true) {
+                        resolve({ result: false })
                         return
-                    })
-                } , GATEWAY_SELECTION_TIMEOUT)
+                    }
+                    await this.connect()
+                    return this.getGatewayInfo(GATEWAY_SELECTION_TIMEOUT)
+                        .then(async (response) => {
+                            await this.disconnect()
+                            if (response) {
+                                resolve({ result: true, dvoteUri: url, supportedApis: response, pubKey: this.pubKey })
+                            } else {
+                                resolve({ result: false })
+                            }
+                            return
+                        })
+                }).catch((err) => {
+                    console.error(err)
+                    reject(err)
+                    return
+                })
+            setTimeout(() => {reject()} , GATEWAY_SELECTION_TIMEOUT)
         })
     }
 
