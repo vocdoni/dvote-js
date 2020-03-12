@@ -28,7 +28,7 @@ export const EntityMetadataTemplate: EntityMetadata = {
     actions: [
         {
             type: "register",
-            actionKey: "sign-up",
+            actionKey: "register",
             name: {
                 default: "Sign up",
                 // fr: "S'inscrire"
