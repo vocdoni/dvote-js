@@ -139,8 +139,9 @@ export async function getActiveEntityGateways(entityAddress: string): Promise<Ga
  * @param networkId The Ethereum network to which the gateway should be associated
  * @returns A GatewayInfo object
  */
-export async function getWorkingGatewayInfo(networkId: NetworkID): Promise<GatewayInfo> {
-    const defaultGateways = await getDefaultGateways(networkId)
+export async function getWorkingGatewayInfo(networkId: NetworkID, bootnodesContentUri?: string | ContentURI ): Promise<GatewayInfo> {
+
+    const defaultGateways = bootnodesContentUri ? await getGatewaysFromBootNode(bootnodesContentUri) : await getDefaultGateways(networkId)
     const dvoteNodes: DVoteGateway[] = defaultGateways[networkId].dvote
     const web3Nodes: Web3Gateway[] = defaultGateways[networkId].web3
 
