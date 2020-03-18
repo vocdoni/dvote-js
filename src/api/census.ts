@@ -114,7 +114,7 @@ export async function addClaimBulk(censusId: string, claimsData: string[], diges
     let invalidClaims = []
     while (claimsData.length) {
         const claims = claimsData.splice(0, CENSUS_MAX_BULK_SIZE)
-        const partialInvalidClaims = await addClaimBulkHelper(censusId, digested, claims, gateway, walletOrSigner)
+        const partialInvalidClaims = await addClaimBulkHelper(censusId, claims, digested, gateway, walletOrSigner)
         invalidClaims = invalidClaims.concat(partialInvalidClaims)
     }
 
@@ -123,7 +123,7 @@ export async function addClaimBulk(censusId: string, claimsData: string[], diges
     return { merkleRoot, invalidClaims }
 }
 
-async function addClaimBulkHelper(censusId: string, digested: boolean, claimsData: string[], gateway: IDVoteGateway, walletOrSigner: Wallet | Signer): Promise<any[]> {
+async function addClaimBulkHelper(censusId: string, claimsData: string[], digested: boolean, gateway: IDVoteGateway, walletOrSigner: Wallet | Signer): Promise<any[]> {
     if (!censusId || !claimsData || claimsData.length > CENSUS_MAX_BULK_SIZE || !gateway) throw new Error("Invalid parameters")
     if (!claimsData.length) return []
 
