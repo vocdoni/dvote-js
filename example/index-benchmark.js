@@ -307,33 +307,28 @@ async function gwCensusOperations() {
 
         const censusName = "My census name " + Math.random().toString().substr(2) + Math.random().toString().substr(2)
         const adminPublicKeys = [await wallet.signingKey.publicKey]
-        const publicKeys = []
+        const publicKeyClaims = []
 
         for (let i = 0; i < 100; i++) {
             const newK = "04" + Math.random().toString().substr(2) + Math.random().toString().substr(2) + Math.random().toString().substr(2) +
                 Math.random().toString().substr(2) + Math.random().toString().substr(2) + Math.random().toString().substr(2) +
                 Math.random().toString().substr(2) + Math.random().toString().substr(2) + Math.random().toString().substr(2)
-            publicKeys.push(newK.substr(0, 128))
+            publicKeyClaims.push(newK.substr(0, 128))
         }
 
-        let publicKeyDigestedClaims = publicKeys.map(item => digestHexClaim(item))
-        publicKeyDigestedClaims[publicKeyDigestedClaims.length - 1] = "wrong_value"
-        // console.log(publicKeyDigestedClaims);
+        publicKeyClaims[publicKeyClaims.length - 1] = "wrong_value"
 
         // Create a census if it doesn't exist
         let result = await addCensus(censusName, adminPublicKeys, gw, wallet)
-        // console.log(`ADD CENSUS "${censusName}" RESULT:`)
-        // { censusId: "0x.../0x...", merkleRoot: "0x0..."}
 
         // Add a claim to the new census
         const censusId = result.censusId
-        result = await addClaim(censusId, publicKeyDigestedClaims[0], gw, wallet)
-        // console.log("ADDED", publicKeyDigestedClaims[0], "TO", censusId)
+        result = await addClaim(censusId, false, publicKeyClaims[0], gw, wallet)
+        // console.log("ADDED", publicKeyClaims[0], "TO", censusId)
 
         // Add claims to the new census
-        // const censusId = result.censusId
-        result = await addClaimBulk(censusId, publicKeyDigestedClaims.slice(1), gw, wallet)
-        // console.log("ADDED", publicKeyDigestedClaims.slice(1), "TO", censusId)
+        result = await addClaimBulk(censusId, false, publicKeyClaims.slice(1), gw, wallet)
+        // console.log("ADDED", publicKeyClaims.slice(1), "TO", censusId)
         if (result.invalidClaims.length != 1) throw new Error("INVALID CLAIMS", result.invalidClaims)
         else if (result.invalidClaims[0] != 98) throw new Error("INVALID CLAIMS", result.invalidClaims)
         const merkleRoot = await getRoot(censusId, gw)

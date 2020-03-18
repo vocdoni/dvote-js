@@ -81,15 +81,16 @@ export async function addCensus(censusName: string, managerPublicKeys: string[],
  * NOTE: This function is intended to be called from NodeJS 10+
  * 
  * @param censusId Full Census ID containing the Entity ID and the hash of the original name
- * @param claimData A stirng containing the digest of the Public Key (see `digestHexClaim()`)
+ * @param claimData A string containing a base64 encoded Public Key or the base64 encoded Poseidon Hash of it
+ * @param digested Set to true if the claim is already hashed using Poseidon Hash. False otherwise.
  * @param gateway A DVoteGateway instance pointing to a remote Gateway
  * @param walletOrSigner 
  * @returns Promise resolving with the new merkleRoot
  */
-export function addClaim(censusId: string, claimData: string, gateway: IDVoteGateway, walletOrSigner: Wallet | Signer): Promise<string> {
+export function addClaim(censusId: string, claimData: string, digested: boolean, gateway: IDVoteGateway, walletOrSigner: Wallet | Signer): Promise<string> {
     if (!censusId || !claimData || !claimData.length || !gateway) throw new Error("Invalid parameters")
 
-    return gateway.sendMessage({ method: "addClaim", censusId, claimData }, walletOrSigner).then(response => {
+    return gateway.sendMessage({ method: "addClaim", censusId, digested, claimData }, walletOrSigner).then(response => {
         if (!response.ok) throw new Error("The claim could not be added")
 
         return getRoot(censusId, gateway)
@@ -101,18 +102,19 @@ export function addClaim(censusId: string, claimData: string, gateway: IDVoteGat
  * NOTE: This function is intended to be called from NodeJS 10+
  * 
  * @param censusId Full Census ID containing the Entity ID and the hash of the original name
- * @param claimsData A stirng containing the digest of the users' Public Keys (see `digestHexClaim()`)
+ * @param claimsData A string array containing base64 encoded Public Keys or the base64 encoded Poseidon Hashes of them
+ * @param digested Set to true if the claims are already hashed using Poseidon Hash. False otherwise.
  * @param gateway A DVoteGateway instance pointing to a remote Gateway
  * @param walletOrSigner 
  * @returns Promise resolving with the new merkleRoot
  */
-export async function addClaimBulk(censusId: string, claimsData: string[], gateway: IDVoteGateway, walletOrSigner: Wallet | Signer): Promise<{ merkleRoot: string, invalidClaims: any[] }> {
+export async function addClaimBulk(censusId: string, claimsData: string[], digested: boolean, gateway: IDVoteGateway, walletOrSigner: Wallet | Signer): Promise<{ merkleRoot: string, invalidClaims: any[] }> {
     if (!censusId || !claimsData || !claimsData.length || !gateway) throw new Error("Invalid parameters")
-    
+
     let invalidClaims = []
-    while(claimsData.length) {
-        const claims  = claimsData.splice(0,CENSUS_MAX_BULK_SIZE)
-        const partialInvalidClaims = await addClaimBulkHelper(censusId, claims, gateway, walletOrSigner)
+    while (claimsData.length) {
+        const claims = claimsData.splice(0, CENSUS_MAX_BULK_SIZE)
+        const partialInvalidClaims = await addClaimBulkHelper(censusId, digested, claims, gateway, walletOrSigner)
         invalidClaims = invalidClaims.concat(partialInvalidClaims)
     }
 
@@ -121,11 +123,11 @@ export async function addClaimBulk(censusId: string, claimsData: string[], gatew
     return { merkleRoot, invalidClaims }
 }
 
-async function addClaimBulkHelper(censusId: string, claimsData: string[], gateway: IDVoteGateway, walletOrSigner: Wallet | Signer): Promise<any[]> {
+async function addClaimBulkHelper(censusId: string, digested: boolean, claimsData: string[], gateway: IDVoteGateway, walletOrSigner: Wallet | Signer): Promise<any[]> {
     if (!censusId || !claimsData || claimsData.length > CENSUS_MAX_BULK_SIZE || !gateway) throw new Error("Invalid parameters")
     if (!claimsData.length) return []
-    
-    const response = await gateway.sendMessage({ method: "addClaimBulk", censusId, claimsData }, walletOrSigner)
+
+    const response = await gateway.sendMessage({ method: "addClaimBulk", censusId, digested, claimsData }, walletOrSigner)
     if (!response.ok) throw new Error("The given claims could not be added")
     const invalidClaims = ("invalidClaims" in response) ? response.invalidClaims : []
 
@@ -194,7 +196,6 @@ export function dumpPlain(censusId: string, gateway: IDVoteGateway, walletOrSign
         if (!response.ok) throw new Error("The census merkle root could not be fetched")
         return (response.claimsData && response.claimsData.length) ? response.claimsData : []
     })
-
 }
 
 /** Only works with specific merkletree format used by dump method. To add a list of plain claims use `addClaimBulk` instead */
