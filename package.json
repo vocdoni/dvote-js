@@ -24,7 +24,7 @@
     "arraybuffer-to-string": "^1.0.2",
     "axios": "^0.19.2",
     "buffer": "^5.2.1",
-    "circomlib": "0.0.14",
+    "circomlib": "^0.1.2",
     "dvote-solidity": "^0.5.1",
     "ethers": "^4.0.44",
     "iso-language-codes": "^1.0.6",
