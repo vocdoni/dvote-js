@@ -445,7 +445,7 @@ async function useVoteApi() {
         // console.log("- Block on 10/10/2019:", await getBlockNumberForTime(processId, new Date(2019, 9, 10), dvoteGw))
 
         // const publicKeyHash = digestHexClaim(wallet["signingKey"].publicKey)
-        // const merkleProof = await generateProof(censusMerkleRoot, publicKeyHash, dvoteGw)
+        // const merkleProof = await generateProof(censusMerkleRoot, publicKeyHash, true, dvoteGw)
         // const votes = [1, 2, 1]
         // const voteEnvelope = await packagePollEnvelope(votes, merkleProof, processId, wallet)
 
@@ -501,7 +501,7 @@ async function submitVoteBatch() {
             // const myEntityAddress = await wallet.getAddress()
 
             const publicKeyHash = digestHexClaim(wallet["signingKey"].publicKey)
-            const merkleProof = await generateProof(censusMerkleRoot, publicKeyHash, dvoteGw)
+            const merkleProof = await generateProof(censusMerkleRoot, publicKeyHash, true, dvoteGw)
             const votes = [1]
             const voteEnvelope = await packagePollEnvelope(votes, merkleProof, processId, wallet)
 
@@ -567,7 +567,7 @@ async function fetchMerkleProof() {
     // console.log("FETCHING CLAIM", process.env.BASE64_CLAIM_DATA)
     // console.log("on Merkle Tree", process.env.CENSUS_MERKLE_ROOT)
 
-    const siblings = await generateProof(process.env.CENSUS_MERKLE_ROOT, process.env.BASE64_CLAIM_DATA, dvoteGateway)
+    const siblings = await generateProof(process.env.CENSUS_MERKLE_ROOT, process.env.BASE64_CLAIM_DATA, true, dvoteGateway)
     // console.log("SIBLINGS:", siblings)
 
     // dvoteGateway.disconnect()
