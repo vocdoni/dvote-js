@@ -6,14 +6,15 @@
 
 import "mocha" // using @types/mocha
 import { expect } from "chai"
-import { Contract } from "ethers"
+import { Contract, Wallet } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
 import { getAccounts, increaseTimestamp, TestAccount } from "../testing-eth-utils"
 import { VotingProcessContractMethods } from "dvote-solidity"
 const fs = require("fs")
 
 import { deployVotingProcessContract, getVotingProcessInstance } from "../../src/net/contracts"
-import { checkValidProcessMetadata, ProcessMetadataTemplate } from "../../src/models/voting-process";
+import { getPollNullifier } from "../../src/api/vote"
+import { checkValidProcessMetadata, ProcessMetadataTemplate } from "../../src/models/voting-process"
 import VotingProcessBuilder, {
     DEFAULT_PROCESS_TYPE,
     DEFAULT_METADATA_CONTENT_HASHED_URI,
@@ -500,13 +501,37 @@ describe("Voting Process", () => {
     //     it("Should deny the validity of a signature produced by key that don't belong to the given ring")
     //     it("Should link two signatures that have been issued with the same key pair")
     //     it("Should not link two signatures that have been issued with different key pairs")
-    //     it("Should bundle a Vote Package into a valid Vote Envelope that only the chosen relay can decrypt")
+    //     it("Should bundle a Vote Package into a valid Vote Envelope")
     // })
 
     describe("ZK Snarks", () => {
         it("Should produce a valid ZK proof if the user is eligible to vote in an election")
         it("Should allow to verify that a ZK proof is valid")
-        it("Should bundle a Vote Package into a valid Vote Envelope that only the chosen relay can decrypt")
+        it("Should bundle a Vote Package into a valid Vote Envelope")
+    })
+
+    describe("Polls", () => {
+        it("Should retrieve a valid merkle proof if the user is eligible to vote in an election")
+        it("Should compute valid poll nullifiers", () => {
+            const processId = "0x8b35e10045faa886bd2e18636cd3cb72e80203a04e568c47205bf0313a0f60d1"
+
+            const wallet = Wallet.fromMnemonic("seven family better journey display approve crack burden run pattern filter topple")
+            expect(wallet.privateKey).to.eq("0xdc44bf8c260abe06a7265c5775ea4fb68ecd1b1940cfa76c1726141ec0da5ddc")
+            expect(wallet.address).to.eq("0xaDDAa28Fb1fe87362A6dFdC9d3EEA03d0C221d81")
+
+            let nullifier = getPollNullifier(wallet.address, processId)
+            expect(nullifier).to.eq("0xf6e3fe2d68f3ccc3af2a7835b302e42c257e2de6539c264542f11e5588e8c162")
+
+            nullifier = getPollNullifier(baseAccount.address, processId)
+            expect(nullifier).to.eq("0x13bf966813b5299110d34b1e565d62d8c26ecb1f76f92ca8bd21fd91600360bc")
+
+            nullifier = getPollNullifier(randomAccount.address, processId)
+            expect(nullifier).to.eq("0x25e1ec205509664e2433b9f9930c901eb1f2e31e851468a6ef7329dd9ada3bc8")
+
+            nullifier = getPollNullifier(randomAccount1.address, processId)
+            expect(nullifier).to.eq("0x419761e28c5103fa4ddac3d575a940c683aa647c31a8ac1073c8780f4664efcb")
+        })
+        it("Should bundle a Vote Package into a valid Vote Envelope")
     })
 
     describe("Metadata validator", () => {

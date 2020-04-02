@@ -440,6 +440,19 @@ export function packagePollVote(votes: number[]): string {
     return getBase64StringFromArrayBuffer(buff)
 }
 
+/** Computes the nullifier of the user's vote within a poll voting process.
+* Returns a hex string with kecak256(bytes(address) + bytes(processId))
+*/
+export function getPollNullifier(address: string, processId: string): string {
+    address = address.replace(/^0x/, "")
+    processId = processId.replace(/^0x/, "")
+
+    if (address.length != 40) return null
+    if (processId.length != 64) return null
+
+    return utils.keccak256(utils.arrayify("0x" + address + processId))
+}
+
 
 // TYPES
 
