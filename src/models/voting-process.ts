@@ -32,7 +32,7 @@ type MessagingUriString = string
 export function checkValidProcessMetadata(voteMetadata: ProcessMetadata) {
     if (typeof voteMetadata != "object") throw new Error("The metadata must be a JSON object")
 
-    const result = Joi.validate(voteMetadata, voteMetadataSchema)
+    const result = Joi.validate(voteMetadata, voteMetadataSchema, {convert: true})
     if (!result || result.error) {
         throw new Error("Metadata validation error: " + result.error.toString())
     }
@@ -72,6 +72,7 @@ const voteMetadataSchema = Joi.object().keys({
         title: Joi.object().keys(multiLanguageStringKeys).required(),
         description: Joi.object().keys(multiLanguageStringKeys).required(),
         headerImage: Joi.string().required(),
+        streamUrl: Joi.string().allow("").optional(),
         questions: Joi.array().items(
             Joi.object().keys({
                 type: Joi.string().valid(...questionTypes).required(),
@@ -80,7 +81,7 @@ const voteMetadataSchema = Joi.object().keys({
                 voteOptions: Joi.array().items(
                     Joi.object().keys({
                         title: Joi.object().keys(multiLanguageStringKeys).required(),
-                        value: Joi.string().required()
+                        value: Joi.number().integer().required(),
                     })
                 ).required()
             })
@@ -116,13 +117,14 @@ export interface ProcessMetadata {
         title: MultiLanguage<string>,
         description: MultiLanguage<string>,
         headerImage: ContentUriString,
+        streamUrl?: ContentUriString,
         questions: Array<{
             type: QuestionType, // Defines how the UI should allow to choose among the votingOptions.
             question: MultiLanguage<string>,
             description: MultiLanguage<string>,
             voteOptions: Array<{
                 title: MultiLanguage<string>,
-                value: string,
+                value: number | string,
             }>,
         }>,
     }
