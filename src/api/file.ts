@@ -153,11 +153,16 @@ export async function addFile(buffer: Uint8Array | string, name: string, walletO
         content: Buffer.from(buffer).toString("base64")
     }
 
-    return gateway.sendMessage(requestBody, walletOrSigner).then(response => {
-        if (!response || !response.uri) throw new Error("The data could not be uploaded")
+    return gateway.sendMessage(requestBody, walletOrSigner)
+        .then(response => {
+            if (!response || !response.uri) throw new Error("The data could not be uploaded")
 
-        return response.uri
-    })
+            return response.uri
+        })
+        .catch((error) => {
+            const message = (error.message) ? "The data could not be uploaded: " + error.message : "The data could not be uploaded"
+            throw new Error(message)
+        })
 }
 
 /**

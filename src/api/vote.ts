@@ -92,10 +92,9 @@ export async function getVoteMetadata(processId: string, web3Gateway: IWeb3Gatew
         const jsonBuffer = await fetchFileString(data.metadata, dvoteGateway)
 
         return JSON.parse(jsonBuffer.toString())
-    }
-    catch (err) {
-        console.error(err)
-        throw new Error("Could not fetch the process data")
+    } catch (error) {
+        const message = (error.message) ? "Could not fetch the process data: " + error.message : "Could not fetch the process data"
+        throw new Error(message)
     }
 }
 
@@ -108,7 +107,7 @@ export function getVotesMetadata(processIds: string[], web3Gateway: IWeb3Gateway
     if (!Array.isArray(processIds)) Promise.reject(new Error("Invalid processIds"))
     else if (!(web3Gateway instanceof Web3Gateway) || !(dvoteGateway instanceof DVoteGateway)) Promise.reject(new Error("Invalid Gateway object"))
 
-    return Promise.all(processIds.map(id => getVoteMetadata(id, web3Gateway, dvoteGateway)))
+    return Promise.all(processIds.map((id) => getVoteMetadata(id, web3Gateway, dvoteGateway)))
 }
 
 /**
@@ -119,10 +118,13 @@ export function getBlockHeight(gateway: IDVoteGateway): Promise<number> {
     if (!gateway || !(gateway instanceof DVoteGateway)) Promise.reject(new Error("Invalid Gateway object"))
 
     return gateway.sendMessage({ method: "getBlockHeight" })
-        .then(response => {
-            if (!response || !response["ok"]) throw new Error("Could not retrieve the number of blocks")
-            else if (!(typeof response.height === 'number') || response.height < 0) throw new Error("The gateway response is not correct")
+        .then((response) => {
+            if (!(typeof response.height === 'number') || response.height < 0) throw new Error("The gateway response is not correct")
             return response.height
+        })
+        .catch((error) => {
+            const message = (error.message) ? "Could not retrieve the number of blocks: " + error.message : "Could not retrieve the number of blocks"
+            throw new Error(message)
         })
 }
 
@@ -135,14 +137,14 @@ export async function submitEnvelope(voteEnvelope: SnarkVoteEnvelope | PollVoteE
     if (!voteEnvelope) throw new Error("Invalid parameters")
     else if (!gateway || !(gateway instanceof DVoteGateway)) Promise.reject(new Error("Invalid Gateway object"))
 
-    return gateway.sendMessage({
-        method: "submitEnvelope",
-        payload: voteEnvelope
-    }).then(res => {
-        if (!res || !res["ok"]) throw new Error("Could not submit the vote envelope")
-    }).catch(err => {
-        throw new Error("Could not submit the vote envelope")
-    })
+    return gateway.sendMessage({ method: "submitEnvelope", payload: voteEnvelope })
+        .then((res) => {
+            return
+        })
+        .catch((error) => {
+            const message = (error.message) ? "Could not submit the vote envelope: " + error.message : "Could not submit the vote envelope"
+            throw new Error(message)
+        })
 }
 
 /**
@@ -156,13 +158,13 @@ export function getEnvelopeStatus(processId: string, nullifier: string, gateway:
     if (!(gateway instanceof DVoteGateway)) return Promise.reject(new Error("Invalid Gateway object"))
 
     return gateway.sendMessage({ method: "getEnvelopeStatus", processId, nullifier })
-        .then(response => {
-            if (!response || !response["ok"]) throw new Error("Could not check the envelope status")
-            else if (typeof response.registered != "boolean") throw new Error("Invalid response received from the gateway")
+        .then((response) => {
+            if (typeof response.registered != "boolean") throw new Error("Invalid response received from the gateway")
             return response.registered
-        }).catch(err => {
-            console.error(err)
-            throw new Error("The envelope status could not be retrieved")
+        })
+        .catch((error) => {
+            const message = (error.message) ? "The envelope status could not be retrieved: " + error.message : "The envelope status could not be retrieved"
+            throw new Error(message)
         })
 }
 
@@ -177,11 +179,14 @@ export async function getEnvelope(processId: string, gateway: IDVoteGateway, nul
     if (!(gateway instanceof DVoteGateway)) return Promise.reject(new Error("Invalid Gateway object"))
 
     return gateway.sendMessage({ method: "getEnvelope", nullifier, processId })
-        .then(response => {
-            if (!response || !response["ok"]) throw new Error("Could not get the envelope data")
-            else if (!response.payload) throw new Error("The envelope could not be retrieved")
+        .then((response) => {
+            if (!response.payload) throw new Error("The envelope could not be retrieved")
             // if (!(response.payload instanceof String)) throw new Error("Envlope content not correct")
             return response.payload
+        })
+        .catch((error) => {
+            const message = (error.message) ? "Could not get the envelope data: " + error.message : "Could not get the envelope data"
+            throw new Error(message)
         })
 }
 
@@ -195,10 +200,13 @@ export function getEnvelopeHeight(processId: string, dvoteGw: IDVoteGateway): Pr
     else if (!(dvoteGw instanceof DVoteGateway)) return Promise.reject(new Error("Invalid Gateway object"))
 
     return dvoteGw.sendMessage({ method: "getEnvelopeHeight", processId })
-        .then(response => {
-            if (!response || !response["ok"]) throw new Error("Could not get the envelope height")
-            else if (!(typeof response.height === 'number') || response.height < 0) throw new Error("The gateway response is not correct")
+        .then((response) => {
+            if (!(typeof response.height === 'number') || response.height < 0) throw new Error("The gateway response is not correct")
             return response.height
+        })
+        .catch((error) => {
+            const message = (error.message) ? "Could not get the envelope height: " + error.message : "Could not get the envelope height"
+            throw new Error(message)
         })
 }
 
@@ -213,14 +221,15 @@ export function getTimeUntilStart(processId: string, startBlock: number, dvoteGw
     if (!processId || isNaN(startBlock)) throw new Error("Invalid parameters")
     else if (!(dvoteGw instanceof DVoteGateway)) return Promise.reject(new Error("Invalid Gateway object"))
 
-    return getBlockHeight(dvoteGw).then(currentHeight => {
+    return getBlockHeight(dvoteGw).then((currentHeight) => {
         const remainingBlocks = startBlock - currentHeight
         if (remainingBlocks <= 0) return 0
         else return remainingBlocks * VOCHAIN_BLOCK_TIME
-    }).catch(err => {
-        console.error(err)
-        throw new Error("The process start block could not be determined")
     })
+        .catch((error) => {
+            const message = (error.message) ? "The process start block could not be determined: " + error.message : "The process start block could not be determined"
+            throw new Error(message)
+        })
 }
 
 /**
@@ -235,14 +244,15 @@ export function getTimeUntilEnd(processId: string, startBlock: number, numberOfB
     if (!processId || isNaN(startBlock) || isNaN(numberOfBlocks)) throw new Error("Invalid parameters")
     else if (!(dvoteGw instanceof DVoteGateway)) return Promise.reject(new Error("Invalid Gateway object"))
 
-    return getBlockHeight(dvoteGw).then(currentHeight => {
+    return getBlockHeight(dvoteGw).then((currentHeight) => {
         const remainingBlocks = (startBlock + numberOfBlocks) - currentHeight
         if (remainingBlocks <= 0) return 0
         else return remainingBlocks * VOCHAIN_BLOCK_TIME
-    }).catch(err => {
-        console.error(err)
-        throw new Error("The process deadline could not be determined")
     })
+        .catch((error) => {
+            const message = (error.message) ? "The process deadline could not be determined: " + error.message : "The process deadline could not be determined"
+            throw new Error(message)
+        })
 }
 
 /**
@@ -255,14 +265,16 @@ export function getTimeForBlock(processId: string, blockNumber: number, dvoteGw:
     if (!processId || isNaN(blockNumber)) throw new Error("Invalid parameters")
     else if (!(dvoteGw instanceof DVoteGateway)) return Promise.reject(new Error("Invalid Gateway object"))
 
-    return getBlockHeight(dvoteGw).then(currentHeight => {
-        const blockDifference = blockNumber - currentHeight
-        const now = Date.now()
-        return new Date(now + (blockDifference * VOCHAIN_BLOCK_TIME * 1000))
-    }).catch(err => {
-        console.error(err)
-        throw new Error("The process deadline could not be determined")
-    })
+    return getBlockHeight(dvoteGw)
+        .then((currentHeight) => {
+            const blockDifference = blockNumber - currentHeight
+            const now = Date.now()
+            return new Date(now + (blockDifference * VOCHAIN_BLOCK_TIME * 1000))
+        })
+        .catch((error) => {
+            const message = (error.message) ? "The block mine time could not be determined: " + error.message : "The block mine time could not be determined"
+            throw new Error(message)
+        })
 }
 
 /**
@@ -275,14 +287,17 @@ export function getBlockNumberForTime(processId: string, dateTime: Date, dvoteGw
     if (!processId || !(dateTime instanceof Date)) return Promise.reject(new Error("Invalid parameters"))
     else if (!(dvoteGw instanceof DVoteGateway)) return Promise.reject(new Error("Invalid Gateway object"))
 
-    return getBlockHeight(dvoteGw).then(currentHeight => {
-        const blockDiff = Math.floor((dateTime.getTime() - Date.now()) / 1000 / VOCHAIN_BLOCK_TIME)
+    return getBlockHeight(dvoteGw)
+        .then((currentHeight) => {
+            const blockDiff = Math.floor((dateTime.getTime() - Date.now()) / 1000 / VOCHAIN_BLOCK_TIME)
 
-        return Math.max(currentHeight + blockDiff, 0)
-    }).catch(err => {
-        console.error(err)
-        throw new Error("The process deadline could not be determined")
-    })
+            return Math.max(currentHeight + blockDiff, 0)
+        })
+        .catch((error) => {
+            const message = (error.message) ? "The block number at the given date and time could not be determined: " +
+                error.message : "The block number at the given date and time could not be determined"
+            throw new Error(message)
+        })
 }
 
 /**
@@ -310,10 +325,13 @@ export function getEnvelopeList(processId: string,
         return Promise.reject(new Error("Invalid parameters"))
 
     return dvoteGw.sendMessage({ method: "getEnvelopeList", processId, from, listSize })
-        .then(response => {
-            if (!response || !response["ok"]) throw new Error("Could not get the envelope height")
-            else if (!Array.isArray(response.nullifiers)) throw new Error("The gateway response is not correct")
+        .then((response) => {
+            if (!Array.isArray(response.nullifiers)) throw new Error("The gateway response is not correct")
             return response.nullifiers
+        })
+        .catch((error) => {
+            const message = (error.message) ? "Could not retrieve the envelope list: " + error.message : "Could not retrieve the envelope list"
+            throw new Error(message)
         })
 }
 
@@ -330,13 +348,16 @@ export function getRawResults(processId: string, dvoteGateway: IDVoteGateway): P
         return Promise.reject(new Error("Invalid Gateway object"))
 
     return dvoteGateway.sendMessage({ method: "getResults", processId })
-        .then(response => {
-            if (!response || !response["ok"]) throw new Error("Could not fetch the process results")
-            else if (!Array.isArray(response.results)) throw new Error("The gateway response is not valid")
+        .then((response) => {
+            if (!Array.isArray(response.results)) throw new Error("The gateway response is not valid")
             const results = (Array.isArray(response.results) && response.results.length) ? response.results : []
             const type = response.type || ""
             const state = response.state || ""
             return { results, type, state }
+        })
+        .catch((error) => {
+            const message = (error.message) ? "Could not fetch the process results: " + error.message : "Could not fetch the process results"
+            throw new Error(message)
         })
 }
 
@@ -355,7 +376,7 @@ export function getResultsDigest(processId: string, web3Gateway: IWeb3Gateway, d
     var voteMetadata
     const pid = processId.startsWith("0x") ? processId : "0x" + processId
     return getVoteMetadata(pid, web3Gateway, dvoteGateway)
-        .then(meta => {
+        .then((meta) => {
             voteMetadata = meta
             return getRawResults(processId, dvoteGateway)
         }).then(({ results, type, state }) => {
