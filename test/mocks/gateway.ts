@@ -6,17 +6,14 @@ type ConstructorParams = {
 }
 export type GatewayResponse = {
     id: string
-    response?: {
+    response: {
+        ok: boolean
         request: string  // Request ID here as well
+        message?: string
         timestamp?: number
         [key: string]: any
     }
-    error?: {
-        request: string  // Request ID here as well
-        timestamp?: number
-        message: string
-    }
-    signature: string
+    signature?: string
 }
 export type InteractionMock = {
     actual?: any,                     // What the client actually sent
@@ -58,8 +55,8 @@ export class GatewayMock {
         if (responseData.response) {
             responseData.response.request = this.interactionList[idx].actual.id
         }
-        else if (responseData.error) {
-            responseData.error.request = this.interactionList[idx].actual.id
+        else if (responseData.response.ok === false) {
+            responseData.response.request = this.interactionList[idx].actual.id
         }
         else {
             console.error("GATEWAY MOCK: No request or error field present", responseData)
