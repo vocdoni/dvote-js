@@ -19,6 +19,7 @@ export const ProcessMetadataTemplate: ProcessMetadata = {
             default: "" // ## Markdown text goes here\n### Abstract
         },
         headerImage: "https://source.unsplash.com/random/800x600", // Content URI
+        streamUrl: "",
         questions: [
             {
                 type: "single-choice",
@@ -33,13 +34,13 @@ export const ProcessMetadataTemplate: ProcessMetadata = {
                         title: {
                             default: "Yes",
                         },
-                        value: "1"
+                        value: 0
                     },
                     {
                         title: {
                             default: "No",
                         },
-                        value: "2"
+                        value: 1
                     }
                 ]
             }
