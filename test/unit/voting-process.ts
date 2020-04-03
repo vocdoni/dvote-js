@@ -14,7 +14,7 @@ const fs = require("fs")
 
 import { deployVotingProcessContract, getVotingProcessInstance } from "../../src/net/contracts"
 import { getPollNullifier } from "../../src/api/vote"
-import { checkValidProcessMetadata, ProcessMetadataTemplate } from "../../src/models/voting-process"
+import { checkValidProcessMetadata } from "../../src/models/voting-process"
 import VotingProcessBuilder, {
     DEFAULT_PROCESS_TYPE,
     DEFAULT_METADATA_CONTENT_HASHED_URI,
@@ -23,6 +23,7 @@ import VotingProcessBuilder, {
     DEFAULT_NUMBER_OF_BLOCKS,
     DEFAULT_START_BLOCK
 } from "../builders/voting-process"
+import ProcessMetadataBuilder from  "../builders/voting-process-metadata"
 import { BigNumber } from "ethers/utils"
 
 let accounts: TestAccount[]
@@ -535,40 +536,101 @@ describe("Voting Process", () => {
     })
 
     describe("Metadata validator", () => {
-        it("Should accept a valid Process Metadata JSON", () => {
-            const processMetadata = Object.assign({}, ProcessMetadataTemplate)
 
+        it("Should accept a valid Process Metadata JSON", () => {
+            const processMetadata = new ProcessMetadataBuilder().build()
             expect(() => {
                 checkValidProcessMetadata(processMetadata)
-            }).to.not.throw
+            }).to.not.throw()
+        })
 
+        it("Should reject a non valid Process Metadata JSON", () => {
+            const processMetadata = new ProcessMetadataBuilder().get()
             expect(() => {
-                checkValidProcessMetadata(ProcessMetadataTemplate)
-            }).to.not.throw
+                checkValidProcessMetadata(processMetadata)
+            }).to.throw()
+        })
+
+        it("Should accept an integer vote value", () => {
+            const payload  = new ProcessMetadataBuilder().withIntegerVoteValues().build()
+            expect(() => {
+                checkValidProcessMetadata(payload)
+            }).to.not.throw()
+        })
+
+        it("Should accept a string vote value", () => {
+            const payload  = new ProcessMetadataBuilder().withStringVoteValues().build()
+            expect(() => {
+                checkValidProcessMetadata(payload)
+            }).to.not.throw()
+        })
+
+        it("Should convert a string value vote to integer in the Process Metadata JSON", () => {
+            const payload  = new ProcessMetadataBuilder().withStringVoteValues().build()
+            const result = checkValidProcessMetadata(payload)
+            expect(result.details.questions[0].voteOptions[0].value).to.be.a("number")
         })
 
         it("Should reject invalid Process Metadata JSON payloads", () => {
+            const processMetadata = new ProcessMetadataBuilder().build()
             // Totally invalid
             expect(() => {
                 const payload = JSON.parse('{"test": 123}')
                 checkValidProcessMetadata(payload)
-            }).to.throw
+            }).to.throw()
 
             expect(() => {
                 const payload = JSON.parse('{"name": {"default": "hello", "fr": "Alô"}}')
                 checkValidProcessMetadata(payload)
-            }).to.throw
+            }).to.throw()
 
-            // Incomplete fields
-            const processMetadata = Object.assign({}, ProcessMetadataTemplate)
-
-            expect(() => { checkValidProcessMetadata(Object.assign({}, processMetadata, { version: null })) }).to.throw
-            expect(() => { checkValidProcessMetadata(Object.assign({}, processMetadata, { type: null })) }).to.throw
-            expect(() => { checkValidProcessMetadata(Object.assign({}, processMetadata, { startBlock: null })) }).to.throw
-            expect(() => { checkValidProcessMetadata(Object.assign({}, processMetadata, { numberOfBlocks: null })) }).to.throw
-            expect(() => { checkValidProcessMetadata(Object.assign({}, processMetadata, { census: null })) }).to.throw
-            expect(() => { checkValidProcessMetadata(Object.assign({}, processMetadata, { details: null })) }).to.throw
-
+            expect(() => {
+                processMetadata.details.questions[0].voteOptions[0].value = "a"
+                checkValidProcessMetadata(processMetadata)
+            }).to.throw()
         })
+
+        it("Should reject null required fields", () => {
+            const processMetadata = new ProcessMetadataBuilder().build()
+            // Incomplete fields
+            expect(() => {
+                checkValidProcessMetadata(Object.assign({}, processMetadata, { version: null }))
+            }).to.throw()
+            expect(() => {
+                checkValidProcessMetadata(Object.assign({}, processMetadata, { type: null }))
+            }).to.throw()
+            expect(() => {
+                checkValidProcessMetadata(Object.assign({}, processMetadata, { startBlock: null }))
+            }).to.throw()
+            expect(() => {
+                checkValidProcessMetadata(Object.assign({}, processMetadata, { numberOfBlocks: null }))
+            }).to.throw()
+            expect(() => {
+                checkValidProcessMetadata(Object.assign({}, processMetadata, { census: null }))
+            }).to.throw()
+            expect(() => {
+                checkValidProcessMetadata(Object.assign({}, processMetadata, { details: null }))
+            }).to.throw()
+        })
+
+        it("Should accept big number of questions", () => {
+            const processMetadata = new ProcessMetadataBuilder().withNumberOfQuestions(500).build()
+            expect(() => {
+                checkValidProcessMetadata(processMetadata)
+            }).to.not.throw()
+
+            const result = checkValidProcessMetadata(processMetadata)
+            expect(result.details.questions.length).to.equal(500)
+        }).timeout(1500)
+
+        it("Should accept big number of options", () => {
+            const processMetadata = new ProcessMetadataBuilder().withNumberOfOptions(500)
+            expect(() => {
+                checkValidProcessMetadata(processMetadata)
+            }).to.not.throw()
+
+            const result = checkValidProcessMetadata(processMetadata)
+            expect(result.details.questions[0].voteOptions.length).to.equal(500)
+        }).timeout(1500)
     })
 })
