@@ -138,9 +138,6 @@ export async function submitEnvelope(voteEnvelope: SnarkVoteEnvelope | PollVoteE
     else if (!gateway || !(gateway instanceof DVoteGateway)) Promise.reject(new Error("Invalid Gateway object"))
 
     return gateway.sendMessage({ method: "submitEnvelope", payload: voteEnvelope })
-        .then((res) => {
-            return
-        })
         .catch((error) => {
             const message = (error.message) ? "Could not submit the vote envelope: " + error.message : "Could not submit the vote envelope"
             throw new Error(message)
