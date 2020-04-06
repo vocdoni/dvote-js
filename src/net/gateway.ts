@@ -280,15 +280,12 @@ export class DVoteGateway {
             if (typeof timestamp != "number" || timestamp < from || timestamp > until) {
                 throw new Error("The response does not provide a valid timestamp")
             }
-
-            if (msg.response) {
-                if (!isSignatureValid(msg.signature, this.publicKey, msg.response)) {
-                    throw new Error("The signature of the response does not match the expected one")
-                }
+            else if (!isSignatureValid(msg.signature, this.publicKey, msg.response)) {
+                throw new Error("The signature of the response does not match the expected one")
             }
         }
 
-        if (msg.response.ok === false) {
+        if (!msg.response.ok) {
             if (msg.response.message) throw new Error(msg.response.message)
             else throw new Error("There was an error while handling the request at the gateway")
         }
