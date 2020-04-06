@@ -61,19 +61,21 @@ export async function addCensus(censusName: string, managerPublicKeys: string[],
         // Pass the full censusId instead of the second term only
         existingRoot = await getRoot(censusId, gateway)
         if (typeof existingRoot == "string" && existingRoot.match(/^0x[0-9a-zA-Z]+$/)) return { censusId, merkleRoot: existingRoot }
-    } catch (err) {
+    } catch (error) {
         // console.error(err)
         // If it errors because it doesn't exist, we continue below
     }
 
-    const censusIdSuffix = generateCensusIdSuffix(censusName)
 
-    const response = await gateway.sendMessage({ method: "addCensus", censusId: censusIdSuffix, pubKeys: managerPublicKeys }, walletOrSigner)
-    if (!response.ok) throw new Error("The census could not be created")
-
-    const merkleRoot = await getRoot(censusId, gateway)
-
-    return { censusId: response.censusId, merkleRoot }
+    try {
+        const censusIdSuffix = generateCensusIdSuffix(censusName)
+        const response = await gateway.sendMessage({ method: "addCensus", censusId: censusIdSuffix, pubKeys: managerPublicKeys }, walletOrSigner)
+        const merkleRoot = await getRoot(censusId, gateway)
+        return { censusId: response.censusId, merkleRoot }
+    } catch (error) {
+        const message = (error.message) ? "The census could not be created: " + error.message : "The census could not be created "
+        throw new Error(message)
+    }
 }
 
 /**
@@ -90,11 +92,14 @@ export async function addCensus(censusName: string, managerPublicKeys: string[],
 export function addClaim(censusId: string, claimData: string, digested: boolean, gateway: IDVoteGateway, walletOrSigner: Wallet | Signer): Promise<string> {
     if (!censusId || !claimData || !claimData.length || !gateway) throw new Error("Invalid parameters")
 
-    return gateway.sendMessage({ method: "addClaim", censusId, digested, claimData }, walletOrSigner).then(response => {
-        if (!response.ok) throw new Error("The claim could not be added")
-
-        return getRoot(censusId, gateway)
-    })
+    return gateway.sendMessage({ method: "addClaim", censusId, digested, claimData }, walletOrSigner)
+        .then((response) => {
+            return getRoot(censusId, gateway)
+        })
+        .catch((error) => {
+            const message = (error.message) ? "The claim could not be added: " + error.message : "The claim could not be added."
+            throw new Error(message)
+        })
 }
 
 /**
@@ -127,11 +132,16 @@ async function addClaimBulkHelper(censusId: string, claimsData: string[], digest
     if (!censusId || !claimsData || claimsData.length > CENSUS_MAX_BULK_SIZE || !gateway) throw new Error("Invalid parameters")
     if (!claimsData.length) return []
 
-    const response = await gateway.sendMessage({ method: "addClaimBulk", censusId, digested, claimsData }, walletOrSigner)
-    if (!response.ok) throw new Error("The given claims could not be added")
-    const invalidClaims = ("invalidClaims" in response) ? response.invalidClaims : []
+    try {
+        const response = await gateway.sendMessage({ method: "addClaimBulk", censusId, digested, claimsData }, walletOrSigner)
+        const invalidClaims = ("invalidClaims" in response) ? response.invalidClaims : []
 
-    return invalidClaims
+        return invalidClaims
+
+    } catch (error) {
+        const message = (error.message) ? "The given claims could not be added" + error.message : "The given claims could not be added"
+        throw new Error(message)
+    }
 }
 
 /**
@@ -143,10 +153,15 @@ async function addClaimBulkHelper(censusId: string, claimsData: string[], digest
 export function getRoot(censusId: string, gateway: IDVoteGateway): Promise<string> {
     if (!censusId || !gateway) throw new Error("Invalid parameters")
 
-    return gateway.sendMessage({ method: "getRoot", censusId }).then(response => {
-        if (!response.ok || !response.root) throw new Error("The census merkle root could not be fetched")
-        return response.root
-    })
+    return gateway.sendMessage({ method: "getRoot", censusId })
+        .then(response => {
+            if (!response.root) throw new Error("The census merkle root could not be fetched")
+            return response.root
+        })
+        .catch((error) => {
+            const message = (error.message) ? error.message : "The request could not be completed"
+            throw new Error(message)
+        })
 }
 
 /**
@@ -159,9 +174,13 @@ export function getCensusSize(censusMerkleRootHash: string, dvoteGw: IDVoteGatew
     if (!censusMerkleRootHash || !dvoteGw) throw new Error("Invalid parameters")
 
     return dvoteGw.sendMessage({ method: "getSize", censusId: censusMerkleRootHash }).then(response => {
-        if (!response.ok || isNaN(response.size)) throw new Error("The census size could not be retrieved")
+        if (isNaN(response.size)) throw new Error("The census size could not be retrieved")
         return response.size
     })
+        .catch((error) => {
+            const message = (error.message) ? error.message : "The request could not be completed"
+            throw new Error(message)
+        })
 }
 
 /** Dumps the entire content of the census as an array of hexStrings rady to be imported to another census service 
@@ -175,10 +194,14 @@ export function dump(censusId: string, gateway: IDVoteGateway, walletOrSigner: W
     if (!censusId || !gateway) throw new Error("Invalid parameters")
     const msg: IDvoteRequestParameters = (rootHash) ? { method: "dump", censusId, rootHash } : { method: "dump", censusId }
 
-    return gateway.sendMessage(msg, walletOrSigner).then(response => {
-        if (!response.ok) throw new Error("The census merkle root could not be fetched")
-        return (response.claimsData && response.claimsData.length) ? response.claimsData : []
-    })
+    return gateway.sendMessage(msg, walletOrSigner)
+        .then(response => {
+            return (response.claimsData && response.claimsData.length) ? response.claimsData : []
+        })
+        .catch((error) => {
+            const message = (error.message) ? "The census merkle root could not be fetched: " + error.message : "The census merkle root could not be fetched"
+            throw new Error(message)
+        })
 }
 
 /** Dumps the contents of a census in raw string format. Not valid to use with `importDump`
@@ -192,10 +215,14 @@ export function dumpPlain(censusId: string, gateway: IDVoteGateway, walletOrSign
     if (!censusId || !gateway) throw new Error("Invalid parameters")
     const msg: IDvoteRequestParameters = (rootHash) ? { method: "dumpPlain", censusId, rootHash } : { method: "dumpPlain", censusId }
 
-    return gateway.sendMessage(msg, walletOrSigner).then(response => {
-        if (!response.ok) throw new Error("The census merkle root could not be fetched")
-        return (response.claimsData && response.claimsData.length) ? response.claimsData : []
-    })
+    return gateway.sendMessage(msg, walletOrSigner)
+        .then(response => {
+            return (response.claimsData && response.claimsData.length) ? response.claimsData : []
+        })
+        .catch((error) => {
+            const message = (error.message) ? "The census merkle root could not be fetched: " + error.message : "The census merkle root could not be fetched"
+            throw new Error(message)
+        })
 }
 
 /** Only works with specific merkletree format used by dump method. To add a list of plain claims use `addClaimBulk` instead */
@@ -212,10 +239,15 @@ export function importRemote() {
 export function publishCensus(censusId: string, gateway: IDVoteGateway, walletOrSigner: Wallet | Signer): Promise<string> {
     if (!censusId || !gateway) throw new Error("Invalid parameters")
 
-    return gateway.sendMessage({ method: "publish", censusId }, walletOrSigner).then(response => {
-        if (!response.uri) throw new Error("The census claim URI could not be retrieved")
-        return response.uri
-    })
+    return gateway.sendMessage({ method: "publish", censusId }, walletOrSigner)
+        .then(response => {
+            if (!response.uri) throw new Error("The census claim URI could not be retrieved")
+            return response.uri
+        })
+        .catch((error) => {
+            const message = (error.message) ? error.message : "The request could not be completed"
+            throw new Error(message)
+        })
 }
 
 /**
@@ -232,10 +264,15 @@ export function generateProof(censusMerkleRoot: string, base64Claim: string, isD
         censusId: censusMerkleRoot,
         digested: isDigested,
         claimData: base64Claim,
-    }).then(response => {
-        if (typeof response.siblings != "string" || !response.siblings.length) throw new Error("The Merkle Proof could not be fetched")
-        return response.siblings
     })
+        .then(response => {
+            if (typeof response.siblings != "string" || !response.siblings.length) throw new Error("The Merkle Proof could not be fetched")
+            return response.siblings
+        })
+        .catch((error) => {
+            const message = (error.message) ? error.message : "The request could not be completed"
+            throw new Error(message)
+        })
 }
 
 // export function checkProof() {

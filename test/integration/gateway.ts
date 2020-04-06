@@ -86,11 +86,11 @@ describe("DVoteGateway", () => {
             const gatewayServer = new GatewayMock({
                 port,
                 responses: [
-                    { id: "123", response: { request: "123", timestamp: 123, result: "OK 1" }, signature: "123" },
-                    { id: "234", response: { request: "234", timestamp: 234, result: "OK 2" }, signature: "234" },
-                    { id: "345", response: { request: "345", timestamp: 345, result: "OK 3" }, signature: "345" },
-                    { id: "345", response: { request: "345", timestamp: 345, result: "OK 4" }, signature: "345" },
-                    { id: "456", response: { request: "456", timestamp: 456, result: "OK 5" }, signature: "456" },
+                    { id: "123", response: { ok: true, request: "123", timestamp: 123, result: "OK 1" }, signature: "123" },
+                    { id: "234", response: { ok: true, request: "234", timestamp: 234, result: "OK 2" }, signature: "234" },
+                    { id: "345", response: { ok: true, request: "345", timestamp: 345, result: "OK 3" }, signature: "345" },
+                    { id: "345", response: { ok: true, request: "345", timestamp: 345, result: "OK 4" }, signature: "345" },
+                    { id: "456", response: { ok: true, request: "456", timestamp: 456, result: "OK 5" }, signature: "456" },
                 ]
             })
             const gatewayInfo = new GatewayInfo(gatewayUri, ["file", "vote", "census"], "https://server/path", "")
@@ -130,11 +130,11 @@ describe("DVoteGateway", () => {
             const gatewayServer = new GatewayMock({
                 port,
                 responses: [
-                    { id: "123", error: { request: "123", timestamp: 123, message: "ERROR 1" }, signature: "123" },
-                    { id: "234", error: { request: "234", timestamp: 234, message: "ERROR 2" }, signature: "234" },
-                    { id: "345", error: { request: "345", timestamp: 345, message: "ERROR 3" }, signature: "345" },
-                    { id: "345", error: { request: "345", timestamp: 345, message: "ERROR 4" }, signature: "345" },
-                    { id: "456", error: { request: "456", timestamp: 456, message: "ERROR 5" }, signature: "456" },
+                    { id: "123", response: { ok: false, request: "123", timestamp: 123, message: "ERROR 1" }, signature: "123" },
+                    { id: "234", response: { ok: false, request: "234", timestamp: 234, message: "ERROR 2" }, signature: "234" },
+                    { id: "345", response: { ok: false, request: "345", timestamp: 345, message: "ERROR 3" }, signature: "345" },
+                    { id: "345", response: { ok: false, request: "345", timestamp: 345, message: "ERROR 4" }, signature: "345" },
+                    { id: "456", response: { ok: false, request: "456", timestamp: 456, message: "ERROR 5" }, signature: "456" },
                 ]
             })
             const gatewayInfo = new GatewayInfo(gatewayUri, ["file", "vote", "census"], "https://server/path", "")
@@ -284,7 +284,7 @@ describe("DVoteGateway", () => {
 
             // DVoteGateway (server)
             const responses: GatewayResponse[] = [
-                { id: "123", response: { request: "123", timestamp: 123, uri: "ipfs://1234" }, signature: "123" }
+                { id: "123", response: { ok: true, request: "123", timestamp: 123, uri: "ipfs://1234" }, signature: "123" }
             ]
             const gatewayServer = new GatewayMock({ port, responses })
 
@@ -314,8 +314,8 @@ describe("DVoteGateway", () => {
 
             // DVoteGateway (server)
             const responses: GatewayResponse[] = [
-                { id: "123", response: { request: "123", timestamp: 123, uri: "ipfs://2345" }, signature: "123" },
-                { id: "234", response: { request: "234", timestamp: 234, content: buffData.toString("base64") }, signature: "234" }
+                { id: "123", response: { ok: true, request: "123", timestamp: 123, uri: "ipfs://2345" }, signature: "123" },
+                { id: "234", response: { ok: true, request: "234", timestamp: 234, content: buffData.toString("base64") }, signature: "234" }
             ]
             const gatewayServer = new GatewayMock({ port, responses })
 
@@ -349,7 +349,7 @@ describe("DVoteGateway", () => {
             // DVoteGateway (server)
             const gatewayServer = new GatewayMock({
                 port, responses: [
-                    { id: "123", error: { request: "123", timestamp: 123, message: "Invalid wallet" }, signature: "123" },
+                    { id: "123", response: { ok: false, request: "123", timestamp: 123, message: "Invalid wallet" }, signature: "123" },
                 ]
             })
 
@@ -365,7 +365,7 @@ describe("DVoteGateway", () => {
                 throw new Error("Should have thrown an error but didn't")
             }
             catch (err) {
-                expect(err.message).to.equal("Invalid wallet")
+                expect(err.message).to.equal("The data could not be uploaded: Invalid wallet")
             }
             gw.disconnect()
 

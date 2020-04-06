@@ -13,6 +13,7 @@ import { SIGNATURE_TIMESTAMP_TOLERANCE } from "../constants"
 import { signJsonBody, isSignatureValid } from "../util/json-sign"
 import axios from "axios"
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
+import { throwError } from "ethers/errors"
 
 const uriPattern = /^([a-z][a-z0-9+.-]+):(\/\/([^@]+@)?([a-z0-9.\-_~]+)(:\d+)?)?((?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])*)*|(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+)*)?(\?(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?(\#(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?$/i
 
@@ -48,16 +49,15 @@ type MessageRequestContent = {
     signature?: string
 }
 
-/** Data structure of JSON responses from the Gateway */
 type GatewayResponse = {
     id: string,
-    error?: {
+    response: {
+        ok: boolean,
         request: string,
-        message: string,
-        timestamp: number
+        message?: string,
+        timestamp?: number,
     },
-    response?: any,
-    signature: string
+    signature?: string,
 }
 
 /**
@@ -264,39 +264,30 @@ export class DVoteGateway {
 
         const msg = (await reqPromise) as GatewayResponse
 
-        const incomingReqId = msg.response ? msg.response.request : (msg.error ? msg.error.request : null)
+        if (!msg.response) throw new Error("Invalid response message")
+
+        const incomingReqId = msg.response.request || null
         if (incomingReqId !== requestId) {
             throw new Error("The signed request ID does not match the expected one")
         }
 
         // Check the signature of the response
         if (this.publicKey) {
-            const timestamp = msg.response ? msg.response.timestamp : (msg.error ? msg.error.timestamp : null)
+            const timestamp = msg.response.timestamp || null
 
             const from = Math.floor(Date.now() / 1000) - SIGNATURE_TIMESTAMP_TOLERANCE
             const until = Math.floor(Date.now() / 1000) + SIGNATURE_TIMESTAMP_TOLERANCE
             if (typeof timestamp != "number" || timestamp < from || timestamp > until) {
                 throw new Error("The response does not provide a valid timestamp")
             }
-
-            if (msg.response) {
-                if (!isSignatureValid(msg.signature, this.publicKey, msg.response)) {
-                    throw new Error("The signature of the response does not match the expected one")
-                }
-            }
-            else if (msg.error) {
-                if (!isSignatureValid(msg.signature, this.publicKey, msg.error)) {
-                    throw new Error("The signature of the response does not match the expected one")
-                }
+            else if (!isSignatureValid(msg.signature, this.publicKey, msg.response)) {
+                throw new Error("The signature of the response does not match the expected one")
             }
         }
 
-        if (msg.error) {
-            if (msg.error.message) throw new Error(msg.error.message)
-            else throw new Error("There was an error while handling the request")
-        }
-        else if (!msg.response) {
-            throw new Error("Received an empty response")
+        if (!msg.response.ok) {
+            if (msg.response.message) throw new Error(msg.response.message)
+            else throw new Error("There was an error while handling the request at the gateway")
         }
 
         return msg.response
