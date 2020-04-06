@@ -55,7 +55,7 @@ export class GatewayMock {
         if (responseData.response) {
             responseData.response.request = this.interactionList[idx].actual.id
         }
-        else if (responseData.response.ok === false) {
+        else if (!responseData.response.ok) {
             responseData.response.request = this.interactionList[idx].actual.id
         }
         else {
