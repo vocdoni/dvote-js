@@ -2,7 +2,7 @@ import { Wallet, Signer, utils } from "ethers"
 import { getVotingProcessInstance } from "../net/contracts"
 import { DVoteGateway, Web3Gateway, IDVoteGateway, IWeb3Gateway } from "../net/gateway"
 import { fetchFileString, addFile } from "./file"
-import { ProcessMetadata, checkValidProcessMetadata, ProcessResults, ProcessType, VochainProcessState } from "../models/voting-process"
+import { ProcessMetadata, checkValidProcessMetadata, ProcessResults, ProcessType, VochainProcessState, ProcessResultItem } from "../models/voting-process"
 // import { HexString } from "../models/common"
 import ContentHashedURI from "../wrappers/content-hashed-uri"
 import { getEntityMetadataByAddress, updateEntity, getEntityId } from "./entity"
@@ -370,21 +370,20 @@ export function getResultsDigest(processId: string, web3Gateway: IWeb3Gateway, d
     else if (!(dvoteGateway instanceof DVoteGateway) || !(web3Gateway instanceof Web3Gateway))
         return Promise.reject(new Error("Invalid Gateway object"))
 
-    var voteMetadata
+    var voteMetadata: ProcessMetadata
     const pid = processId.startsWith("0x") ? processId : "0x" + processId
     return getVoteMetadata(pid, web3Gateway, dvoteGateway)
         .then((meta) => {
             voteMetadata = meta
             return getRawResults(processId, dvoteGateway)
         }).then(({ results, type, state }) => {
-
             const resultsDigest: ProcessResults = { questions: [] }
             const zippedQuestions = voteMetadata.details.questions.map((e, i) => ({ meta: e, result: results[i] }))
-            resultsDigest.questions = zippedQuestions.map((zippedEntry) => {
+            resultsDigest.questions = zippedQuestions.map((zippedEntry, idx): ProcessResultItem => {
                 const zippedOptions = zippedEntry.meta.voteOptions.map((e, i) => ({ title: e.title, value: zippedEntry.result[i] }))
                 return {
                     question: zippedEntry.meta.question,
-                    type,
+                    type: voteMetadata.details.questions[idx].type,
                     voteResults: zippedOptions.map((option) => ({
                         title: option.title,
                         votes: option.value || 0,

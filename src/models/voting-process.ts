@@ -135,7 +135,7 @@ export interface ProcessResults {
 }
 
 export interface ProcessResultItem {
-    type: ProcessType, // Defines how the UI should allow to choose among the votingOptions.
+    type: QuestionType, // Defines how the UI should allow to choose among the votingOptions.
     question: MultiLanguage<string>,
     voteResults: Array<{
         title: MultiLanguage<string>,
