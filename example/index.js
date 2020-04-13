@@ -393,6 +393,38 @@ async function createVotingProcessFull() {
     dvoteGateway.disconnect()
 }
 
+async function cloneVotingProcess() {
+    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+    const BOOTNODES_URL = " ... "
+    const gwInfo = await getWorkingGatewayInfo("goerli", BOOTNODES_URL)
+
+    const web3Gateway = new Web3Gateway(gwInfo)
+    const dvoteGateway = new DVoteGateway(gwInfo)
+    await dvoteGateway.connect()
+
+    console.log("Updating...")
+    const PROCESS_ID_OLD = "0x6529717ebd0926f9096d6ae342c67bfd7dce90ce8eb2dbf9342a51d70fffb759"
+    const processMetadata = await Vote.getVoteMetadata(PROCESS_ID_OLD, web3Gateway, dvoteGateway)
+    const currentBlock = 765
+    const startBlock = currentBlock + 130
+    processMetadata.startBlock = startBlock
+    processMetadata.numberOfBlocks = 60480
+    const NEW_MERKLE_ROOT = "0xbae0912183e55c3173bad6eeb4408bfe4de6892f82123562475aca66b109ba13"
+    const NEW_MERKLE_TREE_ORIGIN = "ipfs://QmUC4NokWrykhZwY9CNGPz7KS8AvHWD3M4SLk5doMRMCmA"
+    processMetadata.census.merkleRoot = NEW_MERKLE_ROOT
+    processMetadata.census.merkleTree = NEW_MERKLE_TREE_ORIGIN
+
+    const processId = await createVotingProcess(processMetadata, wallet, web3Gateway, dvoteGateway)
+
+    console.log("CREATED", processId)
+
+    // READING BACK:
+    const metadata = await getVoteMetadata(processId, web3Gateway, dvoteGateway)
+    console.log("PROCESS METADATA", metadata)
+
+    dvoteGateway.disconnect()
+}
+
 async function useVoteApi() {
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
     const myEntityAddress = await wallet.getAddress()
@@ -649,7 +681,7 @@ async function ensResolver() {
     console.log("Voting Process contract address", processAddr)
 }
 
-async function workingGatewayInfo(){
+async function workingGatewayInfo() {
     let gwInfo = await getWorkingGatewayInfo("goerli")
     console.log(JSON.stringify(gwInfo))
 }
@@ -674,6 +706,7 @@ async function main() {
     // await gwCensusOperations()
     // await createVotingProcessManual()
     // await createVotingProcessFull()
+    await cloneVotingProcess()
     // await useVoteApi()
     // await submitVoteBatch()
     // await fetchMerkleProof()
@@ -682,7 +715,7 @@ async function main() {
 
     // await gatewayHealthCheck()
     // await ensResolver()
-    await workingGatewayInfo()
+    // await workingGatewayInfo()
 }
 
 main()
