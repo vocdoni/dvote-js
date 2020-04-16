@@ -489,15 +489,29 @@ async function launchVotes(accounts) {
     const publicKeyHash = digestHexClaim(wallet["signingKey"].publicKey)
 
     process.stdout.write(`Gen Proof [${idx}] ; `)
-    const merkleProof = await generateProof(voteMetadata.census.merkleRoot, publicKeyHash, true, dvoteGateway).catch(err => {
-      console.error("\ngenerateProof ERR", idx, account.privateKey, publicKeyHash, err)
-      throw err
-    })
+    const merkleProof = await generateProof(voteMetadata.census.merkleRoot, publicKeyHash, true, dvoteGateway)
+      // TODO: Comment out to stop on errors
+      .catch(err => null)
+    if (!merkleProof) return // skip
+
+    // TODO: Uncomment for error reporting
+    // .catch(err => {
+    //   console.error("\ngenerateProof ERR", idx, account.privateKey, publicKeyHash, err)
+    //   throw err
+    // })
+
     process.stdout.write(`Pkg Envelope [${idx}] ; `)
     const choices = getChoicesForVoter(idx)
     const voteEnvelope = await packagePollEnvelope(choices, merkleProof, processId, wallet)
     process.stdout.write(`Submit [${idx}] ; `)
     await submitEnvelope(voteEnvelope, dvoteGateway)
+      // TODO: Comment out to stop on errors
+      .catch(err => null)
+      // TODO: Uncomment for error reporting
+      // .catch(err => {
+      //   console.error("\submitEnvelope ERR", idx, account.privateKey, publicKeyHash, err)
+      //   throw err
+      // })
 
     process.stdout.write(`Waiting [${idx}] ; `)
     await new Promise(resolve => setTimeout(resolve, 11000))
