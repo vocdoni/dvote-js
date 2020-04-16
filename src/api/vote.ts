@@ -172,8 +172,8 @@ export function getEnvelopeStatus(processId: string, nullifier: string, gateway:
  * @param nullifier
  */
 export async function getEnvelope(processId: string, gateway: IDVoteGateway, nullifier: string): Promise<string> {
-    if (!gateway || !processId) return Promise.reject(new Error("No process ID provided"))
-    if (!(gateway instanceof DVoteGateway)) return Promise.reject(new Error("Invalid Gateway object"))
+    if (!processId) return Promise.reject(new Error("No process ID provided"))
+    else if (!(gateway instanceof DVoteGateway)) return Promise.reject(new Error("Invalid Gateway object"))
 
     return gateway.sendMessage({ method: "getEnvelope", nullifier, processId })
         .then((response) => {
@@ -193,7 +193,7 @@ export async function getEnvelope(processId: string, gateway: IDVoteGateway, nul
  * @param gateway 
  */
 export function getEnvelopeHeight(processId: string, dvoteGw: IDVoteGateway): Promise<number> {
-    if (!dvoteGw || !processId) return Promise.reject(new Error("No process ID provided"))
+    if (!processId) return Promise.reject(new Error("No process ID provided"))
     else if (!(dvoteGw instanceof DVoteGateway)) return Promise.reject(new Error("Invalid Gateway object"))
 
     return dvoteGw.sendMessage({ method: "getEnvelopeHeight", processId })
@@ -365,7 +365,7 @@ export function getRawResults(processId: string, dvoteGateway: IDVoteGateway): P
  * @returns Results, vote process  type, vote process state
  */
 export function getResultsDigest(processId: string, web3Gateway: IWeb3Gateway, dvoteGateway: IDVoteGateway): Promise<ProcessResults> {
-    if (!web3Gateway || !dvoteGateway || !processId)
+    if (!processId)
         return Promise.reject(new Error("No process ID provided"))
     else if (!(dvoteGateway instanceof DVoteGateway) || !(web3Gateway instanceof Web3Gateway))
         return Promise.reject(new Error("Invalid Gateway object"))
