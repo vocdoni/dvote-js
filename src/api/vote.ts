@@ -416,7 +416,7 @@ export async function packagePollEnvelope(votes: number[],
             processId: processId,
             proof: merkleProof,
             nonce,
-            "vote-package": votePackage
+            votePackage
             // signature:  Must be unset because the body must be singed without the  signature
         }
 
@@ -479,7 +479,7 @@ export type SnarkVoteEnvelope = {
     proof: string,  // ZK Proof
     nonce: string,  // Unique number per vote attempt, so that replay attacks can't reuse this payload
     nullifier: string,   // Hash of the private key
-    "vote-package": string  // base64(jsonString) is encrypted
+    votePackage: string  // base64(jsonString) is encrypted
 }
 export type SnarkVotePackage = {
     type: "snark-vote",
@@ -492,8 +492,8 @@ export type PollVoteEnvelope = {
     processId: string,
     proof: string,  // Merkle Proof
     nonce: string,  // Unique number per vote attempt, so that replay attacks can't reuse this payload
-    "vote-package": string,  // base64(json(votePackage))
-    signature?: string //  Signature including all the rest of the envelope (processId, proof, nonce, vote-package)
+    votePackage: string,  // base64(json(votePackage))
+    signature?: string //  Signature including all the rest of the envelope (processId, proof, nonce, votePackage)
 }
 export type PollVotePackage = {
     type: "poll-vote",

@@ -13,7 +13,7 @@ import { VotingProcessContractMethods } from "dvote-solidity"
 const fs = require("fs")
 
 import { deployVotingProcessContract, getVotingProcessInstance } from "../../src/net/contracts"
-import { getPollNullifier } from "../../src/api/vote"
+import { getPollNullifier, packagePollEnvelope, PollVotePackage } from "../../src/api/vote"
 import { checkValidProcessMetadata } from "../../src/models/voting-process"
 import VotingProcessBuilder, {
     DEFAULT_PROCESS_TYPE,
@@ -23,7 +23,7 @@ import VotingProcessBuilder, {
     DEFAULT_NUMBER_OF_BLOCKS,
     DEFAULT_START_BLOCK
 } from "../builders/voting-process"
-import ProcessMetadataBuilder from  "../builders/voting-process-metadata"
+import ProcessMetadataBuilder from "../builders/voting-process-metadata"
 import { BigNumber } from "ethers/utils"
 
 let accounts: TestAccount[]
@@ -532,7 +532,31 @@ describe("Voting Process", () => {
             nullifier = getPollNullifier(randomAccount1.address, processId)
             expect(nullifier).to.eq("0x419761e28c5103fa4ddac3d575a940c683aa647c31a8ac1073c8780f4664efcb")
         })
-        it("Should bundle a Vote Package into a valid Vote Envelope")
+        it("Should bundle a Vote Package into a valid Vote Envelope", async () => {
+            const wallet = Wallet.fromMnemonic("seven family better journey display approve crack burden run pattern filter topple")
+
+            let processId = "0x8b35e10045faa886bd2e18636cd3cb72e80203a04e568c47205bf0313a0f60d1"
+            let siblings = "0x0003000000000000000000000000000000000000000000000000000000000006f0d72fbd8b3a637488107b0d8055410180ec017a4d76dbb97bee1c3086a25e25b1a6134dbd323c420d6fc2ac3aaf8fff5f9ac5bc0be5949be64b7cfd1bcc5f1f"
+
+            const envelope1 = await packagePollEnvelope([1, 2, 3], siblings, processId, wallet)
+            expect(envelope1.processId).to.eq(processId)
+            expect(envelope1.proof).to.eq(siblings)
+            const pkg1: PollVotePackage = JSON.parse(Buffer.from(envelope1.votePackage, "base64").toString())
+            expect(pkg1.type).to.eq("poll-vote")
+            expect(pkg1.votes.length).to.eq(3)
+            expect(pkg1.votes).to.deep.equal([1, 2, 3])
+
+            processId = "0x36c886bd2e18605bf03a0428be100313a0f6e568c470d135d3cb72e802045faa"
+            siblings = "0x0003000000100000000002000000000300000000000400000000000050000006f0d72fbd8b3a637488107b0d8055410180ec017a4d76dbb97bee1c3086a25e25b1a6134dbd323c420d6fc2ac3aaf8fff5f9ac5bc0be5949be64b7cfd1bcc5f1f"
+
+            const envelope2 = await packagePollEnvelope([5, 6, 7], siblings, processId, wallet)
+            expect(envelope2.processId).to.eq(processId)
+            expect(envelope2.proof).to.eq(siblings)
+            const pkg2: PollVotePackage = JSON.parse(Buffer.from(envelope2.votePackage, "base64").toString())
+            expect(pkg2.type).to.eq("poll-vote")
+            expect(pkg2.votes.length).to.eq(3)
+            expect(pkg2.votes).to.deep.equal([5, 6, 7])
+        })
     })
 
     describe("Metadata validator", () => {
@@ -552,21 +576,21 @@ describe("Voting Process", () => {
         })
 
         it("Should accept an integer vote value", () => {
-            const payload  = new ProcessMetadataBuilder().withIntegerVoteValues().build()
+            const payload = new ProcessMetadataBuilder().withIntegerVoteValues().build()
             expect(() => {
                 checkValidProcessMetadata(payload)
             }).to.not.throw()
         })
 
         it("Should accept a string vote value", () => {
-            const payload  = new ProcessMetadataBuilder().withStringVoteValues().build()
+            const payload = new ProcessMetadataBuilder().withStringVoteValues().build()
             expect(() => {
                 checkValidProcessMetadata(payload)
             }).to.not.throw()
         })
 
         it("Should convert a string value vote to integer in the Process Metadata JSON", () => {
-            const payload  = new ProcessMetadataBuilder().withStringVoteValues().build()
+            const payload = new ProcessMetadataBuilder().withStringVoteValues().build()
             const result = checkValidProcessMetadata(payload)
             expect(result.details.questions[0].voteOptions[0].value).to.be.a("number")
         })
