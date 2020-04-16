@@ -222,6 +222,44 @@ const web3Provider2 = new ethers.providers.Web3Provider(currentProvider2)
 
 [More information](https://docs.ethers.io/ethers.js/html/api-providers.html#connecting-to-ethereum)
 
+### Wallets
+
+Generating a wallet from a mnemonic (and an optional path and Web3 provider):
+
+```typescript
+const mnemonic = "my mnemonic ..."
+const mnemonicPath = "m/44'/60'/0'/0/0"
+const provider = ethers.getDefaultProvider('goerli')
+
+const wallet = walletFromMnemonic(mnemonic, mnemonicPath, provider)
+wallet.sendTransaction(...)
+// ...
+```
+
+Generating a standalone deterministic wallet from a passphrase and a (non-private) seed. They are intended to provide wallets where the private key can be accessed.
+
+```typescript
+const provider = ethers.getDefaultProvider('goerli')
+
+// Created from scratch
+const hexSeed = generateRandomHexSeed()  // could be stored locally
+const passphrase = "A very Difficult 1234 passphrase" // must be private and include upper/lowercase chars and numbers
+
+// Or using an already created seed
+const hexSeed = "0xfdbc446f9f3ea732d23c7bcd10c784d041887d48ebc392c4ff51882ae569ca15"
+const passphrase = "A very Difficult 1234 passphrase" // must be private and include upper/lowercase chars and numbers
+
+const wallet = walletFromSeededPassphrase(passphrase, hexSeed, provider)
+wallet.signMessage(...)
+// ...
+```
+
+Accessing the browser wallet or MetaMask:
+
+```typescript
+const signer = signerFromBrowserProvider()
+signer.sendTransaction(...)
+```
 
 ## Components
 
