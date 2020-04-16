@@ -48,6 +48,7 @@ let entityId
 let entityWallet
 let processId
 let voteMetadata
+let accounts
 
 // STATE DATA
 let dvoteGateway
@@ -78,14 +79,14 @@ async function main() {
     await setEntityMetadata()
 
     // Create N wallets
-    const accounts = createWallets(NUM_ACCOUNTS)
+    accounts = createWallets(NUM_ACCOUNTS)
 
     // Write them to a file
     fs.writeFileSync(ACCOUNT_LIST_FILE_PATH, JSON.stringify(accounts, null, 2))
 
     // Submit the accounts to the entity
     const adminAccesstoken = await databasePrepare()
-    await submitAccountsToEntity(accounts)
+    await submitAccountsToRegistry(accounts)
 
     // Generate and publish the census
     // Get the merkle root and IPFS origin of the Merkle Tree
@@ -307,7 +308,7 @@ async function databasePrepare() {
   return token
 }
 
-async function submitAccountsToEntity(accounts) {
+async function submitAccountsToRegistry(accounts) {
   console.log("Registering", accounts.length, "accounts to the entity")
 
   return Promise.map(accounts, async (account, idx) => {
@@ -488,7 +489,10 @@ async function launchVotes(accounts) {
     const publicKeyHash = digestHexClaim(wallet["signingKey"].publicKey)
 
     process.stdout.write(`Gen Proof [${idx}] ; `)
-    const merkleProof = await generateProof(voteMetadata.census.merkleRoot, publicKeyHash, true, dvoteGateway)
+    const merkleProof = await generateProof(voteMetadata.census.merkleRoot, publicKeyHash, true, dvoteGateway).catch(err => {
+      console.error("\ngenerateProof ERR", idx, account.privateKey, publicKeyHash, err)
+      throw err
+    })
     process.stdout.write(`Pkg Envelope [${idx}] ; `)
     const choices = getChoicesForVoter(idx)
     const voteEnvelope = await packagePollEnvelope(choices, merkleProof, processId, wallet)
@@ -513,7 +517,6 @@ async function checkVoteResults() {
   console.log("\nWaiting for the votes to be processed")
   await new Promise((resolve) => setTimeout(resolve, 1000 * 10 * 3)) // wait ~2 blocks
 
-  // processId = JSON.parse(fs.readFileSync(PROCESS_INFO_FILE_PATH).toString()).processId
   assert.equal(typeof processId, "string")
 
   console.log("Fetching the vote results for", processId)
