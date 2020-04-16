@@ -212,11 +212,11 @@ async function setEntityMetadata() {
   // Read back
   const entityMetaPost = await getEntityMetadataByAddress(await entityWallet.getAddress(), web3Gateway, dvoteGateway)
   assert(entityMetaPost)
-  assert(entityMetaPost.name.default == metadata.name.default)
-  assert(entityMetaPost.description.default == metadata.description.default)
-  assert(entityMetaPost.actions.length == 1)
-  assert(entityMetaPost.votingProcesses.active.length == 0)
-  assert(entityMetaPost.votingProcesses.ended.length == 0)
+  assert.equal(entityMetaPost.name.default, metadata.name.default)
+  assert.equal(entityMetaPost.description.default, metadata.description.default)
+  assert.equal(entityMetaPost.actions.length, 1)
+  assert.equal(entityMetaPost.votingProcesses.active.length, 0)
+  assert.equal(entityMetaPost.votingProcesses.ended.length, 0)
 
   return entityMetaPost
 }
@@ -225,12 +225,14 @@ function createWallets(amount) {
   console.log("Creating", amount, "wallets")
   const accounts = []
   for (let i = 0; i < amount; i++) {
-    if (i % 50 == 0) console.log("Wallet", i)
+    if (i % 50 == 0) process.stdout.write("Wallet " + i + " ; ")
     const wallet = Wallet.createRandom()
     accounts.push({
+      idx: i,
       mnemonic: wallet.mnemonic,
       privateKey: wallet.signingKey.privateKey,
-      // publicKey: wallet.signingKey.publicKey,
+      publicKey: wallet.signingKey.publicKey,
+      publicKeyHash: digestHexClaim(wallet.signingKey.publicKey)
       // address: wallet.address
     })
   }
@@ -486,19 +488,13 @@ async function launchVotes(accounts) {
     process.stdout.write(`Starting [${idx}] ; `)
 
     const wallet = new Wallet(account.privateKey)
-    const publicKeyHash = digestHexClaim(wallet["signingKey"].publicKey)
 
     process.stdout.write(`Gen Proof [${idx}] ; `)
-    const merkleProof = await generateProof(voteMetadata.census.merkleRoot, publicKeyHash, true, dvoteGateway)
+    const merkleProof = await generateProof(voteMetadata.census.merkleRoot, account.publicKeyHash, true, dvoteGateway)
       // TODO: Comment out to stop on errors
-      .catch(err => null)
-    if (!merkleProof) return // skip
-
+      .catch(err => null); if (!merkleProof) return // skip
     // TODO: Uncomment for error reporting
-    // .catch(err => {
-    //   console.error("\ngenerateProof ERR", idx, account.privateKey, publicKeyHash, err)
-    //   throw err
-    // })
+    // .catch(err => { console.error("\ngenerateProof ERR", idx, account.privateKey, account.publicKeyHash, err); throw err })
 
     process.stdout.write(`Pkg Envelope [${idx}] ; `)
     const choices = getChoicesForVoter(idx)
@@ -507,11 +503,8 @@ async function launchVotes(accounts) {
     await submitEnvelope(voteEnvelope, dvoteGateway)
       // TODO: Comment out to stop on errors
       .catch(err => null)
-      // TODO: Uncomment for error reporting
-      // .catch(err => {
-      //   console.error("\submitEnvelope ERR", idx, account.privateKey, publicKeyHash, err)
-      //   throw err
-      // })
+    // TODO: Uncomment for error reporting
+    // .catch(err => { console.error("\submitEnvelope ERR", idx, account.privateKey, account.publicKeyHash, err) throw err })
 
     process.stdout.write(`Waiting [${idx}] ; `)
     await new Promise(resolve => setTimeout(resolve, 11000))
