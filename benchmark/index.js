@@ -314,7 +314,7 @@ async function submitAccountsToRegistry(accounts) {
   console.log("Registering", accounts.length, "accounts to the entity")
 
   return Promise.map(accounts, async (account, idx) => {
-    if (idx % 50 == 0) console.log("Account", idx)
+    if (idx % 50 == 0) process.stdout.write("Account " + idx + " ; ")
     const wallet = Wallet.fromMnemonic(account.mnemonic)
     const timestamp = Date.now()
 
@@ -514,7 +514,8 @@ async function launchVotes(accounts) {
     const hasVoted = await getEnvelopeStatus(processId, nullifier, dvoteGateway)
     process.stdout.write(`Done [${idx}] ; `)
 
-    assert(hasVoted)
+    // TODO: Uncomment to stop on errors
+    // assert(hasVoted)
 
     process.stdout.write(`Done [${idx}] ; `)
   }, { concurrency: MAX_CONCURRENCY })
