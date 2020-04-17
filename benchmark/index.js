@@ -129,7 +129,9 @@ async function main() {
   await waitUntilStarted()
 
   // Submit votes for every account
+  console.time("Voting 📩")
   await launchVotes(accounts)
+  console.timeEnd("Voting 📩")
 
   await checkVoteResults()
 
