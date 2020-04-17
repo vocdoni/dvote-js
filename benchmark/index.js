@@ -31,28 +31,29 @@ const ACCOUNT_LIST_FILE_PATH = "./cached-accounts.json"
 const PROCESS_INFO_FILE_PATH = "./cached-process-info.json"
 
 const READ_EXISTING = !!process.env.READ_EXISTING
+const STOP_ON_ERROR = !!process.env.STOP_ON_ERROR
+
 const ETH_NETWORK_ID = process.env.ETH_NETWORK_ID || "goerli"
 const BOOTNODES_URL_RW = process.env.BOOTNODES_URL_RW
+
 const REGISTRY_API_PREFIX = process.env.REGISTRY_API_PREFIX
 const CENSUS_MANAGER_API_PREFIX = process.env.CENSUS_MANAGER_API_PREFIX
-const WEB_POLL_URI_PREFIX = process.env.WEB_POLL_URI_PREFIX
 const ENTITY_MANAGER_URI_PREFIX = process.env.ENTITY_MANAGER_URI_PREFIX
+
 const NUM_ACCOUNTS = parseInt(process.env.NUM_ACCOUNTS || "1000") || 1000
 const MAX_CONCURRENCY = parseInt(process.env.MAX_CONCURRENCY || "100") || 100
 const VOTES_PATTERN = process.env.VOTES_PATTERN || "all-0" // Valid: all-0, all-1, all-2, all-even, incremental
 
 let entityResolver = null
 let votingProcess = null
+let dvoteGateway
+let web3Gateway
 
 let entityId
 let entityWallet
 let processId
 let voteMetadata
 let accounts
-
-// STATE DATA
-let dvoteGateway
-let web3Gateway
 
 
 async function main() {
@@ -62,6 +63,10 @@ async function main() {
   if (READ_EXISTING) {
     console.log("Reading account list")
     accounts = JSON.parse(fs.readFileSync(ACCOUNT_LIST_FILE_PATH).toString())
+
+    // optional
+    const adminAccesstoken = await adminLogin()
+    await checkDatabaseKeys(adminAccesstoken, accounts)
 
     console.log("Reading process metadata")
     const procInfo = JSON.parse(fs.readFileSync(PROCESS_INFO_FILE_PATH))
@@ -85,8 +90,10 @@ async function main() {
     fs.writeFileSync(ACCOUNT_LIST_FILE_PATH, JSON.stringify(accounts, null, 2))
 
     // Submit the accounts to the entity
-    const adminAccesstoken = await databasePrepare()
+    const adminAccesstoken = await adminLogin()
+    await databasePrepare(adminAccesstoken)
     await submitAccountsToRegistry(accounts)
+    await checkDatabaseKeys(adminAccesstoken, accounts)
 
     // Generate and publish the census
     // Get the merkle root and IPFS origin of the Merkle Tree
@@ -236,10 +243,13 @@ function createWallets(amount) {
       // address: wallet.address
     })
   }
+
+  console.log() // \n
   return accounts
 }
 
-async function databasePrepare() {
+async function adminLogin() {
+  assert(entityWallet)
   console.log("Logging into the registry admin")
 
   // Admin Log in
@@ -255,6 +265,10 @@ async function databasePrepare() {
   if (!response || !response.data || !response.data.token) throw new Error("Invalid Census Manager token")
   const token = response.data.token
 
+  return token
+}
+
+async function databasePrepare(token) {
   // List current census
   var request = {
     headers: {
@@ -283,7 +297,7 @@ async function databasePrepare() {
 
   // List current users
   request.method = 'GET'
-  request.url = CENSUS_MANAGER_API_PREFIX + "/api/members?filter=%7B%7D&order=ASC&perPage=10000000&sort=name&start=0"
+  request.url = CENSUS_MANAGER_API_PREFIX + "/api/members?filter=%7B%7D&order=ASC&perPage=1000000&sort=name&start=0"
 
   response = await axios(request)
   assert(Array.isArray(response.data))
@@ -313,9 +327,9 @@ async function databasePrepare() {
 async function submitAccountsToRegistry(accounts) {
   console.log("Registering", accounts.length, "accounts to the entity")
 
-  return Promise.map(accounts, async (account, idx) => {
+  await Promise.map(accounts, async (account, idx) => {
     if (idx % 50 == 0) process.stdout.write("Account " + idx + " ; ")
-    const wallet = Wallet.fromMnemonic(account.mnemonic)
+    const wallet = new Wallet(account.privateKey)
     const timestamp = Date.now()
 
     const body = {
@@ -334,15 +348,47 @@ async function submitAccountsToRegistry(accounts) {
     }
     body.signature = await signJsonBody(body.request, wallet)
 
-    return axios.post(`${REGISTRY_API_PREFIX}/api/actions/register`, body).then(res => {
-      const response = res.data && res.data.response
-      if (!response) throw new Error("Invalid response")
-      else if (response.error) throw new Error(response.error)
-      else if (!response.ok) throw new Error("Could not complete the registration process")
-    }).catch(err => {
-      throw new Error("Failed registering account " + idx)
-    })
-  }, { concurrency: 10 })
+    const res = await axios.post(`${REGISTRY_API_PREFIX}/api/actions/register`, body)
+
+    const response = res.data && res.data.response
+    if (!response) throw new Error("Empty response")
+    else if (response.error) throw new Error(response.error)
+    else if (!response.ok) throw new Error("Registration returned ok: false")
+  }, { concurrency: 50 })
+
+  console.log() // \n
+}
+
+async function checkDatabaseKeys(token, accounts) {
+  console.log("Checking database key values")
+
+  // Get the DB members data
+  var request = {
+    headers: {
+      'Content-Type': 'application/json',
+      'Cookie': "session-jwt=" + token
+    },
+    json: true
+  }
+  request.method = 'GET'
+  request.url = CENSUS_MANAGER_API_PREFIX + "/api/members?filter=%7B%7D&order=ASC&perPage=1000000&sort=email&start=0"
+
+  const response = await axios(request)
+  assert(response.data.length >= NUM_ACCOUNTS)
+
+  const dbAccounts = response.data
+  for (let account of accounts) {
+    const dbAccount = dbAccounts.find(dbAccount => dbAccount.user.email == "user" + account.idx + "@mail.com")
+    assert(dbAccount, "There is no such account for index " + account.idx)
+    if (dbAccount.user.digestedPublicKey == account.publicKeyHash && dbAccount.user.publicKey == account.publicKey) continue
+
+    // not found??
+    console.error("Generated account does not match the one on the DB:")
+    console.error("- Original pub key:", account.publicKey)
+    console.error("- DB pub key:", dbAccount.user.publicKey)
+    console.error("- Original pub key hash:", account.publicKeyHash)
+    console.error("- DB pub key hash:", dbAccount.user.digestedPublicKey)
+  }
 }
 
 async function generatePublicCensus(token) {
@@ -357,6 +403,7 @@ async function generatePublicCensus(token) {
     json: true
   }
 
+  // Create the census we will later export
   request.method = 'POST'
   request.url = CENSUS_MANAGER_API_PREFIX + "/api/census"
   request.data = { "name": "E2E Test census " + Date.now(), "filters": [{ "key": "dateOfBirth", "predicate": { "operator": "$gt", "value": "1800-01-01" } }] }
@@ -411,49 +458,38 @@ async function launchNewVote(merkleRoot, merkleTreeUri) {
   assert(merkleTreeUri)
   console.log("Preparing the new vote metadata")
 
-  const processMetadata = JSON.parse(JSON.stringify(ProcessMetadataTemplate)) // make a copy of the template
-  processMetadata.census.merkleRoot = merkleRoot
-  processMetadata.census.merkleTree = merkleTreeUri
-  processMetadata.details.entityId = entityId
-  processMetadata.details.encryptionPublicKey = "0x0"
-  processMetadata.details.title.default = "E2E process"
-  processMetadata.details.description.default = "E2E process"
-  processMetadata.details.questions[0].question.default = "Should 1+1 equal 2?"
-  processMetadata.details.questions[0].description.default = "Description here"
-  processMetadata.details.questions[0].voteOptions[0].title.default = "Yes"
-  processMetadata.details.questions[0].voteOptions[0].value = 0
-  processMetadata.details.questions[0].voteOptions[1].title.default = "No"
-  processMetadata.details.questions[0].voteOptions[1].value = 1
+  const processMetadataPre = JSON.parse(JSON.stringify(ProcessMetadataTemplate)) // make a copy of the template
+  processMetadataPre.census.merkleRoot = merkleRoot
+  processMetadataPre.census.merkleTree = merkleTreeUri
+  processMetadataPre.details.entityId = entityId
+  processMetadataPre.details.encryptionPublicKey = "0x0"
+  processMetadataPre.details.title.default = "E2E process"
+  processMetadataPre.details.description.default = "E2E process"
+  processMetadataPre.details.questions[0].question.default = "Should 1+1 equal 2?"
+  processMetadataPre.details.questions[0].description.default = "Description here"
+  processMetadataPre.details.questions[0].voteOptions[0].title.default = "Yes"
+  processMetadataPre.details.questions[0].voteOptions[0].value = 0
+  processMetadataPre.details.questions[0].voteOptions[1].title.default = "No"
+  processMetadataPre.details.questions[0].voteOptions[1].value = 1
 
   const currentBlock = await getBlockHeight(dvoteGateway)
   const startBlock = currentBlock + 25
-  processMetadata.startBlock = startBlock
-  processMetadata.numberOfBlocks = 60480
-  processId = await createVotingProcess(processMetadata, entityWallet, web3Gateway, dvoteGateway)
+  processMetadataPre.startBlock = startBlock
+  processMetadataPre.numberOfBlocks = 60480
+  processId = await createVotingProcess(processMetadataPre, entityWallet, web3Gateway, dvoteGateway)
 
   const entityMetaPost = await getEntityMetadataByAddress(await entityWallet.getAddress(), web3Gateway, dvoteGateway)
 
   assert(processId)
   assert(entityMetaPost)
-  assert(entityMetaPost.votingProcesses.active.length == 1)
-  assert(entityMetaPost.votingProcesses.ended.length == 0)
 
   // Reading back
   voteMetadata = await getVoteMetadata(processId, web3Gateway, dvoteGateway)
-  assert(voteMetadata.details.entityId == entityId)
-  assert(voteMetadata.startBlock == startBlock)
-  assert(voteMetadata.numberOfBlocks == processMetadata.numberOfBlocks)
-  assert(voteMetadata.census.merkleRoot == processMetadata.census.merkleRoot)
-  assert(voteMetadata.census.merkleTree == processMetadata.census.merkleTree)
-}
-
-function makeVoteLinks(accounts) {
-  assert(Array.isArray(accounts))
-  assert(accounts.length == NUM_ACCOUNTS)
-  console.log("Computing the vote links")
-
-  // http://<server>/processes/#/<entity-id>/<process-id>/<key>
-  return accounts.map(item => `${WEB_POLL_URI_PREFIX}/processes/#/${entityId}/${processId}/${item.privateKey}`)
+  assert.equal(voteMetadata.details.entityId, entityId)
+  assert.equal(voteMetadata.startBlock, processMetadataPre.startBlock, "SENT " + JSON.stringify(processMetadataPre) + " GOT " + JSON.stringify(voteMetadata))
+  assert.equal(voteMetadata.numberOfBlocks, processMetadataPre.numberOfBlocks)
+  assert.equal(voteMetadata.census.merkleRoot, processMetadataPre.census.merkleRoot)
+  assert.equal(voteMetadata.census.merkleTree, processMetadataPre.census.merkleTree)
 }
 
 async function waitUntilStarted() {
@@ -491,20 +527,22 @@ async function launchVotes(accounts) {
 
     process.stdout.write(`Gen Proof [${idx}] ; `)
     const merkleProof = await generateProof(voteMetadata.census.merkleRoot, account.publicKeyHash, true, dvoteGateway)
-      // TODO: Comment out to stop on errors
-      .catch(err => null); if (!merkleProof) return // skip
-    // TODO: Uncomment for error reporting
-    // .catch(err => { console.error("\ngenerateProof ERR", idx, account.privateKey, account.publicKeyHash, err); throw err })
+      .catch(err => {
+        console.error("\ngenerateProof ERR", account, err)
+        if (STOP_ON_ERROR) throw err
+        return null
+      })
+    if (!merkleProof) return // skip when !STOP_ON_ERROR
 
     process.stdout.write(`Pkg Envelope [${idx}] ; `)
     const choices = getChoicesForVoter(idx)
     const voteEnvelope = await packagePollEnvelope(choices, merkleProof, processId, wallet)
     process.stdout.write(`Submit [${idx}] ; `)
     await submitEnvelope(voteEnvelope, dvoteGateway)
-      // TODO: Comment out to stop on errors
-      .catch(err => null)
-    // TODO: Uncomment for error reporting
-    // .catch(err => { console.error("\submitEnvelope ERR", idx, account.privateKey, account.publicKeyHash, err) throw err })
+      .catch(err => {
+        console.error("\nsubmitEnvelope ERR", account, voteEnvelope, err)
+        if (STOP_ON_ERROR) throw err
+      })
 
     process.stdout.write(`Waiting [${idx}] ; `)
     await new Promise(resolve => setTimeout(resolve, 11000))
@@ -512,17 +550,17 @@ async function launchVotes(accounts) {
     process.stdout.write(`Checking [${idx}] ; `)
     const nullifier = await getPollNullifier(wallet.address, processId)
     const hasVoted = await getEnvelopeStatus(processId, nullifier, dvoteGateway)
-    process.stdout.write(`Done [${idx}] ; `)
 
-    // TODO: Uncomment to stop on errors
-    // assert(hasVoted)
+    if (STOP_ON_ERROR) assert(hasVoted)
 
     process.stdout.write(`Done [${idx}] ; `)
   }, { concurrency: MAX_CONCURRENCY })
+
+  console.log() // \n
 }
 
 async function checkVoteResults() {
-  console.log("\nWaiting for the votes to be processed")
+  console.log("\nWaiting a bit for the votes to be processed")
   await new Promise((resolve) => setTimeout(resolve, 1000 * 10 * 3)) // wait ~2 blocks
 
   assert.equal(typeof processId, "string")
@@ -573,7 +611,6 @@ async function checkVoteResults() {
       break
     default:
       throw new Error("The type of votes is unknown")
-      assert(false)
   }
 
   assert.equal(totalVotes, NUM_ACCOUNTS)
