@@ -32,7 +32,6 @@ const PROCESS_INFO_FILE_PATH = "./cached-process-info.json"
 
 const READ_EXISTING_ACCOUNTS = !!process.env.READ_EXISTING_ACCOUNTS
 const READ_EXISTING_PROCESS = !!process.env.READ_EXISTING_PROCESS
-const USE_LOCAL_ACCOUNTS_FOR_CENSUS = !!process.env.USE_LOCAL_ACCOUNTS_FOR_CENSUS
 const STOP_ON_ERROR = !!process.env.STOP_ON_ERROR
 
 const ETH_NETWORK_ID = process.env.ETH_NETWORK_ID || "goerli"
@@ -100,7 +99,7 @@ async function main() {
   }
   else {
     let adminAccesstoken
-    if (!USE_LOCAL_ACCOUNTS_FOR_CENSUS) {
+    if (!READ_EXISTING_ACCOUNTS) {
       adminAccesstoken = await adminLogin()
       await checkDatabaseKeys(adminAccesstoken, accounts)  // optional
     }
@@ -108,7 +107,7 @@ async function main() {
     // Generate and publish the census
     // Get the merkle root and IPFS origin of the Merkle Tree
     console.log("Publishing census")
-    const { merkleRoot, merkleTreeUri } = USE_LOCAL_ACCOUNTS_FOR_CENSUS ?
+    const { merkleRoot, merkleTreeUri } = READ_EXISTING_ACCOUNTS ?
       await generatePublicCensusFromAccounts(accounts) :   // Read from JSON
       await generatePublicCensusFromDb(adminAccesstoken)   // Dump from DB
 
