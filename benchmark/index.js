@@ -30,11 +30,14 @@ const PATH = process.env.ETH_PATH || "m/44'/60'/0'/0/0"
 const ACCOUNT_LIST_FILE_PATH = "./cached-accounts.json"
 const PROCESS_INFO_FILE_PATH = "./cached-process-info.json"
 
-const READ_EXISTING = !!process.env.READ_EXISTING
+const READ_EXISTING_ACCOUNTS = !!process.env.READ_EXISTING_ACCOUNTS
+const READ_EXISTING_PROCESS = !!process.env.READ_EXISTING_PROCESS
 const STOP_ON_ERROR = !!process.env.STOP_ON_ERROR
 
 const ETH_NETWORK_ID = process.env.ETH_NETWORK_ID || "goerli"
 const BOOTNODES_URL_RW = process.env.BOOTNODES_URL_RW
+const DVOTE_GATEWAY_URI = process.env.DVOTE_GATEWAY_URI || undefined
+const DVOTE_GATEWAY_PUBLIC_KEY = process.env.DVOTE_GATEWAY_PUBLIC_KEY || undefined
 
 const REGISTRY_API_PREFIX = process.env.REGISTRY_API_PREFIX
 const CENSUS_MANAGER_API_PREFIX = process.env.CENSUS_MANAGER_API_PREFIX
@@ -60,24 +63,12 @@ async function main() {
   // Connect to a GW
   await connectGateways()
 
-  if (READ_EXISTING) {
+  if (READ_EXISTING_ACCOUNTS) {
     console.log("Reading account list")
     accounts = JSON.parse(fs.readFileSync(ACCOUNT_LIST_FILE_PATH).toString())
-
-    // optional
-    const adminAccesstoken = await adminLogin()
-    await checkDatabaseKeys(adminAccesstoken, accounts)
-
-    console.log("Reading process metadata")
-    const procInfo = JSON.parse(fs.readFileSync(PROCESS_INFO_FILE_PATH))
-    processId = procInfo.processId
-    voteMetadata = procInfo.voteMetadata
-
-    assert(accounts)
-    assert(processId)
-    assert(voteMetadata)
   }
-  else { // Create from scratch
+  else {
+    // Create from scratch
     console.log("Creating from scratch")
 
     // Set Entity Metadata
@@ -94,9 +85,25 @@ async function main() {
     await databasePrepare(adminAccesstoken)
     await submitAccountsToRegistry(accounts)
     await checkDatabaseKeys(adminAccesstoken, accounts)
+    assert(accounts)
+  }
+
+  if (READ_EXISTING_PROCESS) {
+    console.log("Reading process metadata")
+    const procInfo = JSON.parse(fs.readFileSync(PROCESS_INFO_FILE_PATH))
+    processId = procInfo.processId
+    voteMetadata = procInfo.voteMetadata
+
+    assert(processId)
+    assert(voteMetadata)
+  }
+  else {
+    const adminAccesstoken = await adminLogin()
+    await checkDatabaseKeys(adminAccesstoken, accounts)
 
     // Generate and publish the census
     // Get the merkle root and IPFS origin of the Merkle Tree
+    console.log("Publishing census")
     const { merkleRoot, merkleTreeUri } = await generatePublicCensus(adminAccesstoken)
 
     // Create a new voting process
@@ -107,6 +114,7 @@ async function main() {
 
     console.log("The voting process is ready")
   }
+
 
   console.log("- Entity ID", voteMetadata.details.entityId)
   console.log("- Process ID", processId)
@@ -138,16 +146,32 @@ async function connectGateways() {
 
   // Get working DvoteGW
   let success = false
-  for (let gw of gws[ETH_NETWORK_ID].dvote) {
+
+  if (DVOTE_GATEWAY_URI && DVOTE_GATEWAY_PUBLIC_KEY) {
     try {
+      const gw = new DVoteGateway({ uri: DVOTE_GATEWAY_URI, publicKey: DVOTE_GATEWAY_PUBLIC_KEY, supportedApis: ["census", "file", "vote", "results"] })
       await gw.connect()
       await gw.getGatewayInfo()
       dvoteGateway = gw
       success = true
     }
     catch (err) {
-      console.log("DVoteGW failed", err)
-      continue
+      console.error(DVOTE_GATEWAY_URI, "is down, using default")
+    }
+  }
+
+  if (!success) {
+    for (let gw of gws[ETH_NETWORK_ID].dvote) {
+      try {
+        await gw.connect()
+        await gw.getGatewayInfo()
+        dvoteGateway = gw
+        success = true
+      }
+      catch (err) {
+        console.log("DVoteGW failed", err)
+        continue
+      }
     }
   }
   if (!success) throw new Error("Could not connect to the network")
@@ -374,20 +398,26 @@ async function checkDatabaseKeys(token, accounts) {
   request.url = CENSUS_MANAGER_API_PREFIX + "/api/members?filter=%7B%7D&order=ASC&perPage=1000000&sort=email&start=0"
 
   const response = await axios(request)
-  assert(response.data.length >= NUM_ACCOUNTS)
+  if (STOP_ON_ERROR) assert(response.data.length >= NUM_ACCOUNTS)
 
   const dbAccounts = response.data
   for (let account of accounts) {
     const dbAccount = dbAccounts.find(dbAccount => dbAccount.user.email == "user" + account.idx + "@mail.com")
-    assert(dbAccount, "There is no such account for index " + account.idx)
+    if (STOP_ON_ERROR) assert(dbAccount, "There is no such account for index " + account.idx)
+    else if (!dbAccount) continue
     if (dbAccount.user.digestedPublicKey == account.publicKeyHash && dbAccount.user.publicKey == account.publicKey) continue
 
     // not found??
     console.error("Generated account does not match the one on the DB:")
-    console.error("- Original pub key:", account.publicKey)
-    console.error("- DB pub key:", dbAccount.user.publicKey)
-    console.error("- Original pub key hash:", account.publicKeyHash)
-    console.error("- DB pub key hash:", dbAccount.user.digestedPublicKey)
+    if (dbAccount.user.digestedPublicKey != account.publicKeyHash) {
+      console.error("- Original pub key:", account.publicKey)
+      console.error("- DB pub key:", dbAccount.user.publicKey)
+    }
+    else {
+      console.error("- Pub key:", account.publicKey)
+      console.error("- Original pub key hash:", account.publicKeyHash)
+      console.error("- DB pub key hash:", dbAccount.user.digestedPublicKey)
+    }
   }
 }
 
@@ -421,11 +451,13 @@ async function generatePublicCensus(token) {
 
   response = await axios(request)
   const { censusIdSuffix, publicKeyDigests, managerPublicKeys } = response.data
-  assert(censusIdSuffix.length == 64)
-  assert(Array.isArray(publicKeyDigests))
-  assert(publicKeyDigests.length == NUM_ACCOUNTS)
-  assert(Array.isArray(managerPublicKeys))
-  assert(managerPublicKeys.length == 1)
+  if (STOP_ON_ERROR) {
+    assert(censusIdSuffix.length == 64)
+    assert(Array.isArray(publicKeyDigests))
+    assert(publicKeyDigests.length == NUM_ACCOUNTS)
+    assert(Array.isArray(managerPublicKeys))
+    assert(managerPublicKeys.length == 1)
+  }
 
   // Adding claims
   console.log("Registering the new census to the Census Service")
@@ -443,8 +475,10 @@ async function generatePublicCensus(token) {
 
   // Check that the census is published
   const exportedMerkleTree = await dumpPlain(censusId, dvoteGateway, entityWallet)
-  assert(Array.isArray(exportedMerkleTree))
-  assert(exportedMerkleTree.length == NUM_ACCOUNTS)
+  if (STOP_ON_ERROR) {
+    assert(Array.isArray(exportedMerkleTree))
+    assert(exportedMerkleTree.length == NUM_ACCOUNTS)
+  }
 
   // Return the census ID / Merkle Root
   return {
@@ -540,7 +574,7 @@ async function launchVotes(accounts) {
     process.stdout.write(`Submit [${idx}] ; `)
     await submitEnvelope(voteEnvelope, dvoteGateway)
       .catch(err => {
-        console.error("\nsubmitEnvelope ERR", account, voteEnvelope, err)
+        console.error("\nsubmitEnvelope ERR", account.publicKey, voteEnvelope, err)
         if (STOP_ON_ERROR) throw err
       })
 
@@ -550,6 +584,10 @@ async function launchVotes(accounts) {
     process.stdout.write(`Checking [${idx}] ; `)
     const nullifier = await getPollNullifier(wallet.address, processId)
     const hasVoted = await getEnvelopeStatus(processId, nullifier, dvoteGateway)
+      .catch(err => {
+        console.error("\ngetEnvelopeStatus ERR", account.publicKey, nullifier, err)
+        if (STOP_ON_ERROR) throw err
+      })
 
     if (STOP_ON_ERROR) assert(hasVoted)
 

@@ -1,4 +1,4 @@
-export type DVoteSupportedApi = "file" | "vote" | "census"
+export type DVoteSupportedApi = "file" | "vote" | "census" | "results"
 
 export type FileApiMethod = "fetchFile" | "addFile" | "pinList" | "pinFile" | "unpinFile"
 export type VoteApiMethod = "submitEnvelope" | "getEnvelopeStatus" | "getEnvelope" | "getEnvelopeHeight" | "getProcessList" | "getEnvelopeList" | "getBlockHeight" | "getResults"
