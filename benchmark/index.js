@@ -32,6 +32,7 @@ const PROCESS_INFO_FILE_PATH = "./cached-process-info.json"
 
 const READ_EXISTING_ACCOUNTS = !!process.env.READ_EXISTING_ACCOUNTS
 const READ_EXISTING_PROCESS = !!process.env.READ_EXISTING_PROCESS
+const USE_LOCAL_ACCOUNTS_FOR_CENSUS = !!process.env.USE_LOCAL_ACCOUNTS_FOR_CENSUS
 const STOP_ON_ERROR = !!process.env.STOP_ON_ERROR
 
 const ETH_NETWORK_ID = process.env.ETH_NETWORK_ID || "goerli"
@@ -98,13 +99,18 @@ async function main() {
     assert(voteMetadata)
   }
   else {
-    const adminAccesstoken = await adminLogin()
-    await checkDatabaseKeys(adminAccesstoken, accounts)
+    let adminAccesstoken
+    if (!USE_LOCAL_ACCOUNTS_FOR_CENSUS) {
+      adminAccesstoken = await adminLogin()
+      await checkDatabaseKeys(adminAccesstoken, accounts)  // optional
+    }
 
     // Generate and publish the census
     // Get the merkle root and IPFS origin of the Merkle Tree
     console.log("Publishing census")
-    const { merkleRoot, merkleTreeUri } = await generatePublicCensus(adminAccesstoken)
+    const { merkleRoot, merkleTreeUri } = USE_LOCAL_ACCOUNTS_FOR_CENSUS ?
+      await generatePublicCensusFromAccounts(accounts) :   // Read from JSON
+      await generatePublicCensusFromDb(adminAccesstoken)   // Dump from DB
 
     // Create a new voting process
     await launchNewVote(merkleRoot, merkleTreeUri)
@@ -423,7 +429,7 @@ async function checkDatabaseKeys(token, accounts) {
   }
 }
 
-async function generatePublicCensus(token) {
+async function generatePublicCensusFromDb(token) {
   // Create new census
   console.log("Creating a new census")
 
@@ -453,6 +459,50 @@ async function generatePublicCensus(token) {
 
   response = await axios(request)
   const { censusIdSuffix, publicKeyDigests, managerPublicKeys } = response.data
+  if (STOP_ON_ERROR) {
+    assert(censusIdSuffix.length == 64)
+    assert(Array.isArray(publicKeyDigests))
+    assert(publicKeyDigests.length == NUM_ACCOUNTS)
+    assert(Array.isArray(managerPublicKeys))
+    assert(managerPublicKeys.length == 1)
+  }
+
+  // Adding claims
+  console.log("Registering the new census to the Census Service")
+
+  const { censusId } = await addCensus(censusIdSuffix, managerPublicKeys, dvoteGateway, entityWallet)
+
+  console.log("Adding", publicKeyDigests.length, "claims")
+  response = await addClaimBulk(censusId, publicKeyDigests, true, dvoteGateway, entityWallet)
+
+  if (response.invalidClaims.length > 0) throw new Error("Census Service invalid claims count is " + response.invalidClaims.length)
+
+  // Publish the census
+  console.log("Publishing the new census")
+  const merkleTreeUri = await publishCensus(censusId, dvoteGateway, entityWallet)
+
+  // Check that the census is published
+  const exportedMerkleTree = await dumpPlain(censusId, dvoteGateway, entityWallet)
+  if (STOP_ON_ERROR) {
+    assert(Array.isArray(exportedMerkleTree))
+    assert(exportedMerkleTree.length == NUM_ACCOUNTS)
+  }
+
+  // Return the census ID / Merkle Root
+  return {
+    merkleTreeUri,
+    merkleRoot: response.merkleRoot
+  }
+}
+
+async function generatePublicCensusFromAccounts(accounts) {
+  // Create new census
+  console.log("Creating a new census")
+
+  const censusIdSuffix = require("crypto").createHash('sha256').update("" + Date.now()).digest().toString("hex")
+  const publicKeyDigests = accounts.map(account => account.publicKeyHash)
+  const managerPublicKeys = [entityWallet.signingKey.publicKey]
+
   if (STOP_ON_ERROR) {
     assert(censusIdSuffix.length == 64)
     assert(Array.isArray(publicKeyDigests))
