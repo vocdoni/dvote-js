@@ -35,7 +35,9 @@ export function generateCensusIdSuffix(censusName: string) {
 export function digestHexClaim(publicKey: string): string {
     const pubKeyBytes = hexStringToBuffer(publicKey)
     let hashNumHex: string = hashBuffer(pubKeyBytes).toString(16)
-    if (hashNumHex.length % 2 != 0) hashNumHex = "0" + hashNumHex
+    while (hashNumHex.length < 64) {
+        hashNumHex = "0" + hashNumHex
+    }
 
     const hashBuff = hexStringToBuffer(hashNumHex)
     return ArrayBuffToString(hashBuff, "base64")
