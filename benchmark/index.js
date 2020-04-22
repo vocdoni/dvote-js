@@ -90,7 +90,7 @@ async function main() {
 
   if (READ_EXISTING_PROCESS) {
     console.log("Reading process metadata")
-    const procInfo = JSON.parse(fs.readFileSync(PROCESS_INFO_FILE_PATH))
+    const procInfo = JSON.parse(fs.readFileSync(PROCESS_INFO_FILE_PATH).toString())
     processId = procInfo.processId
     voteMetadata = procInfo.voteMetadata
 

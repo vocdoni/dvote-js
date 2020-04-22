@@ -30,17 +30,25 @@ export function generateCensusIdSuffix(censusName: string) {
 
 /** 
  * Hashes the given hex string ECDSA public key and returns the
- * base 64 representation of the resulting big int
+ * base 64 litte-endian representation of the Poseidon hash big int
  */
 export function digestHexClaim(publicKey: string): string {
     const pubKeyBytes = hexStringToBuffer(publicKey)
     let hashNumHex: string = hashBuffer(pubKeyBytes).toString(16)
-    while (hashNumHex.length < 64) {
+    if (hashNumHex.length % 2 != 0) {
         hashNumHex = "0" + hashNumHex
     }
 
-    const hashBuff = hexStringToBuffer(hashNumHex)
-    return ArrayBuffToString(hashBuff, "base64")
+    // Using big-endian, pad any missing bytes until we get 32 bytes
+    while (hashNumHex.length < 64) {
+        hashNumHex = "00" + hashNumHex
+    }
+    // Convert to Little-endian
+    const hashNumBuffer = hexStringToBuffer(hashNumHex)
+    hashNumBuffer.reverse()
+
+    // Encode in base64
+    return ArrayBuffToString(hashNumBuffer, "base64")
 }
 
 /**
@@ -287,11 +295,18 @@ export function generateProof(censusMerkleRoot: string, base64Claim: string, isD
 
 function hexStringToBuffer(hexString: string): Buffer {
     if (!/^(0x)?[0-9a-fA-F]+$/.test(hexString)) throw new Error("Invalid hex string")
+    else if (hexString.length % 2 != 0) throw new Error("The hex string contains an odd length")
     hexString = hexString.replace(/^0x/, "")
 
-    const result = new Buffer(Math.ceil(hexString.length / 2));
+    const result = new Buffer(hexString.length / 2)
     for (let i = 0; i < result.length; i++) {
         result[i] = parseInt(hexString.substr(i * 2, 2), 16)
     }
     return result
+}
+
+function switchBufferEndienness(buff: Buffer): Buffer {
+    if (!(buff instanceof Buffer)) throw new Error("Invalid buffer was provided. Please, use a require('buffer/') instance instead")
+
+    return buff.reverse()
 }
