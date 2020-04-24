@@ -21,7 +21,6 @@
     "postinstall": "rm -Rf node_modules/ganache-core/node_modules/web3-providers-ws/node_modules/websocket/.git || true"
   },
   "dependencies": {
-    "arraybuffer-to-string": "^1.0.2",
     "axios": "^0.19.2",
     "buffer": "^5.2.1",
     "circomlib": "^0.1.2",

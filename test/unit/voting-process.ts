@@ -14,6 +14,7 @@ const fs = require("fs")
 
 import { deployVotingProcessContract, getVotingProcessInstance } from "../../src/net/contracts"
 import { getPollNullifier, packagePollEnvelope, PollVotePackage } from "../../src/api/vote"
+import { Asymmetric } from "../../src/util/encryption"
 import { checkValidProcessMetadata } from "../../src/models/voting-process"
 import VotingProcessBuilder, {
     DEFAULT_PROCESS_TYPE,
@@ -538,7 +539,7 @@ describe("Voting Process", () => {
             let processId = "0x8b35e10045faa886bd2e18636cd3cb72e80203a04e568c47205bf0313a0f60d1"
             let siblings = "0x0003000000000000000000000000000000000000000000000000000000000006f0d72fbd8b3a637488107b0d8055410180ec017a4d76dbb97bee1c3086a25e25b1a6134dbd323c420d6fc2ac3aaf8fff5f9ac5bc0be5949be64b7cfd1bcc5f1f"
 
-            const envelope1 = await packagePollEnvelope([1, 2, 3], siblings, processId, wallet)
+            const envelope1 = await packagePollEnvelope({ votes: [1, 2, 3], merkleProof: siblings, processId, walletOrSigner: wallet })
             expect(envelope1.processId).to.eq(processId)
             expect(envelope1.proof).to.eq(siblings)
             const pkg1: PollVotePackage = JSON.parse(Buffer.from(envelope1.votePackage, "base64").toString())
@@ -549,13 +550,49 @@ describe("Voting Process", () => {
             processId = "0x36c886bd2e18605bf03a0428be100313a0f6e568c470d135d3cb72e802045faa"
             siblings = "0x0003000000100000000002000000000300000000000400000000000050000006f0d72fbd8b3a637488107b0d8055410180ec017a4d76dbb97bee1c3086a25e25b1a6134dbd323c420d6fc2ac3aaf8fff5f9ac5bc0be5949be64b7cfd1bcc5f1f"
 
-            const envelope2 = await packagePollEnvelope([5, 6, 7], siblings, processId, wallet)
+            const envelope2 = await packagePollEnvelope({ votes: [5, 6, 7], merkleProof: siblings, processId, walletOrSigner: wallet })
             expect(envelope2.processId).to.eq(processId)
             expect(envelope2.proof).to.eq(siblings)
             const pkg2: PollVotePackage = JSON.parse(Buffer.from(envelope2.votePackage, "base64").toString())
             expect(pkg2.type).to.eq("poll-vote")
             expect(pkg2.votes.length).to.eq(3)
             expect(pkg2.votes).to.deep.equal([5, 6, 7])
+        })
+        it("Should bundle an encrypted Vote Package into a valid Vote Envelope", async () => {
+            const wallet = Wallet.fromMnemonic("seven family better journey display approve crack burden run pattern filter topple")
+
+            const votePrivateKey = "91f86dd7a9ac258c4908ca8fbdd3157f84d1f74ffffcb9fa428fba14a1d40150"
+            const votePublicKey = "6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"
+
+            const processes = [
+                {
+                    processId: "0x8b35e10045faa886bd2e18636cd3cb72e80203a04e568c47205bf0313a0f60d1",
+                    siblings: "0x0003000000000000000000000000000000000000000000000000000000000006f0d72fbd8b3a637488107b0d8055410180ec017a4d76dbb97bee1c3086a25e25b1a6134dbd323c420d6fc2ac3aaf8fff5f9ac5bc0be5949be64b7cfd1bcc5f1f",
+                    votes: [1, 2, 3]
+                },
+                {
+                    processId: "0x36c886bd2e18605bf03a0428be100313a0f6e568c470d135d3cb72e802045faa",
+                    siblings: "0x00030000001000000000020000000003000000000004000000000000500000053cd72fbd8b3a637488107b0d8055410180ec017a4d76dbb97bee1c3086a25e25b1a6134dbd323c420d6fc2ac3aaf8fff5f9ac5bc0be5949be64b7cfd1bcc5f1f",
+                    votes: [4, 5, 6]
+                },
+                {
+                    processId: "0x21c886bd2e18605b733a0428be100313a057e568c470d135d3cb72e312045faa",
+                    siblings: "0x00030080001000000080020000400003000003000004000000200000500004053cd72fbd8b3a637488107b0d8055410180ec017a4d76dbb97bee1c3086a25e25b1a6134dbd323c420d6fc2ac3aaf8fff5f9ac5bc0be5949be64b7cfd1bcc5f1f",
+                    votes: [7, 8, 9]
+                }
+            ]
+
+            for (let item of processes) {
+                const envelope = await packagePollEnvelope({ votes: item.votes, merkleProof: item.siblings, processId: item.processId, walletOrSigner: wallet, encryptionPublicKey: votePublicKey })
+                expect(envelope.processId).to.eq(item.processId)
+                expect(envelope.proof).to.eq(item.siblings)
+                expect(envelope.votePackage).to.be.a("string")
+                expect(Buffer.from(envelope.votePackage, "base64").length).to.be.greaterThan(0)
+
+                const pkg: PollVotePackage = JSON.parse(Asymmetric.decryptString(envelope.votePackage, votePrivateKey))
+                expect(pkg.type).to.eq("poll-vote")
+                expect(pkg.votes).to.deep.equal(item.votes)
+            }
         })
     })
 
