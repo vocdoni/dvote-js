@@ -3,7 +3,7 @@ import { IDVoteGateway, IDvoteRequestParameters } from "../net/gateway"
 import { sha3_256 } from 'js-sha3'
 // import ContentURI from "../wrappers/content-uri"
 import { hashBuffer } from "../util/hashing"
-const { Buffer } = require("buffer/")
+import { hexStringToBuffer } from "../util/encoding"
 import * as ArrayBuffToString from 'arraybuffer-to-string'
 import { CENSUS_MAX_BULK_SIZE } from "../constants"
 
@@ -288,25 +288,3 @@ export function generateProof(censusMerkleRoot: string, base64Claim: string, isD
 // export function checkProof() {
 //     throw new Error("TODO: Unimplemented")
 // }
-
-///////////////////////////////////////////////////////////////////////////////
-// INTERNAL HELPERS
-///////////////////////////////////////////////////////////////////////////////
-
-function hexStringToBuffer(hexString: string): Buffer {
-    if (!/^(0x)?[0-9a-fA-F]+$/.test(hexString)) throw new Error("Invalid hex string")
-    else if (hexString.length % 2 != 0) throw new Error("The hex string contains an odd length")
-    hexString = hexString.replace(/^0x/, "")
-
-    const result = new Buffer(hexString.length / 2)
-    for (let i = 0; i < result.length; i++) {
-        result[i] = parseInt(hexString.substr(i * 2, 2), 16)
-    }
-    return result
-}
-
-function switchBufferEndienness(buff: Buffer): Buffer {
-    if (!(buff instanceof Buffer)) throw new Error("Invalid buffer was provided. Please, use a require('buffer/') instance instead")
-
-    return buff.reverse()
-}
