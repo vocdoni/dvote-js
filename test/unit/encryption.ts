@@ -4,6 +4,7 @@ import { addCompletionHooks } from "../mocha-hooks"
 import { Wallet } from "ethers"
 
 import { Asymmetric } from "../../src/util/encryption"
+import { Buffer } from "buffer/"
 
 addCompletionHooks()
 
@@ -16,8 +17,11 @@ describe("Asymmetric encryption", () => {
         "",
         "!·$%&/)1234567890",
         "UTF-8-charsàèìòù",
-        "😃🌟🌹⚖️🚀"
+        "😃🌟🌹⚖️🚀",
+        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
     ]
+    const buffers = messages.map(msg => Buffer.from(msg))
+    const randomMessages = (() => { const msgs = []; for (let i = 0; i < 80; i++) msgs.push(Wallet.createRandom().mnemonic); return msgs })()
 
     it("Should encrypt and recover messages", () => {
         for (let i = 0; i < messages.length; i++) {
@@ -27,14 +31,48 @@ describe("Asymmetric encryption", () => {
         }
     })
 
-    it("Should encrypt and recover random messages", () => {
-        let wallet: Wallet, encrypted, decrypted
-        for (let i = 0; i < 50; i++) {
-            wallet = Wallet.createRandom()
+    it("Should encrypt and recover byte arrays from base64", () => {
+        for (let i = 0; i < buffers.length; i++) {
+            const encrypted = Asymmetric.encryptBytes(buffers[i], publicKey)
+            const decrypted = Asymmetric.decryptBytes(encrypted, privateKey)
+            expect(decrypted.join(",")).to.eq(buffers[i].join(","))
+        }
+    })
 
-            encrypted = Asymmetric.encryptString(wallet.mnemonic, publicKey)
+    it("Should encrypt and recover byte arrays", () => {
+        for (let i = 0; i < buffers.length; i++) {
+            const encrypted = Asymmetric.encryptRaw(buffers[i], publicKey)
+            const decrypted = Asymmetric.decryptRaw(encrypted, privateKey)
+            expect(decrypted.join(",")).to.eq(buffers[i].join(","))
+        }
+    })
+
+    it("Should encrypt and recover random byte arrays", () => {
+        let buffer: Buffer, encrypted: Buffer, decrypted: Buffer
+        for (let i = 0; i < randomMessages.length; i++) {
+            buffer = Buffer.from(randomMessages[i])
+            encrypted = Asymmetric.encryptRaw(buffer, publicKey)
+            decrypted = Asymmetric.decryptRaw(encrypted, privateKey)
+            expect(decrypted.join(",")).to.eq(buffer.join(","))
+        }
+    })
+
+    it("Should encrypt and recover random byte arrays from base64", () => {
+        let buffer: Buffer, encrypted: string, decrypted: Buffer
+        for (let i = 0; i < randomMessages.length; i++) {
+            buffer = Buffer.from(randomMessages[i])
+            encrypted = Asymmetric.encryptBytes(buffer, publicKey)
+            decrypted = Asymmetric.decryptBytes(encrypted, privateKey)
+            expect(decrypted.join(",")).to.eq(buffer.join(","))
+        }
+    })
+
+    it("Should encrypt and recover random messages", () => {
+        let encrypted, decrypted
+        for (let i = 0; i < randomMessages.length; i++) {
+            encrypted = Asymmetric.encryptString(randomMessages[i], publicKey)
             decrypted = Asymmetric.decryptString(encrypted, privateKey)
-            expect(decrypted).to.eq(wallet.mnemonic)
+            expect(decrypted).to.eq(randomMessages[i])
         }
     })
 
