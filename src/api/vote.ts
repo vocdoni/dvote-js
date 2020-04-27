@@ -8,7 +8,8 @@ import ContentHashedURI from "../wrappers/content-hashed-uri"
 import { getEntityMetadataByAddress, updateEntity, getEntityId } from "./entity"
 import { VOCHAIN_BLOCK_TIME } from "../constants"
 import { signJsonBody } from "../util/json-sign"
-import { getArrayBufferFromString, getBase64StringFromArrayBuffer } from "../util/convert"
+import { Buffer } from "buffer/"  // Previously using "arraybuffer-to-string"
+import { Asymmetric } from "../util/encryption"
 
 /**
  * Use the given JSON metadata to create a new voting process from the Entity ID associated to the given wallet account.
@@ -398,29 +399,57 @@ export function getResultsDigest(processId: string, web3Gateway: IWeb3Gateway, d
 
 // TODO: SEE https://vocdoni.io/docs/#/architecture/components/process?id=vote-envelope
 
-export function packageSnarkEnvelope(votes: number[],
-    merkleProof: string, processId: string, voteEncryptionPublicKey: string, walletOrSigner: Wallet | Signer): SnarkVoteEnvelope {
+export function packageSnarkEnvelope(params: {
+    votes: number[], merkleProof: string, processId: string, privateKey: string,
+    encryptionPublicKey?: string
+}): SnarkVoteEnvelope {
+    if (!params) throw new Error("Invalid parameters");
+    if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
+    else if (typeof params.merkleProof != "string" || !params.merkleProof.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid Merkle Proof")
+    else if (typeof params.processId != "string" || !params.processId.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid processId")
+    else if (!params.privateKey || !params.privateKey.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid private key")
+    else if (typeof params.encryptionPublicKey != "undefined") {
+        if (typeof params.encryptionPublicKey != "string" || !params.encryptionPublicKey.match(/^(0x)?[0-9a-zA-Z]+$/))
+            throw new Error("The encryption public key is not valid")
+    }
 
     // TODO: use packageSnarkVote()
     throw new Error("TODO: unimplemented")
 }
 
-export async function packagePollEnvelope(votes: number[],
-    merkleProof: string, processId: string, walletOrSigner: Wallet | Signer): Promise<PollVoteEnvelope> {
-    if (!votes || !merkleProof || !processId || !walletOrSigner) throw new Error("Invalid parameters");
+/**
+ * Packages the given vote array into a JSON payload that can be sent to Vocdoni Gateways.
+ * If `encryptionPublicKey` is defined, it will be used to encrypt the vote package.
+ * @param params 
+ */
+export async function packagePollEnvelope(params: {
+    votes: number[], merkleProof: string, processId: string, walletOrSigner: Wallet | Signer,
+    encryptionPublicKey?: string
+}): Promise<PollVoteEnvelope> {
+    if (!params) throw new Error("Invalid parameters");
+    else if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
+    else if (typeof params.merkleProof != "string" || !params.merkleProof.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid Merkle Proof")
+    else if (typeof params.processId != "string" || !params.processId.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid processId")
+    else if (!params.walletOrSigner || !params.walletOrSigner.signMessage) throw new Error("Invalid wallet or signer")
+    else if (typeof params.encryptionPublicKey != "undefined") {
+        if (typeof params.encryptionPublicKey != "string" || !params.encryptionPublicKey.match(/^(0x)?[0-9a-zA-Z]+$/))
+            throw new Error("The encryption public key is not valid")
+    }
+
     try {
         const nonce = utils.keccak256('0x' + Date.now().toString(16)).substr(2)
 
-        const votePackage: string = packagePollVote(votes)
+        const votePackage: string = packagePollVote(params.votes, params.encryptionPublicKey)
+
         const pkg: PollVoteEnvelope = {
-            processId: processId,
-            proof: merkleProof,
+            processId: params.processId,
+            proof: params.merkleProof,
             nonce,
             votePackage
             // signature:  Must be unset because the body must be singed without the  signature
         }
 
-        pkg.signature = await signJsonBody(pkg, walletOrSigner)
+        pkg.signature = await signJsonBody(pkg, params.walletOrSigner)
 
         return pkg
     } catch (error) {
@@ -439,13 +468,25 @@ export function packageSnarkVote(votes: number[], voteEncryptionPublicKey: strin
     // }
 
     // // TODO: ENCRYPT WITH voteEncryptionPublicKey
-    // const buff = getArrayBufferFromString(JSON.stringify(payload))
-    // return getBase64StringFromArrayBuffer(buff)
+    // const strPayload = JSON.stringify(payload)
+
+    // if (encryptionPublicKey) return Asymmetric.encryptString(strPayload, encryptionPublicKey)
+    // else return Buffer.from(strPayload).toString("base64")
     throw new Error("Unimplemented")
 }
 
-export function packagePollVote(votes: number[]): string {
+/**
+ * Packages the given votes into a base64 string. If encryptionPublicKey is defined, the base64 payload
+ * will be encrypted for it.
+ * @param votes An array of numbers with the choices
+ * @param encryptionPublicKey An ed25519 public key (https://ed25519.cr.yp.to/)
+ */
+export function packagePollVote(votes: number[], encryptionPublicKey: string): string {
     if (!Array.isArray(votes)) throw new Error("Invalid votes")
+    else if (typeof encryptionPublicKey != "undefined") {
+        if (typeof encryptionPublicKey != "string" || !encryptionPublicKey.match(/^(0x)?[0-9a-zA-Z]+$/))
+            throw new Error("The encryption public key is not valid")
+    }
     const nonce = utils.keccak256('0x' + Date.now().toString(16)).substr(2)
 
     const payload: PollVotePackage = {
@@ -453,8 +494,10 @@ export function packagePollVote(votes: number[]): string {
         nonce,
         votes
     }
-    const buff = getArrayBufferFromString(JSON.stringify(payload))
-    return getBase64StringFromArrayBuffer(buff)
+    const strPayload = JSON.stringify(payload)
+
+    if (encryptionPublicKey) return Asymmetric.encryptString(strPayload, encryptionPublicKey)
+    else return Buffer.from(strPayload).toString("base64")
 }
 
 /** Computes the nullifier of the user's vote within a poll voting process.
@@ -465,7 +508,7 @@ export function getPollNullifier(address: string, processId: string): string {
     processId = processId.replace(/^0x/, "")
 
     if (address.length != 40) return null
-    if (processId.length != 64) return null
+    else if (processId.length != 64) return null
 
     return utils.keccak256(utils.arrayify("0x" + address + processId))
 }

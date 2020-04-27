@@ -621,7 +621,8 @@ async function launchVotes(accounts) {
 
     process.stdout.write(`Pkg Envelope [${idx}] ; `)
     const choices = getChoicesForVoter(idx)
-    const voteEnvelope = await packagePollEnvelope(choices, merkleProof, processId, wallet)
+    // TODO: Use encrypted payloads
+    const voteEnvelope = await packagePollEnvelope({ votes: choices, merkleProof, processId, walletOrSigner: wallet })
     process.stdout.write(`Submit [${idx}] ; `)
     await submitEnvelope(voteEnvelope, dvoteGateway)
       .catch(err => {

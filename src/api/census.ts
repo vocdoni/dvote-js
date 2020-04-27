@@ -4,7 +4,7 @@ import { sha3_256 } from 'js-sha3'
 // import ContentURI from "../wrappers/content-uri"
 import { hashBuffer } from "../util/hashing"
 import { hexStringToBuffer } from "../util/encoding"
-import * as ArrayBuffToString from 'arraybuffer-to-string'
+// import { Buffer } from "buffer/"
 import { CENSUS_MAX_BULK_SIZE } from "../constants"
 
 
@@ -48,7 +48,7 @@ export function digestHexClaim(publicKey: string): string {
     hashNumBuffer.reverse()
 
     // Encode in base64
-    return ArrayBuffToString(hashNumBuffer, "base64")
+    return hashNumBuffer.toString("base64")
 }
 
 /**
