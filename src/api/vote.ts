@@ -86,11 +86,10 @@ export async function getVoteMetadata(processId: string, web3Gateway: IWeb3Gatew
     const processInstance = await getVotingProcessInstance({ provider: web3Gateway.getProvider() })
 
     try {
-        const data = await processInstance.get(processId)
+        const processInfo = await processInstance.get(processId)
+        if (!processInfo.metadata) throw new Error("The given voting process has no metadata")
 
-        if (!data.metadata) throw new Error("The given voting process has no metadata")
-
-        const jsonBuffer = await fetchFileString(data.metadata, dvoteGateway)
+        const jsonBuffer = await fetchFileString(processInfo.metadata, dvoteGateway)
 
         return JSON.parse(jsonBuffer.toString())
     } catch (error) {
@@ -109,6 +108,56 @@ export function getVotesMetadata(processIds: string[], web3Gateway: IWeb3Gateway
     else if (!(web3Gateway instanceof Web3Gateway) || !(dvoteGateway instanceof DVoteGateway)) Promise.reject(new Error("Invalid Gateway object"))
 
     return Promise.all(processIds.map((id) => getVoteMetadata(id, web3Gateway, dvoteGateway)))
+}
+
+/**
+ * Send a transaction to mark a voting process as canceled or ended.
+ * @param processId
+ * @param walletOrSigner
+ * @param web3Gateway
+ */
+export async function cancelProcess(processId: string,
+    walletOrSigner: Wallet | Signer, web3Gateway: IWeb3Gateway): Promise<void> {
+    if (!processId) throw new Error("Invalid process ID")
+    else if (!walletOrSigner) throw new Error("Invalid Wallet or Signer")
+    else if (!(web3Gateway instanceof Web3Gateway)) throw new Error("Invalid Gateway object")
+
+    try {
+        const processInstance = await getVotingProcessInstance({
+            provider: web3Gateway.getProvider(),
+            signer: walletOrSigner instanceof Signer ? walletOrSigner : undefined,
+            wallet: walletOrSigner instanceof Wallet ? walletOrSigner : undefined
+        })
+
+        const tx = await processInstance.cancel(processId)
+        if (!tx) throw new Error("Could not start the blockchain transaction")
+        await tx.wait()
+    }
+    catch (err) {
+        console.error(err)
+        throw err
+    }
+}
+
+/**
+ * Checks wether the given process is canceled or not.
+ * @param processId
+ * @param web3Gateway
+ */
+export async function isCanceled(processId: string, web3Gateway: IWeb3Gateway): Promise<boolean> {
+    if (!processId) throw new Error("Invalid process ID")
+    else if (!(web3Gateway instanceof Web3Gateway)) throw new Error("Invalid Gateway object")
+
+    try {
+        const processInstance = await getVotingProcessInstance({ provider: web3Gateway.getProvider() })
+
+        const processInfo = await processInstance.get(processId)
+        if (!processInfo) throw new Error("Could not check the process status")
+        return !!processInfo.canceled
+    }
+    catch (err) {
+        throw err
+    }
 }
 
 /**

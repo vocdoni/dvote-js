@@ -25,7 +25,7 @@ const { getRoot, addCensus, addClaim, addClaimBulk, digestHexClaim, getCensusSiz
 const { DVoteGateway, Web3Gateway } = Gateway
 const { getDefaultGateways, getRandomGatewayInfo, getWorkingGatewayInfo } = Bootnodes
 const { addFile, fetchFileString } = File
-const { createVotingProcess, getVoteMetadata, packagePollEnvelope, submitEnvelope, getBlockHeight, getEnvelopeHeight, getTimeUntilStart, getTimeUntilEnd, getTimeForBlock, getBlockNumberForTime, getEnvelopeList, getEnvelope, getRawResults, getResultsDigest } = Vote
+const { createVotingProcess, getVoteMetadata, packagePollEnvelope, submitEnvelope, cancelProcess, isCanceled, getBlockHeight, getEnvelopeHeight, getTimeUntilStart, getTimeUntilEnd, getTimeForBlock, getBlockNumberForTime, getEnvelopeList, getEnvelope, getRawResults, getResultsDigest } = Vote
 
 const { Wallet, providers, utils } = require("ethers")
 const { Buffer } = require("buffer/")
@@ -393,6 +393,32 @@ async function createVotingProcessFull() {
     dvoteGateway.disconnect()
 }
 
+async function cancelVotingProcess() {
+    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+    const myEntityAddress = await wallet.getAddress()
+    const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
+    const web3Gateway = new Web3Gateway(gwInfo)
+    const dvoteGateway = new DVoteGateway(gwInfo)
+    await dvoteGateway.connect()
+
+
+    const processMetadata = JSON.parse(JSON.stringify(ProcessMetadataTemplate)) // make a copy of the template
+    processMetadata.census.merkleRoot = "0x0000000000000000000000000000000000000000000000000"
+    processMetadata.census.merkleTree = "ipfs://1234123412341234"
+    processMetadata.details.entityId = getEntityId(myEntityAddress)
+
+    const processId = await createVotingProcess(processMetadata, wallet, web3Gateway, dvoteGateway)
+    const canceledPre = await isCanceled(processId, web3Gateway)
+    await cancelProcess(processId, wallet, web3Gateway)
+    const canceledPost = await isCanceled(processId, web3Gateway)
+
+    console.log("Created", processId)
+    console.log("Canceled (before)", canceledPre)
+    console.log("Canceled (after)", canceledPost)
+
+    dvoteGateway.disconnect()
+}
+
 async function cloneVotingProcess() {
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
     const BOOTNODES_URL = " ... "
@@ -710,6 +736,7 @@ async function main() {
     // await gwCensusOperations()
     // await createVotingProcessManual()
     // await createVotingProcessFull()
+    // await cancelVotingProcess()
     await cloneVotingProcess()
     // await useVoteApi()
     // await submitVoteBatch()
