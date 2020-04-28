@@ -10,8 +10,9 @@ import {
     // PrivateKey,
     // ProcessId,
     MultiLanguage,
-    URI
+    // URI
 } from "./common"
+import { ProcessType } from "dvote-solidity"
 import * as Joi from "joi-browser"
 import { by639_1 } from 'iso-language-codes'
 export { ProcessMetadataTemplate } from "./templates/voting-process"
@@ -32,7 +33,7 @@ type MessagingUriString = string
 export function checkValidProcessMetadata(voteMetadata: ProcessMetadata) {
     if (typeof voteMetadata != "object") throw new Error("The metadata must be a JSON object")
 
-    const result = Joi.validate(voteMetadata, voteMetadataSchema, {convert: true})
+    const result = Joi.validate(voteMetadata, voteMetadataSchema, { convert: true })
     if (!result || result.error) {
         throw new Error("Metadata validation error: " + result.error.toString())
     }
@@ -54,7 +55,7 @@ const multiLanguageStringKeys = {
 
 // MAIN ENTITY SCHEMA
 
-const processTypes = ["snark-vote", "poll-vote", "petition-sign"]
+const processTypes: ProcessType[] = ["snark-vote", "poll-vote", "encrypted-poll-vote", "petition-sign"]
 const questionTypes = ["single-choice"]
 
 const voteMetadataSchema = Joi.object().keys({
@@ -94,8 +95,8 @@ const voteMetadataSchema = Joi.object().keys({
 ///////////////////////////////////////////////////////////////////////////////
 
 type ProtocolVersion = "1.0"
-export type ProcessType = "snark-vote" | "poll-vote" | "petition-sign"
 type QuestionType = "single-choice"
+export { ProcessType }
 export type VochainProcessState = "scheduled" | "active" | "paused" | "finished" | "canceled"
 
 /**

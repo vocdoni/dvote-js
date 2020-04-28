@@ -62,6 +62,11 @@ export default class ProcessMetadataBuilder {
         return this
     }
 
+    withTypeEncryptedPollVote() {
+        this.metadata.type = "encrypted-poll-vote" as ProcessType
+        return this
+    }
+
     withTypePetitionSign() {
         this.metadata.type = "petition-sign" as ProcessType
         return this
