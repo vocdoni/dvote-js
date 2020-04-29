@@ -179,6 +179,25 @@ export function getBlockHeight(gateway: IDVoteGateway): Promise<number> {
 }
 
 /**
+ * Retrieves the encryption public keys of the given process
+ * @param processId 
+ * @param gateway 
+ */
+export function getProcessKeys(processId: string, gateway: IDVoteGateway): Promise<string[]> {
+    if (!gateway || !(gateway instanceof DVoteGateway)) Promise.reject(new Error("Invalid Gateway object"))
+
+    return gateway.sendMessage({ method: "getProcessKeys", processId })
+        .then((response) => {
+            if (!response.processKeys || !Array.isArray(response.processKeys)) throw new Error("The gateway response is not correct")
+            return response.processKeys
+        })
+        .catch((error) => {
+            const message = (error.message) ? "Could not retrieve the process encryption keys: " + error.message : "Could not retrieve the process encryption keys"
+            throw new Error(message)
+        })
+}
+
+/**
  * Submit the vote envelope to a Gateway
  * @param voteEnvelope
  * @param gateway 
@@ -450,16 +469,16 @@ export function getResultsDigest(processId: string, web3Gateway: IWeb3Gateway, d
 
 export function packageSnarkEnvelope(params: {
     votes: number[], merkleProof: string, processId: string, privateKey: string,
-    encryptionPublicKey?: string
+    encryptionPublicKeys?: string[]
 }): SnarkVoteEnvelope {
     if (!params) throw new Error("Invalid parameters");
     if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
     else if (typeof params.merkleProof != "string" || !params.merkleProof.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid Merkle Proof")
     else if (typeof params.processId != "string" || !params.processId.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid processId")
     else if (!params.privateKey || !params.privateKey.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid private key")
-    else if (typeof params.encryptionPublicKey != "undefined") {
-        if (typeof params.encryptionPublicKey != "string" || !params.encryptionPublicKey.match(/^(0x)?[0-9a-zA-Z]+$/))
-            throw new Error("The encryption public key is not valid")
+    else if (params.encryptionPublicKeys && Array.isArray(params.encryptionPublicKeys) && params.encryptionPublicKeys.length) {
+        const someErr = params.encryptionPublicKeys.some(k => typeof k != "string" || !k.match(/^(0x)?[0-9a-zA-Z]+$/))
+        if (someErr) throw new Error("Some encryption public keys are not valid")
     }
 
     // TODO: use packageSnarkVote()
@@ -473,22 +492,22 @@ export function packageSnarkEnvelope(params: {
  */
 export async function packagePollEnvelope(params: {
     votes: number[], merkleProof: string, processId: string, walletOrSigner: Wallet | Signer,
-    encryptionPublicKey?: string
+    encryptionPublicKeys?: string[]
 }): Promise<PollVoteEnvelope> {
     if (!params) throw new Error("Invalid parameters");
     else if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
     else if (typeof params.merkleProof != "string" || !params.merkleProof.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid Merkle Proof")
     else if (typeof params.processId != "string" || !params.processId.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid processId")
     else if (!params.walletOrSigner || !params.walletOrSigner.signMessage) throw new Error("Invalid wallet or signer")
-    else if (typeof params.encryptionPublicKey != "undefined") {
-        if (typeof params.encryptionPublicKey != "string" || !params.encryptionPublicKey.match(/^(0x)?[0-9a-zA-Z]+$/))
-            throw new Error("The encryption public key is not valid")
+    else if (params.encryptionPublicKeys && Array.isArray(params.encryptionPublicKeys) && params.encryptionPublicKeys.length) {
+        const someErr = params.encryptionPublicKeys.some(k => typeof k != "string" || !k.match(/^(0x)?[0-9a-zA-Z]+$/))
+        if (someErr) throw new Error("Some encryption public keys are not valid")
     }
 
     try {
         const nonce = utils.keccak256('0x' + Date.now().toString(16)).substr(2)
 
-        const votePackage: string = packagePollVote(params.votes, params.encryptionPublicKey)
+        const votePackage: string = packagePollVote(params.votes, params.encryptionPublicKeys)
 
         const pkg: PollVoteEnvelope = {
             processId: params.processId,
@@ -506,7 +525,7 @@ export async function packagePollEnvelope(params: {
     }
 }
 
-export function packageSnarkVote(votes: number[], voteEncryptionPublicKey: string): string {
+export function packageSnarkVote(votes: number[], voteEncryptionPublicKeys: string): string {
     // if (!Array.isArray(votes)) throw new Error("Invalid votes")
     // const nonce = utils.keccak256('0x' + Date.now().toString(16)).substr(2)
 
@@ -516,25 +535,25 @@ export function packageSnarkVote(votes: number[], voteEncryptionPublicKey: strin
     //     votes
     // }
 
-    // // TODO: ENCRYPT WITH voteEncryptionPublicKey
+    // // TODO: ENCRYPT WITH voteEncryptionPublicKeys
     // const strPayload = JSON.stringify(payload)
 
-    // if (encryptionPublicKey) return Asymmetric.encryptString(strPayload, encryptionPublicKey)
+    // if (encryptionPublicKeys) return Asymmetric.encryptString(strPayload, encryptionPublicKeys)
     // else return Buffer.from(strPayload).toString("base64")
     throw new Error("Unimplemented")
 }
 
 /**
- * Packages the given votes into a base64 string. If encryptionPublicKey is defined, the base64 payload
+ * Packages the given votes into a base64 string. If encryptionPublicKeys is defined, the base64 payload
  * will be encrypted for it.
  * @param votes An array of numbers with the choices
- * @param encryptionPublicKey An ed25519 public key (https://ed25519.cr.yp.to/)
+ * @param encryptionPublicKeys An ed25519 public key (https://ed25519.cr.yp.to/)
  */
-export function packagePollVote(votes: number[], encryptionPublicKey: string): string {
+export function packagePollVote(votes: number[], encryptionPublicKeys: string[]): string {
     if (!Array.isArray(votes)) throw new Error("Invalid votes")
-    else if (typeof encryptionPublicKey != "undefined") {
-        if (typeof encryptionPublicKey != "string" || !encryptionPublicKey.match(/^(0x)?[0-9a-zA-Z]+$/))
-            throw new Error("The encryption public key is not valid")
+    else if (encryptionPublicKeys && Array.isArray(encryptionPublicKeys) && encryptionPublicKeys.length) {
+        const someErr = encryptionPublicKeys.some(k => typeof k != "string" || !k.match(/^(0x)?[0-9a-zA-Z]+$/))
+        if (someErr) throw new Error("Some encryption public keys are not valid")
     }
     const nonce = utils.keccak256('0x' + Date.now().toString(16)).substr(2)
 
@@ -545,7 +564,16 @@ export function packagePollVote(votes: number[], encryptionPublicKey: string): s
     }
     const strPayload = JSON.stringify(payload)
 
-    if (encryptionPublicKey) return Asymmetric.encryptString(strPayload, encryptionPublicKey)
+    if (encryptionPublicKeys) {
+        encryptionPublicKeys = encryptionPublicKeys.map(k => k.replace(/^0x/, ""))
+        
+        let result: string
+        for (let i = 0; i < encryptionPublicKeys.length; i++) {
+            if (i > 0) result = Asymmetric.encryptString(result, encryptionPublicKeys[i]) // reencrypt result
+            else result = Asymmetric.encryptString(strPayload, encryptionPublicKeys[i]) // encrypt the first
+        }
+        return result
+    }
     else return Buffer.from(strPayload).toString("base64")
 }
 

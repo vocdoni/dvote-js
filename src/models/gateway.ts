@@ -1,14 +1,14 @@
 export type DVoteSupportedApi = "file" | "vote" | "census" | "results"
 
 export type FileApiMethod = "fetchFile" | "addFile" | "pinList" | "pinFile" | "unpinFile"
-export type VoteApiMethod = "submitEnvelope" | "getEnvelopeStatus" | "getEnvelope" | "getEnvelopeHeight" | "getProcessList" | "getEnvelopeList" | "getBlockHeight" | "getResults"
+export type VoteApiMethod = "submitEnvelope" | "getEnvelopeStatus" | "getEnvelope" | "getEnvelopeHeight" | "getProcessKeys" | "getProcessList" | "getEnvelopeList" | "getBlockHeight" | "getResults"
 export type CensusApiMethod = "addCensus" | "addClaim" | "addClaimBulk" | "getRoot" | "genProof" | "getSize" | "checkProof" | "dump" | "dumpPlain" | "importDump" | "publish" | "importRemote"
 export type GatewayApiMethod = "getGatewayInfo"
 export type WsGatewayMethod = FileApiMethod | VoteApiMethod | CensusApiMethod | GatewayApiMethod
 
 export const fileApiMethods: FileApiMethod[] = ["fetchFile", "addFile", "pinList", "pinFile", "unpinFile"]
-export const voteApiMethods: VoteApiMethod[] = ["submitEnvelope", "getEnvelopeStatus", "getEnvelope", "getEnvelopeHeight", "getProcessList", "getEnvelopeList", "getBlockHeight"]
-export const censusApiMethods: CensusApiMethod[] = ["addCensus", "addClaim", "addClaimBulk", "getRoot", "genProof", "checkProof", "dump", "dumpPlain", "importDump", "publish", "importRemote"]
+export const voteApiMethods: VoteApiMethod[] = ["submitEnvelope", "getEnvelopeStatus", "getEnvelope", "getEnvelopeHeight", "getProcessKeys", "getProcessList", "getEnvelopeList", "getBlockHeight", "getResults"]
+export const censusApiMethods: CensusApiMethod[] = ["addCensus", "addClaim", "addClaimBulk", "getRoot", "genProof", "getSize", "checkProof", "dump", "dumpPlain", "importDump", "publish", "importRemote"]
 export const dvoteGatewayApiMethods: (FileApiMethod | VoteApiMethod | CensusApiMethod)[] = [].concat(fileApiMethods).concat(voteApiMethods).concat(censusApiMethods)
 
 export type GatewayBootNodes = {
