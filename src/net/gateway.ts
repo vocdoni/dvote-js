@@ -8,12 +8,18 @@ import { Buffer } from 'buffer'
 import { Contract, ContractFactory, providers, utils, Wallet, Signer } from "ethers"
 import { providerFromUri } from "../util/providers"
 import GatewayInfo from "../wrappers/gateway-info"
-import { DVoteSupportedApi, WsGatewayMethod, fileApiMethods, voteApiMethods, censusApiMethods } from "../models/gateway"
-import { SIGNATURE_TIMESTAMP_TOLERANCE } from "../constants"
+import { DVoteSupportedApi, WsGatewayMethod, fileApiMethods, voteApiMethods, censusApiMethods, dvoteGatewayApiMethods } from "../models/gateway"
+import { SIGNATURE_TIMESTAMP_TOLERANCE, GATEWAY_SELECTION_TIMEOUT } from "../constants"
 import { signJsonBody, isSignatureValid } from "../util/json-sign"
+import { getEntityResolverInstance, getVotingProcessInstance, IVotingProcessContract, IEntityResolverContract } from "../net/contracts"
 import axios from "axios"
-import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
-import { throwError } from "ethers/errors"
+import { NetworkID, fetchDefaultBootNode, getGatewaysFromBootNodeData, fetchFromBootNode } from "./gateway-bootnodes"
+import ContentURI from "wrappers/content-uri"
+import {
+    EntityResolver as EntityContractDefinition,
+    VotingProcess as VotingProcessContractDefinition
+} from "dvote-solidity"
+import { entityResolverEnsDomain, votingProcessEnsDomain } from "../constants"
 
 const uriPattern = /^([a-z][a-z0-9+.-]+):(\/\/([^@]+@)?([a-z0-9.\-_~]+)(:\d+)?)?((?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])*)*|(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+)*)?(\?(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?(\#(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?$/i
 
@@ -24,6 +30,8 @@ const uriPattern = /^([a-z][a-z0-9+.-]+):(\/\/([^@]+@)?([a-z0-9.\-_~]+)(:\d+)?)?
 // Export the class typings as an interface
 export type IDVoteGateway = InstanceType<typeof DVoteGateway>
 export type IWeb3Gateway = InstanceType<typeof Web3Gateway>
+export type IGateway = InstanceType<typeof Gateway>
+
 
 /** Parameters sent by the function caller */
 export interface IDvoteRequestParameters {
@@ -61,13 +69,236 @@ type GatewayResponse = {
 }
 
 /**
+ * This is class, addressed to the end user, is a wrapper of DvoteGateway and Web3Gateway
+ */
+export class Gateway {
+    protected dvote: DVoteGateway = null
+    protected web3: Web3Gateway = null
+    public get health() { return this.dvote.health }
+    public get publicKey() { return this.dvote.publicKey }
+    public getSupportedApis() { return this.dvote.getSupportedApis() }
+
+    private entityResolverAddress() {return this.web3.entityResolverAddress}
+    private votingContractAddress() {return this.web3.votingContractAddress}
+
+    /** 
+     * Returns a new Gateway
+     * @param dvoteGateway A DvoteGateway instance
+     * @param web3Gateway A Web3Gateway instance
+     */
+    constructor(dvoteGateway: IDVoteGateway, web3Gateway: IWeb3Gateway) {
+        if (!dvoteGateway || !web3Gateway ||
+            !(dvoteGateway instanceof DVoteGateway) || !(web3Gateway instanceof Web3Gateway)) {
+            throw new Error("Invalid gateways provided")
+        }
+        this.dvote = dvoteGateway
+        this.web3 = web3Gateway
+    }
+
+    /** 
+     * Returns a new random *connected*(Dvote-wise) Gateway that is
+     * 1. Attached to the required network 
+     * 2. Servers the required APIs
+     * @param networkId Either "homestead" (mainnet) or "goerli" (test)
+     * @param requiredApis A list of the required APIs
+     */
+    static randomFromDefault(networkId: NetworkID, requiredApis: DVoteSupportedApi[] = []): Promise<Gateway> {
+        return fetchDefaultBootNode(networkId)
+            .then(async bootNodeData => {
+                const gateways = getGatewaysFromBootNodeData(bootNodeData)[networkId]
+                let web3: Web3Gateway
+                for (let i = 0; i < gateways.web3.length; i++) {
+                    let w3 = gateways.web3[i]
+                    const isUp = await w3.isUp().then(()=>true).catch(() =>false)
+                    if (!isUp) continue
+                    web3 = w3
+                    break
+                }
+                if (!web3) throw new Error("Could not find an active Web3 Gateway")
+
+                let gw: Gateway = null
+                let connected = false
+                do {
+                    gw = new Gateway(gateways.dvote.pop(), web3)
+                    connected = await gw.connect(requiredApis).catch(() => false)
+                } while (!connected && gateways.dvote.length)
+
+                if (connected) return gw
+                throw new Error('Could not find an active DVote gateway')
+            })
+    }
+
+    /** 
+     * Returns a new random *connected*(Dvote-wise) Gateway that is
+     * 1. Attached to the required network 
+     * 2. Included in the provided URI of bootnodes
+     * 2. Servers the required APIs
+     * @param networkId Either "homestead" (mainnet) or "goerli" (test)
+     * @param bootnodesContentUri The uri from which contains the available gateways
+     * @param requiredApis A list of the required APIs
+     */
+    static randomfromUri(networkId: NetworkID, bootnodesContentUri: string | ContentURI, requiredApis: DVoteSupportedApi[] = []): Promise<Gateway> {
+        return fetchFromBootNode(bootnodesContentUri)
+            .then(async bootNodeData => {
+                const gateways = getGatewaysFromBootNodeData(bootNodeData)[networkId]
+                let web3: Web3Gateway
+                for (let i = 0; i < gateways.web3.length; i++) {
+                    let w3 = gateways.web3[i]
+                    const isUp = await w3.isUp().then(()=>true).catch(() =>false)
+                    if (!isUp) continue
+                    web3 = w3
+                    break
+                }
+                if (!web3) throw new Error("Could not find an active Web3 Gateway")
+
+                let gw: Gateway = null
+                let connected = false
+                do {
+                    gw = new Gateway(gateways.dvote.pop(), web3)
+                    connected = await gw.connect(requiredApis).catch(() => false)
+                } while (!connected && gateways.dvote.length)
+
+                if (connected) return gw
+                throw new Error('Could not find an active DVote gateway')
+            })
+    }
+
+    /** 
+     * Returns a new *connected* Gateway that is instantiated based on the given parameters
+     * @param gatewayOrParams Either a gatewayInfo object or an object with the defined parameters
+     */
+    static fromInfo(gatewayOrParams: GatewayInfo | { dvoteUri: string, supportedApis: DVoteSupportedApi[], web3Uri: string, publicKey?: string }): Promise<Gateway> {
+        let dvoteGateway, web3Gateway
+        if (gatewayOrParams instanceof GatewayInfo) {
+            dvoteGateway = new DVoteGateway(gatewayOrParams)
+            web3Gateway = new Web3Gateway(gatewayOrParams)
+        } else if (gatewayOrParams instanceof Object) {
+            if (!(typeof gatewayOrParams.dvoteUri === "string") ||
+                !(Array.isArray(gatewayOrParams.supportedApis)) ||
+                !(typeof gatewayOrParams.web3Uri === "string"))
+                throw new Error("Invalid Parameters")
+            dvoteGateway = new DVoteGateway({
+                uri: gatewayOrParams.dvoteUri,
+                supportedApis: gatewayOrParams.supportedApis,
+                publicKey: gatewayOrParams.publicKey
+            })
+            web3Gateway = new Web3Gateway(gatewayOrParams.web3Uri)
+        }
+        const gateway = new Gateway(dvoteGateway, web3Gateway)
+        return gateway.connect()
+            .then(connected => {
+                if (connected) return gateway
+                throw new Error("Could not connect to the chosen gateway")
+            }).catch(error => {
+                throw new Error("Could not connect to the chosen gateway: " + error)
+            })
+    }
+
+    /** 
+     * Tries to connect both web3 and dvote gateways and returns true only if succeeds at both.
+     * @param requiredApis Possible required Dvote APIs 
+     */
+    public connect(requiredApis: DVoteSupportedApi[] = []): Promise<boolean> {
+        // console.time("connect web3")
+        return this.connectWeb3()
+            .then(web3connected => {
+                // console.timeEnd("connect web3")
+                // console.time("connect dvote")
+                if (!web3connected) return false
+                return this.connectDvote(requiredApis)
+                    .then(dvoteConnected => {
+                        // console.timeEnd("connect dvote")
+                        if (!dvoteConnected) return false
+                        return true
+
+                    })
+            })
+    }
+    public isConnected(): Promise<boolean> {
+        // If web3 is connected
+        if (this.entityResolverAddress && this.votingContractAddress)
+            // Check dvote connection
+            return this.dvote.isConnected()
+        else
+            return Promise.resolve(false)
+    }
+
+    // DVOTE
+
+    async connectDvote(requiredApis: DVoteSupportedApi[] = []): Promise<boolean> {
+        if (await this.dvote.isConnected()) return Promise.resolve(true)
+        return this.dvote.connect()
+            .then(() => this.dvote.getGatewayInfo())
+            .then(info => {
+                if (!requiredApis.length) return true
+                else if (requiredApis.length && requiredApis.every(api => info.api.includes(api)))
+                    return true
+                return false
+            }).catch(error => {
+                throw new Error(error)
+            })
+    }
+
+    public disconnect() {
+        return this.dvote.disconnect()
+    }
+
+
+    public getDVoteUri(): Promise<string> {
+        return this.dvote.getUri()
+    }
+
+    public sendMessage(requestBody: IDvoteRequestParameters, wallet: Wallet | Signer = null, timeout: number = 50): Promise<any> {
+        return this.dvote.sendMessage(requestBody, wallet, timeout)
+    }
+
+    public getGatewayInfo(timeout: number = 5): Promise<{ api: DVoteSupportedApi[], health: number }> {
+        return this.dvote.getGatewayInfo(timeout)
+    }
+
+    // WEB3
+    async connectWeb3(): Promise<boolean> {
+       return this.web3.isUp()
+       .then(() =>  true)
+       .catch(() => false)
+    }
+
+    public getProvider(): providers.Provider { return this.web3.getProvider() }
+
+    public deploy<CustomContractMethods>(abi: string | (string | utils.ParamType)[] | utils.Interface, bytecode: string,
+        signParams: { signer?: Signer, wallet?: Wallet } = {}, deployArguments: any[] = []): Promise<(Contract & CustomContractMethods)> {
+
+        return this.web3.deploy<CustomContractMethods>(abi, bytecode, signParams, deployArguments)
+    }
+
+    public getEntityResolverInstance(walletOrSigner?: Wallet | Signer): IEntityResolverContract {
+        if (!this.entityResolverAddress()) throw new Error("The gateway is not yet connected")
+
+        if (walletOrSigner && (walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer))
+            return this.web3.attach<IEntityResolverContract>(this.entityResolverAddress(), EntityContractDefinition.abi as any).connect(walletOrSigner) as (IEntityResolverContract)
+        return this.web3.attach<IEntityResolverContract>(this.entityResolverAddress(), EntityContractDefinition.abi as any)
+    }
+
+    public getVotingProcessInstance(walletOrSigner?: Wallet | Signer): IVotingProcessContract {
+        if (!this.votingContractAddress()) throw new Error("The gateway is not yet connected")
+
+        if (walletOrSigner && (walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer))
+            return this.web3.attach<IVotingProcessContract>(this.votingContractAddress(), VotingProcessContractDefinition.abi as any).connect(walletOrSigner) as (IVotingProcessContract)
+        return this.web3.attach<IVotingProcessContract>(this.votingContractAddress(), VotingProcessContractDefinition.abi as any)
+    }
+}
+
+/**
  * This class provides access to Vocdoni Gateways sending JSON payloads over Web Sockets
  * intended to interact within voting processes
  */
 export class DVoteGateway {
     protected uri: string = ""
+
     protected supportedApis: DVoteSupportedApi[] = []
     protected pubKey: string = ""
+
+    public health: number = 0
 
     private webSocket: WebSocket = null
     private connectionPromise: Promise<void> = null   // let sendMessage wait of the socket is still not open
@@ -82,8 +313,7 @@ export class DVoteGateway {
             this.uri = gatewayOrParams.dvote
             this.supportedApis = gatewayOrParams.supportedApis
             this.pubKey = gatewayOrParams.publicKey
-        }
-        else {
+        } else {
             const { uri, supportedApis, publicKey } = gatewayOrParams
             if (!uriPattern.test(uri)) throw new Error("Invalid gateway URI")
 
@@ -98,49 +328,21 @@ export class DVoteGateway {
      * @param gatewayOrParams (optional) If set, connect to the given coordinates
      * @returns Promise that resolves when the socket is open
      */
-    public connect(gatewayOrParams?: GatewayInfo | { uri: string, supportedApis: DVoteSupportedApi[], publicKey?: string }): Promise<void> {
-        let newUri: string, newSupportedApis: DVoteSupportedApi[], newPublicKey: string
-
-        if (gatewayOrParams) {
-            if (gatewayOrParams instanceof GatewayInfo) {
-                newUri = gatewayOrParams.dvote
-                newSupportedApis = gatewayOrParams.supportedApis
-                newPublicKey = gatewayOrParams.publicKey
-            }
-            else {
-                const { uri, supportedApis, publicKey } = gatewayOrParams
-                if (!uriPattern.test(uri)) throw new Error("Invalid Gateway URI")
-
-                newUri = uri
-                newSupportedApis = supportedApis
-                newPublicKey = publicKey
-            }
-        }
-        else if (!this.uri) throw new Error("The details of a gateway are needed in order to connect to it")
-        else {
-            newUri = this.uri
-            newSupportedApis = this.supportedApis || []
-            newPublicKey = this.publicKey || ""
-        }
-
-
+    public connect(): Promise<void> {
         // Close any previous web socket that might be open
         this.disconnect()
 
-        const url = parseURL(newUri)
+        const url = parseURL(this.uri)
         if (url.protocol != "ws:" && url.protocol != "wss:") throw new Error("Unsupported gateway protocol: " + url.protocol)
 
         // Keep a promise so that calls to sendMessage coming before the socket is open
         // wait until the promise is resolved
         this.connectionPromise = new Promise((resolve, reject) => {
             // Set up the web socket
-            const ws = new WebSocket(newUri)
+            const ws = new WebSocket(this.uri)
             ws.onopen = () => {
                 // the socket is ready
                 this.webSocket = ws
-                this.uri = newUri
-                this.supportedApis = newSupportedApis
-                this.pubKey = newPublicKey
 
                 this.connectionPromise = null
                 resolve()
@@ -180,7 +382,7 @@ export class DVoteGateway {
         if (!this.webSocket) return
         else if (typeof this.webSocket.close == "function") this.webSocket.close()
         this.webSocket = null
-        this.uri = null
+        // this.uri = null  // Why???
     }
 
     /**
@@ -203,6 +405,8 @@ export class DVoteGateway {
 
         return this.uri
     }
+
+    public getSupportedApis() { return this.supportedApis }
 
     public get publicKey() { return this.pubKey }
 
@@ -236,7 +440,6 @@ export class DVoteGateway {
         do {
             rand = Math.random().toString(16).split('.')[1]
             requestId = utils.keccak256('0x' + rand).substr(2)
-            // } while (this.requestList.filter(r => r.id === rand).length > 0)
         } while (this.requestList.some(r => r.id === rand))
         const content: MessageRequestContent = {
             id: requestId,
@@ -258,7 +461,6 @@ export class DVoteGateway {
                     this.requestList = this.requestList.filter(r => r.id != requestId)
                 }, timeout * 1000)
             })
-
             this.webSocket.send(JSON.stringify(content))
         })
 
@@ -297,7 +499,7 @@ export class DVoteGateway {
      * Retrieves the status of the given gateway and returns an object indicating the services it provides.
      * If there is no connection open, the method returns null.
      */
-    public async getGatewayInfo(timeout?: number): Promise<DVoteSupportedApi[]> {
+    public async getGatewayInfo(timeout?: number): Promise<{ api: DVoteSupportedApi[], health: number }> {
         if (!this.isConnected()) return null
 
         try {
@@ -306,13 +508,21 @@ export class DVoteGateway {
                 result = await this.sendMessage({ method: "getGatewayInfo" }, null, timeout)
             else
                 result = await this.sendMessage({ method: "getGatewayInfo" })
+
             if (!result.ok) throw new Error("Not OK")
             else if (!Array.isArray(result.apiList)) throw new Error("apiList is not an array")
-            return result.apiList
+            else if (typeof result.health !== "number") throw new Error("invalid gateway reply")
+            this.health = result.health
+            this.supportedApis = result.apiList
+            return {
+                api: result.apiList,
+                health: result.health
+            }
         }
-        catch (err) {
-            console.error(err)
-            throw new Error("The status of the gateway could not be retrieved")
+        catch (error) {
+            let message = "The status of the gateway could not be retrieved"
+            message = (error.message) ? message + ": " + error.message : message
+            throw new Error(message)
         }
     }
 
@@ -320,40 +530,27 @@ export class DVoteGateway {
      * Checks the health of the current Gateway by calling isUp
      * @returns the necessary parameters to create a GatewayInfo object
      */
-    public async isUp(): Promise<{ result: boolean, dvoteUri?: string, supportedApis?: DVoteSupportedApi[], pubKey?: string }> {
-        const url = this.uri
+    public async isUp(timeout: number = GATEWAY_SELECTION_TIMEOUT): Promise<void> {
         const uri = parseURL(this.uri)
 
-        // if (!(uri instanceof Url]) || uri.host.length === 0) {
-        // TODO Check that parsing worked correctly
-        if ( uri.host.length === 0) {
+        if (uri.host.length === 0) {
             throw new Error("Invalid Gateway URL")
         }
         return new Promise((resolve, reject) => {
             // Check ping and then status
+            setTimeout(() => reject(new Error("The Dvote Gateway is too slow")), timeout)
+
             this.checkPing()
-                .then(async (isUp) => {
-                    if (isUp !== true) {
-                        resolve({ result: false })
-                        return
-                    }
-                    await this.connect()
-                    return this.getGatewayInfo(GATEWAY_SELECTION_TIMEOUT)
-                        .then(async (response) => {
-                            await this.disconnect()
-                            if (response) {
-                                resolve({ result: true, dvoteUri: url, supportedApis: response, pubKey: this.pubKey })
-                            } else {
-                                resolve({ result: false })
-                            }
-                            return
+                .then((isUp) => {
+                    if (isUp !== true) return reject(new Error("No ping reply"))
+
+                    return this.connect()
+                        .then(() => this.getGatewayInfo(timeout))
+                        .then((response) => {
+                            if (response && Array.isArray(response.api)) return resolve()
+                            return reject(new Error("Invalid DVote Gateway response"))
                         })
-                }).catch((err) => {
-                    console.error(err)
-                    reject(err)
-                    return
-                })
-            setTimeout(() => reject("timeout") , GATEWAY_SELECTION_TIMEOUT)
+                }).catch((err) => reject(new Error("The DVote Gateway seems to be down")))
         })
     }
 
@@ -363,17 +560,17 @@ export class DVoteGateway {
      */
     public async checkPing(): Promise<boolean> {
         const uri = parseURL(this.uri)
-        // console.log("starting ping")
         let pingUrl: string = uri.port
             ? `https://${uri.host}:${uri.port}/ping`
             : `https://${uri.host}/ping`
 
         try {
-            let response = await axios.get(pingUrl)
+            let response = await axios.get(pingUrl).catch(err => {
+                return null
+            })
             if (response != null &&
                 response.status === 200 &&
                 response.data === "pong") {
-                // console.log('ping');
                 return true;
             }
 
@@ -382,13 +579,14 @@ export class DVoteGateway {
                 ? `http://${uri.host}:${uri.port}/ping`
                 : `http://${uri.host}/ping`
 
-            response = await axios.get(pingUrl)
+            response = await axios.get(pingUrl).catch(err => {
+                return null
+            })
             return (response != null &&
                 response.status === 200 &&
                 response.data === "pong")
         } catch (err) {
-            // console.error(err)
-            return false;
+            return false
         }
     }
 
@@ -424,13 +622,15 @@ export class DVoteGateway {
         request.resolve(response)
         delete request.resolve
     }
-
 }
+
 /**
  * A Web3 wrapped client with utility methods to deploy and attach to Ethereum contracts.
  */
 export class Web3Gateway {
     private provider: providers.Provider
+    public entityResolverAddress: string
+    public votingContractAddress: string
 
     /** Returns a JSON RPC provider that can be used for Ethereum communication */
     public static providerFromUri(uri: string) {
@@ -503,5 +703,31 @@ export class Web3Gateway {
     /** Returns a JSON RPC provider associated to the initial Gateway URI */
     public getProvider() {
         return this.provider
+    }
+
+    public isUp(timeout: number = GATEWAY_SELECTION_TIMEOUT): Promise<void> {
+        if (this.entityResolverAddress && this.votingContractAddress) return Promise.resolve()
+        return new Promise((resolve, reject) => {
+            setTimeout(() => reject(new Error("The Web3 Gateway is too slow")), timeout)
+            return this.getProvider().resolveName(entityResolverEnsDomain)
+                .then(entityResolverAddress => {
+                    if (!entityResolverAddress) reject(new Error("The Web3 Gateway seems to be down"))
+                    this.entityResolverAddress = entityResolverAddress
+                    this.getProvider().resolveName(votingProcessEnsDomain)
+                        .then(votingContractAddress => {
+                            if (!votingContractAddress) reject(new Error("The Web3 Gateway seems to be down"))
+                            this.votingContractAddress = votingContractAddress
+                            resolve()
+                        })
+                })
+                .catch(() => reject(new Error("The Web3 Gateway seems to be down")))
+            // if (!entityResolverAddress) continue
+            // votingContractAddress = await w3.getProvider().resolveName(votingProcessEnsDomain).catch(() => { return false })
+            // if (!votingContractAddress) continue
+            // getEntityResolverInstance({ provider: this.provider })
+            //     .then(() => getVotingProcessInstance({ provider: this.provider }))
+            //     .then(() => resolve())
+            //     .catch(() => reject(new Error("The Web3 Gateway seems to be down")))
+        })
     }
 }

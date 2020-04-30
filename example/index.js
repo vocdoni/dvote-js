@@ -6,7 +6,7 @@ require('dotenv').config({ path: __dirname + "/.env" })
 
 const {
     API: { File, Entity, Census, Vote },
-    Network: { Bootnodes, Gateway, Contracts },
+    Network: { Bootnodes, Gateways, Contracts, Discovery, Pool },
     Wrappers: { GatewayInfo, ContentURI, ContentHashedURI },
     Models: { Entity: { TextRecordKeys, EntityMetadataTemplate }, Vote: { ProcessMetadataTemplate } },
     EtherUtils: { Providers, Signers },
@@ -22,8 +22,10 @@ const {
 
 const { getEntityId, getEntityMetadataByAddress, updateEntity } = Entity
 const { getRoot, addCensus, addClaim, addClaimBulk, digestHexClaim, getCensusSize, generateCensusId, generateCensusIdSuffix, publishCensus, importRemote, generateProof, dump, dumpPlain } = Census
-const { DVoteGateway, Web3Gateway } = Gateway
-const { getDefaultGateways, getRandomGatewayInfo, getWorkingGatewayInfo } = Bootnodes
+const { DVoteGateway, Web3Gateway, Gateway } = Gateways
+const { getBestGateways } = Discovery
+const { GatewayPool } = Pool
+const { getGatewaysFromBootNodeData, fetchDefaultBootNode } = Bootnodes
 const { addFile, fetchFileString } = File
 const { createVotingProcess, getVoteMetadata, packagePollEnvelope, submitEnvelope, cancelProcess, isCanceled, getBlockHeight, getEnvelopeHeight, getTimeUntilStart, getTimeUntilEnd, getTimeForBlock, getBlockNumberForTime, getEnvelopeList, getEnvelope, getRawResults, getResultsDigest } = Vote
 
@@ -122,18 +124,17 @@ async function attachToVotingProcess() {
 }
 
 async function checkGatewayStatus() {
-    var gw
+    var dvoteGw
     try {
-        const gwInfo = await getRandomGatewayInfo("goerli")
-        gw = new DVoteGateway(gwInfo["goerli"])
-        await gw.connect()
+        const gw = await getRandomGateway("goerli")
+        dvoteGw = gw.dvote
 
-        const status = await gw.getGatewayInfo()
+        const status = await dvoteGw.getGatewayInfo()
         console.log("Gateway status", status)
-        gw.disconnect()
+        dvoteGw.disconnect()
     }
     catch (err) {
-        if (gw) gw.disconnect()
+        if (dvoteGw) dvoteGw.disconnect()
         console.error("The gateway can't be reached", err)
     }
 }
@@ -169,9 +170,8 @@ async function fileDownload(address) {
     try {
         const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
-        const gws = await getRandomGatewayInfo("goerli")
-        dvoteGw = new DVoteGateway(gws[NETWORK_ID])
-        await dvoteGw.connect()
+        const gw = await getRandomGateway("goerli")
+        dvoteGw = gw.dvote
 
         console.log("SIGNING FROM ADDRESS", wallet.address)
         const data = await fetchFileString(address, dvoteGw)
@@ -200,9 +200,8 @@ async function emptyFeedUpload() {
     try {
         const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
-        const gws = await getRandomGatewayInfo("goerli")
-        dvoteGw = new DVoteGateway(gws[NETWORK_ID])
-        await dvoteGw.connect()
+        const gw = await getRandomGateway("goerli")
+        dvoteGw = gw.dvote
 
         console.log("SIGNING FROM ADDRESS", wallet.address)
 
@@ -629,9 +628,8 @@ async function checkSignature() {
 }
 
 async function fetchMerkleProof() {
-    const gws = await getRandomGatewayInfo("goerli")
-    const dvoteGw = new DVoteGateway(gws[NETWORK_ID])
-    await dvoteGw.connect()
+    const gw = await getRandomGateway("goerli")
+    const dvoteGw = gw.dvote
 
     console.log("FETCHING CLAIM", process.env.BASE64_CLAIM_DATA)
     console.log("on Merkle Tree", process.env.CENSUS_MERKLE_ROOT)
@@ -649,7 +647,8 @@ async function gatewayHealthCheck() {
     const myEntityAddress = await wallet.getAddress()
     const myEntityId = getEntityId(myEntityAddress)
 
-    const gws = await getDefaultGateways("goerli")
+    const bootNodeData = await fetchDefaultBootNode(networkId)
+    const gws = getGatewaysFromBootNodeData(bootNodeData)
 
     const URL = "https://hnrss.org/newest"
     const response = await axios.get(URL)
@@ -676,25 +675,23 @@ async function gatewayHealthCheck() {
 
 async function gatewayRawRequest() {
     // DVOTE
-    const gws = await getRandomGatewayInfo("goerli")
-    gw = new DVoteGateway(gws[NETWORK_ID])
-    console.log("THE DVOTE GW:", gw.publicKey)
-
-    await gw.connect()
+    const gw = await getRandomGateway("goerli")
+    const dvoteGw = gw.dvote
+    console.log("THE DVOTE GW:", dvoteGw.publicKey)
 
     // SIGNED
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
     const req = { method: "test" }  // Low level raw request
     const timeout = 20
-    const r = await gw.sendMessage(req, wallet, timeout)
+    const r = await dvoteGw.sendMessage(req, wallet, timeout)
     console.log("RESPONSE:", r)
 
     // UNSIGNED
     const origin = "ipfs://QmUNZNB1u31eoAw1ooqXRGxGvSQg4Y7MdTTLUwjEp86WnE"
     console.log("\nReading from", GATEWAY_DVOTE_URI)
     console.log("\nReading", origin)
-    const data = await fetchFileString(origin, gw)
+    const data = await fetchFileString(origin, dvoteGw)
     console.log("DATA:", data)
 
     gw.disconnect()
@@ -711,9 +708,70 @@ async function ensResolver() {
     console.log("Voting Process contract address", processAddr)
 }
 
-async function workingGatewayInfo() {
-    let gwInfo = await getWorkingGatewayInfo("goerli")
-    console.log(JSON.stringify(gwInfo))
+async function testGatewayInitialization() {
+    // const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+    const ETH_NETWORK_ID = "goerli"
+    const BOOTNODES_URL = "https://bootnodes.github.io/gateways.dev.json"
+    let pool, gateway
+    let options = {
+        networkId: ETH_NETWORK_ID,
+        bootnodesContentUri: BOOTNODES_URL,
+        numberOfGateways: 2,
+        race: false,
+        timeout: 5000,
+    }
+    // Pool No race
+    console.log("==============================")
+    console.time("Pool No race")
+    pool = await GatewayPool.discover(options)
+    console.timeEnd("Pool No race")
+    if (!(await pool.isConnected())) throw new Error("Could not connect to the network")
+    console.log("Connected to", await pool.getDVoteUri())
+    console.log("Connected to", pool.getProvider().connection.url)
+
+    // Pool Race
+    console.log("==============================")
+    options.race = true
+    console.time("Pool Race")
+    pool = await GatewayPool.discover(options)
+    console.timeEnd("Pool Race")
+    
+    if (!(await pool.isConnected())) throw new Error("Could not connect to the network")
+    console.log("Connected to", await pool.getDVoteUri())
+    console.log("Connected to", pool.getProvider().connection.url)
+
+    // Default Gateway
+    console.log("==============================")
+    console.time("Random Gateway from default Bootnode")
+    gateway = await Gateway.randomFromDefault(ETH_NETWORK_ID)
+    console.timeEnd("Random Gateway from default Bootnode")
+    
+    if (!(await gateway.isConnected())) throw new Error("Could not connect to the network")
+    console.log("Connected to", await gateway.getDVoteUri())
+    console.log("Connected to", gateway.getProvider().connection.url)
+
+    // Gateway from URI
+    console.log("==============================")
+    console.time("Random Gateway from URI")
+    gateway = await Gateway.randomfromUri(ETH_NETWORK_ID, BOOTNODES_URL)
+    console.timeEnd("Random Gateway from URI")
+    
+    if (!(await gateway.isConnected())) throw new Error("Could not connect to the network")
+    console.log("Connected to", await gateway.getDVoteUri())
+    console.log("Connected to", gateway.getProvider().connection.url)
+
+    // Gateway from info
+    console.log("==============================")
+    console.time("Gateway from gatewayInfo")
+    const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
+    gateway = await Gateway.fromInfo(gwInfo)
+    console.timeEnd("Gateway from gatewayInfo")
+
+    if (!(await gateway.isConnected())) throw new Error("Could not connect to the network")
+    console.log("Connected to", await gateway.getDVoteUri())
+    console.log("Connected to", gateway.getProvider().connection.url)
+
+    return
 }
 
 async function main() {
@@ -737,12 +795,13 @@ async function main() {
     // await createVotingProcessManual()
     // await createVotingProcessFull()
     // await cancelVotingProcess()
-    await cloneVotingProcess()
+    // await cloneVotingProcess()
     // await useVoteApi()
     // await submitVoteBatch()
     // await fetchMerkleProof()
     // await checkSignature()
     // await gatewayRawRequest()
+    await testGatewayInitialization()
 
     // await gatewayHealthCheck()
     // await ensResolver()
