@@ -6,8 +6,8 @@ const Promise = require("bluebird")
 const axios = require("axios")
 
 const {
-  API: { File, Entity, Census, Vote },
-  Network: { Bootnodes, Gateway, Contracts },
+  API: { File, Entity, Census, Vote},
+  Network: { Bootnodes, Gateways, Contracts, Pool: {GatewayPool} },
   Wrappers: { GatewayInfo, ContentURI, ContentHashedURI },
   Models: { Entity: { TextRecordKeys, EntityMetadataTemplate }, Vote: { ProcessMetadataTemplate } },
   EtherUtils: { Providers, Signers },
@@ -16,8 +16,8 @@ const {
 
 const { getEntityId, getEntityMetadataByAddress, updateEntity } = Entity
 const { getRoot, addCensus, addClaim, addClaimBulk, digestHexClaim, getCensusSize, generateCensusId, generateCensusIdSuffix, publishCensus, importRemote, generateProof, dump, dumpPlain } = Census
-const { DVoteGateway, Web3Gateway } = Gateway
-const { getGatewaysFromBootNode, getDefaultGateways, getRandomGatewayInfo } = Bootnodes
+const { DVoteGateway, Web3Gateway} = Gateways
+const { getGatewaysFromBootNode, getDefaultGateways } = Bootnodes
 const { addFile, fetchFileString } = File
 const { createVotingProcess, getVoteMetadata, packagePollEnvelope, submitEnvelope, getBlockHeight, getEnvelopeHeight, getPollNullifier, getEnvelopeStatus, getTimeUntilStart, getTimeUntilEnd, getTimeForBlock, getBlockNumberForTime, getEnvelopeList, getEnvelope, getRawResults, getResultsDigest } = Vote
 const { getEntityResolverInstance, getVotingProcessInstance } = Contracts
@@ -62,7 +62,7 @@ let accounts
 async function main() {
   // Connect to a GW
   await connectGateways()
-
+  console.log(READ_EXISTING_ACCOUNTS)
   if (READ_EXISTING_ACCOUNTS) {
     console.log("Reading account list")
     accounts = JSON.parse(fs.readFileSync(ACCOUNT_LIST_FILE_PATH).toString())
@@ -145,71 +145,23 @@ async function main() {
 
 async function connectGateways() {
   console.log("Connecting to the gateways")
-
-  const gws = await getGatewaysFromBootNode(BOOTNODES_URL_RW)
-  if (!gws || !gws[ETH_NETWORK_ID]) throw new Error("Could not connect to the network")
-  else if (!gws[ETH_NETWORK_ID].dvote || !gws[ETH_NETWORK_ID].dvote.length) throw new Error("Could not connect to the network")
-  else if (!gws[ETH_NETWORK_ID].web3 || !gws[ETH_NETWORK_ID].web3.length) throw new Error("Could not connect to the network")
-
-  // Get working DvoteGW
-  let success = false
-
-  if (DVOTE_GATEWAY_URI && DVOTE_GATEWAY_PUBLIC_KEY) {
-    try {
-      const gw = new DVoteGateway({ uri: DVOTE_GATEWAY_URI, publicKey: DVOTE_GATEWAY_PUBLIC_KEY, supportedApis: ["census", "file", "vote", "results"] })
-      await gw.connect()
-      await gw.getGatewayInfo()
-      dvoteGateway = gw
-      success = true
-    }
-    catch (err) {
-      console.error(DVOTE_GATEWAY_URI, "is down, using default")
-    }
+  const options = {
+    networkId: ETH_NETWORK_ID,
+    bootnodesContentUri: BOOTNODES_URL_RW,
+    numberOfGateways: 2,
+    race: false,
+    // timeout: 10000,
   }
+  const pool = await GatewayPool.discover(options)
 
-  if (!success) {
-    for (let gw of gws[ETH_NETWORK_ID].dvote) {
-      try {
-        await gw.connect()
-        await gw.getGatewayInfo()
-        dvoteGateway = gw
-        success = true
-      }
-      catch (err) {
-        console.log("DVoteGW failed", err)
-        continue
-      }
-    }
-  }
-  if (!success) throw new Error("Could not connect to the network")
-  console.log("Connected to", await dvoteGateway.getUri())
+  if (!(await pool.isConnected())) throw new Error("Could not connect to the network")
+  dvoteGateway = pool
+  web3Gateway = pool
+  console.log("Connected to", await dvoteGateway.getDVoteUri())
+  console.log("Connected to", web3Gateway.getProvider().connection.url)
 
   // WEB3 CLIENT
   const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
-
-  // const provider = getDefaultProvider(ETH_NETWORK_ID)
-  // web3Gateway = new Web3Gateway(provider)
-
-  // entityResolver = await getEntityResolverInstance({ provider, signer: wallet })
-  // votingProcess = await getVotingProcessInstance({ provider, signer: wallet })
-
-  success = false
-  for (let w3 of gws[ETH_NETWORK_ID].web3) {
-    try {
-      // Get the contract instances
-      entityResolver = await getEntityResolverInstance({ provider: w3.getProvider(), signer: wallet })
-      votingProcess = await getVotingProcessInstance({ provider: w3.getProvider(), signer: wallet })
-
-      web3Gateway = w3
-      success = true
-    }
-    catch (err) {
-      console.error("Web3 GW failed", err)
-      continue
-    }
-  }
-  if (!success) throw new Error("Could not connect to the network")
-  console.log("Connected to", web3Gateway.getProvider().connection.url)
 
   entityWallet = Wallet.fromMnemonic(MNEMONIC, PATH)
     .connect(web3Gateway.getProvider())

@@ -23,9 +23,18 @@ export {
 export {
     IDvoteRequestParameters,
     IDVoteGateway,
-    IWeb3Gateway
+    IWeb3Gateway,
+    IGateway
 } from "./net/gateway"
 export {
     IEntityResolverContract,
     IVotingProcessContract
 } from "./net/contracts"
+
+export {
+    GatewayDiscoveryParameters
+} from "./net/gateway-discovery"
+
+export {
+    IGatewayPool
+} from "./net/gateway-pool"

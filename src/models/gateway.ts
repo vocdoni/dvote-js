@@ -10,6 +10,11 @@ export const fileApiMethods: FileApiMethod[] = ["fetchFile", "addFile", "pinList
 export const voteApiMethods: VoteApiMethod[] = ["submitEnvelope", "getEnvelopeStatus", "getEnvelope", "getEnvelopeHeight", "getProcessKeys", "getProcessList", "getEnvelopeList", "getBlockHeight", "getResults"]
 export const censusApiMethods: CensusApiMethod[] = ["addCensus", "addClaim", "addClaimBulk", "getRoot", "genProof", "getSize", "checkProof", "dump", "dumpPlain", "importDump", "publish", "importRemote"]
 export const dvoteGatewayApiMethods: (FileApiMethod | VoteApiMethod | CensusApiMethod)[] = [].concat(fileApiMethods).concat(voteApiMethods).concat(censusApiMethods)
+export const dvoteApis : {[k in "file" | "vote" | "census"]: FileApiMethod[] | VoteApiMethod[] | CensusApiMethod[] } = {
+    "file": fileApiMethods,
+    "vote": voteApiMethods,
+    "census": censusApiMethods,
+}
 
 export type GatewayBootNodes = {
     [k: string]: {

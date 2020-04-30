@@ -30,7 +30,7 @@ To upload a file and pin it on IPFS, you need the data as a `String` or o as a `
 
 const {
     API: { File: { addFile, fetchFileString }, Entity, Census, Vote },
-    Network: { Bootnodes, Gateway, Contracts }
+    Network: { Bootnodes, Gateways: { Gateway }, Contracts, Discovery, Pool: { GatewayPool } }
 } = require("dvote-js")
 
 const { Wallet } = require("ethers")
@@ -39,11 +39,21 @@ const MNEMONIC = "..."
 const PATH = "m/44'/60'/0'/0/0"
 const GATEWAY_DVOTE_URI = "wss://host:port/dvote"
 const GATEWAY_PUB_KEY = "02..."
+const NETWORK_ID = ""
 
 const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
-dvoteGw = new DVoteGateway({ uri: GATEWAY_DVOTE_URI, supportedApis: ["file"], publicKey: GATEWAY_PUB_KEY })
-await dvoteGw.connect()
+gateway = await Gateway.fromInfo({ uri: GATEWAY_DVOTE_URI, supportedApis: ["file"], publicKey: GATEWAY_PUB_KEY })
+// alternatively for a pool of gateways
+// const options = {
+//         networkId: "goerli",
+//         bootnodesContentUri: GATEWAY_DVOTE_URI,
+//         numberOfGateways: 2,
+//         race: false,
+//         timeout: 10000,
+//     }
+// gateway = await pool.discover(options)
+
 
 // Wallet to sign requests
 const wallet = Wallet.fromMnemonic(MNEMONIC)
@@ -72,7 +82,7 @@ dvoteGw.disconnect()
 ```javascript
 const {
     API: { File, Entity, Census, Vote },
-    Network: { Bootnodes, Gateway, Contracts },
+    Network: { Bootnodes, Gateways, Contracts },
     Wrappers: { GatewayInfo, ContentURI, ContentHashedURI },
     // EtherUtils: { Providers, Signers }
 } = require("dvote-js")
@@ -84,30 +94,27 @@ const {
     // deployVotingProcessContract
 } = Contracts
 const { getEntityId, getEntityMetadataByAddress, updateEntity } = Entity
-const { DVoteGateway, Web3Gateway } = Gateway
-const { getRandomGatewayInfo } = Bootnodes
+const { Gateway } = Gateways
+const { getRandomGateway } = Discovery
 const { Wallet, providers } = require("ethers")
 
 const MNEMONIC = "..." 
 
-// Use a random GW from Vocdoni
-const gwInfo = await getRandomGatewayInfo()
-const web3Gw = new Web3Gateway(gwInfo["goerli"])
-const dvoteGw = new DVoteGateway(gwInfo["goerli"])
-await dvoteGw.connect()
+// Use a random GW from Vocdoni at "goerli" network
+const gw = await Gateway.randomFromDefault("goerli")
 
-const provider = web3Gw.getProvider()
+const provider = gw.getProvider()
 const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
 // Attach to the Entity Resolver contract
-const resolverInstance = await getEntityResolverInstance({ provider, wallet })
+const resolverInstance = await gw.getEntityResolverInstance(wallet)
 
 const myEntityAddress = await wallet.getAddress()
 const myEntityId = getEntityId(myEntityAddress)
 const jsonMetadata = { ... } // EDIT THIS
 
 // Request the update
-const contentUri = await updateEntity(myEntityAddress, jsonMetadata, wallet, web3Gw, dvoteGw)
+const contentUri = await updateEntity(myEntityAddress, jsonMetadata, wallet, gw)
 
 console.log("IPFS ORIGIN:", contentUri)
 
@@ -119,7 +126,7 @@ gw.disconnect()
 ```javascript
 const {
     API: { File, Entity, Census, Vote },
-    Network: { Bootnodes, Gateway: { DVoteGateway, Web3Gateway }, Contracts },
+    Network: { Bootnodes, Gateway: { Gateway }, Contracts },
     Wrappers: { GatewayInfo, ContentURI, ContentHashedURI },
     // EtherUtils: { Providers, Signers }
 } = require("dvote-js")
@@ -146,11 +153,10 @@ const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
 const myEntityAddress = await wallet.getAddress()
 const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, GATEWAY_SUPPORTED_APIS, GATEWAY_WEB3_PROVIDER_URI, GATEWAY_PUBLIC_KEY)
-const web3Gw = new Web3Gateway(gwInfo)
-const dvoteGw = new DVoteGateway(gwInfo)
-await dvoteGw.connect()
+const gateway = await Gateway.fromInfo(gwInfo)
 
-const meta = await getEntityMetadataByAddress(myEntityAddress, web3Gw, dvoteGw)
+
+const meta = await getEntityMetadataByAddress(myEntityAddress, gateway)
 console.log("JSON METADATA", meta)
 
 dvoteGw.disconnect()

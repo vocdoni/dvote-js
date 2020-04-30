@@ -2,7 +2,7 @@ import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
 import { getAccounts, TestAccount } from "../testing-eth-utils"
-import { DVoteGateway, Web3Gateway, IDVoteGateway } from "../../src/net/gateway"
+import { DVoteGateway, Web3Gateway, IDVoteGateway, Gateway, IGateway } from "../../src/net/gateway"
 import { addFile, fetchFileBytes } from "../../src/api/file"
 import { GatewayMock, InteractionMock, GatewayResponse } from "../mocks/gateway"
 import { Buffer } from "buffer"
@@ -19,6 +19,7 @@ let entityAccount: TestAccount
 let randomAccount: TestAccount
 
 const defaultDummyResponse = { id: "123", response: { request: "123", timestamp: 123, ok: true }, signature: "123" }
+const defaultConnectResponse = { id: "123", response: { request: "123", timestamp: 123, ok: true, supportedApis: ["file", "vote", "census"], health: 100 }, signature: "123" }
 
 addCompletionHooks()
 
@@ -32,7 +33,7 @@ describe("DVoteGateway", () => {
 
     describe("Lifecycle", () => {
         it("Should create a DVoteGateway instance", async () => {
-            const gatewayServer = new GatewayMock({ port, responses: [] })
+            const gatewayServer = new GatewayMock({ port, responses: [defaultConnectResponse] })
 
             expect(() => {
                 const gw1 = new DVoteGateway({ uri: "", supportedApis: [], publicKey: "" })
@@ -54,7 +55,7 @@ describe("DVoteGateway", () => {
             expect(gatewayServer1.interactionCount).to.equal(0)
 
             const gatewayInfo1 = new GatewayInfo(gatewayUri1, ["file", "vote", "census"], "https://server/path", "")
-            const gwClient = new DVoteGateway(gatewayInfo1)
+            let gwClient = new DVoteGateway(gatewayInfo1)
             expect(await gwClient.getUri()).to.equal(gatewayInfo1.dvote)
             await gwClient.connect()
             await gwClient.sendMessage({ method: "addClaim", processId: "1234", nullifier: "2345" })
@@ -69,7 +70,8 @@ describe("DVoteGateway", () => {
             const gatewayServer2 = new GatewayMock({ port: port2, responses: [defaultDummyResponse] })
             expect(gatewayServer2.interactionCount).to.equal(0)
 
-            await gwClient.connect(gatewayInfo2)
+            gwClient = new DVoteGateway(gatewayInfo2)
+            await gwClient.connect()
             expect(await gwClient.getUri()).to.equal(gatewayInfo2.dvote)
             await gwClient.sendMessage({ method: "addClaim", processId: "5678", nullifier: "6789" })
 

@@ -1,6 +1,7 @@
 import ContentURI from "../wrappers/content-uri"
 import ContentHashedURI from "../wrappers/content-hashed-uri"
-import { DVoteGateway, IDVoteGateway, IDvoteRequestParameters } from "../net/gateway"
+import { Gateway, IGateway, DVoteGateway, IDVoteGateway, IDvoteRequestParameters } from "../net/gateway"
+import { IGatewayPool, GatewayPool } from "../net/gateway-pool"
 import { fetchIpfsHash } from "../net/ipfs"
 import { Buffer } from 'buffer'
 import axios from "axios"
@@ -14,7 +15,9 @@ import { Wallet, Signer } from "ethers"
  * @param contentUri 
  * @param gateway (optional) A Vocdoni Gateway to use
  */
-export function fetchFileString(contentUri: ContentURI | ContentHashedURI | string, gateway: IDVoteGateway = null): Promise<string> {
+export function fetchFileString(contentUri: ContentURI | ContentHashedURI | string, gateway: IDVoteGateway | IGateway | IGatewayPool = null): Promise<string> {
+    if (gateway && !(gateway instanceof DVoteGateway || gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+
     let cUri: ContentURI | ContentHashedURI
     if (typeof contentUri == "string") cUri = new ContentURI(contentUri)
     else cUri = contentUri
@@ -32,21 +35,23 @@ export function fetchFileString(contentUri: ContentURI | ContentHashedURI | stri
  * @param contentUri 
  * @param gateway (optional) A Vocdoni Gateway to use
  */
-export async function fetchFileBytes(contentUri: ContentURI | ContentHashedURI | string, gateway: IDVoteGateway = null): Promise<Buffer> {
+export async function fetchFileBytes(contentUri: ContentURI | ContentHashedURI | string, gateway: IDVoteGateway | IGateway | IGatewayPool = null): Promise<Buffer> {
     if (!contentUri) throw new Error("Invalid contentUri")
+    else if (gateway && !(gateway instanceof DVoteGateway || gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
     let cUri: ContentHashedURI
     if (typeof contentUri == "string") cUri = new ContentHashedURI(contentUri)
     else cUri = new ContentHashedURI(contentUri.toString())
 
     // Attempt 1: fetch all from the given gateway
-    if (gateway instanceof DVoteGateway) {
+    // if ((gateway instanceof DVoteGateway) || (gateway instanceof Gateway) || (gateway instanceof GatewayPool)) {
+    if (gateway) {
         try {
             // Connect only if we created the client
             const response = await gateway.sendMessage({ method: "fetchFile", uri: cUri.toContentUriString() })
 
             if (!response || !response.content) {
-                throw new Error("Invalid response received from the gateway")
+                return Promise.reject(new Error("Invalid response received from the gateway"))
             }
 
             if (cUri.hash) {
@@ -134,13 +139,13 @@ export async function fetchFileBytes(contentUri: ContentURI | ContentHashedURI |
  * @param buffer Uint8Array or string with the file contents
  * @param type What type of P2P protocol should be used
  * @param wallet An Ethers.js wallet capable of signing the payload
- * @param gateway A string with the Gateway URI or a DVoteGateway object, set with a URI and a public key
+ * @param gateway A string with the Gateway URI or a Gateway object, set with a URI and a public key
  * @return The Content URI friendly URI of the newly added file (ipfs://<hash>)
  */
-export async function addFile(buffer: Uint8Array | string, name: string, walletOrSigner: Wallet | Signer, gateway: IDVoteGateway): Promise<string> {
-    if (!buffer) throw new Error("Empty payload")
-    else if (!walletOrSigner) throw new Error("Wallet is required")
-    else if (!(gateway instanceof DVoteGateway)) throw new Error("A gateway is required")
+export async function addFile(buffer: Uint8Array | string, name: string, walletOrSigner: Wallet | Signer, gateway: IDVoteGateway | IGateway | GatewayPool): Promise<string> {
+    if (!buffer) return Promise.reject(new Error("Empty payload"))
+    else if (!walletOrSigner) return Promise.reject(new Error("Wallet is required"))
+    else if (!(gateway instanceof DVoteGateway || gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
     if (typeof buffer == "string") {
         buffer = new Uint8Array(Buffer.from(buffer))
