@@ -178,7 +178,7 @@ export function getBlockHeight(gateway: IGateway | IGatewayPool): Promise<number
  * @param gateway 
  */
 export function getProcessKeys(processId: string, gateway: IGateway | IGatewayPool): Promise<string[]> {
-    if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) Promise.reject(new Error("Invalid Gateway object"))
+    if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
     return gateway.sendMessage({ method: "getProcessKeys", processId })
         .then((response) => {
@@ -198,7 +198,7 @@ export function getProcessKeys(processId: string, gateway: IGateway | IGatewayPo
  */
 export async function submitEnvelope(voteEnvelope: SnarkVoteEnvelope | PollVoteEnvelope, gateway: IGateway | GatewayPool): Promise<void> {
     if (!voteEnvelope) return Promise.reject(new Error("Invalid parameters"))
-    else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) Promise.reject(new Error("Invalid Gateway object"))
+    else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
     return gateway.sendMessage({ method: "submitEnvelope", payload: voteEnvelope })
         .catch((error) => {
@@ -549,7 +549,9 @@ export function packagePollVote(votes: number[], encryptionPublicKeys: string[])
         const someErr = encryptionPublicKeys.some(k => typeof k != "string" || !k.match(/^(0x)?[0-9a-zA-Z]+$/))
         if (someErr) throw new Error("Some encryption public keys are not valid")
     }
-    const nonce = utils.keccak256('0x' + Date.now().toString(16)).substr(2)
+    // produce a 8 byte nonce
+    const nonceSeed = utils.arrayify('0x' + parseInt(Math.random().toString().substr(2)).toString(16) + parseInt(Math.random().toString().substr(2)).toString(16) + Date.now().toString(16))
+    const nonce = utils.keccak256(nonceSeed).substr(2, 16)
 
     const payload: PollVotePackage = {
         type: "poll-vote",
@@ -560,7 +562,7 @@ export function packagePollVote(votes: number[], encryptionPublicKeys: string[])
 
     if (encryptionPublicKeys) {
         encryptionPublicKeys = encryptionPublicKeys.map(k => k.replace(/^0x/, ""))
-        
+
         let result: string
         for (let i = 0; i < encryptionPublicKeys.length; i++) {
             if (i > 0) result = Asymmetric.encryptString(result, encryptionPublicKeys[i]) // reencrypt result
