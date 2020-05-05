@@ -11,6 +11,13 @@ import { Buffer } from "buffer/"  // Previously using "arraybuffer-to-string"
 import { Asymmetric } from "../util/encryption"
 import { GatewayPool, IGatewayPool } from "../net/gateway-pool"
 
+type IProcessKeys = {
+    encryptionPublicKeys: { idx: number, key: string }[],
+    encryptionPrivateKeys?: { idx: number, key: string }[],
+    commitmentKeys?: { idx: number, key: string }[],
+    revealKeys?: { idx: number, key: string }[]
+}
+
 /**
  * Use the given JSON metadata to create a new voting process from the Entity ID associated to the given wallet account.
  * The Census Merkle Root and Merkle Tree will be published to the blockchain, and the Metadata will be stored on IPFS
@@ -177,13 +184,22 @@ export function getBlockHeight(gateway: IGateway | IGatewayPool): Promise<number
  * @param processId 
  * @param gateway 
  */
-export function getProcessKeys(processId: string, gateway: IGateway | IGatewayPool): Promise<string[]> {
+export function getProcessKeys(processId: string, gateway: IGateway | IGatewayPool): Promise<IProcessKeys> {
     if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
     return gateway.sendMessage({ method: "getProcessKeys", processId })
         .then((response) => {
-            if (!response.processKeys || !Array.isArray(response.processKeys)) throw new Error("The gateway response is not correct")
-            return response.processKeys
+            if (!response) throw new Error("The gateway response is not correct")
+            const result: IProcessKeys = { encryptionPublicKeys: [], encryptionPrivateKeys: [], commitmentKeys: [], revealKeys: [] }
+            if (Array.isArray(response.encryptionPublicKeys) && response.encryptionPublicKeys.every(item => typeof item.idx == "number" && typeof item.key == "string"))
+                result.encryptionPublicKeys = response.encryptionPublicKeys
+            if (Array.isArray(response.encryptionPrivateKeys) && response.encryptionPrivateKeys.every(item => typeof item.idx == "number" && typeof item.key == "string"))
+                result.encryptionPrivateKeys = response.encryptionPrivateKeys
+            if (Array.isArray(response.commitmentKeys) && response.commitmentKeys.every(item => typeof item.idx == "number" && typeof item.key == "string"))
+                result.commitmentKeys = response.commitmentKeys
+            if (Array.isArray(response.revealKeys) && response.revealKeys.every(item => typeof item.idx == "number" && typeof item.key == "string"))
+                result.revealKeys = response.revealKeys
+            return result
         })
         .catch((error) => {
             const message = (error.message) ? "Could not retrieve the process encryption keys: " + error.message : "Could not retrieve the process encryption keys"
@@ -463,16 +479,18 @@ export function getResultsDigest(processId: string, gateway: IGateway | IGateway
 
 export function packageSnarkEnvelope(params: {
     votes: number[], merkleProof: string, processId: string, privateKey: string,
-    encryptionPublicKeys?: string[]
+    encryptionKeys?: IProcessKeys
 }): SnarkVoteEnvelope {
     if (!params) throw new Error("Invalid parameters");
     if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
     else if (typeof params.merkleProof != "string" || !params.merkleProof.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid Merkle Proof")
     else if (typeof params.processId != "string" || !params.processId.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid processId")
     else if (!params.privateKey || !params.privateKey.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid private key")
-    else if (params.encryptionPublicKeys && Array.isArray(params.encryptionPublicKeys) && params.encryptionPublicKeys.length) {
-        const someErr = params.encryptionPublicKeys.some(k => typeof k != "string" || !k.match(/^(0x)?[0-9a-zA-Z]+$/))
-        if (someErr) throw new Error("Some encryption public keys are not valid")
+    else if (params.encryptionKeys) {
+        if (!Array.isArray(params.encryptionKeys.encryptionPublicKeys) || !params.encryptionKeys.encryptionPublicKeys.every(
+            item => item && typeof item.idx == "number" && typeof item.key == "string" && item.key.match(/^(0x)?[0-9a-zA-Z]+$/))) {
+            throw new Error("Some encryption public keys are not valid")
+        }
     }
 
     // TODO: use packageSnarkVote()
@@ -486,22 +504,24 @@ export function packageSnarkEnvelope(params: {
  */
 export async function packagePollEnvelope(params: {
     votes: number[], merkleProof: string, processId: string, walletOrSigner: Wallet | Signer,
-    encryptionPublicKeys?: string[]
+    encryptionKeys?: IProcessKeys
 }): Promise<PollVoteEnvelope> {
     if (!params) throw new Error("Invalid parameters");
     else if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
     else if (typeof params.merkleProof != "string" || !params.merkleProof.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid Merkle Proof")
     else if (typeof params.processId != "string" || !params.processId.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid processId")
     else if (!params.walletOrSigner || !params.walletOrSigner.signMessage) throw new Error("Invalid wallet or signer")
-    else if (params.encryptionPublicKeys && Array.isArray(params.encryptionPublicKeys) && params.encryptionPublicKeys.length) {
-        const someErr = params.encryptionPublicKeys.some(k => typeof k != "string" || !k.match(/^(0x)?[0-9a-zA-Z]+$/))
-        if (someErr) throw new Error("Some encryption public keys are not valid")
+    else if (params.encryptionKeys) {
+        if (!Array.isArray(params.encryptionKeys.encryptionPublicKeys) || !params.encryptionKeys.encryptionPublicKeys.every(
+            item => item && typeof item.idx == "number" && typeof item.key == "string" && item.key.match(/^(0x)?[0-9a-zA-Z]+$/))) {
+            throw new Error("Some encryption public keys are not valid")
+        }
     }
 
     try {
         const nonce = utils.keccak256('0x' + Date.now().toString(16)).substr(2)
 
-        const votePackage: string = packagePollVote(params.votes, params.encryptionPublicKeys)
+        const { votePackage, keyIndexes } = packagePollVote(params.votes, params.encryptionKeys)
 
         const pkg: PollVoteEnvelope = {
             processId: params.processId,
@@ -510,6 +530,7 @@ export async function packagePollEnvelope(params: {
             votePackage
             // signature:  Must be unset because the body must be singed without the  signature
         }
+        if (keyIndexes) pkg.encryptionKeyIndexes = keyIndexes
 
         pkg.signature = await signJsonBody(pkg, params.walletOrSigner)
 
@@ -519,8 +540,14 @@ export async function packagePollEnvelope(params: {
     }
 }
 
-export function packageSnarkVote(votes: number[], voteEncryptionPublicKeys: string): string {
+export function packageSnarkVote(votes: number[], encryptionKeys?: IProcessKeys): { votePackage: string, keyIndexes?: number[] } {
     // if (!Array.isArray(votes)) throw new Error("Invalid votes")
+    // else if (encryptionKeys) {
+    //     if (!Array.isArray(encryptionKeys.encryptionPublicKeys) || !encryptionKeys.encryptionPublicKeys.every(
+    //         item => item && typeof item.idx == "number" && typeof item.key == "string" && item.key.match(/^(0x)?[0-9a-zA-Z]+$/))) {
+    //         throw new Error("Some encryption public keys are not valid")
+    //     }
+    // }
     // const nonce = utils.keccak256('0x' + Date.now().toString(16)).substr(2)
 
     // const payload: SnarkVotePackage = {
@@ -529,10 +556,10 @@ export function packageSnarkVote(votes: number[], voteEncryptionPublicKeys: stri
     //     votes
     // }
 
-    // // TODO: ENCRYPT WITH voteEncryptionPublicKeys
+    // // TODO: ENCRYPT WITH encryptionKeys.encryptionPublicKeys
     // const strPayload = JSON.stringify(payload)
 
-    // if (encryptionPublicKeys) return Asymmetric.encryptString(strPayload, encryptionPublicKeys)
+    // if (encryptionPublicKeys) return Asymmetric.encryptString(strPayload, encryptionKeys.encryptionPublicKeys)
     // else return Buffer.from(strPayload).toString("base64")
     throw new Error("Unimplemented")
 }
@@ -543,12 +570,15 @@ export function packageSnarkVote(votes: number[], voteEncryptionPublicKeys: stri
  * @param votes An array of numbers with the choices
  * @param encryptionPublicKeys An ed25519 public key (https://ed25519.cr.yp.to/)
  */
-export function packagePollVote(votes: number[], encryptionPublicKeys: string[]): string {
+export function packagePollVote(votes: number[], encryptionKeys?: IProcessKeys): { votePackage: string, keyIndexes?: number[] } {
     if (!Array.isArray(votes)) throw new Error("Invalid votes")
-    else if (encryptionPublicKeys && Array.isArray(encryptionPublicKeys) && encryptionPublicKeys.length) {
-        const someErr = encryptionPublicKeys.some(k => typeof k != "string" || !k.match(/^(0x)?[0-9a-zA-Z]+$/))
-        if (someErr) throw new Error("Some encryption public keys are not valid")
+    else if (encryptionKeys) {
+        if (!Array.isArray(encryptionKeys.encryptionPublicKeys) || !encryptionKeys.encryptionPublicKeys.every(
+            item => item && typeof item.idx == "number" && typeof item.key == "string" && item.key.match(/^(0x)?[0-9a-zA-Z]+$/))) {
+            throw new Error("Some encryption public keys are not valid")
+        }
     }
+
     // produce a 8 byte nonce
     const nonceSeed = utils.arrayify('0x' + parseInt(Math.random().toString().substr(2)).toString(16) + parseInt(Math.random().toString().substr(2)).toString(16) + Date.now().toString(16))
     const nonce = utils.keccak256(nonceSeed).substr(2, 16)
@@ -560,17 +590,28 @@ export function packagePollVote(votes: number[], encryptionPublicKeys: string[])
     }
     const strPayload = JSON.stringify(payload)
 
-    if (encryptionPublicKeys) {
-        encryptionPublicKeys = encryptionPublicKeys.map(k => k.replace(/^0x/, ""))
+    if (encryptionKeys) {
+        // Sort key indexes
+        encryptionKeys.encryptionPublicKeys.sort((a, b) => a.idx - b.idx)
+
+        const publicKeys: string[] = []
+        const publicKeysIdx: number[] = []
+        // NOTE: Using all keys by now
+        encryptionKeys.encryptionPublicKeys.forEach(entry => {
+            publicKeys.push(entry.key.replace(/^0x/, ""))
+            publicKeysIdx.push(entry.idx)
+        })
 
         let result: string
-        for (let i = 0; i < encryptionPublicKeys.length; i++) {
-            if (i > 0) result = Asymmetric.encryptString(result, encryptionPublicKeys[i]) // reencrypt result
-            else result = Asymmetric.encryptString(strPayload, encryptionPublicKeys[i]) // encrypt the first
+        for (let i = 0; i < publicKeys.length; i++) {
+            if (i > 0) result = Asymmetric.encryptString(result, publicKeys[i]) // reencrypt result
+            else result = Asymmetric.encryptString(strPayload, publicKeys[i]) // encrypt the first
         }
-        return result
+        return { votePackage: result, keyIndexes: publicKeysIdx }
     }
-    else return Buffer.from(strPayload).toString("base64")
+    else {
+        return { votePackage: Buffer.from(strPayload).toString("base64") }
+    }
 }
 
 /** Computes the nullifier of the user's vote within a poll voting process.
@@ -595,6 +636,7 @@ export type SnarkVoteEnvelope = {
     proof: string,  // ZK Proof
     nonce: string,  // Unique number per vote attempt, so that replay attacks can't reuse this payload
     nullifier: string,   // Hash of the private key
+    encryptionKeyIndexes?: number[],   // The index of the keys used to encrypt the votePackage (only for encrypted processes)
     votePackage: string  // base64(jsonString) is encrypted
 }
 export type SnarkVotePackage = {
@@ -608,6 +650,7 @@ export type PollVoteEnvelope = {
     processId: string,
     proof: string,  // Merkle Proof
     nonce: string,  // Unique number per vote attempt, so that replay attacks can't reuse this payload
+    encryptionKeyIndexes?: number[],   // The index of the keys used to encrypt the votePackage (only for encrypted processes)
     votePackage: string,  // base64(json(votePackage))
     signature?: string //  Signature including all the rest of the envelope (processId, proof, nonce, votePackage)
 }

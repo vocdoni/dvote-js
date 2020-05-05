@@ -584,9 +584,11 @@ describe("Voting Process", () => {
 
             // one key
             for (let item of processes) {
-                const envelope = await packagePollEnvelope({ votes: item.votes, merkleProof: item.siblings, processId: item.processId, walletOrSigner: wallet, encryptionPublicKeys: [votePublicKey] })
+                const encryptionKeys = { encryptionPublicKeys: [{ idx: 1, key: votePublicKey }] }
+                const envelope = await packagePollEnvelope({ votes: item.votes, merkleProof: item.siblings, processId: item.processId, walletOrSigner: wallet, encryptionKeys })
                 expect(envelope.processId).to.eq(item.processId)
                 expect(envelope.proof).to.eq(item.siblings)
+                expect(envelope.encryptionKeyIndexes).to.be.deep.equal([1])
                 expect(envelope.votePackage).to.be.a("string")
                 expect(Buffer.from(envelope.votePackage, "base64").length).to.be.greaterThan(0)
 
@@ -638,15 +640,18 @@ describe("Voting Process", () => {
 
             // N keys
             for (let item of processes) {
+                const keys = { encryptionPublicKeys: encryptionKeys.map((kp, idx) => ({ idx, key: kp.publicKey })) }
+
                 const envelope = await packagePollEnvelope({
                     votes: item.votes,
                     merkleProof: item.siblings,
                     processId: item.processId,
                     walletOrSigner: wallet,
-                    encryptionPublicKeys: encryptionKeys.map(kp => kp.publicKey)
+                    encryptionKeys: keys
                 })
                 expect(envelope.processId).to.eq(item.processId)
                 expect(envelope.proof).to.eq(item.siblings)
+                expect(envelope.encryptionKeyIndexes).to.be.deep.equal([0, 1, 2, 3])
                 expect(envelope.votePackage).to.be.a("string")
                 expect(Buffer.from(envelope.votePackage, "base64").length).to.be.greaterThan(0)
 

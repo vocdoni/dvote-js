@@ -1,6 +1,6 @@
 {
   "name": "dvote-js",
-  "version": "0.15.0",
+  "version": "0.15.1",
   "description": "Javascript/Typescript library to interact with Vocdoni voting processes",
   "main": "dist/index",
   "types": "dist/index",
@@ -17,7 +17,6 @@
     "test": "npm run build && ./node_modules/.bin/mocha -r ts-node/register test/**/*.ts",
     "test:unit": "npm run build && ./node_modules/.bin/mocha -r ts-node/register test/unit/*.ts",
     "test:integration": "npm run build && ./node_modules/.bin/mocha -r ts-node/register test/integration/*.ts",
-    "test:remote": "NODE_ENV='test' ./node_modules/.bin/mocha --timeout 20000 -r ts-node/register test/**/*.ts",
     "postinstall": "rm -Rf node_modules/ganache-core/node_modules/web3-providers-ws/node_modules/websocket/.git || true"
   },
   "dependencies": {
