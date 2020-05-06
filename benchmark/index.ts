@@ -525,7 +525,10 @@ async function waitUntilStarted() {
   })
 
   console.log("Checking that the Process ID is on the list")
-  const processList = await getProcessList(entityId, pool)
+  let processList: string[] = await getProcessList(entityId, pool)
+  while (processList.length > 0 && !processList.includes(processId)) {
+    processList = await getProcessList(entityId, pool, processList[processList.length - 1])
+  }
   assert(processList.includes(processId))
 }
 
