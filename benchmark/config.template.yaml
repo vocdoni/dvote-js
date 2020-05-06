@@ -20,6 +20,7 @@ entityManagerUriPrefix: "https://my-entity-manager"
 numAccounts: 10000
 maxConcurrency: 4500
 
+encryptedVote: true
 votesPattern: "all-0"   #  Vote the first option on all questions
 #votesPattern: "all-1"  #  Vote the second option on all questions
 #votesPattern: "all-2"  #  Vote the third option on all questions

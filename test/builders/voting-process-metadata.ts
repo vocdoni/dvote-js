@@ -63,7 +63,7 @@ export default class ProcessMetadataBuilder {
     }
 
     withTypeEncryptedPollVote() {
-        this.metadata.type = "encrypted-poll-vote" as ProcessType
+        this.metadata.type = "encrypted-poll" as ProcessType
         return this
     }
 

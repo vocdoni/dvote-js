@@ -15,22 +15,22 @@ import { GatewayPool } from "../dist/net/gateway-pool"
 import { getProcessKeys } from "../dist/api/vote"
 
 const { File, Entity, Census, Vote } = API
-const { Bootnodes, Gateways, Contracts } = Network
-const { GatewayInfo, ContentURI, ContentHashedURI } = Wrappers
+// const { Bootnodes, Gateways, Contracts } = Network
+// const { GatewayInfo, ContentURI, ContentHashedURI } = Wrappers
 const { Entity: { TextRecordKeys, EntityMetadataTemplate }, Vote: { ProcessMetadataTemplate } } = Models
-const { Providers, Signers } = EtherUtils
+// const { Providers, Signers } = EtherUtils
 const { signJsonBody, isSignatureValid, recoverSignerPublicKey } = JsonSign
 
 const { getEntityId, getEntityMetadataByAddress, updateEntity } = Entity
 const { getRoot, addCensus, addClaim, addClaimBulk, digestHexClaim, getCensusSize, generateCensusId, generateCensusIdSuffix, publishCensus, importRemote, generateProof, dump, dumpPlain } = Census
-const { DVoteGateway, Web3Gateway } = Gateways
-const { addFile, fetchFileString } = File
+// const { DVoteGateway, Web3Gateway } = Gateways
+// const { addFile, fetchFileString } = File
 const { createVotingProcess, getVoteMetadata, packagePollEnvelope, submitEnvelope, getBlockHeight, getEnvelopeHeight, getPollNullifier, getEnvelopeStatus, getProcessList, getTimeUntilStart, getTimeUntilEnd, getTimeForBlock, getBlockNumberForTime, getEnvelopeList, getEnvelope, getRawResults, getResultsDigest } = Vote
-const { getEntityResolverInstance, getVotingProcessInstance } = Contracts
+// const { getEntityResolverInstance, getVotingProcessInstance } = Contracts
 
 // let entityResolver = null, votingProcess = null
 
-let pool: GatewayPool, entityId: string, entityWallet: Wallet, processId: string, voteMetadata: ProcessMetadata, accounts
+let pool: GatewayPool, entityId: string, entityWallet: Wallet, processId: string, voteMetadata: ProcessMetadata, accounts: Account[]
 
 async function main() {
   // Connect to a GW
@@ -89,7 +89,7 @@ async function main() {
     await launchNewVote(merkleRoot, merkleTreeUri)
     assert(processId)
     assert(voteMetadata)
-    fs.writeFileSync(config.processInfoFilePath, JSON.stringify({ processId, voteMetadata }))
+    fs.writeFileSync(config.processInfoFilePath, JSON.stringify({ processId, voteMetadata }, null, 2))
 
     console.log("The voting process is ready")
   }
@@ -467,7 +467,8 @@ async function launchNewVote(merkleRoot, merkleTreeUri) {
   assert(merkleTreeUri)
   console.log("Preparing the new vote metadata")
 
-  const processMetadataPre = JSON.parse(JSON.stringify(ProcessMetadataTemplate)) // make a copy of the template
+  const processMetadataPre: ProcessMetadata = JSON.parse(JSON.stringify(ProcessMetadataTemplate)) // make a copy of the template
+  processMetadataPre.type = config.encryptedVote ? "encrypted-poll" : "poll-vote"
   processMetadataPre.census.merkleRoot = merkleRoot
   processMetadataPre.census.merkleTree = merkleTreeUri
   processMetadataPre.details.entityId = entityId
@@ -536,7 +537,7 @@ async function waitUntilStarted() {
 async function launchVotes(accounts) {
   console.log("Launching votes")
 
-  const voteKeys = voteMetadata.type == "encrypted-poll-vote" ? await getProcessKeys(processId, pool) : null
+  const voteKeys = voteMetadata.type == "encrypted-poll" ? await getProcessKeys(processId, pool) : null
 
   await Bluebird.map(accounts, async (account, idx) => {
     process.stdout.write(`Starting [${idx}] ; `)
@@ -555,11 +556,11 @@ async function launchVotes(accounts) {
     process.stdout.write(`Pkg Envelope [${idx}] ; `)
     const choices = getChoicesForVoter(idx)
 
-    const voteEnvelope = voteMetadata.type == "encrypted-poll-vote" ?
+    const voteEnvelope = voteMetadata.type == "encrypted-poll" ?
       await packagePollEnvelope({ votes: choices, merkleProof, processId, walletOrSigner: wallet, encryptionKeys: voteKeys }) :
       await packagePollEnvelope({ votes: choices, merkleProof, processId, walletOrSigner: wallet })
 
-    process.stdout.write(`Sent [${idx}] ; `)
+    process.stdout.write(`Sending [${idx}] ; `)
     await submitEnvelope(voteEnvelope, pool)
       .catch(err => {
         console.error("\nsubmitEnvelope ERR", account.publicKey, voteEnvelope, err)
@@ -698,6 +699,7 @@ function getConfig(): Config {
   assert(typeof config.entityManagerUriPrefix == "string", "config.yaml > entityManagerUriPrefix should be a string")
   assert(typeof config.numAccounts == "number", "config.yaml > numAccounts should be a number")
   assert(typeof config.maxConcurrency == "number", "config.yaml > maxConcurrency should be a number")
+  assert(typeof config.encryptedVote == "boolean", "config.yaml > encryptedVote should be a boolean")
   assert(typeof config.votesPattern == "string", "config.yaml > votesPattern should be a string")
   return config
 }
@@ -725,5 +727,14 @@ type Config = {
   numAccounts: number
   maxConcurrency: number
 
+  encryptedVote: boolean
   votesPattern: string
+}
+
+type Account = {
+  idx: number,
+  mnemonic: string
+  privateKey: string
+  publicKey: string
+  publicKeyHash: string
 }
