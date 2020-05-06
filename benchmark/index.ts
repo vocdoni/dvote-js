@@ -9,9 +9,10 @@ import * as YAML from 'yaml'
 const CONFIG_PATH = "./config.yaml"
 const config = getConfig()
 
-import { API, Network, Wrappers, Models, EtherUtils, JsonSign } from "../dist"
+import { API, Network, Wrappers, Models, EtherUtils, JsonSign, ProcessMetadata } from "../dist"
 import { NetworkID } from "../dist/net/gateway-bootnodes"
 import { GatewayPool } from "../dist/net/gateway-pool"
+import { getProcessKeys } from "../dist/api/vote"
 
 const { File, Entity, Census, Vote } = API
 const { Bootnodes, Gateways, Contracts } = Network
@@ -29,7 +30,7 @@ const { getEntityResolverInstance, getVotingProcessInstance } = Contracts
 
 // let entityResolver = null, votingProcess = null
 
-let pool: GatewayPool, entityId: string, entityWallet: Wallet, processId: string, voteMetadata, accounts
+let pool: GatewayPool, entityId: string, entityWallet: Wallet, processId: string, voteMetadata: ProcessMetadata, accounts
 
 async function main() {
   // Connect to a GW
@@ -535,6 +536,8 @@ async function waitUntilStarted() {
 async function launchVotes(accounts) {
   console.log("Launching votes")
 
+  const voteKeys = voteMetadata.type == "encrypted-poll-vote" ? await getProcessKeys(processId, pool) : null
+
   await Bluebird.map(accounts, async (account, idx) => {
     process.stdout.write(`Starting [${idx}] ; `)
 
@@ -551,9 +554,12 @@ async function launchVotes(accounts) {
 
     process.stdout.write(`Pkg Envelope [${idx}] ; `)
     const choices = getChoicesForVoter(idx)
-    // TODO: Use encrypted payloads
-    const voteEnvelope = await packagePollEnvelope({ votes: choices, merkleProof, processId, walletOrSigner: wallet })
-    process.stdout.write(`Submit [${idx}] ; `)
+
+    const voteEnvelope = voteMetadata.type == "encrypted-poll-vote" ?
+      await packagePollEnvelope({ votes: choices, merkleProof, processId, walletOrSigner: wallet, encryptionKeys: voteKeys }) :
+      await packagePollEnvelope({ votes: choices, merkleProof, processId, walletOrSigner: wallet })
+
+    process.stdout.write(`Sent [${idx}] ; `)
     await submitEnvelope(voteEnvelope, pool)
       .catch(err => {
         console.error("\nsubmitEnvelope ERR", account.publicKey, voteEnvelope, err)
