@@ -1,5 +1,5 @@
 node_modules
-.env
+config.yaml
 old
 cached-accounts.json
 cached-process-info.json

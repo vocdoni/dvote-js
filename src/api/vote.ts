@@ -377,14 +377,29 @@ export function getBlockNumberForTime(processId: string, dateTime: Date, gateway
 }
 
 /**
- * Fetches the list pf processes for a given entity
- * @param processId 
+ * Fetches the list of process ID's for a given entity
+ * @param entityId 
  * @param gateway 
+ * @param afterId (optional) Skip any process ID's before this one and itself too
  */
-export async function getProcessList(processId: string, gateway: IGateway | IGatewayPool): Promise<string> {
+export async function getProcessList(entityId: string, gateway: IGateway | IGatewayPool, afterId?: string): Promise<string[]> {
+    if (!entityId) throw new Error("Invalid Entity Id")
+    else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) throw new Error("Invalid Gateway object")
 
-    return Promise.reject(new Error("TODO: unimplemented"))
+    try {
+        const req: any = {
+            method: "getProcessList",
+            entityId
+        }
+        if (afterId) req.fromId = afterId
 
+        const response = await gateway.sendMessage(req)
+        if (!response || !Array.isArray(response.processList)) throw new Error("Invalid response")
+        return response.processList
+    }
+    catch (err) {
+        throw err
+    }
 }
 
 /**

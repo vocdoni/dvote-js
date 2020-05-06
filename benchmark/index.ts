@@ -1,71 +1,44 @@
-console.log("Reading .env (if present)...")
-require('dotenv').config({ path: __dirname + "/.env" })
-const assert = require("assert")
 const fs = require("fs")
-const Promise = require("bluebird")
-const axios = require("axios")
+import * as Bluebird from "bluebird"
+import axios from "axios"
+import { Wallet, utils } from "ethers"
+import * as assert from "assert"
+import { readFileSync } from "fs"
+import * as YAML from 'yaml'
 
-const {
-  API: { File, Entity, Census, Vote},
-  Network: { Bootnodes, Gateways, Contracts, Pool: {GatewayPool} },
-  Wrappers: { GatewayInfo, ContentURI, ContentHashedURI },
-  Models: { Entity: { TextRecordKeys, EntityMetadataTemplate }, Vote: { ProcessMetadataTemplate } },
-  EtherUtils: { Providers, Signers },
-  JsonSign: { signJsonBody, isSignatureValid, recoverSignerPublicKey }
-} = require("../dist")
+const CONFIG_PATH = "./config.yaml"
+const config = getConfig()
+
+import { API, Network, Wrappers, Models, EtherUtils, JsonSign } from "../dist"
+import { NetworkID } from "../dist/net/gateway-bootnodes"
+import { GatewayPool } from "../dist/net/gateway-pool"
+
+const { File, Entity, Census, Vote } = API
+const { Bootnodes, Gateways, Contracts } = Network
+const { GatewayInfo, ContentURI, ContentHashedURI } = Wrappers
+const { Entity: { TextRecordKeys, EntityMetadataTemplate }, Vote: { ProcessMetadataTemplate } } = Models
+const { Providers, Signers } = EtherUtils
+const { signJsonBody, isSignatureValid, recoverSignerPublicKey } = JsonSign
 
 const { getEntityId, getEntityMetadataByAddress, updateEntity } = Entity
 const { getRoot, addCensus, addClaim, addClaimBulk, digestHexClaim, getCensusSize, generateCensusId, generateCensusIdSuffix, publishCensus, importRemote, generateProof, dump, dumpPlain } = Census
-const { DVoteGateway, Web3Gateway} = Gateways
-const { getGatewaysFromBootNode, getDefaultGateways } = Bootnodes
+const { DVoteGateway, Web3Gateway } = Gateways
 const { addFile, fetchFileString } = File
-const { createVotingProcess, getVoteMetadata, packagePollEnvelope, submitEnvelope, getBlockHeight, getEnvelopeHeight, getPollNullifier, getEnvelopeStatus, getTimeUntilStart, getTimeUntilEnd, getTimeForBlock, getBlockNumberForTime, getEnvelopeList, getEnvelope, getRawResults, getResultsDigest } = Vote
+const { createVotingProcess, getVoteMetadata, packagePollEnvelope, submitEnvelope, getBlockHeight, getEnvelopeHeight, getPollNullifier, getEnvelopeStatus, getProcessList, getTimeUntilStart, getTimeUntilEnd, getTimeForBlock, getBlockNumberForTime, getEnvelopeList, getEnvelope, getRawResults, getResultsDigest } = Vote
 const { getEntityResolverInstance, getVotingProcessInstance } = Contracts
 
-const { Wallet, utils } = require("ethers")
+// let entityResolver = null, votingProcess = null
 
-const MNEMONIC = process.env.MNEMONIC || "bar bundle start frog dish gauge square subway load easily south bamboo"
-const PATH = process.env.ETH_PATH || "m/44'/60'/0'/0/0"
-
-const ACCOUNT_LIST_FILE_PATH = "./cached-accounts.json"
-const PROCESS_INFO_FILE_PATH = "./cached-process-info.json"
-
-const READ_EXISTING_ACCOUNTS = !!process.env.READ_EXISTING_ACCOUNTS
-const READ_EXISTING_PROCESS = !!process.env.READ_EXISTING_PROCESS
-const STOP_ON_ERROR = !!process.env.STOP_ON_ERROR
-
-const ETH_NETWORK_ID = process.env.ETH_NETWORK_ID || "goerli"
-const BOOTNODES_URL_RW = process.env.BOOTNODES_URL_RW
-const DVOTE_GATEWAY_URI = process.env.DVOTE_GATEWAY_URI || undefined
-const DVOTE_GATEWAY_PUBLIC_KEY = process.env.DVOTE_GATEWAY_PUBLIC_KEY || undefined
-
-const REGISTRY_API_PREFIX = process.env.REGISTRY_API_PREFIX
-const CENSUS_MANAGER_API_PREFIX = process.env.CENSUS_MANAGER_API_PREFIX
-const ENTITY_MANAGER_URI_PREFIX = process.env.ENTITY_MANAGER_URI_PREFIX
-
-const NUM_ACCOUNTS = parseInt(process.env.NUM_ACCOUNTS || "1000") || 1000
-const MAX_CONCURRENCY = parseInt(process.env.MAX_CONCURRENCY || "100") || 100
-const VOTES_PATTERN = process.env.VOTES_PATTERN || "all-0" // Valid: all-0, all-1, all-2, all-even, incremental
-
-let entityResolver = null
-let votingProcess = null
-let dvoteGateway
-let web3Gateway
-
-let entityId
-let entityWallet
-let processId
-let voteMetadata
-let accounts
-
+let pool: GatewayPool, entityId: string, entityWallet: Wallet, processId: string, voteMetadata, accounts
 
 async function main() {
   // Connect to a GW
-  await connectGateways()
-  console.log(READ_EXISTING_ACCOUNTS)
-  if (READ_EXISTING_ACCOUNTS) {
+  const gwPool = await connectGateways()
+  pool = gwPool
+
+  if (config.readExistingAccounts) {
     console.log("Reading account list")
-    accounts = JSON.parse(fs.readFileSync(ACCOUNT_LIST_FILE_PATH).toString())
+    accounts = JSON.parse(fs.readFileSync(config.accountListFilePath).toString())
   }
   else {
     // Create from scratch
@@ -75,10 +48,10 @@ async function main() {
     await setEntityMetadata()
 
     // Create N wallets
-    accounts = createWallets(NUM_ACCOUNTS)
+    accounts = createWallets(config.numAccounts)
 
     // Write them to a file
-    fs.writeFileSync(ACCOUNT_LIST_FILE_PATH, JSON.stringify(accounts, null, 2))
+    fs.writeFileSync(config.accountListFilePath, JSON.stringify(accounts, null, 2))
 
     // Submit the accounts to the entity
     const adminAccesstoken = await adminLogin()
@@ -88,9 +61,9 @@ async function main() {
     assert(accounts)
   }
 
-  if (READ_EXISTING_PROCESS) {
+  if (config.readExistingProcess) {
     console.log("Reading process metadata")
-    const procInfo = JSON.parse(fs.readFileSync(PROCESS_INFO_FILE_PATH).toString())
+    const procInfo = JSON.parse(fs.readFileSync(config.processInfoFilePath).toString())
     processId = procInfo.processId
     voteMetadata = procInfo.voteMetadata
 
@@ -99,7 +72,7 @@ async function main() {
   }
   else {
     let adminAccesstoken
-    if (!READ_EXISTING_ACCOUNTS) {
+    if (!config.readExistingAccounts) {
       adminAccesstoken = await adminLogin()
       await checkDatabaseKeys(adminAccesstoken, accounts)  // optional
     }
@@ -107,7 +80,7 @@ async function main() {
     // Generate and publish the census
     // Get the merkle root and IPFS origin of the Merkle Tree
     console.log("Publishing census")
-    const { merkleRoot, merkleTreeUri } = READ_EXISTING_ACCOUNTS ?
+    const { merkleRoot, merkleTreeUri } = config.readExistingAccounts ?
       await generatePublicCensusFromAccounts(accounts) :   // Read from JSON
       await generatePublicCensusFromDb(adminAccesstoken)   // Dump from DB
 
@@ -115,7 +88,7 @@ async function main() {
     await launchNewVote(merkleRoot, merkleTreeUri)
     assert(processId)
     assert(voteMetadata)
-    fs.writeFileSync(PROCESS_INFO_FILE_PATH, JSON.stringify({ processId, voteMetadata }))
+    fs.writeFileSync(config.processInfoFilePath, JSON.stringify({ processId, voteMetadata }))
 
     console.log("The voting process is ready")
   }
@@ -128,7 +101,7 @@ async function main() {
   console.log("- Process merkle root", voteMetadata.census.merkleRoot)
   console.log("- Process merkle tree", voteMetadata.census.merkleTree)
   console.log("-", accounts.length, "accounts on the census")
-  console.log("- Entity Manager link:", ENTITY_MANAGER_URI_PREFIX + "/processes/#/" + entityId + "/" + processId)
+  console.log("- Entity Manager link:", config.entityManagerUriPrefix + "/processes/#/" + entityId + "/" + processId)
 
   // Wait until the current block >= startBlock
   await waitUntilStarted()
@@ -143,11 +116,11 @@ async function main() {
   disconnect()
 }
 
-async function connectGateways() {
+async function connectGateways(): Promise<GatewayPool> {
   console.log("Connecting to the gateways")
   const options = {
-    networkId: ETH_NETWORK_ID,
-    bootnodesContentUri: BOOTNODES_URL_RW,
+    networkId: config.ethNetworkId as NetworkID,
+    bootnodesContentUri: config.bootnodesUrlRw,
     numberOfGateways: 2,
     race: false,
     // timeout: 10000,
@@ -155,24 +128,22 @@ async function connectGateways() {
   const pool = await GatewayPool.discover(options)
 
   if (!(await pool.isConnected())) throw new Error("Could not connect to the network")
-  dvoteGateway = pool
-  web3Gateway = pool
-  console.log("Connected to", await dvoteGateway.getDVoteUri())
-  console.log("Connected to", web3Gateway.getProvider().connection.url)
+  console.log("Connected to", await pool.getDVoteUri())
+  console.log("Connected to", pool.getProvider()["connection"].url)
 
   // WEB3 CLIENT
-  const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
-
-  entityWallet = Wallet.fromMnemonic(MNEMONIC, PATH)
-    .connect(web3Gateway.getProvider())
+  entityWallet = Wallet.fromMnemonic(config.mnemonic, config.ethPath)
+    .connect(pool.getProvider())
 
   entityId = getEntityId(await entityWallet.getAddress())
   console.log("Entity Address", await entityWallet.getAddress())
   console.log("Entity ID", entityId)
+
+  return pool
 }
 
 async function setEntityMetadata() {
-  if ((await entityWallet.getBalance()) == 0)
+  if ((await entityWallet.getBalance()).eq(0))
     throw new Error("The account has no ether")
   console.log("Setting Metadata for entity", entityId)
 
@@ -191,16 +162,16 @@ async function setEntityMetadata() {
       name: {
         default: "Sign up",
       },
-      url: REGISTRY_API_PREFIX + "/api/actions/register",
-      visible: REGISTRY_API_PREFIX + "/api/actions"
+      url: config.registryApiPrefix + "/api/actions/register",
+      visible: config.registryApiPrefix + "/api/actions"
     }
   ]
 
-  await updateEntity(await entityWallet.getAddress(), metadata, entityWallet, web3Gateway, dvoteGateway)
+  await updateEntity(await entityWallet.getAddress(), metadata, entityWallet, pool)
   console.log("Metadata updated")
 
   // Read back
-  const entityMetaPost = await getEntityMetadataByAddress(await entityWallet.getAddress(), web3Gateway, dvoteGateway)
+  const entityMetaPost = await getEntityMetadataByAddress(await entityWallet.getAddress(), pool)
   assert(entityMetaPost)
   assert.equal(entityMetaPost.name.default, metadata.name.default)
   assert.equal(entityMetaPost.description.default, metadata.description.default)
@@ -220,9 +191,9 @@ function createWallets(amount) {
     accounts.push({
       idx: i,
       mnemonic: wallet.mnemonic,
-      privateKey: wallet.signingKey.privateKey,
-      publicKey: wallet.signingKey.publicKey,
-      publicKeyHash: digestHexClaim(wallet.signingKey.publicKey)
+      privateKey: wallet["signingKey"].privateKey,
+      publicKey: wallet["signingKey"].publicKey,
+      publicKeyHash: digestHexClaim(wallet["signingKey"].publicKey)
       // address: wallet.address
     })
   }
@@ -244,7 +215,7 @@ async function adminLogin() {
     payload: msg,
     signature
   }
-  var response = await axios.post(CENSUS_MANAGER_API_PREFIX + "/api/auth/session", body)
+  var response = await axios.post(config.censusManagerApiPrefix + "/api/auth/session", body)
   if (!response || !response.data || !response.data.token) throw new Error("Invalid Census Manager token")
   const token = response.data.token
 
@@ -253,7 +224,7 @@ async function adminLogin() {
 
 async function databasePrepare(token) {
   // List current census
-  var request = {
+  var request: any = {
     headers: {
       'Content-Type': 'application/json',
       'Cookie': "session-jwt=" + token
@@ -262,9 +233,9 @@ async function databasePrepare(token) {
   }
 
   request.method = 'GET'
-  request.url = CENSUS_MANAGER_API_PREFIX + "/api/census?filter=%7B%7D&order=ASC&perPage=100000&sort=name&start=0"
+  request.url = config.censusManagerApiPrefix + "/api/census?filter=%7B%7D&order=ASC&perPage=100000&sort=name&start=0"
 
-  response = await axios(request)
+  var response = await axios(request)
   assert(Array.isArray(response.data))
   const cIds = response.data.map(item => item._id)
 
@@ -274,13 +245,13 @@ async function databasePrepare(token) {
 
     request.method = 'DELETE'
     request.data = undefined
-    request.url = CENSUS_MANAGER_API_PREFIX + "/api/census?" + cIds.map(id => "ids=" + id).join("&")
+    request.url = config.censusManagerApiPrefix + "/api/census?" + cIds.map(id => "ids=" + id).join("&")
     response = await axios(request)
   }
 
   // List current users
   request.method = 'GET'
-  request.url = CENSUS_MANAGER_API_PREFIX + "/api/members?filter=%7B%7D&order=ASC&perPage=1000000&sort=name&start=0"
+  request.url = config.censusManagerApiPrefix + "/api/members?filter=%7B%7D&order=ASC&perPage=1000000&sort=name&start=0"
 
   response = await axios(request)
   assert(Array.isArray(response.data))
@@ -298,7 +269,7 @@ async function databasePrepare(token) {
       const ids = mIds.slice(i * 100, i * 100 + 100)
       if (ids.length == 0) break
 
-      request.url = CENSUS_MANAGER_API_PREFIX + "/api/members?" + ids.map(id => "ids=" + id).join("&")
+      request.url = config.censusManagerApiPrefix + "/api/members?" + ids.map(id => "ids=" + id).join("&")
       response = await axios(request)
     }
     response = await axios(request)
@@ -310,7 +281,7 @@ async function databasePrepare(token) {
 async function submitAccountsToRegistry(accounts) {
   console.log("Registering", accounts.length, "accounts to the entity")
 
-  await Promise.map(accounts, async (account, idx) => {
+  await Bluebird.map(accounts, async (account, idx) => {
     if (idx % 50 == 0) process.stdout.write("Account " + idx + " ; ")
     const wallet = new Wallet(account.privateKey)
     const timestamp = Date.now()
@@ -331,7 +302,7 @@ async function submitAccountsToRegistry(accounts) {
     }
     body.signature = await signJsonBody(body.request, wallet)
 
-    const res = await axios.post(`${REGISTRY_API_PREFIX}/api/actions/register`, body)
+    const res = await axios.post(`${config.registryApiPrefix}/api/actions/register`, body)
 
     const response = res.data && res.data.response
     if (!response) throw new Error("Empty response")
@@ -346,7 +317,7 @@ async function checkDatabaseKeys(token, accounts) {
   console.log("Checking database key values")
 
   // Get the DB members data
-  var request = {
+  var request: any = {
     headers: {
       'Content-Type': 'application/json',
       'Cookie': "session-jwt=" + token
@@ -354,15 +325,15 @@ async function checkDatabaseKeys(token, accounts) {
     json: true
   }
   request.method = 'GET'
-  request.url = CENSUS_MANAGER_API_PREFIX + "/api/members?filter=%7B%7D&order=ASC&perPage=1000000&sort=email&start=0"
+  request.url = config.censusManagerApiPrefix + "/api/members?filter=%7B%7D&order=ASC&perPage=1000000&sort=email&start=0"
 
   const response = await axios(request)
-  if (STOP_ON_ERROR) assert(response.data.length >= NUM_ACCOUNTS)
+  if (config.stopOnError) assert(response.data.length >= config.numAccounts)
 
   const dbAccounts = response.data
   for (let account of accounts) {
     const dbAccount = dbAccounts.find(dbAccount => dbAccount.user.email == "user" + account.idx + "@mail.com")
-    if (STOP_ON_ERROR) assert(dbAccount, "There is no such account for index " + account.idx)
+    if (config.stopOnError) assert(dbAccount, "There is no such account for index " + account.idx)
     else if (!dbAccount) continue
     if (dbAccount.user.digestedPublicKey == account.publicKeyHash && dbAccount.user.publicKey == account.publicKey) continue
 
@@ -384,7 +355,7 @@ async function generatePublicCensusFromDb(token) {
   // Create new census
   console.log("Creating a new census")
 
-  var request = {
+  var request: any = {
     headers: {
       'Content-Type': 'application/json',
       'Cookie': "session-jwt=" + token
@@ -394,10 +365,10 @@ async function generatePublicCensusFromDb(token) {
 
   // Create the census we will later export
   request.method = 'POST'
-  request.url = CENSUS_MANAGER_API_PREFIX + "/api/census"
+  request.url = config.censusManagerApiPrefix + "/api/census"
   request.data = { "name": "E2E Test census " + Date.now(), "filters": [{ "key": "dateOfBirth", "predicate": { "operator": "$gt", "value": "1800-01-01" } }] }
 
-  response = await axios(request)
+  var response = await axios(request)
   assert(response.data._id.length == 24)
   const newCensusId = response.data._id
 
@@ -405,15 +376,15 @@ async function generatePublicCensusFromDb(token) {
   console.log("Exporting the census", newCensusId)
 
   request.method = 'GET'
-  request.url = CENSUS_MANAGER_API_PREFIX + "/api/census/" + newCensusId + "/dump"
+  request.url = config.censusManagerApiPrefix + "/api/census/" + newCensusId + "/dump"
   request.data = undefined
 
   response = await axios(request)
   const { censusIdSuffix, publicKeyDigests, managerPublicKeys } = response.data
-  if (STOP_ON_ERROR) {
+  if (config.stopOnError) {
     assert(censusIdSuffix.length == 64)
     assert(Array.isArray(publicKeyDigests))
-    assert(publicKeyDigests.length == NUM_ACCOUNTS)
+    assert(publicKeyDigests.length == config.numAccounts)
     assert(Array.isArray(managerPublicKeys))
     assert(managerPublicKeys.length == 1)
   }
@@ -421,28 +392,28 @@ async function generatePublicCensusFromDb(token) {
   // Adding claims
   console.log("Registering the new census to the Census Service")
 
-  const { censusId } = await addCensus(censusIdSuffix, managerPublicKeys, dvoteGateway, entityWallet)
+  const { censusId } = await addCensus(censusIdSuffix, managerPublicKeys, pool, entityWallet)
 
   console.log("Adding", publicKeyDigests.length, "claims")
-  response = await addClaimBulk(censusId, publicKeyDigests, true, dvoteGateway, entityWallet)
+  const result = await addClaimBulk(censusId, publicKeyDigests, true, pool, entityWallet)
 
-  if (response.invalidClaims.length > 0) throw new Error("Census Service invalid claims count is " + response.invalidClaims.length)
+  if (result.invalidClaims.length > 0) throw new Error("Census Service invalid claims count is " + result.invalidClaims.length)
 
   // Publish the census
   console.log("Publishing the new census")
-  const merkleTreeUri = await publishCensus(censusId, dvoteGateway, entityWallet)
+  const merkleTreeUri = await publishCensus(censusId, pool, entityWallet)
 
   // Check that the census is published
-  const exportedMerkleTree = await dumpPlain(censusId, dvoteGateway, entityWallet)
-  if (STOP_ON_ERROR) {
+  const exportedMerkleTree = await dumpPlain(censusId, pool, entityWallet)
+  if (config.stopOnError) {
     assert(Array.isArray(exportedMerkleTree))
-    assert(exportedMerkleTree.length == NUM_ACCOUNTS)
+    assert(exportedMerkleTree.length == config.numAccounts)
   }
 
   // Return the census ID / Merkle Root
   return {
     merkleTreeUri,
-    merkleRoot: response.merkleRoot
+    merkleRoot: result.merkleRoot
   }
 }
 
@@ -452,12 +423,12 @@ async function generatePublicCensusFromAccounts(accounts) {
 
   const censusIdSuffix = require("crypto").createHash('sha256').update("" + Date.now()).digest().toString("hex")
   const publicKeyDigests = accounts.map(account => account.publicKeyHash)
-  const managerPublicKeys = [entityWallet.signingKey.publicKey]
+  const managerPublicKeys = [entityWallet["signingKey"].publicKey]
 
-  if (STOP_ON_ERROR) {
+  if (config.stopOnError) {
     assert(censusIdSuffix.length == 64)
     assert(Array.isArray(publicKeyDigests))
-    assert(publicKeyDigests.length == NUM_ACCOUNTS)
+    assert(publicKeyDigests.length == config.numAccounts)
     assert(Array.isArray(managerPublicKeys))
     assert(managerPublicKeys.length == 1)
   }
@@ -465,28 +436,28 @@ async function generatePublicCensusFromAccounts(accounts) {
   // Adding claims
   console.log("Registering the new census to the Census Service")
 
-  const { censusId } = await addCensus(censusIdSuffix, managerPublicKeys, dvoteGateway, entityWallet)
+  const { censusId } = await addCensus(censusIdSuffix, managerPublicKeys, pool, entityWallet)
 
   console.log("Adding", publicKeyDigests.length, "claims")
-  response = await addClaimBulk(censusId, publicKeyDigests, true, dvoteGateway, entityWallet)
+  const result = await addClaimBulk(censusId, publicKeyDigests, true, pool, entityWallet)
 
-  if (response.invalidClaims.length > 0) throw new Error("Census Service invalid claims count is " + response.invalidClaims.length)
+  if (result.invalidClaims.length > 0) throw new Error("Census Service invalid claims count is " + result.invalidClaims.length)
 
   // Publish the census
   console.log("Publishing the new census")
-  const merkleTreeUri = await publishCensus(censusId, dvoteGateway, entityWallet)
+  const merkleTreeUri = await publishCensus(censusId, pool, entityWallet)
 
   // Check that the census is published
-  const exportedMerkleTree = await dumpPlain(censusId, dvoteGateway, entityWallet)
-  if (STOP_ON_ERROR) {
+  const exportedMerkleTree = await dumpPlain(censusId, pool, entityWallet)
+  if (config.stopOnError) {
     assert(Array.isArray(exportedMerkleTree))
-    assert(exportedMerkleTree.length == NUM_ACCOUNTS)
+    assert(exportedMerkleTree.length == config.numAccounts)
   }
 
   // Return the census ID / Merkle Root
   return {
     merkleTreeUri,
-    merkleRoot: response.merkleRoot
+    merkleRoot: result.merkleRoot
   }
 }
 
@@ -509,19 +480,19 @@ async function launchNewVote(merkleRoot, merkleTreeUri) {
   processMetadataPre.details.questions[0].voteOptions[1].title.default = "No"
   processMetadataPre.details.questions[0].voteOptions[1].value = 1
 
-  const currentBlock = await getBlockHeight(dvoteGateway)
+  const currentBlock = await getBlockHeight(pool)
   const startBlock = currentBlock + 25
   processMetadataPre.startBlock = startBlock
   processMetadataPre.numberOfBlocks = 60480
-  processId = await createVotingProcess(processMetadataPre, entityWallet, web3Gateway, dvoteGateway)
+  processId = await createVotingProcess(processMetadataPre, entityWallet, pool)
 
-  const entityMetaPost = await getEntityMetadataByAddress(await entityWallet.getAddress(), web3Gateway, dvoteGateway)
+  const entityMetaPost = await getEntityMetadataByAddress(await entityWallet.getAddress(), pool)
 
   assert(processId)
   assert(entityMetaPost)
 
   // Reading back
-  voteMetadata = await getVoteMetadata(processId, web3Gateway, dvoteGateway)
+  voteMetadata = await getVoteMetadata(processId, pool)
   assert.equal(voteMetadata.details.entityId, entityId)
   assert.equal(voteMetadata.startBlock, processMetadataPre.startBlock, "SENT " + JSON.stringify(processMetadataPre) + " GOT " + JSON.stringify(voteMetadata))
   assert.equal(voteMetadata.numberOfBlocks, processMetadataPre.numberOfBlocks)
@@ -530,11 +501,11 @@ async function launchNewVote(merkleRoot, merkleTreeUri) {
 }
 
 async function waitUntilStarted() {
-  assert(dvoteGateway)
+  assert(pool)
   assert(processId)
   assert(voteMetadata)
 
-  const currentBlock = await getBlockHeight(dvoteGateway)
+  const currentBlock = await getBlockHeight(pool)
   if (currentBlock >= voteMetadata.startBlock) return processId
 
   console.log("Waiting for block", voteMetadata.startBlock)
@@ -542,7 +513,7 @@ async function waitUntilStarted() {
   // wait
   await new Promise((resolve, reject) => {
     const interval = setInterval(() => {
-      getBlockHeight(dvoteGateway).then(currentBlock => {
+      getBlockHeight(pool).then(currentBlock => {
         console.log("Now at block", currentBlock)
         if (currentBlock >= voteMetadata.startBlock) {
           resolve()
@@ -552,34 +523,38 @@ async function waitUntilStarted() {
         .catch(err => reject(err))
     }, 10000)
   })
+
+  console.log("Checking that the Process ID is on the list")
+  const processList = await getProcessList(entityId, pool)
+  assert(processList.includes(processId))
 }
 
 async function launchVotes(accounts) {
   console.log("Launching votes")
 
-  await Promise.map(accounts, async (account, idx) => {
+  await Bluebird.map(accounts, async (account, idx) => {
     process.stdout.write(`Starting [${idx}] ; `)
 
     const wallet = new Wallet(account.privateKey)
 
     process.stdout.write(`Gen Proof [${idx}] ; `)
-    const merkleProof = await generateProof(voteMetadata.census.merkleRoot, account.publicKeyHash, true, dvoteGateway)
+    const merkleProof = await generateProof(voteMetadata.census.merkleRoot, account.publicKeyHash, true, pool)
       .catch(err => {
         console.error("\ngenerateProof ERR", account, err)
-        if (STOP_ON_ERROR) throw err
+        if (config.stopOnError) throw err
         return null
       })
-    if (!merkleProof) return // skip when !STOP_ON_ERROR
+    if (!merkleProof) return // skip when !config.stopOnError
 
     process.stdout.write(`Pkg Envelope [${idx}] ; `)
     const choices = getChoicesForVoter(idx)
     // TODO: Use encrypted payloads
     const voteEnvelope = await packagePollEnvelope({ votes: choices, merkleProof, processId, walletOrSigner: wallet })
     process.stdout.write(`Submit [${idx}] ; `)
-    await submitEnvelope(voteEnvelope, dvoteGateway)
+    await submitEnvelope(voteEnvelope, pool)
       .catch(err => {
         console.error("\nsubmitEnvelope ERR", account.publicKey, voteEnvelope, err)
-        if (STOP_ON_ERROR) throw err
+        if (config.stopOnError) throw err
       })
 
     process.stdout.write(`Waiting [${idx}] ; `)
@@ -587,16 +562,16 @@ async function launchVotes(accounts) {
 
     process.stdout.write(`Checking [${idx}] ; `)
     const nullifier = await getPollNullifier(wallet.address, processId)
-    const hasVoted = await getEnvelopeStatus(processId, nullifier, dvoteGateway)
+    const hasVoted = await getEnvelopeStatus(processId, nullifier, pool)
       .catch(err => {
         console.error("\ngetEnvelopeStatus ERR", account.publicKey, nullifier, err)
-        if (STOP_ON_ERROR) throw err
+        if (config.stopOnError) throw err
       })
 
-    if (STOP_ON_ERROR) assert(hasVoted)
+    if (config.stopOnError) assert(hasVoted)
 
     process.stdout.write(`Done [${idx}] ; `)
-  }, { concurrency: MAX_CONCURRENCY })
+  }, { concurrency: config.maxConcurrency })
 
   console.log() // \n
 }
@@ -608,45 +583,45 @@ async function checkVoteResults() {
   assert.equal(typeof processId, "string")
 
   console.log("Fetching the vote results for", processId)
-  const resultsDigest = await getResultsDigest(processId, web3Gateway, dvoteGateway)
-  const totalVotes = await getEnvelopeHeight(processId, dvoteGateway)
+  const resultsDigest = await getResultsDigest(processId, pool)
+  const totalVotes = await getEnvelopeHeight(processId, pool)
 
   assert.equal(resultsDigest.questions.length, 1)
   assert(resultsDigest.questions[0].voteResults)
 
-  switch (VOTES_PATTERN) {
+  switch (config.votesPattern) {
     case "all-0":
       assert(resultsDigest.questions[0].voteResults.length >= 2)
-      assert.equal(resultsDigest.questions[0].voteResults[0].votes, NUM_ACCOUNTS)
+      assert.equal(resultsDigest.questions[0].voteResults[0].votes, config.numAccounts)
       assert.equal(resultsDigest.questions[0].voteResults[1].votes, 0)
       break
     case "all-1":
       assert(resultsDigest.questions[0].voteResults.length >= 2)
       assert.equal(resultsDigest.questions[0].voteResults[0].votes, 0)
-      assert.equal(resultsDigest.questions[0].voteResults[1].votes, NUM_ACCOUNTS)
+      assert.equal(resultsDigest.questions[0].voteResults[1].votes, config.numAccounts)
       break
     case "all-2":
       assert(resultsDigest.questions[0].voteResults.length >= 3)
       assert.equal(resultsDigest.questions[0].voteResults[0].votes, 0)
       assert.equal(resultsDigest.questions[0].voteResults[1].votes, 0)
-      assert.equal(resultsDigest.questions[0].voteResults[2].votes, NUM_ACCOUNTS)
+      assert.equal(resultsDigest.questions[0].voteResults[2].votes, config.numAccounts)
       break
     case "all-even":
-      assert(resultsDigest.questions[0].voteResults.lengt >= 2)
-      if (NUM_ACCOUNTS % 2 == 0) {
-        assert.equal(resultsDigest.questions[0].voteResults[0].votes, NUM_ACCOUNTS / 2)
-        assert.equal(resultsDigest.questions[0].voteResults[1].votes, NUM_ACCOUNTS / 2)
+      assert(resultsDigest.questions[0].voteResults.length >= 2)
+      if (config.numAccounts % 2 == 0) {
+        assert.equal(resultsDigest.questions[0].voteResults[0].votes, config.numAccounts / 2)
+        assert.equal(resultsDigest.questions[0].voteResults[1].votes, config.numAccounts / 2)
       }
       else {
-        assert.equal(resultsDigest.questions[0].voteResults[0].votes, Math.ceil(NUM_ACCOUNTS / 2))
-        assert.equal(resultsDigest.questions[0].voteResults[1].votes, Math.floor(NUM_ACCOUNTS / 2))
+        assert.equal(resultsDigest.questions[0].voteResults[0].votes, Math.ceil(config.numAccounts / 2))
+        assert.equal(resultsDigest.questions[0].voteResults[1].votes, Math.floor(config.numAccounts / 2))
       }
       break
     case "incremental":
       assert.equal(resultsDigest.questions[0].voteResults.length, 2)
       resultsDigest.questions.forEach((question, i) => {
         for (let j = 0; j < question.voteResults.length; j++) {
-          if (i == j) assert.equal(question.voteResults[j].votes, NUM_ACCOUNTS)
+          if (i == j) assert.equal(question.voteResults[j].votes, config.numAccounts)
           else assert.equal(question.voteResults[j].votes, 0)
         }
       })
@@ -655,11 +630,11 @@ async function checkVoteResults() {
       throw new Error("The type of votes is unknown")
   }
 
-  assert.equal(totalVotes, NUM_ACCOUNTS)
+  assert.equal(totalVotes, config.numAccounts)
 }
 
 async function disconnect() {
-  dvoteGateway.disconnect()
+  pool.disconnect()
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -683,7 +658,7 @@ function getChoicesForVoter(voterIdx) {
   assert(voteMetadata.details.questions)
 
   return voteMetadata.details.questions.map((_, idx) => {
-    switch (VOTES_PATTERN) {
+    switch (config.votesPattern) {
       case "all-0": return 0
       case "all-1": return 1
       case "all-2": return 2
@@ -692,4 +667,54 @@ function getChoicesForVoter(voterIdx) {
       default: return 0
     }
   })
+}
+
+function getConfig(): Config {
+  const config: Config = YAML.parse(readFileSync(CONFIG_PATH).toString())
+  assert(typeof config == "object", "The config file appears to be invalid")
+  assert(typeof config.readExistingAccounts == "boolean", "config.yaml > readExistingAccounts should be a boolean")
+  assert(typeof config.readExistingProcess == "boolean", "config.yaml > readExistingProcess should be a boolean")
+  assert(typeof config.stopOnError == "boolean", "config.yaml > stopOnError should be a boolean")
+  assert(typeof config.accountListFilePath == "string", "config.yaml > accountListFilePath should be a string")
+  assert(typeof config.processInfoFilePath == "string", "config.yaml > processInfoFilePath should be a string")
+  assert(typeof config.mnemonic == "string", "config.yaml > mnemonic should be a string")
+  assert(config.mnemonic, "config.yaml > Please, set the mnemonic to use")
+  assert(typeof config.ethPath == "string", "config.yaml > ethPath should be a string")
+  assert(typeof config.ethNetworkId == "string", "config.yaml > ethNetworkId should be a string")
+  assert(typeof config.bootnodesUrlRw == "string", "config.yaml > bootnodesUrlRw should be a string")
+  assert(!config.dvoteGatewayUri || typeof config.dvoteGatewayUri == "string", "config.yaml > dvoteGatewayUri should be a string")
+  assert(!config.dvoteGatewayPublicKey || typeof config.dvoteGatewayPublicKey == "string", "config.yaml > dvoteGatewayPublicKey should be a string")
+  assert(typeof config.registryApiPrefix == "string", "config.yaml > registryApiPrefix should be a string")
+  assert(typeof config.censusManagerApiPrefix == "string", "config.yaml > censusManagerApiPrefix should be a string")
+  assert(typeof config.entityManagerUriPrefix == "string", "config.yaml > entityManagerUriPrefix should be a string")
+  assert(typeof config.numAccounts == "number", "config.yaml > numAccounts should be a number")
+  assert(typeof config.maxConcurrency == "number", "config.yaml > maxConcurrency should be a number")
+  assert(typeof config.votesPattern == "string", "config.yaml > votesPattern should be a string")
+  return config
+}
+
+type Config = {
+  readExistingAccounts: boolean
+  readExistingProcess: boolean
+  stopOnError: boolean
+
+  accountListFilePath: string
+  processInfoFilePath: string
+
+  mnemonic: string
+  ethPath: string
+  ethNetworkId: string
+
+  bootnodesUrlRw: string
+  dvoteGatewayUri: string
+  dvoteGatewayPublicKey: string
+
+  registryApiPrefix: string
+  censusManagerApiPrefix: string
+  entityManagerUriPrefix: string
+
+  numAccounts: number
+  maxConcurrency: number
+
+  votesPattern: string
 }

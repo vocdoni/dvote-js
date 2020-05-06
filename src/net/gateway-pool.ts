@@ -126,7 +126,7 @@ export class GatewayPool {
                 return response
             })
             .catch((err: Error) => {
-                console.error("requestError", err)
+                // console.error("requestError", err)
 
                 if (ERROR_SKIP_METHODS.includes(requestBody.method)) {
                     throw err
