@@ -75,10 +75,8 @@ export async function addCensus(censusName: string, managerPublicKeys: string[],
         existingRoot = await getRoot(censusId, gateway)
         if (typeof existingRoot == "string" && existingRoot.match(/^0x[0-9a-zA-Z]+$/)) return { censusId, merkleRoot: existingRoot }
     } catch (error) {
-        console.error(error)
         // If it errors because it doesn't exist, we continue below
     }
-
 
     try {
         const censusIdSuffix = generateCensusIdSuffix(censusName)
