@@ -482,12 +482,15 @@ async function launchNewVote(merkleRoot, merkleTreeUri) {
   processMetadataPre.details.questions[0].voteOptions[1].title.default = "No"
   processMetadataPre.details.questions[0].voteOptions[1].value = 1
 
+  console.log("Getting the block height")
   const currentBlock = await getBlockHeight(pool)
   const startBlock = currentBlock + 25
   processMetadataPre.startBlock = startBlock
   processMetadataPre.numberOfBlocks = 60480
+  console.log("Creating the process")
   processId = await createVotingProcess(processMetadataPre, entityWallet, pool)
-
+  
+  console.log("Reading the process metadata back")
   const entityMetaPost = await getEntityMetadataByAddress(await entityWallet.getAddress(), pool)
 
   assert(processId)

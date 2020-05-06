@@ -494,15 +494,15 @@ export function getResultsDigest(processId: string, gateway: IGateway | IGateway
 
 export function packageSnarkEnvelope(params: {
     votes: number[], merkleProof: string, processId: string, privateKey: string,
-    encryptionKeys?: IProcessKeys
+    processKeys?: IProcessKeys
 }): SnarkVoteEnvelope {
     if (!params) throw new Error("Invalid parameters");
     if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
     else if (typeof params.merkleProof != "string" || !params.merkleProof.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid Merkle Proof")
     else if (typeof params.processId != "string" || !params.processId.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid processId")
     else if (!params.privateKey || !params.privateKey.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid private key")
-    else if (params.encryptionKeys) {
-        if (!Array.isArray(params.encryptionKeys.encryptionPublicKeys) || !params.encryptionKeys.encryptionPublicKeys.every(
+    else if (params.processKeys) {
+        if (!Array.isArray(params.processKeys.encryptionPublicKeys) || !params.processKeys.encryptionPublicKeys.every(
             item => item && typeof item.idx == "number" && typeof item.key == "string" && item.key.match(/^(0x)?[0-9a-zA-Z]+$/))) {
             throw new Error("Some encryption public keys are not valid")
         }
@@ -519,15 +519,15 @@ export function packageSnarkEnvelope(params: {
  */
 export async function packagePollEnvelope(params: {
     votes: number[], merkleProof: string, processId: string, walletOrSigner: Wallet | Signer,
-    encryptionKeys?: IProcessKeys
+    processKeys?: IProcessKeys
 }): Promise<PollVoteEnvelope> {
     if (!params) throw new Error("Invalid parameters");
     else if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
     else if (typeof params.merkleProof != "string" || !params.merkleProof.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid Merkle Proof")
     else if (typeof params.processId != "string" || !params.processId.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid processId")
     else if (!params.walletOrSigner || !params.walletOrSigner.signMessage) throw new Error("Invalid wallet or signer")
-    else if (params.encryptionKeys) {
-        if (!Array.isArray(params.encryptionKeys.encryptionPublicKeys) || !params.encryptionKeys.encryptionPublicKeys.every(
+    else if (params.processKeys) {
+        if (!Array.isArray(params.processKeys.encryptionPublicKeys) || !params.processKeys.encryptionPublicKeys.every(
             item => item && typeof item.idx == "number" && typeof item.key == "string" && item.key.match(/^(0x)?[0-9a-zA-Z]+$/))) {
             throw new Error("Some encryption public keys are not valid")
         }
@@ -536,7 +536,7 @@ export async function packagePollEnvelope(params: {
     try {
         const nonce = utils.keccak256('0x' + Date.now().toString(16)).substr(2)
 
-        const { votePackage, keyIndexes } = packagePollVote(params.votes, params.encryptionKeys)
+        const { votePackage, keyIndexes } = packagePollVote(params.votes, params.processKeys)
 
         const pkg: PollVoteEnvelope = {
             processId: params.processId,
@@ -555,10 +555,10 @@ export async function packagePollEnvelope(params: {
     }
 }
 
-export function packageSnarkVote(votes: number[], encryptionKeys?: IProcessKeys): { votePackage: string, keyIndexes?: number[] } {
+export function packageSnarkVote(votes: number[], processKeys?: IProcessKeys): { votePackage: string, keyIndexes?: number[] } {
     // if (!Array.isArray(votes)) throw new Error("Invalid votes")
-    // else if (encryptionKeys) {
-    //     if (!Array.isArray(encryptionKeys.encryptionPublicKeys) || !encryptionKeys.encryptionPublicKeys.every(
+    // else if (processKeys) {
+    //     if (!Array.isArray(processKeys.encryptionPublicKeys) || !processKeys.encryptionPublicKeys.every(
     //         item => item && typeof item.idx == "number" && typeof item.key == "string" && item.key.match(/^(0x)?[0-9a-zA-Z]+$/))) {
     //         throw new Error("Some encryption public keys are not valid")
     //     }
@@ -571,10 +571,10 @@ export function packageSnarkVote(votes: number[], encryptionKeys?: IProcessKeys)
     //     votes
     // }
 
-    // // TODO: ENCRYPT WITH encryptionKeys.encryptionPublicKeys
+    // // TODO: ENCRYPT WITH processKeys.encryptionPublicKeys
     // const strPayload = JSON.stringify(payload)
 
-    // if (encryptionPublicKeys) return Asymmetric.encryptString(strPayload, encryptionKeys.encryptionPublicKeys)
+    // if (encryptionPublicKeys) return Asymmetric.encryptString(strPayload, processKeys.encryptionPublicKeys)
     // else return Buffer.from(strPayload).toString("base64")
     throw new Error("Unimplemented")
 }
@@ -585,10 +585,10 @@ export function packageSnarkVote(votes: number[], encryptionKeys?: IProcessKeys)
  * @param votes An array of numbers with the choices
  * @param encryptionPublicKeys An ed25519 public key (https://ed25519.cr.yp.to/)
  */
-export function packagePollVote(votes: number[], encryptionKeys?: IProcessKeys): { votePackage: string, keyIndexes?: number[] } {
+export function packagePollVote(votes: number[], processKeys?: IProcessKeys): { votePackage: string, keyIndexes?: number[] } {
     if (!Array.isArray(votes)) throw new Error("Invalid votes")
-    else if (encryptionKeys) {
-        if (!Array.isArray(encryptionKeys.encryptionPublicKeys) || !encryptionKeys.encryptionPublicKeys.every(
+    else if (processKeys) {
+        if (!Array.isArray(processKeys.encryptionPublicKeys) || !processKeys.encryptionPublicKeys.every(
             item => item && typeof item.idx == "number" && typeof item.key == "string" && item.key.match(/^(0x)?[0-9a-zA-Z]+$/))) {
             throw new Error("Some encryption public keys are not valid")
         }
@@ -605,14 +605,14 @@ export function packagePollVote(votes: number[], encryptionKeys?: IProcessKeys):
     }
     const strPayload = JSON.stringify(payload)
 
-    if (encryptionKeys) {
+    if (processKeys && processKeys.encryptionPublicKeys && processKeys.encryptionPublicKeys.length) {
         // Sort key indexes
-        encryptionKeys.encryptionPublicKeys.sort((a, b) => a.idx - b.idx)
+        processKeys.encryptionPublicKeys.sort((a, b) => a.idx - b.idx)
 
         const publicKeys: string[] = []
         const publicKeysIdx: number[] = []
         // NOTE: Using all keys by now
-        encryptionKeys.encryptionPublicKeys.forEach(entry => {
+        processKeys.encryptionPublicKeys.forEach(entry => {
             publicKeys.push(entry.key.replace(/^0x/, ""))
             publicKeysIdx.push(entry.idx)
         })
