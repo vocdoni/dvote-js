@@ -12,7 +12,7 @@ const config = getConfig()
 import { API, Network, Wrappers, Models, EtherUtils, JsonSign, ProcessMetadata } from "../dist"
 import { NetworkID } from "../dist/net/gateway-bootnodes"
 import { GatewayPool } from "../dist/net/gateway-pool"
-import { getProcessKeys, cancelProcess } from "../dist/api/vote"
+import { getProcessKeys, cancelProcess, isCanceled } from "../dist/api/vote"
 
 const { File, Entity, Census, Vote } = API
 // const { Bootnodes, Gateways, Contracts } = Network
@@ -518,16 +518,18 @@ async function waitUntilStarted() {
   assert(processList.length > 0)
 
   let lastId = processList[processList.length - 1]
-  while (!processList.includes(processId) && processList.length > 1) {
+  const trimProcId = processId.replace(/^0x/, "")
+  while (!processList.some(v => v == trimProcId) && processList.length > 1) {
     processList = await getProcessList(entityId, pool, lastId)
     if (processList.length) {
       if (lastId == processList[processList.length - 1]) break
       lastId = processList[processList.length - 1]
     }
   }
-  assert(processList.includes(processId))
+  assert(processList.some(v => v == trimProcId))
 }
 
+// waits until the Vochain has mined the given block
 async function waitUntilBlock(block: number) {
   assert(typeof block == "number")
 
@@ -546,6 +548,32 @@ async function waitUntilBlock(block: number) {
           lastBlock = currentBlock
         }
         if (currentBlock >= block) {
+          resolve()
+          clearInterval(interval)
+        }
+      }).catch(err => reject(err))
+    }, 2000)
+  })
+}
+
+// waits until the Ethereum block height has increased by N units
+async function waitEthBlocks(blocks: number) {
+  assert(typeof blocks == "number")
+
+  const targetBlock = blocks + await pool.activeGateway().getProvider().getBlockNumber()
+
+  console.log("Waiting for eth block", targetBlock)
+
+  // wait
+  await new Promise((resolve, reject) => {
+    let lastBlock: number
+    const interval = setInterval(() => {
+      pool.activeGateway().getProvider().getBlockNumber().then(currentBlock => {
+        if (currentBlock != lastBlock) {
+          console.log("Now at eth block", currentBlock)
+          lastBlock = currentBlock
+        }
+        if (currentBlock >= targetBlock) {
           resolve()
           clearInterval(interval)
         }
@@ -618,10 +646,15 @@ async function checkVoteResults() {
     const envelopeHeight = await getEnvelopeHeight(processId, pool)
     assert.equal(envelopeHeight, config.numAccounts)
 
-    console.log("Canceling/ending the process", processId)
-    await cancelProcess(processId, entityWallet, pool)
+    if (!(await isCanceled(processId, pool))) {
+      console.log("Canceling/ending the process", processId)
+      await cancelProcess(processId, entityWallet, pool)
+
+      console.log("Waiting a bit for the votes to be decrypted", processId)
+      await waitEthBlocks(18)
+    }
   }
-  console.log("Waiting a bit for the votes to be processed", processId)
+  console.log("Waiting a bit for the results to be ready", processId)
   const nextBlock = 3 + await getBlockHeight(pool)
   await waitUntilBlock(nextBlock)
 
