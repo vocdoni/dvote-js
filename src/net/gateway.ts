@@ -78,10 +78,10 @@ export class Gateway {
     public get publicKey() { return this.dvote.publicKey }
     public getSupportedApis() { return this.dvote.getSupportedApis() }
 
-    private entityResolverAddress() {return this.web3.entityResolverAddress}
-    private votingContractAddress() {return this.web3.votingContractAddress}
+    private entityResolverAddress() { return this.web3.entityResolverAddress }
+    private votingContractAddress() { return this.web3.votingContractAddress }
 
-    /** 
+    /**
      * Returns a new Gateway
      * @param dvoteGateway A DvoteGateway instance
      * @param web3Gateway A Web3Gateway instance
@@ -95,9 +95,9 @@ export class Gateway {
         this.web3 = web3Gateway
     }
 
-    /** 
+    /**
      * Returns a new random *connected*(Dvote-wise) Gateway that is
-     * 1. Attached to the required network 
+     * 1. Attached to the required network
      * 2. Servers the required APIs
      * @param networkId Either "homestead" (mainnet) or "goerli" (test)
      * @param requiredApis A list of the required APIs
@@ -109,7 +109,7 @@ export class Gateway {
                 let web3: Web3Gateway
                 for (let i = 0; i < gateways.web3.length; i++) {
                     let w3 = gateways.web3[i]
-                    const isUp = await w3.isUp().then(()=>true).catch(() =>false)
+                    const isUp = await w3.isUp().then(() => true).catch(() => false)
                     if (!isUp) continue
                     web3 = w3
                     break
@@ -128,9 +128,9 @@ export class Gateway {
             })
     }
 
-    /** 
+    /**
      * Returns a new random *connected*(Dvote-wise) Gateway that is
-     * 1. Attached to the required network 
+     * 1. Attached to the required network
      * 2. Included in the provided URI of bootnodes
      * 2. Servers the required APIs
      * @param networkId Either "homestead" (mainnet) or "goerli" (test)
@@ -144,7 +144,7 @@ export class Gateway {
                 let web3: Web3Gateway
                 for (let i = 0; i < gateways.web3.length; i++) {
                     let w3 = gateways.web3[i]
-                    const isUp = await w3.isUp().then(()=>true).catch(() =>false)
+                    const isUp = await w3.isUp().then(() => true).catch(() => false)
                     if (!isUp) continue
                     web3 = w3
                     break
@@ -163,7 +163,7 @@ export class Gateway {
             })
     }
 
-    /** 
+    /**
      * Returns a new *connected* Gateway that is instantiated based on the given parameters
      * @param gatewayOrParams Either a gatewayInfo object or an object with the defined parameters
      */
@@ -194,9 +194,9 @@ export class Gateway {
             })
     }
 
-    /** 
+    /**
      * Tries to connect both web3 and dvote gateways and returns true only if succeeds at both.
-     * @param requiredApis Possible required Dvote APIs 
+     * @param requiredApis Possible required Dvote APIs
      */
     public connect(requiredApis: DVoteSupportedApi[] = []): Promise<boolean> {
         // console.time("connect web3")
@@ -230,7 +230,8 @@ export class Gateway {
         return this.dvote.connect()
             .then(() => this.dvote.getGatewayInfo())
             .then(info => {
-                if (!requiredApis.length) return true
+                if (!info || !info.api) return false
+                else if (!requiredApis.length) return true
                 else if (requiredApis.length && requiredApis.every(api => info.api.includes(api)))
                     return true
                 return false
@@ -258,9 +259,9 @@ export class Gateway {
 
     // WEB3
     async connectWeb3(): Promise<boolean> {
-       return this.web3.isUp()
-       .then(() =>  true)
-       .catch(() => false)
+        return this.web3.isUp()
+            .then(() => true)
+            .catch(() => false)
     }
 
     public getProvider(): providers.Provider { return this.web3.getProvider() }
@@ -304,7 +305,7 @@ export class DVoteGateway {
     private connectionPromise: Promise<void> = null   // let sendMessage wait of the socket is still not open
     private requestList: WsRequest[] = []  // keep track of the active requests
 
-    /** 
+    /**
      * Returns a new DVote Gateway web socket client
      * @param gatewayOrParams Either a GatewayInfo instance or a JSON object with the service URI, the supported API's and the public key
      */
@@ -372,7 +373,7 @@ export class DVoteGateway {
             ws.onclose = () => reject(new Error("Connection closed"))
         })
 
-        // if the caller of this function awaits this promise, 
+        // if the caller of this function awaits this promise,
         // an eventual call in sendMessage will not need to
         return this.connectionPromise
     }
