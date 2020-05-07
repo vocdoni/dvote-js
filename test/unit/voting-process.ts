@@ -1,7 +1,7 @@
 // IMPORTANT NOTE:
 // Deep testing of on-chain edge cases, race conditions and security enforcement
 // is performed on the dvote-solidity repository specs
-// 
+//
 // https://github.com/vocdoni/dvote-solidity/tree/master/test
 
 import "mocha" // using @types/mocha
@@ -718,7 +718,7 @@ describe("Voting Process", () => {
             }).to.throw()
 
             expect(() => {
-                processMetadata.details.questions[0].voteOptions[0].value = "a"
+                processMetadata.details.questions[0].voteOptions[0].value = "a" as any
                 checkValidProcessMetadata(processMetadata)
             }).to.throw()
         })

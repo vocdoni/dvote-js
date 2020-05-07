@@ -32,14 +32,20 @@ export default class ProcessMetadataBuilder {
         details.description = { default: "Description" }
         details.questions.map(
             (question, index) => {
-                question.question = {default: "Question " +
-                                        String(index)}
-                question.description = {default: "Description " +
-                                        String(index)}
+                question.question = {
+                    default: "Question " +
+                        String(index)
+                }
+                question.description = {
+                    default: "Description " +
+                        String(index)
+                }
                 question.voteOptions.map(
                     (option, index) => {
-                        option.title = {default: "Yes " +
-                                        String(index)}
+                        option.title = {
+                            default: "Yes " +
+                                String(index)
+                        }
                     }
                 )
             }
@@ -89,7 +95,7 @@ export default class ProcessMetadataBuilder {
             (question, questionIndex) => {
                 question.voteOptions.map(
                     (voteOption, voteIndex) => {
-                        voteOption.value = String(voteIndex)
+                        voteOption.value = String(voteIndex) as any
                     })
             }
         )
@@ -112,11 +118,10 @@ export default class ProcessMetadataBuilder {
         const optionTemplate = JSON.stringify(options[0])
         for (let i = 2; i < size; i++) {
             const option = JSON.parse(optionTemplate)
-            option.title = {default: "Yes " + String(i)}
+            option.title = { default: "Yes " + String(i) }
             option.value = i
             options.push(option)
         }
         return this.metadata
     }
-
 }

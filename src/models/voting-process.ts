@@ -30,7 +30,7 @@ type MessagingUriString = string
  * Asserts that the given metadata is valid.
  * Throws an exception if it is not.
  */
-export function checkValidProcessMetadata(voteMetadata: ProcessMetadata) {
+export function checkValidProcessMetadata(voteMetadata: ProcessMetadata): ProcessMetadata {
     if (typeof voteMetadata != "object") throw new Error("The metadata must be a JSON object")
 
     const result = Joi.validate(voteMetadata, voteMetadataSchema, { convert: true })
@@ -125,7 +125,7 @@ export interface ProcessMetadata {
             description: MultiLanguage<string>,
             voteOptions: Array<{
                 title: MultiLanguage<string>,
-                value: number | string,
+                value: number
             }>,
         }>,
     }
