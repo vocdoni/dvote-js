@@ -471,8 +471,12 @@ export async function getResultsDigest(processId: string, gateway: IGateway | IG
 
 		// Encrypted?
 		let procKeys: IProcessKeys, retries: number
+		const currentBlock = await getBlockHeight(gateway)
 		switch (voteMetadata.type) {
 			case "encrypted-poll":
+				if (currentBlock < voteMetadata.startBlock) return { questions: [] }
+				else if ((currentBlock < (voteMetadata.startBlock + voteMetadata.numberOfBlocks)) && !(await isCanceled(processId, gateway))) return { questions: [] }
+
 				retries = 3
 				do {
 					procKeys = await getProcessKeys(processId, gateway)
