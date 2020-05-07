@@ -488,7 +488,7 @@ async function useVoteApi() {
     const votes = [1, 2, 1]
     const voteEnvelope = await packagePollEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet })
     // Encrypted version:
-    // const voteEnvelope = await packagePollEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet, encryptionPublicKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
+    // const voteEnvelope = await packagePollEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
 
     console.log("- Poll Envelope:", voteEnvelope)
 
@@ -542,7 +542,7 @@ async function submitVoteBatch() {
             const votes = [1]
             const voteEnvelope = await packagePollEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet })
             // Encrypted version:
-            // const voteEnvelope = await packagePollEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet, encryptionPublicKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
+            // const voteEnvelope = await packagePollEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
         
             console.log("- Submitting vote envelope")
             await submitEnvelope(voteEnvelope, dvoteGw)

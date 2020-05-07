@@ -12,7 +12,7 @@ const config = getConfig()
 import { API, Network, Wrappers, Models, EtherUtils, JsonSign, ProcessMetadata } from "../dist"
 import { NetworkID } from "../dist/net/gateway-bootnodes"
 import { GatewayPool } from "../dist/net/gateway-pool"
-import { getProcessKeys } from "../dist/api/vote"
+import { getProcessKeys, cancelProcess } from "../dist/api/vote"
 
 const { File, Entity, Census, Vote } = API
 // const { Bootnodes, Gateways, Contracts } = Network
@@ -489,7 +489,7 @@ async function launchNewVote(merkleRoot, merkleTreeUri) {
   processMetadataPre.numberOfBlocks = 60480
   console.log("Creating the process")
   processId = await createVotingProcess(processMetadataPre, entityWallet, pool)
-  
+
   console.log("Reading the process metadata back")
   const entityMetaPost = await getEntityMetadataByAddress(await entityWallet.getAddress(), pool)
 
@@ -510,37 +510,54 @@ async function waitUntilStarted() {
   assert(processId)
   assert(voteMetadata)
 
-  const currentBlock = await getBlockHeight(pool)
-  if (currentBlock >= voteMetadata.startBlock) return processId
+  await waitUntilBlock(voteMetadata.startBlock)
 
-  console.log("Waiting for block", voteMetadata.startBlock)
+  console.log("Checking that the Process ID is on the list")
+
+  let processList: string[] = await getProcessList(entityId, pool)
+  assert(processList.length > 0)
+
+  let lastId = processList[processList.length - 1]
+  while (!processList.includes(processId) && processList.length > 1) {
+    processList = await getProcessList(entityId, pool, lastId)
+    if (processList.length) {
+      if (lastId == processList[processList.length - 1]) break
+      lastId = processList[processList.length - 1]
+    }
+  }
+  assert(processList.includes(processId))
+}
+
+async function waitUntilBlock(block: number) {
+  assert(typeof block == "number")
+
+  const currentBlock = await getBlockHeight(pool)
+  if (currentBlock >= block) return processId
+
+  console.log("Waiting for block", block)
 
   // wait
   await new Promise((resolve, reject) => {
+    let lastBlock: number
     const interval = setInterval(() => {
       getBlockHeight(pool).then(currentBlock => {
-        console.log("Now at block", currentBlock)
-        if (currentBlock >= voteMetadata.startBlock) {
+        if (currentBlock != lastBlock) {
+          console.log("Now at block", currentBlock)
+          lastBlock = currentBlock
+        }
+        if (currentBlock >= block) {
           resolve()
           clearInterval(interval)
         }
-      })
-        .catch(err => reject(err))
-    }, 10000)
+      }).catch(err => reject(err))
+    }, 2000)
   })
-
-  console.log("Checking that the Process ID is on the list")
-  let processList: string[] = await getProcessList(entityId, pool)
-  while (processList.length > 0 && !processList.includes(processId)) {
-    processList = await getProcessList(entityId, pool, processList[processList.length - 1])
-  }
-  assert(processList.includes(processId))
 }
 
 async function launchVotes(accounts) {
   console.log("Launching votes")
 
-  const voteKeys = voteMetadata.type == "encrypted-poll" ? await getProcessKeys(processId, pool) : null
+  const processKeys = voteMetadata.type == "encrypted-poll" ? await getProcessKeys(processId, pool) : null
 
   await Bluebird.map(accounts, async (account, idx) => {
     process.stdout.write(`Starting [${idx}] ; `)
@@ -560,7 +577,7 @@ async function launchVotes(accounts) {
     const choices = getChoicesForVoter(idx)
 
     const voteEnvelope = voteMetadata.type == "encrypted-poll" ?
-      await packagePollEnvelope({ votes: choices, merkleProof, processId, walletOrSigner: wallet, encryptionKeys: voteKeys }) :
+      await packagePollEnvelope({ votes: choices, merkleProof, processId, walletOrSigner: wallet, processKeys }) :
       await packagePollEnvelope({ votes: choices, merkleProof, processId, walletOrSigner: wallet })
 
     process.stdout.write(`Sending [${idx}] ; `)
@@ -590,10 +607,23 @@ async function launchVotes(accounts) {
 }
 
 async function checkVoteResults() {
-  console.log("\nWaiting a bit for the votes to be processed")
-  await new Promise((resolve) => setTimeout(resolve, 1000 * 10 * 3)) // wait ~2 blocks
-
   assert.equal(typeof processId, "string")
+
+  if (config.encryptedVote) {
+    console.log("Waiting a bit for the votes to be received", processId)
+    const nextBlock = 2 + await getBlockHeight(pool)
+    await waitUntilBlock(nextBlock)
+
+    console.log("Fetching the number of votes for", processId)
+    const envelopeHeight = await getEnvelopeHeight(processId, pool)
+    assert.equal(envelopeHeight, config.numAccounts)
+
+    console.log("Canceling/ending the process", processId)
+    await cancelProcess(processId, entityWallet, pool)
+  }
+  console.log("Waiting a bit for the votes to be processed", processId)
+  const nextBlock = 3 + await getBlockHeight(pool)
+  await waitUntilBlock(nextBlock)
 
   console.log("Fetching the vote results for", processId)
   const resultsDigest = await getResultsDigest(processId, pool)
