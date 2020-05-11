@@ -48,19 +48,33 @@ export function discoverGateways(params: GatewayDiscoveryParameters): Promise<Ga
         return Promise.reject(new Error("Invalid parameters"))
 
     return getWorkingGateways(params)
-        .then(gateways => {
-            gateways.sort((a, b) => b.dvote.health - a.dvote.health)
+        .then(async gateways => {
+            gateways.sort((a, b) => {
+                if (!b && !a) return 0
+                else if (!b) return 1
+                else if (!a) return -1
+                else if (!b.dvote && !a.dvote) return 0
+                else if (!b.dvote) return 1
+                else if (!a.dvote) return -1
+                else if (isNaN(b.dvote.health) && isNaN(a.dvote.health)) return 0
+                else if (isNaN(b.dvote.health)) return 1
+                else if (isNaN(a.dvote.health)) return -1
+                return b.dvote.health - a.dvote.health
+            })
+
+            let candidate: { dvote: IDVoteGateway, web3: IWeb3Gateway }
+            for (let gw of gateways) {
+                if (await gw.dvote.isConnected()) {
+                    candidate = gw
+                    break
+                }
+            }
+            if (!candidate) throw new Error("No candidate gateway is connected after being selected")
 
             // Disconnect other gateways
-            gateways.slice(1).map(gw => gw.dvote.disconnect())
+            gateways.filter(gw => gw != candidate).map(gw => gw.dvote.disconnect())
 
-            return gateways[0].dvote.isConnected()
-                .then(async connected => {
-                    // TODO: What if [0] fails?
-                    if (!connected) await gateways[0].dvote.connect()
-
-                    return gateways.map(gw => new Gateway(gw.dvote, gw.web3))
-                })
+            return gateways.map(gw => new Gateway(gw.dvote, gw.web3))
         })
         .catch(error => {
             throw new Error(error && error.message || "Unable to find a working gateway")
@@ -89,7 +103,12 @@ async function getWorkingGateways(p: GatewayDiscoveryParameters): Promise<{ dvot
     const timeoutsToTest = [timeout, 2 * timeout, 4 * timeout, 16 * timeout]
 
     // Extract BootnodeData
-    const bootnodeData: GatewayBootNodes = bootnodesContentUri ? await fetchFromBootNode(bootnodesContentUri) : await fetchDefaultBootNode(networkId)
+    const bootnodeData: GatewayBootNodes = await new Promise<GatewayBootNodes>((resolve, reject) => {
+        setTimeout(() => reject(new Error("The request timed out")), GATEWAY_SELECTION_TIMEOUT / 2)
+
+        if (bootnodesContentUri) return fetchFromBootNode(bootnodesContentUri).then(res => resolve(res))
+        else return fetchDefaultBootNode(networkId).then(res => resolve(res))
+    }).catch(err => { throw new Error("Could not fetch the bootnode details") })
 
     // Randomizing DvoteGateways order
     bootnodeData[networkId].dvote = shuffle(bootnodeData[networkId].dvote)
@@ -158,7 +177,7 @@ async function testingLoop(totalDvoteNodes: IDVoteGateway[], totalWeb3Nodes: IWe
     }
 
     if (dvoteGateways.length == 0 || web3Gateways.length == 0)
-        if (race)
+        if (race) // retry without the race mode
             return testingLoop(totalDvoteNodes, totalWeb3Nodes, numberOfGateways, false, timeoutsToTest)
         else
             throw new Error("No working gateway found")
@@ -209,23 +228,21 @@ function testGateways(dvoteNodes: IDVoteGateway[], web3Nodes: IWeb3Gateway[], ti
     const checks: Promise<void>[] = []
 
     for (let node of dvoteNodes) {
-        checks.push(node.isUp(timeout)
-            .then(() => {
-                result.dvote.push(node)
-            })
+        let prom = node.isUp(timeout)
+            .then(() => { result.dvote.push(node) })
             .catch(error => {
                 // console.error("The error is:", error)
-            }))
+            })
+        checks.push(prom)
     }
 
     for (let node of web3Nodes) {
-        checks.push(node.isUp(timeout)
-            .then(() => {
-                result.web3.push(node)
-            })
+        let prom = node.isUp(timeout)
+            .then(() => { result.web3.push(node) })
             .catch(error => {
                 // console.error("The error is:", error)
-            }))
+            })
+        checks.push(prom)
     }
 
     return Promise.all(checks)
@@ -252,19 +269,14 @@ async function raceGateways(dvoteNodes: IDVoteGateway[], web3Nodes: IWeb3Gateway
 
     try {
         await Promise.race(dvoteNodes.map(node => node.isUp(timeout)
-            .then(() => {
-                result.dvote.push(node)
-            })
+            .then(() => { result.dvote.push(node) })
             .catch(error => new Promise(resolve => setTimeout(resolve, timeout)))
         ))
-
 
         await Promise.race(web3Nodes
             .map(node =>
                 node.isUp(timeout)
-                    .then(() => {
-                        result.web3.push(node)
-                    })
+                    .then(() => { result.web3.push(node) })
                     .catch(error => new Promise(resolve => setTimeout(resolve, timeout)))
             ))
 

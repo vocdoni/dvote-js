@@ -1,6 +1,6 @@
 {
   "name": "dvote-js",
-  "version": "0.15.5",
+  "version": "0.15.6",
   "description": "Javascript/Typescript library to interact with Vocdoni voting processes",
   "main": "dist/index",
   "types": "dist/index",

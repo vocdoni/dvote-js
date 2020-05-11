@@ -32,11 +32,11 @@ export class GatewayPool {
     }
 
     // factory
-    static discover(p: GatewayDiscoveryParameters): Promise<GatewayPool> {
+    static discover(params: GatewayDiscoveryParameters): Promise<GatewayPool> {
         let pool: GatewayPool
-        return discoverGateways(p)
+        return discoverGateways(params)
             .then((bestNodes: Gateway[]) => {
-                pool = new GatewayPool(bestNodes, p)
+                pool = new GatewayPool(bestNodes, params)
 
                 return pool.connect()
             }).then(() => {
