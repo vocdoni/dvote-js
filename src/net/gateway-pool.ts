@@ -64,11 +64,12 @@ export class GatewayPool {
      * Disconnects the currently active gateway and connects using the next one
      */
     public shiftGateway(): Promise<boolean> {
+        this.disconnect()
+        console.log("Disconected from Gateway: ", this.pool[0].publicKey)
+
         if (this.errorCount > this.pool.length) {
             return this.refresh()
         }
-        this.disconnect()
-        console.log("Disconected from Gateway: ", this.pool[0].publicKey)
 
         this.pool.push(this.pool.shift())
         return this.connect()

@@ -44,12 +44,12 @@ export function checkValidEntityMetadata(entityMetadata: EntityMetadata) {
 
 // Like { en: Joi.string(), fr: Joi.string, it: Joi.string, ... }
 const strLangCodes = Object.keys(by639_1).reduce((prev, cur) => {
-    prev[cur] = Joi.string()
+    prev[cur] = Joi.string().allow("").optional()
     return prev
 }, {})
 
 const multiLanguageStringKeys = {
-    default: Joi.string().optional(),
+    default: Joi.string().allow("").optional(),
     ...strLangCodes
 }
 
@@ -170,7 +170,7 @@ export type EntityCustomAction = EntityBaseAction & (EntityRegisterAction | Enti
 interface EntityBaseAction {
     // type: string => overridden by subtypes
 
-    // A name to identify this action when querying for visibility 
+    // A name to identify this action when querying for visibility
     // and sending requests
     actionKey: string,
 

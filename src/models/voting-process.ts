@@ -44,13 +44,13 @@ export function checkValidProcessMetadata(voteMetadata: ProcessMetadata): Proces
 
 // Like { en: Joi.string(), fr: Joi.string, it: Joi.string, ... }
 const strLangCodes = Object.keys(by639_1).reduce((prev, cur) => {
-    prev[cur] = Joi.string()
+    prev[cur] = Joi.string().allow("").optional()
     return prev
 }, {})
 
 const multiLanguageStringKeys = {
     ...strLangCodes,
-    default: Joi.string().optional()
+    default: Joi.string().allow("").optional()
 }
 
 // MAIN ENTITY SCHEMA

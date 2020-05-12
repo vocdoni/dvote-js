@@ -381,6 +381,7 @@ export class DVoteGateway {
     /** Close the current connection */
     public disconnect() {
         if (!this.webSocket) return
+        else if (typeof this.webSocket.terminate == "function") this.webSocket.terminate()
         else if (typeof this.webSocket.close == "function") this.webSocket.close()
         this.webSocket = null
         // this.uri = null  // Why???
@@ -393,8 +394,7 @@ export class DVoteGateway {
         if (this.connectionPromise) await this.connectionPromise
 
         return this.webSocket != null &&
-            this.webSocket.readyState !== this.webSocket.CLOSING &&
-            this.webSocket.readyState !== this.webSocket.CLOSED &&
+            this.webSocket.readyState === this.webSocket.OPEN &&
             this.uri != null
     }
 
