@@ -189,8 +189,6 @@ async function testingLoop(totalDvoteNodes: IDVoteGateway[], totalWeb3Nodes: IWe
 
     // TODO: Clean console.logs
     console.error("Could not find any active gateways")
-    console.error({ totalDvoteNodes, totalWeb3Nodes })
-    console.error("Final candidates")
     console.error({ dvoteGateways, web3Gateways })
 
     throw new Error("No working gateways found out of " + totalDvoteNodes.length + " and " + totalWeb3Nodes.length)
@@ -240,23 +238,23 @@ function testGateways(dvoteNodes: IDVoteGateway[], web3Nodes: IWeb3Gateway[], ti
 
     const checks: Promise<void>[] = []
 
-    for (let dvoteGw of dvoteNodes) {
+    dvoteNodes.forEach((dvoteGw) => {
         let prom = dvoteGw.isUp(timeout)
             .then(() => { result.dvote.push(dvoteGw) })
             .catch(error => {
-                // console.error("The error is:", error)
+                console.error("Is up failed:", error)
             })
         checks.push(prom)
-    }
+    })
 
-    for (let web3Gw of web3Nodes) {
+    web3Nodes.forEach(web3Gw => {
         let prom = web3Gw.isUp(timeout)
             .then(() => { result.web3.push(web3Gw) })
             .catch(error => {
-                // console.error("The error is:", error)
+                console.error("Is up failed:", error)
             })
         checks.push(prom)
-    }
+    })
 
     return Promise.all(checks)
         .then(() => result)
