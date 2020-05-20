@@ -9,7 +9,7 @@ import { Contract, ContractFactory, providers, utils, Wallet, Signer } from "eth
 import { providerFromUri } from "../util/providers"
 import GatewayInfo from "../wrappers/gateway-info"
 import { DVoteSupportedApi, WsGatewayMethod, fileApiMethods, voteApiMethods, censusApiMethods, dvoteGatewayApiMethods } from "../models/gateway"
-import { SIGNATURE_TIMESTAMP_TOLERANCE, GATEWAY_SELECTION_TIMEOUT } from "../constants"
+import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
 import { signJsonBody, isSignatureValid } from "../util/json-sign"
 import { getEntityResolverInstance, getVotingProcessInstance, IVotingProcessContract, IEntityResolverContract } from "../net/contracts"
 import axios from "axios"
@@ -431,7 +431,7 @@ export class DVoteGateway {
         if ((fileApiMethods.indexOf(requestBody.method as any) >= 0 && this.supportedApis.indexOf("file") < 0) ||
             (voteApiMethods.indexOf(requestBody.method as any) >= 0 && this.supportedApis.indexOf("vote") < 0) ||
             (censusApiMethods.indexOf(requestBody.method as any) >= 0 && this.supportedApis.indexOf("census") < 0)
-        ) throw new Error("The method is not available in the Gateway's supported API's")
+        ) return Promise.reject(new Error("The method is not available in the Gateway's supported API's"))
 
         // Append the current timestamp to the body
         if (typeof requestBody.timestamp == "undefined") {
@@ -467,30 +467,30 @@ export class DVoteGateway {
 
         const msg = (await reqPromise) as GatewayResponse
 
-        if (!msg.response) throw new Error("Invalid response message")
+        if (!msg.response) return Promise.reject(new Error("Invalid response message"))
 
         const incomingReqId = msg.response.request || null
         if (incomingReqId !== requestId) {
-            throw new Error("The signed request ID does not match the expected one")
+            return Promise.reject(new Error("The signed request ID does not match the expected one"))
         }
 
         // Check the signature of the response
         if (this.publicKey) {
-            const timestamp = msg.response.timestamp || null
-
-            const from = Math.floor(Date.now() / 1000) - SIGNATURE_TIMESTAMP_TOLERANCE
-            const until = Math.floor(Date.now() / 1000) + SIGNATURE_TIMESTAMP_TOLERANCE
-            if (typeof timestamp != "number" || timestamp < from || timestamp > until) {
-                throw new Error("The response does not provide a valid timestamp")
-            }
-            else if (!isSignatureValid(msg.signature, this.publicKey, msg.response)) {
-                throw new Error("The signature of the response does not match the expected one")
+            // const timestamp = msg.response.timestamp || null
+            //
+            // const from = Math.floor(Date.now() / 1000) - SIGNATURE_TIMESTAMP_TOLERANCE
+            // const until = Math.floor(Date.now() / 1000) + SIGNATURE_TIMESTAMP_TOLERANCE
+            // if (typeof timestamp != "number" || timestamp < from || timestamp > until) {
+            //     return Promise.reject(new Error("The response does not provide a valid timestamp"))
+            // }
+            if (!isSignatureValid(msg.signature, this.publicKey, msg.response)) {
+                return Promise.reject(new Error("The signature of the response does not match the expected one"))
             }
         }
 
         if (!msg.response.ok) {
-            if (msg.response.message) throw new Error(msg.response.message)
-            else throw new Error("There was an error while handling the request at the gateway")
+            if (msg.response.message) return Promise.reject(new Error(msg.response.message))
+            else return Promise.reject(new Error("There was an error while handling the request at the gateway"))
         }
 
         return msg.response
@@ -531,11 +531,11 @@ export class DVoteGateway {
      * Checks the health of the current Gateway by calling isUp
      * @returns the necessary parameters to create a GatewayInfo object
      */
-    public async isUp(timeout: number = GATEWAY_SELECTION_TIMEOUT): Promise<void> {
+    public isUp(timeout: number = GATEWAY_SELECTION_TIMEOUT): Promise<void> {
         const uri = parseURL(this.uri)
 
         if (uri.host.length === 0) {
-            throw new Error("Invalid Gateway URL")
+            return Promise.reject(new Error("Invalid Gateway URL"))
         }
         return new Promise((resolve, reject) => {
             // Check ping and then status
