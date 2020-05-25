@@ -11,7 +11,6 @@ export const ProcessMetadataTemplate: ProcessMetadata = {
     },
     details: {
         entityId: "", // 0x1234
-        encryptionPublicKey: "", // 12345678...
         title: {
             default: "" // Universal Basic Income
         },

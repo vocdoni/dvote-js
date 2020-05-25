@@ -69,7 +69,6 @@ const voteMetadataSchema = Joi.object().keys({
     }),
     details: {
         entityId: Joi.string().regex(/^0x[a-z0-9]+$/).required(),
-        encryptionPublicKey: Joi.string().required(),
         title: Joi.object().keys(multiLanguageStringKeys).required(),
         description: Joi.object().keys(multiLanguageStringKeys).required(),
         headerImage: Joi.string().required(),
@@ -114,7 +113,6 @@ export interface ProcessMetadata {
     },
     details: {
         entityId: HexString,
-        encryptionPublicKey: HexString,
         title: MultiLanguage<string>,
         description: MultiLanguage<string>,
         headerImage: ContentUriString,

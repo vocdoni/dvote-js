@@ -473,7 +473,6 @@ async function launchNewVote(merkleRoot, merkleTreeUri) {
   processMetadataPre.census.merkleRoot = merkleRoot
   processMetadataPre.census.merkleTree = merkleTreeUri
   processMetadataPre.details.entityId = entityId
-  processMetadataPre.details.encryptionPublicKey = "0x0"
   processMetadataPre.details.title.default = "E2E process"
   processMetadataPre.details.description.default = "E2E process"
   processMetadataPre.details.questions[0].question.default = "Should 1+1 equal 2?"

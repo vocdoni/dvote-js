@@ -27,7 +27,6 @@ export default class ProcessMetadataBuilder {
         this.metadata.census.merkleTree = DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI
         const details = this.metadata.details
         details.entityId = "0x180dd5765d9f7ecef810b565a2e5bd14a3ccd536c442b3de74867df552855e85"
-        details.encryptionPublicKey = "0x04d811f8ade566618a667715c637a7f3019f46ae0ffc8b2ec3b16b1f72999e2e2f9e9b50c78ca34175d78942de88798cce5d53569f96579a95ec9bab17c0131d4f"
         details.title = { default: "My Entity" }
         details.description = { default: "Description" }
         details.questions.map(
