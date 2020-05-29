@@ -11,6 +11,7 @@ import { addCompletionHooks } from "../mocha-hooks"
 import { getAccounts, increaseTimestamp, TestAccount } from "../testing-eth-utils"
 import { VotingProcessContractMethods } from "dvote-solidity"
 const fs = require("fs")
+import { Buffer } from "buffer/"
 
 import { deployVotingProcessContract, getVotingProcessInstance } from "../../src/net/contracts"
 import { getPollNullifier, packagePollEnvelope, PollVotePackage } from "../../src/api/vote"
@@ -655,13 +656,16 @@ describe("Voting Process", () => {
                 expect(envelope.votePackage).to.be.a("string")
                 expect(Buffer.from(envelope.votePackage, "base64").length).to.be.greaterThan(0)
 
-                let decrypted: string
+                let decryptedBuff: Buffer
                 // decrypt in reverse order
                 for (let i = encryptionKeys.length - 1; i >= 0; i--) {
-                    if (i < encryptionKeys.length - 1) decrypted = Asymmetric.decryptString(decrypted, encryptionKeys[i].privateKey)
-                    else decrypted = Asymmetric.decryptString(envelope.votePackage, encryptionKeys[i].privateKey)
+                    if (i < encryptionKeys.length - 1) {
+                        expect(decryptedBuff).to.be.ok
+                        decryptedBuff = Asymmetric.decryptRaw(decryptedBuff, encryptionKeys[i].privateKey)
+                    }
+                    else decryptedBuff = Asymmetric.decryptRaw(Buffer.from(envelope.votePackage, "base64"), encryptionKeys[i].privateKey)
                 }
-                const pkg: PollVotePackage = JSON.parse(decrypted)
+                const pkg: PollVotePackage = JSON.parse(decryptedBuff.toString())
                 expect(pkg.type).to.eq("poll-vote")
                 expect(pkg.votes).to.deep.equal(item.votes)
             }

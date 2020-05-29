@@ -642,11 +642,12 @@ export function packagePollVote(votes: number[], processKeys?: IProcessKeys): { 
             publicKeysIdx.push(entry.idx)
         })
 
-        let result: string
+        let buff: Buffer
         for (let i = 0; i < publicKeys.length; i++) {
-            if (i > 0) result = Asymmetric.encryptString(result, publicKeys[i]) // reencrypt result
-            else result = Asymmetric.encryptString(strPayload, publicKeys[i]) // encrypt the first
+            if (i > 0) buff = Asymmetric.encryptRaw(buff, publicKeys[i]) // reencrypt buff
+            else buff = Asymmetric.encryptRaw(Buffer.from(strPayload), publicKeys[i]) // encrypt the first
         }
+        const result = buff.toString("base64")
         return { votePackage: result, keyIndexes: publicKeysIdx }
     }
     else {
