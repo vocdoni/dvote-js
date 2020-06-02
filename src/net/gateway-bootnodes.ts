@@ -83,7 +83,7 @@ export function fetchDefaultBootNode(networkId: NetworkID): Promise<GatewayBootN
  * @returns A GatewayBootnodes object that represents the ata derrived from a BootNode Content URI.
  */
 export function fetchFromBootNode(bootnodesContentUri: string | ContentURI): Promise<GatewayBootNodes> {
-    if (!bootnodesContentUri) throw new Error("Invalid bootNodeUri")
+    if (!bootnodesContentUri) return Promise.reject(new Error("Invalid bootNodeUri"))
 
     return fetchFileString(bootnodesContentUri).then(strResult => {
         const result = JSON.parse(strResult)

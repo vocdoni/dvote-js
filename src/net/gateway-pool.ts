@@ -12,6 +12,8 @@ const GATEWAY_UPDATE_ERRORS = [
     "read ECONNRESET",
     "censusId not valid or not found"
 ]
+const MAX_POOL_REFRESH = 10
+
 export type IGatewayPool = InstanceType<typeof GatewayPool>
 // GLOBAL
 
@@ -22,6 +24,7 @@ export class GatewayPool {
     private pool: Gateway[] = []
     private params: GatewayDiscoveryParameters = null
     private errorCount: number = 0
+    private refreshPoolCount: number = 0
     public supportedApis() { return this.activeGateway().getSupportedApis() }
 
     constructor(newPool: Gateway[], p: GatewayDiscoveryParameters) {
@@ -47,6 +50,8 @@ export class GatewayPool {
     }
 
     public refresh(): Promise<boolean> {
+        this.refreshPoolCount += 1
+        if (this.refreshPoolCount > MAX_POOL_REFRESH) return Promise.reject(new Error("No gateway currently available"))
         console.log("Refreshing Gateway Pool")
         return discoverGateways(this.params)
             .then((bestNodes: Gateway[]) => {
@@ -124,6 +129,7 @@ export class GatewayPool {
         return this.activeGateway().sendMessage(requestBody, wallet, timeout) // => capture time out exceptions
             .then(response => {
                 this.errorCount = 0
+                this.refreshPoolCount = 0
                 return response
             })
             .catch((err: Error) => {
