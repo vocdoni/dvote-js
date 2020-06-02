@@ -6,14 +6,12 @@
 import {
     HexString,
     ContractAddress,
-    // PublicKey,
-    // PrivateKey,
     EntityId,
     ProcessId,
     MultiLanguage,
     URI
 } from "./common"
-import * as Joi from "joi-browser"
+import { object, array, string } from "yup"
 import { by639_1 } from 'iso-language-codes'
 export { EntityMetadataTemplate } from "./templates/entity"
 
@@ -33,80 +31,83 @@ type MessagingUriString = string
 export function checkValidEntityMetadata(entityMetadata: EntityMetadata) {
     if (typeof entityMetadata != "object") throw new Error("The metadata must be a JSON object")
 
-    const result = Joi.validate(entityMetadata, entityMetadataSchema)
-    if (!result || result.error) {
-        throw new Error("Metadata validation error: " + result.error.toString())
+    try {
+        entityMetadataSchema.validateSync(entityMetadata)
+        return entityMetadataSchema.cast(entityMetadata) as EntityMetadata
     }
-    return result.value
+    catch (err) {
+        if (Array.isArray(err.errors)) throw new Error("ValidationError: " + err.errors.join(", "))
+        throw err
+    }
 }
 
 // INTERMEDIATE SCHEMAS
 
-// Like { en: Joi.string(), fr: Joi.string, it: Joi.string, ... }
+// Like { en: string(), fr: string, it: string, ... }
 const strLangCodes = Object.keys(by639_1).reduce((prev, cur) => {
-    prev[cur] = Joi.string().allow("").optional()
+    prev[cur] = string().optional()
     return prev
 }, {})
 
 const multiLanguageStringKeys = {
-    default: Joi.string().allow("").optional(),
+    default: string().optional(),
     ...strLangCodes
 }
 
-const entityReferenceSchema = Joi.object().keys({
-    entityId: Joi.string().regex(/^0x[a-z0-9]+$/).required(),
-    entryPoints: Joi.array().items(Joi.string().required())
+const entityReferenceSchema = object().shape({
+    entityId: string().matches(/^0x[a-z0-9]+$/).required(),
+    entryPoints: array().of(string().required())
 })
 
 // MAIN ENTITY SCHEMA
 
-const entityMetadataSchema = Joi.object().keys({
-    version: Joi.string().regex(/^[0-9]\.[0-9]$/).required(),
+const entityMetadataSchema = object().shape({
+    version: string().matches(/^[0-9]\.[0-9]$/).required(),
 
-    languages: Joi.array().items(Joi.string().regex(/^([a-z]{2}|default)$/)).required(), // TODO: remove default
-    name: Joi.object().keys(multiLanguageStringKeys).required(),
-    description: Joi.object().keys(multiLanguageStringKeys).required(),
+    languages: array().of(string().matches(/^([a-z]{2}|default)$/)).required(), // TODO: remove default
+    name: object().shape(multiLanguageStringKeys).required(),
+    description: object().shape(multiLanguageStringKeys).required(),
 
-    votingProcesses: Joi.object().keys({
-        active: Joi.array().items(Joi.string().regex(/^0x[a-z0-9]+$/)).required(),
-        ended: Joi.array().items(Joi.string().regex(/^0x[a-z0-9]+$/)).required()
+    votingProcesses: object().shape({
+        active: array().of(string().matches(/^0x[a-z0-9]+$/)).required(),
+        ended: array().of(string().matches(/^0x[a-z0-9]+$/)).required()
     }).required(),
 
-    newsFeed: Joi.object().keys(multiLanguageStringKeys).required(),
-    media: Joi.object().keys({
-        avatar: Joi.string().required(),
-        header: Joi.string().required(),
+    newsFeed: object().shape(multiLanguageStringKeys).required(),
+    media: object().shape({
+        avatar: string().required(),
+        header: string().required(),
     }),
 
-    actions: Joi.array().items(
-        Joi.object().keys({
+    actions: array().of(
+        object().shape({
             // Common
-            type: Joi.string().regex(/^(register|browser|submitMedia)$/),
-            actionKey: Joi.string().required(),
-            name: Joi.object().keys(multiLanguageStringKeys).required(),
-            visible: Joi.string().required(),
+            type: string().matches(/^(register|browser|submitMedia)$/),
+            actionKey: string().required(),
+            name: object().shape(multiLanguageStringKeys).required(),
+            visible: string().required(),
 
             // Optional
-            url: Joi.string().optional(),
-            imageSources: Joi.array().items(
-                Joi.object().keys({
-                    type: Joi.string().regex(/^(front-camera|back-camera|gallery)$/).required(),
-                    name: Joi.string().required(), // Arbitrary name to identify the data when the JSON is posted
-                    orientation: Joi.string().regex(/^(portrait|landscape)$/).optional(), // Required when type != "gallery"
-                    overlay: Joi.string().regex(/^(face|id-card-front|id-card-back)$/).optional(), // Required when type != "gallery"
-                    caption: Joi.object().keys(multiLanguageStringKeys).optional()   // Required when type != "gallery"
+            url: string().optional(),
+            imageSources: array().of(
+                object().shape({
+                    type: string().matches(/^(front-camera|back-camera|gallery)$/).required(),
+                    name: string().required(), // Arbitrary name to identify the data when the JSON is posted
+                    orientation: string().matches(/^(portrait|landscape)$/).optional(), // Required when type != "gallery"
+                    overlay: string().matches(/^(face|id-card-front|id-card-back)$/).optional(), // Required when type != "gallery"
+                    caption: object().shape(multiLanguageStringKeys).optional()   // Required when type != "gallery"
                 })
             ).optional(),
         })
     ).required(),
 
-    bootEntities: Joi.array().items(entityReferenceSchema).required(),
+    bootEntities: array().of(entityReferenceSchema).required(),
 
-    fallbackBootNodeEntities: Joi.array().items(entityReferenceSchema).required(),
+    fallbackBootNodeEntities: array().of(entityReferenceSchema).required(),
 
-    trustedEntities: Joi.array().items(entityReferenceSchema).required(),
+    trustedEntities: array().of(entityReferenceSchema).required(),
 
-    censusServiceManagedEntities: Joi.array().items(entityReferenceSchema).required()
+    censusServiceManagedEntities: array().of(entityReferenceSchema).required()
 }).unknown(true) // allow deprecated or unknown fields beyond the required ones
 
 

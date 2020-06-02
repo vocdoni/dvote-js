@@ -32,7 +32,7 @@ export function getAccounts() {
 
 // UTILITIES
 
-export function increaseTimestamp(seconds = 10): Promise<number> {
+export function incrementTimestamp(seconds = 10): Promise<number> {
     return localProvider.send('evm_increaseTime', [seconds]).then(() => {
         return localProvider.send("evm_mine", [])
     }).then(() => {

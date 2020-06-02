@@ -20,7 +20,7 @@ npm install dvote-js ethers
 The library depends on [Ethers.js](https://docs.ethers.io/ethers.js/html/) providers, wallets and signers. Ethers.js is fully compatible with Web3.
 
 - To interact with the blockchain, we need a [Provider](https://docs.ethers.io/ethers.js/html/api-providers.html).
-- In order to send transactions we need a [Wallet](https://docs.ethers.io/ethers.js/html/api-wallet.html) (with a private key) or a [Signer](https://docs.ethers.io/ethers.js/html/api-wallet.html#signer-api) (like Metamask) to sign them. 
+- In order to send transactions we need a [Wallet](https://docs.ethers.io/ethers.js/html/api-wallet.html) (with a private key) or a [Signer](https://docs.ethers.io/ethers.js/html/api-wallet.html#signer-api) (like Metamask) to sign them.
 
 ### File API
 
@@ -98,7 +98,7 @@ const { Gateway } = Gateways
 const { getRandomGateway } = Discovery
 const { Wallet, providers } = require("ethers")
 
-const MNEMONIC = "..." 
+const MNEMONIC = "..."
 
 // Use a random GW from Vocdoni at "goerli" network
 const gw = await Gateway.randomFromDefault("goerli")
@@ -146,7 +146,7 @@ const GATEWAY_DVOTE_URI = "wss://host:443/dvote"
 const GATEWAY_SUPPORTED_APIS = ["file", "vote", "census"]
 const GATEWAY_PUBLIC_KEY = "03..."
 const GATEWAY_WEB3_PROVIDER_URI = "https://rpc.slock.it/goerli"
-const MNEMONIC = "..." 
+const MNEMONIC = "..."
 
 const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
 const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
@@ -184,7 +184,7 @@ const { addFile, fetchFileString } = File
 const { Wallet, providers } = require("ethers")
 
 const GATEWAY_WEB3_PROVIDER_URI = "https://rpc.slock.it/goerli"
-const MNEMONIC = "..." 
+const MNEMONIC = "..."
 
 const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
 const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
@@ -279,7 +279,7 @@ Mainly used to query the metadata of a voting process within the contract instan
 
 ### Gateway
 
-Provides utility functions to fetch data from decentralized filesystems, sending messages and adding files to IPFS. 
+Provides utility functions to fetch data from decentralized filesystems, sending messages and adding files to IPFS.
 
 ## Example
 
@@ -317,11 +317,11 @@ Note: This is still under heavy development.
 
 ### Mocha
 
-When adding new test suites, don't forget to add a call to `addCompletionHooks()`. Otherwise, the NodeJS process will keep up indefinitely when testing. 
+When adding new test suites, don't forget to add a call to `addCompletionHooks()`. Otherwise, the NodeJS process will keep up indefinitely when testing.
 
 ### Simulating future timestamps
 
-If you need a transaction to happen in a future timestamp, use `test/testing-eth-utils > increaseTimestamp()` instead of forcing your code to wait. 
+If you need a transaction to happen in a future timestamp, use `test/testing-eth-utils > incrementTimestamp()` instead of forcing your code to wait.
 
 Be aware that from this point, if you use `Date.now()` on the Javascript side, values will not match the timestamp of the blockchain. So make sure to call `getBlockNumber()` and `getBlock(<num>) > timestamp`.
 

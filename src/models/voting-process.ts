@@ -5,22 +5,16 @@
 
 import {
     HexString,
-    // ContractAddress,
-    // PublicKey,
-    // PrivateKey,
-    // ProcessId,
     MultiLanguage,
-    // URI
+    ContentUriString,
+    ContentHashedUriString
 } from "./common"
 import { ProcessType } from "dvote-solidity"
-import * as Joi from "joi-browser"
+import { object, array, string, number } from "yup"
 import { by639_1 } from 'iso-language-codes'
+
 export { ProcessMetadataTemplate } from "./templates/voting-process"
 
-// LOCAL TYPE ALIASES
-type ContentUriString = string
-type ContentHashedUriString = string
-type MessagingUriString = string
 
 ///////////////////////////////////////////////////////////////////////////////
 // VALIDATION
@@ -33,24 +27,27 @@ type MessagingUriString = string
 export function checkValidProcessMetadata(voteMetadata: ProcessMetadata): ProcessMetadata {
     if (typeof voteMetadata != "object") throw new Error("The metadata must be a JSON object")
 
-    const result = Joi.validate(voteMetadata, voteMetadataSchema, { convert: true })
-    if (!result || result.error) {
-        throw new Error("Metadata validation error: " + result.error.toString())
+    try {
+        voteMetadataSchema.validateSync(voteMetadata)
+        return voteMetadataSchema.cast(voteMetadata) as ProcessMetadata
     }
-    return result.value
+    catch (err) {
+        if (Array.isArray(err.errors)) throw new Error("ValidationError: " + err.errors.join(", "))
+        throw err
+    }
 }
 
 // INTERMEDIATE SCHEMAS
 
-// Like { en: Joi.string(), fr: Joi.string, it: Joi.string, ... }
+// Like { en: string(), fr: string, it: string, ... }
 const strLangCodes = Object.keys(by639_1).reduce((prev, cur) => {
-    prev[cur] = Joi.string().allow("").optional()
+    prev[cur] = string().optional()
     return prev
 }, {})
 
 const multiLanguageStringKeys = {
     ...strLangCodes,
-    default: Joi.string().allow("").optional()
+    default: string().optional()
 }
 
 // MAIN ENTITY SCHEMA
@@ -58,35 +55,35 @@ const multiLanguageStringKeys = {
 const processTypes: ProcessType[] = ["snark-vote", "poll-vote", "encrypted-poll", "petition-sign"]
 const questionTypes = ["single-choice"]
 
-const voteMetadataSchema = Joi.object().keys({
-    version: Joi.string().regex(/^[0-9]\.[0-9]$/).required(),
-    type: Joi.string().valid(...processTypes).required(),
-    startBlock: Joi.number().integer().min(0).required(),
-    numberOfBlocks: Joi.number().integer().min(0).required(),
-    census: Joi.object().keys({
-        merkleRoot: Joi.string().regex(/^0x[a-z0-9]+$/).required(),
-        merkleTree: Joi.string().required()
+const voteMetadataSchema = object().shape({
+    version: string().matches(/^[0-9]\.[0-9]$/).required(),
+    type: number().oneOf(processTypes).required(),
+    startBlock: number().integer().min(0).required(),
+    numberOfBlocks: number().integer().min(0).required(),
+    census: object().shape({
+        merkleRoot: string().matches(/^0x[a-z0-9]+$/).required(),
+        merkleTree: string().required()
     }),
-    details: {
-        entityId: Joi.string().regex(/^0x[a-z0-9]+$/).required(),
-        title: Joi.object().keys(multiLanguageStringKeys).required(),
-        description: Joi.object().keys(multiLanguageStringKeys).required(),
-        headerImage: Joi.string().required(),
-        streamUrl: Joi.string().allow("").optional(),
-        questions: Joi.array().items(
-            Joi.object().keys({
-                type: Joi.string().valid(...questionTypes).required(),
-                question: Joi.object().keys(multiLanguageStringKeys).required(),
-                description: Joi.object().keys(multiLanguageStringKeys).required(),
-                voteOptions: Joi.array().items(
-                    Joi.object().keys({
-                        title: Joi.object().keys(multiLanguageStringKeys).required(),
-                        value: Joi.number().integer().required(),
+    details: object().shape({
+        entityId: string().matches(/^0x[a-z0-9]+$/).required(),
+        title: object().shape(multiLanguageStringKeys).required(),
+        description: object().shape(multiLanguageStringKeys).required(),
+        headerImage: string().required(),
+        streamUrl: string().optional(),
+        questions: array().of(
+            object().shape({
+                type: string().oneOf(questionTypes).required(),
+                question: object().shape(multiLanguageStringKeys).optional(),
+                description: object().shape(multiLanguageStringKeys).required(),
+                voteOptions: array().of(
+                    object().shape({
+                        title: object().shape(multiLanguageStringKeys).required(),
+                        value: number().integer().required(),
                     })
                 ).required()
             })
         ).required()
-    }
+    })
 }).unknown(true) // allow deprecated or unknown fields beyond the required ones
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -119,7 +116,7 @@ export interface ProcessMetadata {
         streamUrl?: ContentUriString,
         questions: Array<{
             type: QuestionType, // Defines how the UI should allow to choose among the votingOptions.
-            question: MultiLanguage<string>,
+            question?: MultiLanguage<string>,
             description: MultiLanguage<string>,
             voteOptions: Array<{
                 title: MultiLanguage<string>,

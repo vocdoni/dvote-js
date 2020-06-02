@@ -3,13 +3,8 @@
 // - Metadata JSON validation checker
 // - A metadata JSON template
 
-import * as Joi from "joi-browser"
+import { object, array, string, bool } from "yup"
 export { JsonFeedTemplate } from "./templates/json-feed"
-
-// LOCAL TYPE ALIASES
-type ContentUriString = string
-type ContentHashedUriString = string
-type MessagingUriString = string
 
 ///////////////////////////////////////////////////////////////////////////////
 // VALIDATION
@@ -22,44 +17,47 @@ type MessagingUriString = string
 export function checkValidJsonFeed(jsonFeed: JsonFeed) {
     if (typeof jsonFeed != "object") throw new Error("The metadata must be a JSON object")
 
-    const result = Joi.validate(jsonFeed, jsonFeedSchema)
-    if (!result || result.error) {
-        throw new Error("JSON Feed validation error: " + result.error.toString())
+    try {
+        jsonFeedSchema.validateSync(jsonFeed)
+        return jsonFeedSchema.cast(jsonFeed) as JsonFeed
     }
-    return result.value
+    catch (err) {
+        if (Array.isArray(err.errors)) throw new Error("ValidationError: " + err.errors.join(", "))
+        throw err
+    }
 }
 
 // MAIN ENTITY SCHEMA
 
-const jsonFeedSchema = Joi.object({
-    version: Joi.string(),
-    title: Joi.string(),
-    home_page_url: Joi.string().allow("").optional(),
-    description: Joi.string().allow("").optional(),
-    feed_url: Joi.string().allow("").optional(),
-    icon: Joi.string().allow("").optional(),
-    favicon: Joi.string().allow("").optional(),
-    expired: Joi.boolean(),
+const jsonFeedSchema = object({
+    version: string(),
+    title: string(),
+    home_page_url: string().optional(),
+    description: string().optional(),
+    feed_url: string().optional(),
+    icon: string().optional(),
+    favicon: string().optional(),
+    expired: bool(),
 
-    items: Joi.array().items(
-        Joi.object({
-            id: Joi.string().allow("").optional(),
-            title: Joi.string(),
-            summary: Joi.string().allow("").optional(),
-            content_text: Joi.string(),
-            content_html: Joi.string(),
-            url: Joi.string().optional(),
-            image: Joi.string().allow("").optional(),
-            tags: Joi.array().items(Joi.string()).optional(),
-            date_published: Joi.string(),
-            date_modified: Joi.string(),
-            author: Joi.object({
-                name: Joi.string().allow("").optional(),
-                url: Joi.string().allow("").optional(),
+    items: array().of(
+        object({
+            id: string().optional(),
+            title: string(),
+            summary: string().optional(),
+            content_text: string(),
+            content_html: string(),
+            url: string().optional(),
+            image: string().optional(),
+            tags: array().of(string()).optional(),
+            date_published: string(),
+            date_modified: string(),
+            author: object({
+                name: string().optional(),
+                url: string().optional(),
             }).optional(),
         })
     )
-}).unknown(true).options({ stripUnknown: true }) // allow deprecated or unknown fields beyond the required ones
+}).unknown(true) // allow deprecated or unknown fields beyond the required ones
 
 ///////////////////////////////////////////////////////////////////////////////
 // TYPE DEFINITIONS

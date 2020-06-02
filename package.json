@@ -27,18 +27,19 @@
     "ethers": "^4.0.44",
     "iso-language-codes": "^1.0.6",
     "isomorphic-ws": "^4.0.1",
-    "joi-browser": "^13.4.0",
     "js-sha3": "^0.8.0",
     "tweetnacl": "^1.0.3",
     "tweetnacl-sealedbox-js": "^1.2.0",
     "universal-parse-url": "^1.0.2",
-    "ws": "^7.1.0"
+    "ws": "^7.1.0",
+    "yup": "^0.29.0"
   },
   "devDependencies": {
     "@types/chai": "^4.1.7",
     "@types/mocha": "^5.2.6",
     "@types/sinon": "^5.0.7",
     "@types/ws": "^6.0.1",
+    "@types/yup": "^0.29.0",
     "chai": "^4.2.0",
     "dotenv": "^7.0.0",
     "ganache-cli": "^6.4.5",

@@ -8,9 +8,8 @@ import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { Contract, Wallet } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
-import { getAccounts, increaseTimestamp, TestAccount } from "../testing-eth-utils"
+import { getAccounts, incrementTimestamp, TestAccount } from "../testing-eth-utils"
 import { VotingProcessContractMethods } from "dvote-solidity"
-const fs = require("fs")
 import { Buffer } from "buffer/"
 
 import { deployVotingProcessContract, getVotingProcessInstance } from "../../src/net/contracts"
