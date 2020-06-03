@@ -750,23 +750,23 @@ describe("Voting Process", () => {
         })
 
         it("Should accept big number of questions", () => {
-            const processMetadata = new ProcessMetadataBuilder().withNumberOfQuestions(500).build()
+            const processMetadata = new ProcessMetadataBuilder().withNumberOfQuestions(200).build()
             expect(() => {
                 checkValidProcessMetadata(processMetadata)
             }).to.not.throw()
 
             const result = checkValidProcessMetadata(processMetadata)
-            expect(result.details.questions.length).to.equal(500)
-        }).timeout(1500)
+            expect(result.details.questions.length).to.equal(200)
+        }).timeout(4000)
 
         it("Should accept big number of options", () => {
-            const processMetadata = new ProcessMetadataBuilder().withNumberOfOptions(500)
+            const processMetadata = new ProcessMetadataBuilder().withNumberOfOptions(200)
             expect(() => {
                 checkValidProcessMetadata(processMetadata)
             }).to.not.throw()
 
             const result = checkValidProcessMetadata(processMetadata)
-            expect(result.details.questions[0].voteOptions.length).to.equal(500)
-        }).timeout(1500)
+            expect(result.details.questions[0].voteOptions.length).to.equal(200)
+        }).timeout(4000)
     })
 })

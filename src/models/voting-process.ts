@@ -57,7 +57,7 @@ const questionTypes = ["single-choice"]
 
 const voteMetadataSchema = object().shape({
     version: string().matches(/^[0-9]\.[0-9]$/).required(),
-    type: number().oneOf(processTypes).required(),
+    type: string().oneOf(processTypes).required(),
     startBlock: number().integer().min(0).required(),
     numberOfBlocks: number().integer().min(0).required(),
     census: object().shape({
