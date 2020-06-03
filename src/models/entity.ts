@@ -69,8 +69,8 @@ const entityMetadataSchema = object().shape({
     description: object().shape(multiLanguageStringKeys).required(),
 
     votingProcesses: object().shape({
-        active: array().of(string().matches(/^0x[a-z0-9]+$/)).required(),
-        ended: array().of(string().matches(/^0x[a-z0-9]+$/)).required()
+        active: array().of(string().matches(/^0x[a-z0-9]+$/)).defined(),
+        ended: array().of(string().matches(/^0x[a-z0-9]+$/)).defined()
     }).required(),
 
     newsFeed: object().shape(multiLanguageStringKeys).required(),
@@ -99,15 +99,15 @@ const entityMetadataSchema = object().shape({
                 })
             ).optional(),
         })
-    ).required(),
+    ).defined(),
 
-    bootEntities: array().of(entityReferenceSchema).required(),
+    bootEntities: array().of(entityReferenceSchema).defined(),
 
-    fallbackBootNodeEntities: array().of(entityReferenceSchema).required(),
+    fallbackBootNodeEntities: array().of(entityReferenceSchema).defined(),
 
-    trustedEntities: array().of(entityReferenceSchema).required(),
+    trustedEntities: array().of(entityReferenceSchema).defined(),
 
-    censusServiceManagedEntities: array().of(entityReferenceSchema).required()
+    censusServiceManagedEntities: array().of(entityReferenceSchema).defined()
 }).unknown(true) // allow deprecated or unknown fields beyond the required ones
 
 
