@@ -757,7 +757,7 @@ describe("Voting Process", () => {
 
             const result = checkValidProcessMetadata(processMetadata)
             expect(result.details.questions.length).to.equal(200)
-        }).timeout(4000)
+        }).timeout(8000)
 
         it("Should accept big number of options", () => {
             const processMetadata = new ProcessMetadataBuilder().withNumberOfOptions(200)
