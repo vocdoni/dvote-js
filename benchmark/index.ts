@@ -567,13 +567,13 @@ async function launchVotes(accounts) {
 
     process.stdout.write(`Checking [${idx}] ; `)
     const nullifier = await getPollNullifier(wallet.address, processId)
-    const hasVoted = await getEnvelopeStatus(processId, nullifier, pool)
+    const { registered, date, block } = await getEnvelopeStatus(processId, nullifier, pool)
       .catch(err => {
         console.error("\ngetEnvelopeStatus ERR", account.publicKey, nullifier, err)
         if (config.stopOnError) throw err
-      })
+      }) as any
 
-    if (config.stopOnError) assert(hasVoted)
+    if (config.stopOnError) assert(registered)
 
     process.stdout.write(`Done [${idx}] ; `)
   }, { concurrency: config.maxConcurrency })

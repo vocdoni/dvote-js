@@ -225,19 +225,23 @@ export async function submitEnvelope(voteEnvelope: SnarkVoteEnvelope | PollVoteE
 }
 
 /**
- * Get status of envelope (submitted or not)
+ * Get status of an envelope
  * @param processId
  * @param nullifier
  * @param gateway
  */
-export function getEnvelopeStatus(processId: string, nullifier: string, gateway: IGateway | IGatewayPool): Promise<boolean> {
+export function getEnvelopeStatus(processId: string, nullifier: string, gateway: IGateway | IGatewayPool): Promise<{ registered: boolean, date: Date, block: number }> {
     if (!processId || !nullifier) return Promise.reject(new Error("Invalid parameters"))
     else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
     return gateway.sendMessage({ method: "getEnvelopeStatus", processId, nullifier })
         .then((response) => {
-            if (typeof response.registered != "boolean") throw new Error("Invalid response received from the gateway")
-            return response.registered
+            if (typeof response.registered != "boolean" || typeof response.blockTimestamp != "number") throw new Error("Invalid response received from the gateway")
+            return {
+                registered: response.registered,
+                date: new Date(response.blockTimestamp * 1000),
+                block: response.height
+            }
         })
         .catch((error) => {
             const message = (error.message) ? "The envelope status could not be retrieved: " + error.message : "The envelope status could not be retrieved"
