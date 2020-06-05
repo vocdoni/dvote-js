@@ -13,7 +13,7 @@ const {
     fetchDefaultBootNode
 } = Network.Bootnodes
 
-const DEFAULT_BOOTNODES_URL = "https://bootnodes.github.io/gateways.dev.json"
+const DEFAULT_BOOTNODES_URL = "https://bootnodes.vocdoni.net/gateways.dev.json"
 
 describe("Boot nodes", () => {
 

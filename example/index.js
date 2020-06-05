@@ -543,7 +543,7 @@ async function submitVoteBatch() {
             const voteEnvelope = await packagePollEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet })
             // Encrypted version:
             // const voteEnvelope = await packagePollEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
-        
+
             console.log("- Submitting vote envelope")
             await submitEnvelope(voteEnvelope, dvoteGw)
 
@@ -711,7 +711,7 @@ async function ensResolver() {
 async function testGatewayInitialization() {
     // const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
     const ETH_NETWORK_ID = "goerli"
-    const BOOTNODES_URL = "https://bootnodes.github.io/gateways.dev.json"
+    const BOOTNODES_URL = "https://bootnodes.vocdoni.net/gateways.dev.json"
     let pool, gateway
     let options = {
         networkId: ETH_NETWORK_ID,
@@ -735,7 +735,7 @@ async function testGatewayInitialization() {
     console.time("Pool Race")
     pool = await GatewayPool.discover(options)
     console.timeEnd("Pool Race")
-    
+
     if (!(await pool.isConnected())) throw new Error("Could not connect to the network")
     console.log("Connected to", await pool.getDVoteUri())
     console.log("Connected to", pool.getProvider().connection.url)
@@ -745,7 +745,7 @@ async function testGatewayInitialization() {
     console.time("Random Gateway from default Bootnode")
     gateway = await Gateway.randomFromDefault(ETH_NETWORK_ID)
     console.timeEnd("Random Gateway from default Bootnode")
-    
+
     if (!(await gateway.isConnected())) throw new Error("Could not connect to the network")
     console.log("Connected to", await gateway.getDVoteUri())
     console.log("Connected to", gateway.getProvider().connection.url)
@@ -755,7 +755,7 @@ async function testGatewayInitialization() {
     console.time("Random Gateway from URI")
     gateway = await Gateway.randomfromUri(ETH_NETWORK_ID, BOOTNODES_URL)
     console.timeEnd("Random Gateway from URI")
-    
+
     if (!(await gateway.isConnected())) throw new Error("Could not connect to the network")
     console.log("Connected to", await gateway.getDVoteUri())
     console.log("Connected to", gateway.getProvider().connection.url)
