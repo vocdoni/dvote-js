@@ -27,8 +27,6 @@ export function walletFromSeededPassphrase(passphrase: string, hexSeed: string, 
  * @param provider (optional)
  */
 export function walletFromMnemonic(mnemonic: string, mnemonicPath: string = "m/44'/60'/0'/0/0", provider?: providers.Provider) {
-    if (typeof window == "undefined" || typeof window["web3"] == "undefined") return null
-
     return provider ?
         Wallet.fromMnemonic(mnemonic, mnemonicPath).connect(provider) :
         Wallet.fromMnemonic(mnemonic, mnemonicPath)
