@@ -99,7 +99,7 @@ export class Gateway {
      * Returns a new random *connected*(Dvote-wise) Gateway that is
      * 1. Attached to the required network
      * 2. Servers the required APIs
-     * @param networkId Either "homestead" (mainnet) or "goerli" (test)
+     * @param networkId Either "mainnet" or "goerli" (test)
      * @param requiredApis A list of the required APIs
      */
     static randomFromDefault(networkId: NetworkID, requiredApis: DVoteSupportedApi[] = []): Promise<Gateway> {
@@ -133,7 +133,7 @@ export class Gateway {
      * 1. Attached to the required network
      * 2. Included in the provided URI of bootnodes
      * 2. Servers the required APIs
-     * @param networkId Either "homestead" (mainnet) or "goerli" (test)
+     * @param networkId Either "mainnet" or "goerli" (test)
      * @param bootnodesContentUri The uri from which contains the available gateways
      * @param requiredApis A list of the required APIs
      */

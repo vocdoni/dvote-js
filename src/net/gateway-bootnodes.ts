@@ -4,25 +4,25 @@
 
 import ContentURI from "../wrappers/content-uri"
 import { fetchFileString } from "../api/file"
-import { vocdoniHomesteadEntityId, vocdoniGoerliEntityId } from "../constants"
+import { vocdoniMainnetEntityId, vocdoniGoerliEntityId } from "../constants"
 import { getEntityResolverInstance } from "../net/contracts"
 import { TextRecordKeys } from "../models/entity"
 import { GatewayBootNodes } from "../models/gateway"
 import { DVoteGateway, Web3Gateway, IDVoteGateway, IWeb3Gateway } from "./gateway"
 import { getDefaultProvider, providers } from "ethers"
 
-export type NetworkID = "homestead" | "goerli"
+export type NetworkID = "mainnet" | "goerli"
 
 /**
  * Retrieve the Content URI of the boot nodes Content URI provided by Vocdoni
- * @param networkId Either "homestead" (mainnet) or "goerli" (test)
+ * @param networkId Either "mainnet" or "goerli" (test)
  * @returns A ContentURI object
  */
 export function getDefaultBootnodeContentUri(networkId: NetworkID): Promise<ContentURI> {
     let provider: providers.BaseProvider
 
     switch (networkId) {
-        case "homestead":
+        case "mainnet":
         case "goerli":
             provider = getDefaultProvider(networkId)
             break;
@@ -30,7 +30,7 @@ export function getDefaultBootnodeContentUri(networkId: NetworkID): Promise<Cont
     }
 
     return getEntityResolverInstance({ provider }).then(instance => {
-        const entityId = networkId == "homestead" ? vocdoniHomesteadEntityId : vocdoniGoerliEntityId
+        const entityId = networkId == "mainnet" ? vocdoniMainnetEntityId : vocdoniGoerliEntityId
         return instance.text(entityId, TextRecordKeys.VOCDONI_BOOT_NODES)
     }).then(uri => {
         if (!uri) throw new Error("The boot nodes Content URI is not defined on " + networkId)
@@ -79,7 +79,7 @@ export function fetchDefaultBootNode(networkId: NetworkID): Promise<GatewayBootN
 
 /**
  * Retrieve the list of gateways based on a BootNode Content URI
- * @param bootnodesContentUri The Content URI from which the list of gateways will be extracted 
+ * @param bootnodesContentUri The Content URI from which the list of gateways will be extracted
  * @returns A GatewayBootnodes object that represents the ata derrived from a BootNode Content URI.
  */
 export function fetchFromBootNode(bootnodesContentUri: string | ContentURI): Promise<GatewayBootNodes> {
