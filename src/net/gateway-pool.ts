@@ -1,5 +1,5 @@
 import { Gateway, IDvoteRequestParameters } from "./gateway"
-import { dvoteApis, DVoteSupportedApi } from "../models/gateway"
+import { dvoteApis, DVoteSupportedApi, WsGatewayMethod } from "../models/gateway"
 import { discoverGateways, GatewayDiscoveryParameters } from "./gateway-discovery"
 import { Wallet, Signer } from "ethers"
 import { Provider } from "ethers/providers"
@@ -170,7 +170,7 @@ export class GatewayPool {
     }
 }
 
-function isMethodSupported(supportedApis: DVoteSupportedApi[], method: string): boolean {
+function isMethodSupported(supportedApis: DVoteSupportedApi[], method: WsGatewayMethod): boolean {
     for (let api of supportedApis) {
         if (dvoteApis[api].includes(method)) return true
     }

@@ -117,7 +117,7 @@ describe("Entity Resolver", () => {
                 let value = await contractInstance.text(entityId, item.key)
                 expect(value).to.equal(item.value)
             }
-        })
+        }).timeout(4000)
 
         it("Should support UTF8 strings", async () => {
             await contractInstance.setText(entityId, "key-123", "àèìòùçäëïöü")

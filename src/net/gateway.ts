@@ -8,7 +8,7 @@ import { Buffer } from 'buffer'
 import { Contract, ContractFactory, providers, utils, Wallet, Signer } from "ethers"
 import { providerFromUri } from "../util/providers"
 import GatewayInfo from "../wrappers/gateway-info"
-import { DVoteSupportedApi, WsGatewayMethod, fileApiMethods, voteApiMethods, censusApiMethods, dvoteGatewayApiMethods } from "../models/gateway"
+import { DVoteSupportedApi, WsGatewayMethod, fileApiMethods, voteApiMethods, censusApiMethods, dvoteGatewayApiMethods, resultsApiMethods } from "../models/gateway"
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
 import { signJsonBody, isSignatureValid } from "../util/json-sign"
 import { getEntityResolverInstance, getVotingProcessInstance, IVotingProcessContract, IEntityResolverContract } from "../net/contracts"
@@ -430,7 +430,8 @@ export class DVoteGateway {
         // Check API method availability
         if ((fileApiMethods.indexOf(requestBody.method as any) >= 0 && this.supportedApis.indexOf("file") < 0) ||
             (voteApiMethods.indexOf(requestBody.method as any) >= 0 && this.supportedApis.indexOf("vote") < 0) ||
-            (censusApiMethods.indexOf(requestBody.method as any) >= 0 && this.supportedApis.indexOf("census") < 0)
+            (censusApiMethods.indexOf(requestBody.method as any) >= 0 && this.supportedApis.indexOf("census") < 0) ||
+            (resultsApiMethods.indexOf(requestBody.method as any) >= 0 && this.supportedApis.indexOf("results") < 0)
         ) return Promise.reject(new Error("The method is not available in the Gateway's supported API's"))
 
         // Append the current timestamp to the body
