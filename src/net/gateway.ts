@@ -20,6 +20,7 @@ import {
     VotingProcess as VotingProcessContractDefinition
 } from "dvote-solidity"
 import { entityResolverEnsDomain, votingProcessEnsDomain } from "../constants"
+import { JsonRpcProvider, Web3Provider, IpcProvider, InfuraProvider, FallbackProvider, EtherscanProvider } from "ethers/providers"
 
 const uriPattern = /^([a-z][a-z0-9+.-]+):(\/\/([^@]+@)?([a-z0-9.\-_~]+)(:\d+)?)?((?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])*)*|(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+)*)?(\?(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?(\#(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?$/i
 
@@ -630,7 +631,7 @@ export class DVoteGateway {
  * A Web3 wrapped client with utility methods to deploy and attach to Ethereum contracts.
  */
 export class Web3Gateway {
-    private provider: providers.Provider
+    private provider: providers.BaseProvider
     public entityResolverAddress: string
     public votingContractAddress: string
 
@@ -643,7 +644,7 @@ export class Web3Gateway {
      * Returns a wrapped Ethereum Web3 client.
      * @param gatewayOrProvider Can be a string with the host's URI or an Ethers Provider
      */
-    constructor(gatewayOrProvider: string | GatewayInfo | providers.Provider) {
+    constructor(gatewayOrProvider: string | GatewayInfo | providers.BaseProvider) {
         if (!gatewayOrProvider) throw new Error("Invalid Gateway or provider")
         else if (typeof gatewayOrProvider == "string") {
             if (!gatewayOrProvider.match(uriPattern)) throw new Error("Invalid Gateway URI")
@@ -657,7 +658,7 @@ export class Web3Gateway {
             if (url.protocol != "http:" && url.protocol != "https:") throw new Error("Unsupported gateway protocol: " + url.protocol)
             this.provider = Web3Gateway.providerFromUri(gatewayOrProvider.web3)
         }
-        else if (gatewayOrProvider instanceof providers.Provider) { // use as a provider
+        else if (gatewayOrProvider instanceof providers.BaseProvider) { // use as a provider
             this.provider = gatewayOrProvider
         }
         else throw new Error("A gateway URI or a provider is required")
@@ -708,21 +709,30 @@ export class Web3Gateway {
     }
 
     public isUp(timeout: number = GATEWAY_SELECTION_TIMEOUT): Promise<void> {
-        if (this.entityResolverAddress && this.votingContractAddress) return Promise.resolve()
+        // if (this.entityResolverAddress && this.votingContractAddress) return Promise.resolve()
+
         return new Promise((resolve, reject) => {
             setTimeout(() => reject(new Error("The Web3 Gateway is too slow")), timeout)
-            return this.getProvider().resolveName(entityResolverEnsDomain)
-                .then(entityResolverAddress => {
-                    if (!entityResolverAddress) reject(new Error("The Web3 Gateway seems to be down"))
-                    this.entityResolverAddress = entityResolverAddress
-                    this.getProvider().resolveName(votingProcessEnsDomain)
-                        .then(votingContractAddress => {
-                            if (!votingContractAddress) reject(new Error("The Web3 Gateway seems to be down"))
-                            this.votingContractAddress = votingContractAddress
-                            resolve()
-                        })
-                })
-                .catch(() => reject(new Error("The Web3 Gateway seems to be down")))
+
+            return this.isSyncing().then(syncing => {
+                if (syncing) return reject(new Error("The Web3 gateway is syncing"))
+
+                return this.provider.resolveName(entityResolverEnsDomain)
+                    .then(entityResolverAddress => {
+                        if (!entityResolverAddress) return reject(new Error("The Web3 Gateway seems to be down"))
+
+                        this.entityResolverAddress = entityResolverAddress
+
+                        return this.provider.resolveName(votingProcessEnsDomain)
+                            .then(votingContractAddress => {
+                                if (!votingContractAddress) return reject(new Error("The Web3 Gateway seems to be down"))
+
+                                this.votingContractAddress = votingContractAddress
+                                resolve()
+                            })
+                    })
+            }).catch(() => reject(new Error("The Web3 Gateway seems to be down")))
+
             // if (!entityResolverAddress) continue
             // votingContractAddress = await w3.getProvider().resolveName(votingProcessEnsDomain).catch(() => { return false })
             // if (!votingContractAddress) continue
@@ -731,5 +741,16 @@ export class Web3Gateway {
             //     .then(() => resolve())
             //     .catch(() => reject(new Error("The Web3 Gateway seems to be down")))
         })
+    }
+
+    /** Determines whether the current Web3 provider is syncing blocks or not. Several types of prviders may always return false. */
+    public isSyncing(): Promise<boolean> {
+        if (!this.provider) return Promise.resolve(false)
+        else if (this.provider instanceof JsonRpcProvider || this.provider instanceof Web3Provider || this.provider instanceof IpcProvider || this.provider instanceof InfuraProvider) {
+            return this.provider.send("eth_syncing", []).then(result => !!result)
+        }
+        // else if (this.provider instanceof FallbackProvider || this.provider instanceof EtherscanProvider) {}
+
+        return Promise.resolve(false)
     }
 }

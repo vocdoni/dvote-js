@@ -11,8 +11,8 @@ import {
 export interface IEntityResolverContract extends Contract, EntityResolverContractMethods { }
 export interface IVotingProcessContract extends Contract, VotingProcessContractMethods { }
 
-type DeployContractParams = { gateway?: string, provider?: providers.Provider, signer?: Signer; wallet?: Wallet; }
-type AttachToContractParams = { gateway?: string, provider?: providers.Provider, signer?: Signer; wallet?: Wallet; }
+type DeployContractParams = { gateway?: string, provider?: providers.BaseProvider, signer?: Signer; wallet?: Wallet; }
+type AttachToContractParams = { gateway?: string, provider?: providers.BaseProvider, signer?: Signer; wallet?: Wallet; }
 
 ///////////////////////////////////////////////////////////////////////////////
 // DEPLOYMENT
@@ -20,12 +20,12 @@ type AttachToContractParams = { gateway?: string, provider?: providers.Provider,
 
 /**
  * Deploy a contract and return the newly created instance of an Entity Resolver
- * @param params An object accepting different keys to set the provider and signer. 
- * - Use `gateway` (string) to define the URI of a Vocdoni Web3 Gateway. 
+ * @param params An object accepting different keys to set the provider and signer.
+ * - Use `gateway` (string) to define the URI of a Vocdoni Web3 Gateway.
  * - Pass an Ethers.js `provider` connected to a wallet to sign transactions.
  * - Pass an Ethers.js `signer` if you are using Metamask.
- * - Pass an Ethers.js `wallet` if you want to sign locally with a private key. 
- * 
+ * - Pass an Ethers.js `wallet` if you want to sign locally with a private key.
+ *
  * One of `gateway`/`provider` and `signer`/`wallet` is required
  */
 export async function deployEntityResolverContract(params: DeployContractParams = {}): Promise<IEntityResolverContract> {
@@ -45,12 +45,12 @@ export async function deployEntityResolverContract(params: DeployContractParams 
 
 /**
  * Deploy a contract and return the newly created instance of a Voting Process
- * @param params An object accepting different keys to set the provider and signer. 
- * - Use `gateway` (string) to define the URI of a Vocdoni Web3 Gateway. 
+ * @param params An object accepting different keys to set the provider and signer.
+ * - Use `gateway` (string) to define the URI of a Vocdoni Web3 Gateway.
  * - Pass an Ethers.js `provider` connected to a wallet to sign transactions.
  * - Pass an Ethers.js `signer` if you are using Metamask.
- * - Pass an Ethers.js `wallet` if you want to sign locally with a private key. 
- * 
+ * - Pass an Ethers.js `wallet` if you want to sign locally with a private key.
+ *
  * One of `gateway`/`provider` and `signer`/`wallet` is required
  */
 export async function deployVotingProcessContract(params: DeployContractParams = {}, deployArguments: [number]): Promise<IVotingProcessContract> {
@@ -77,13 +77,13 @@ export async function deployVotingProcessContract(params: DeployContractParams =
 
 /**
  * Returns an Entity Resolver contract instance, bound to the given Gateway/Provider
- * @param params An object accepting different keys to set the provider and signer. 
- * - Use `gateway` (string) to define the URI of a Vocdoni Web3 Gateway. 
+ * @param params An object accepting different keys to set the provider and signer.
+ * - Use `gateway` (string) to define the URI of a Vocdoni Web3 Gateway.
  * - Pass an Ethers.js `provider` connected to a wallet to sign transactions.
  * - Pass an Ethers.js `signer` if you are using Metamask.
- * - Pass an Ethers.js `wallet` if you want to sign locally with a private key. 
+ * - Pass an Ethers.js `wallet` if you want to sign locally with a private key.
  * @param address (optional) Overrides the address of the contract instance, instead of the value from `*.vocdoni.eth`
- * 
+ *
  * One of `gateway`/`provider` and `signer`/`wallet` is required
  */
 export async function getEntityResolverInstance(params: AttachToContractParams = {}, address: string = null): Promise<(IEntityResolverContract)> {
@@ -109,13 +109,13 @@ export async function getEntityResolverInstance(params: AttachToContractParams =
 
 /**
  * Returns a Voting Process contract instance, bound to the given Gateway/Provider
- * @param params An object accepting different keys to set the provider and signer. 
- * - Use `gateway` (string) to define the URI of a Vocdoni Web3 Gateway. 
+ * @param params An object accepting different keys to set the provider and signer.
+ * - Use `gateway` (string) to define the URI of a Vocdoni Web3 Gateway.
  * - Pass an Ethers.js `provider` connected to a wallet to sign transactions.
  * - Pass an Ethers.js `signer` if you are using Metamask.
- * - Pass an Ethers.js `wallet` if you want to sign locally with a private key. 
+ * - Pass an Ethers.js `wallet` if you want to sign locally with a private key.
  * @param address (optional) Overrides the address of the contract instance, instead of the value from `*.vocdoni.eth`
- * 
+ *
  * One of `gateway`/`provider` and `signer`/`wallet` is required
  */
 export async function getVotingProcessInstance(params: AttachToContractParams = {}, address: string = null): Promise<(IVotingProcessContract)> {
