@@ -122,7 +122,7 @@ export class Gateway {
                 let connected = false
                 do {
                     gw = new Gateway(gateways.dvote.pop(), web3)
-                    connected = await gw.connect(requiredApis).catch(() => false)
+                    connected = await gw.connect(requiredApis).catch(() => { gw.disconnect(); return false })
                 } while (!connected && gateways.dvote.length)
 
                 if (connected) return gw
@@ -157,7 +157,7 @@ export class Gateway {
                 let connected = false
                 do {
                     gw = new Gateway(gateways.dvote.pop(), web3)
-                    connected = await gw.connect(requiredApis).catch(() => false)
+                    connected = await gw.connect(requiredApis).catch(() => { gw.disconnect(); return false })
                 } while (!connected && gateways.dvote.length)
 
                 if (connected) return gw
