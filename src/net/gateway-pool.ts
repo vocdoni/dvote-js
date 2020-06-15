@@ -91,7 +91,7 @@ export class GatewayPool {
         return this.pool[0]
     }
 
-    public async connect(): Promise<boolean> {
+    public connect(): Promise<boolean> {
         return this.activeGateway().isConnected()
             .then(connected => {
                 if (connected) return true

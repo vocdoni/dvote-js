@@ -383,8 +383,8 @@ export class DVoteGateway {
     /** Close the current connection */
     public disconnect() {
         if (!this.webSocket) return
-        else if (typeof this.webSocket.terminate == "function") this.webSocket.terminate()
-        else if (typeof this.webSocket.close == "function") this.webSocket.close()
+        if (typeof this.webSocket.terminate == "function") this.webSocket.terminate()
+        if (typeof this.webSocket.close == "function") this.webSocket.close()
         this.webSocket = null
         // this.uri = null  // Why???
     }
