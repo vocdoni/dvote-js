@@ -1,6 +1,5 @@
-import { ethers } from "ethers"
+import { ethers, providers } from "ethers"
 import { provider } from "ganache-cli"
-import { BaseProvider } from "ethers/providers"
 
 export const mnemonic = "myth like bonus scare over problem client lizard pioneer submit female collect"
 
@@ -19,7 +18,7 @@ Promise.all(wallets.map(wallet => {
         accounts.push({
             privateKey: wallet.privateKey,
             address,
-            provider: wallet.provider as BaseProvider,
+            provider: wallet.provider as providers.BaseProvider,
             wallet
         })
     })

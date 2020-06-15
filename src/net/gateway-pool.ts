@@ -1,8 +1,7 @@
 import { Gateway, IDvoteRequestParameters } from "./gateway"
 import { dvoteApis, DVoteSupportedApi, WsGatewayMethod } from "../models/gateway"
 import { discoverGateways, GatewayDiscoveryParameters } from "./gateway-discovery"
-import { Wallet, Signer } from "ethers"
-import { Provider } from "ethers/providers"
+import { Wallet, Signer, providers } from "ethers"
 import { IVotingProcessContract, IEntityResolverContract } from "./contracts"
 
 const SEQUENTIAL_METHODS = ['addClaimBulk', 'publishCensus'] //generateProof and vote?
@@ -159,7 +158,7 @@ export class GatewayPool {
 
     // WEB3
 
-    public getProvider(): Provider { return this.activeGateway().getProvider() }
+    public getProvider(): providers.BaseProvider { return this.activeGateway().getProvider() }
 
     public getEntityResolverInstance(walletOrSigner?: Wallet | Signer): IEntityResolverContract {
         return this.activeGateway().getEntityResolverInstance(walletOrSigner)
