@@ -554,7 +554,10 @@ export class DVoteGateway {
                             if (response && Array.isArray(response.api)) return resolve()
                             return reject(new Error("Invalid DVote Gateway response"))
                         })
-                }).catch((err) => reject(new Error("The DVote Gateway seems to be down")))
+                }).catch((err) => {
+                    console.error(err);
+                    reject(new Error("The DVote Gateway seems to be down"))
+                })
         })
     }
 
@@ -732,7 +735,10 @@ export class Web3Gateway {
                                 resolve()
                             })
                     })
-            }).catch(() => reject(new Error("The Web3 Gateway seems to be down")))
+            }).catch(err => {
+                console.error(err)
+                reject(new Error("The Web3 Gateway seems to be down"))
+            })
 
             // if (!entityResolverAddress) continue
             // votingContractAddress = await w3.getProvider().resolveName(votingProcessEnsDomain).catch(() => { return false })
