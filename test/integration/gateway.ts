@@ -300,7 +300,7 @@ describe("DVoteGateway", () => {
             expect(gatewayServer.interactionList[0].actual.request.method).to.equal("addFile")
             expect(gatewayServer.interactionList[0].actual.request.type).to.equal("ipfs")
             expect(gatewayServer.interactionList[0].actual.request.content).to.equal(buffData.toString("base64"))
-            expect(gatewayServer.interactionList[0].actual.id).to.match(/^[0-9a-fA-F]{64}$/)
+            expect(gatewayServer.interactionList[0].actual.id).to.match(/^[0-9a-fA-F]{10}$/)
             expect(gatewayServer.interactionList[0].actual.signature).to.match(/^0x[0-9a-fA-F]{100,}$/)
 
             expect(result1.length).to.be.ok
@@ -337,7 +337,7 @@ describe("DVoteGateway", () => {
             expect(gatewayServer.interactionCount).to.equal(2)
             expect(gatewayServer.interactionList[1].actual.request.method).to.equal("fetchFile")
             expect(gatewayServer.interactionList[1].actual.request.uri).to.equal(result1)
-            expect(gatewayServer.interactionList[1].actual.id).to.match(/^[0-9a-fA-F]{64}$/)
+            expect(gatewayServer.interactionList[1].actual.id).to.match(/^[0-9a-fA-F]{10}$/)
 
             gw.disconnect()
             await gatewayServer.stop()
