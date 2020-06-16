@@ -443,7 +443,7 @@ export class DVoteGateway {
         let rand, requestId
         do {
             rand = Math.random().toString(16).split('.')[1]
-            requestId = utils.keccak256('0x' + rand).substr(2)
+            requestId = utils.keccak256('0x' + rand).substr(2, 10)
         } while (this.requestList.some(r => r.id === rand))
         const content: MessageRequestContent = {
             id: requestId,
