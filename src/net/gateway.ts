@@ -246,7 +246,6 @@ export class Gateway {
         return this.dvote.disconnect()
     }
 
-
     public getDVoteUri(): Promise<string> {
         return this.dvote.getUri()
     }
@@ -260,7 +259,7 @@ export class Gateway {
     }
 
     // WEB3
-    async connectWeb3(): Promise<boolean> {
+    public connectWeb3(): Promise<boolean> {
         return this.web3.isUp()
             .then(() => true)
             .catch(() => false)
