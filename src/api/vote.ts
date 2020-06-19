@@ -167,17 +167,238 @@ export async function isCanceled(processId: string, gateway: IGateway | IGateway
  * @param gateway
  */
 export function getBlockHeight(gateway: IGateway | IGatewayPool): Promise<number> {
-    if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
-
-    return gateway.sendMessage({ method: "getBlockHeight" })
-        .then((response) => {
-            if (!(typeof response.height === 'number') || response.height < 0) throw new Error("The gateway response is not correct")
-            return response.height
+    return getBlockStatus(gateway)
+        .then(status => {
+            if (!(typeof status.blockNumber === 'number') || status.blockNumber < 0) throw new Error("The retrieved block number is not valid")
+            return status.blockNumber
         })
         .catch((error) => {
-            const message = (error.message) ? "Could not retrieve the number of blocks: " + error.message : "Could not retrieve the number of blocks"
+            const message = error.message ? "Could not retrieve the number of blocks: " + error.message : "Could not retrieve the number of blocks"
             throw new Error(message)
         })
+}
+
+/**
+ * Retrieves the current block number, the timestamp at which the block was mined and the average block time in miliseconds for 1m, 10m, 1h, 6h and 24h.
+ * @param gateway
+ * @see estimateBlockAtDateTime (date, gateway)
+ * @see estimateDateAtBlock (blockNumber, gateway)
+ */
+export function getBlockStatus(gateway: IGateway | IGatewayPool): Promise<{ blockNumber: number, blockTimestamp: number, blockTimes: number[] }> {
+    if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+
+    return gateway.sendMessage({ method: "getBlockStatus" })
+        .then((response) => {
+            if (!(typeof response.height === 'number') || response.height < 0) throw new Error("The block height is not valid")
+            else if (!(typeof response.blockTimestamp === 'number') || response.blockTimestamp < 0) throw new Error("The block timestamp is not valid")
+            else if (!Array.isArray(response.blockTime) || response.blockTime.some(item => typeof item != "number" || item < 0)) throw new Error("The block times are not valid")
+
+            return {
+                blockNumber: response.height,
+                blockTimestamp: response.blockTimestamp * 1000,
+                blockTimes: response.blockTime
+            }
+        })
+        .catch((error) => {
+            const message = error.message ? "Could not retrieve the block status: " + error.message : "Could not retrieve the block status"
+            throw new Error(message)
+        })
+}
+
+/**
+ * Returns the block number that is expected to be current at the given date and time
+ * @param dateTime
+ * @param gateway
+ */
+export function estimateBlockAtDateTime(dateTime: Date, gateway: IGateway | IGatewayPool): Promise<number> {
+    if (typeof dateTime == "number") dateTime = new Date(dateTime)
+    if (!(dateTime instanceof Date)) return null
+
+    return getBlockStatus(gateway).then(status => {
+        let averageBlockTime = VOCHAIN_BLOCK_TIME * 1000
+        let weightA: number, weightB: number
+
+        // Diff between the last mined block and the given date
+        const dateDiff = Math.abs(dateTime.getTime() - status.blockTimestamp)
+
+        // status.blockTime => [1m, 10m, 1h, 6h, 24h]
+
+        if (dateDiff >= 1000 * 60 * 60 * 24) {
+            if (status.blockTimes[4] > 0) averageBlockTime = status.blockTimes[4]
+        }
+        else if (dateDiff >= 1000 * 60 * 60 * 6) {
+            // 1000 * 60 * 60 * 6 <= dateDiff < 1000 * 60 * 60 * 24
+            const pivot = (dateDiff - 1000 * 60 * 60 * 6) / (1000 * 60 * 60)
+            weightB = pivot / (24 - 6) // 0..1
+            weightA = 1 - weightB
+
+            if (status.blockTimes[4] > 0 && status.blockTimes[3] > 0) {
+                averageBlockTime = weightA * status.blockTimes[3] + weightB * status.blockTimes[4]
+            }
+            else if (status.blockTimes[4] > 0) {
+                averageBlockTime = weightA * VOCHAIN_BLOCK_TIME * 1000 + weightB * status.blockTimes[4]
+            }
+            else if (status.blockTimes[3] > 0) {
+                averageBlockTime = weightA * status.blockTimes[3] + weightB * VOCHAIN_BLOCK_TIME * 1000
+            }
+        }
+        else if (dateDiff >= 1000 * 60 * 60) {
+            // 1000 * 60 * 60 <= dateDiff < 1000 * 60 * 60 * 6
+            const pivot = (dateDiff - 1000 * 60 * 60) / (1000 * 60 * 60)
+            weightB = pivot / (6 - 1) // 0..1
+            weightA = 1 - weightB
+
+            if (status.blockTimes[3] > 0 && status.blockTimes[2] > 0) {
+                averageBlockTime = weightA * status.blockTimes[2] + weightB * status.blockTimes[3]
+            }
+            else if (status.blockTimes[3] > 0) {
+                averageBlockTime = weightA * VOCHAIN_BLOCK_TIME * 1000 + weightB * status.blockTimes[3]
+            }
+            else if (status.blockTimes[2] > 0) {
+                averageBlockTime = weightA * status.blockTimes[2] + weightB * VOCHAIN_BLOCK_TIME * 1000
+            }
+        }
+        else if (dateDiff >= 1000 * 60 * 10) {
+            // 1000 * 60 * 10 <= dateDiff < 1000 * 60 * 60
+            const pivot = (dateDiff - 1000 * 60 * 10) / (1000 * 60)
+            weightB = pivot / (60 - 10) // 0..1
+            weightA = 1 - weightB
+
+            if (status.blockTimes[2] > 0 && status.blockTimes[1] > 0) {
+                averageBlockTime = weightA * status.blockTimes[1] + weightB * status.blockTimes[2]
+            }
+            else if (status.blockTimes[2] > 0) {
+                averageBlockTime = weightA * VOCHAIN_BLOCK_TIME * 1000 + weightB * status.blockTimes[2]
+            }
+            else if (status.blockTimes[1] > 0) {
+                averageBlockTime = weightA * status.blockTimes[1] + weightB * VOCHAIN_BLOCK_TIME * 1000
+            }
+        }
+        else if (dateDiff >= 1000 * 60) {
+            // 1000 * 60 <= dateDiff < 1000 * 60 * 6
+            const pivot = (dateDiff - 1000 * 60) / (1000 * 60)
+            weightB = pivot / (10 - 1) // 0..1
+            weightA = 1 - weightB
+
+            if (status.blockTimes[1] > 0 && status.blockTimes[0] > 0) {
+                averageBlockTime = weightA * status.blockTimes[0] + weightB * status.blockTimes[1]
+            }
+            else if (status.blockTimes[1] > 0) {
+                averageBlockTime = weightA * VOCHAIN_BLOCK_TIME * 1000 + weightB * status.blockTimes[1]
+            }
+            else if (status.blockTimes[0] > 0) {
+                averageBlockTime = weightA * status.blockTimes[0] + weightB * VOCHAIN_BLOCK_TIME * 1000
+            }
+        }
+        else {
+            if (status.blockTimes[0] > 0) averageBlockTime = status.blockTimes[0]
+        }
+
+        const estimatedBlockDiff = dateDiff / averageBlockTime
+        const estimatedBlock = dateTime.getTime() < status.blockTimestamp ?
+            status.blockNumber - estimatedBlockDiff :
+            status.blockNumber + estimatedBlockDiff
+
+        if (estimatedBlock < 0) return 0
+        return Math.floor(estimatedBlock)
+    })
+}
+
+const blocksPerM = 6 // x 10s
+const blocksPer10m = 10 * blocksPerM
+const blocksPerH = blocksPerM * 60
+const blocksPer6h = 6 * blocksPerH
+const blocksPerDay = 24 * blocksPerH
+
+/**
+ * Returns the DateTime at which the given block number is expected to be mined
+ * @param blockNumber
+ * @param gateway
+ */
+export function estimateDateAtBlock(blockNumber: number, gateway: IGateway | IGatewayPool): Promise<Date> {
+    if (!blockNumber) return null
+
+    return getBlockStatus(gateway).then(status => {
+        // Diff between the last mined block and the given one
+        const blockDiff = Math.abs(blockNumber - status.blockNumber)
+        let averageBlockTime = VOCHAIN_BLOCK_TIME * 1000
+        let weightA: number, weightB: number
+
+        // status.blockTime => [1m, 10m, 1h, 6h, 24h]
+        if (blockDiff > blocksPerDay) {
+            if (status.blockTimes[4] > 0) averageBlockTime = status.blockTimes[4]
+        }
+        else if (blockDiff > blocksPer6h) {
+            // blocksPer6h <= blockDiff < blocksPerDay
+            const pivot = (blockDiff - blocksPer6h) / (blocksPerH)
+            weightB = pivot / (24 - 6) // 0..1
+            weightA = 1 - weightB
+
+            if (status.blockTimes[4] > 0 && status.blockTimes[3] > 0) {
+                averageBlockTime = weightA * status.blockTimes[3] + weightB * status.blockTimes[4]
+            }
+            else if (status.blockTimes[4] > 0) {
+                averageBlockTime = weightA * VOCHAIN_BLOCK_TIME * 1000 + weightB * status.blockTimes[4]
+            }
+            else if (status.blockTimes[3] > 0) {
+                averageBlockTime = weightA * status.blockTimes[3] + weightB * VOCHAIN_BLOCK_TIME * 1000
+            }
+        }
+        else if (blockDiff > blocksPerH) {
+            // blocksPerH <= blockDiff < blocksPer6h
+            const pivot = (blockDiff - blocksPerH) / (blocksPerH)
+            weightB = pivot / (6 - 1) // 0..1
+            weightA = 1 - weightB
+
+            if (status.blockTimes[3] > 0 && status.blockTimes[2] > 0) {
+                averageBlockTime = weightA * status.blockTimes[2] + weightB * status.blockTimes[3]
+            }
+            else if (status.blockTimes[3] > 0) {
+                averageBlockTime = weightA * VOCHAIN_BLOCK_TIME * 1000 + weightB * status.blockTimes[3]
+            }
+            else if (status.blockTimes[2] > 0) {
+                averageBlockTime = weightA * status.blockTimes[2] + weightB * VOCHAIN_BLOCK_TIME * 1000
+            }
+        }
+        else if (blockDiff > blocksPer10m) {
+            // blocksPer10m <= blockDiff < blocksPerH
+            const pivot = (blockDiff - blocksPer10m) / (blocksPerM)
+            weightB = pivot / (60 - 10) // 0..1
+            weightA = 1 - weightB
+
+            if (status.blockTimes[2] > 0 && status.blockTimes[1] > 0) {
+                averageBlockTime = weightA * status.blockTimes[1] + weightB * status.blockTimes[2]
+            }
+            else if (status.blockTimes[2] > 0) {
+                averageBlockTime = weightA * VOCHAIN_BLOCK_TIME * 1000 + weightB * status.blockTimes[2]
+            }
+            else if (status.blockTimes[1] > 0) {
+                averageBlockTime = weightA * status.blockTimes[1] + weightB * VOCHAIN_BLOCK_TIME * 1000
+            }
+        }
+        else if (blockDiff > blocksPerM) {
+            // blocksPerM <= blockDiff < blocksPer10m
+            const pivot = (blockDiff - blocksPerM) / (blocksPerM)
+            weightB = pivot / (10 - 1) // 0..1
+            weightA = 1 - weightB
+
+            if (status.blockTimes[1] > 0 && status.blockTimes[0] > 0) {
+                averageBlockTime = weightA * status.blockTimes[0] + weightB * status.blockTimes[1]
+            }
+            else if (status.blockTimes[1] > 0) {
+                averageBlockTime = weightA * VOCHAIN_BLOCK_TIME * 1000 + weightB * status.blockTimes[1]
+            }
+            else if (status.blockTimes[0] > 0) {
+                averageBlockTime = weightA * status.blockTimes[0] + weightB * VOCHAIN_BLOCK_TIME * 1000
+            }
+        }
+        else {
+            if (status.blockTimes[0] > 0) averageBlockTime = status.blockTimes[0]
+        }
+
+        const targetTimestamp = status.blockTimestamp + (blockNumber - status.blockNumber) * averageBlockTime
+        return new Date(targetTimestamp)
+    })
 }
 
 /**
@@ -291,96 +512,6 @@ export function getEnvelopeHeight(processId: string, gateway: IGateway | IGatewa
         })
         .catch((error) => {
             const message = (error.message) ? "Could not get the envelope height: " + error.message : "Could not get the envelope height"
-            throw new Error(message)
-        })
-}
-
-/**
- * Retrieves the number of seconds left before the given process starts.
- * Returns 0 if it already started
- * @param processId ID of the voting process
- * @param startBlock Tendermint block on which the process starts
- * @param gateway DVote Gateway instance
- */
-export function getTimeUntilStart(processId: string, startBlock: number, gateway: IGateway | IGatewayPool): Promise<number> {
-    if (!processId || isNaN(startBlock)) return Promise.reject(new Error("Invalid parameters"))
-    else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
-
-    return getBlockHeight(gateway).then((currentHeight) => {
-        const remainingBlocks = startBlock - currentHeight
-        if (remainingBlocks <= 0) return 0
-        else return remainingBlocks * VOCHAIN_BLOCK_TIME
-    })
-        .catch((error) => {
-            const message = (error.message) ? "The process start block could not be determined: " + error.message : "The process start block could not be determined"
-            throw new Error(message)
-        })
-}
-
-/**
- * Retrieves the number of seconds left before the given process ends.
- * Returns 0 if it already ended
- * @param processId ID of the voting process
- * @param startBlock Tendermint block on which the process starts
- * @param numberOfBlocks Number of Tendermint blocks that the voting process is active
- * @param gateway DVote Gateway instance
- */
-export function getTimeUntilEnd(processId: string, startBlock: number, numberOfBlocks: number, gateway: IGateway | IGatewayPool): Promise<number> {
-    if (!processId || isNaN(startBlock) || isNaN(numberOfBlocks)) return Promise.reject(new Error("Invalid parameters"))
-    else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
-
-    return getBlockHeight(gateway).then((currentHeight) => {
-        const remainingBlocks = (startBlock + numberOfBlocks) - currentHeight
-        if (remainingBlocks <= 0) return 0
-        else return remainingBlocks * VOCHAIN_BLOCK_TIME
-    })
-        .catch((error) => {
-            const message = (error.message) ? "The process deadline could not be determined: " + error.message : "The process deadline could not be determined"
-            throw new Error(message)
-        })
-}
-
-/**
- * Returns the DateTime at which the given block number is expected to be mined
- * @param processId ID of the voting process
- * @param blockNumber Number of block to compute the date for
- * @param gateway DVote Gateway instance
- */
-export function getTimeForBlock(processId: string, blockNumber: number, gateway: IGateway | IGatewayPool): Promise<Date> {
-    if (!processId || isNaN(blockNumber)) return Promise.reject(new Error("Invalid parameters"))
-    else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
-
-    return getBlockHeight(gateway)
-        .then((currentHeight) => {
-            const blockDifference = blockNumber - currentHeight
-            const now = Date.now()
-            return new Date(now + (blockDifference * VOCHAIN_BLOCK_TIME * 1000))
-        })
-        .catch((error) => {
-            const message = (error.message) ? "The block mine time could not be determined: " + error.message : "The block mine time could not be determined"
-            throw new Error(message)
-        })
-}
-
-/**
- * Returns the block number that is expected to be mined at the given date and time
- * @param processId ID of the voting process
- * @param date The date and time to compute the block number for
- * @param gateway DVote Gateway instance
- */
-export function getBlockNumberForTime(processId: string, dateTime: Date, gateway: IGateway | IGatewayPool): Promise<number> {
-    if (!processId || !(dateTime instanceof Date)) return Promise.reject(new Error("Invalid parameters"))
-    else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
-
-    return getBlockHeight(gateway)
-        .then((currentHeight) => {
-            const blockDiff = Math.floor((dateTime.getTime() - Date.now()) / 1000 / VOCHAIN_BLOCK_TIME)
-
-            return Math.max(currentHeight + blockDiff, 0)
-        })
-        .catch((error) => {
-            const message = (error.message) ? "The block number at the given date and time could not be determined: " +
-                error.message : "The block number at the given date and time could not be determined"
             throw new Error(message)
         })
 }

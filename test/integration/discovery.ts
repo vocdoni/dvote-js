@@ -4,18 +4,14 @@ import { Network } from "../.."
 
 
 const {
-discoverGateways
+    discoverGateways
 } = Network.Discovery
 
 const DEFAULT_BOOTNODES_URL = "https://bootnodes.vocdoni.net/gateways.dev.json"
 
 describe("Discovery", () => {
 
-    it("should be implemented", () => {
-
-        // TODO: Use discoverGateways
-        return
-    })
+    it("should be implemented")
 
     // it("getRandomGatewayInfo should provide a gateway for each network ID", async () => {
     //     const gw = await getRandomGatewayInfo("goerli")
