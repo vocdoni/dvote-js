@@ -27,11 +27,12 @@ const { getBestGateways } = Discovery
 const { GatewayPool } = Pool
 const { getGatewaysFromBootNodeData, fetchDefaultBootNode } = Bootnodes
 const { addFile, fetchFileString } = File
-const { createVotingProcess, getVoteMetadata, packagePollEnvelope, submitEnvelope, cancelProcess, isCanceled, getBlockHeight, getEnvelopeHeight, getTimeUntilStart, getTimeUntilEnd, getTimeForBlock, getBlockNumberForTime, getEnvelopeList, getEnvelope, getRawResults, getResultsDigest } = Vote
+const { createVotingProcess, getVoteMetadata, packagePollEnvelope, submitEnvelope, cancelProcess, isCanceled, getBlockHeight, getEnvelopeHeight, estimateDateAtBlock, estimateBlockAtDateTime, getEnvelopeList, getEnvelope, getRawResults, getResultsDigest } = Vote
 
 const { Wallet, providers, utils } = require("ethers")
 const { Buffer } = require("buffer/")
 const fs = require("fs")
+const { VOCHAIN_BLOCK_TIME } = require("../src/constants")
 
 const MNEMONIC = process.env.MNEMONIC || "bar bundle start frog dish gauge square subway load easily south bamboo"
 const PATH = "m/44'/60'/0'/0/0"
@@ -77,8 +78,10 @@ async function attachToEntityResolver() {
     console.log("Entity Address:", myEntityAddress)
     console.log("Entity ID:", myEntityId)
 
-    console.log("Reading 'my-key'")
-    const val = await contractInstance.text(myEntityId, "my-key")
+    const tx = await contractInstance.setText(myEntityId, "vnd.vocdoni.boot-nodes", "https://bootnodes.vocdoni.net/gateways.json")
+    await tx.wait()
+    console.log("Reading 'vnd.vocdoni.boot-nodes'")
+    const val = await contractInstance.text(myEntityId, "vnd.vocdoni.boot-nodes")
     console.log("Value stored on the blockchain:", val)
 }
 
@@ -476,12 +479,12 @@ async function useVoteApi() {
     console.log("- Census size:", await getCensusSize(censusMerkleRoot, dvoteGw))
     console.log("- Block height:", await getBlockHeight(dvoteGw))
     console.log("- Envelope height:", await getEnvelopeHeight(processId, dvoteGw))
-    let remainingSeconds = await getTimeUntilStart(processId, processMeta.startBlock, dvoteGw)
-    console.log("- Seconds until start:", remainingSeconds == 0 ? "[already started]" : remainingSeconds)
-    remainingSeconds = await getTimeUntilEnd(processId, processMeta.startBlock, processMeta.numberOfBlocks, dvoteGw)
-    console.log("- Seconds until end:", remainingSeconds == 0 ? "[already ended]" : remainingSeconds)
-    console.log("- Time at block 500:", await getTimeForBlock(processId, 500, dvoteGw))
-    console.log("- Block on 10/10/2019:", await getBlockNumberForTime(processId, new Date(2019, 9, 10), dvoteGw))
+    let remainingSeconds = await estimateDateAtBlock(processMeta.startBlock, dvoteGw)
+    console.log("- Start date:", remainingSeconds == 0 ? "[already started]" : remainingSeconds)
+    remainingSeconds = await estimateDateAtBlock(processMeta.startBlock + processMeta.numberOfBlocks, dvoteGw)
+    console.log("- End date:", remainingSeconds == 0 ? "[already ended]" : remainingSeconds)
+    console.log("- Date at block 500:", await estimateDateAtBlock(500, dvoteGw))
+    console.log("- Block in 200 seconds:", await estimateBlockAtDateTime(new Date(Date.now() + VOCHAIN_BLOCK_TIME * 20), dvoteGw))
 
     const publicKeyHash = digestHexClaim(wallet["signingKey"].publicKey)
     const merkleProof = await generateProof(censusMerkleRoot, publicKeyHash, true, dvoteGw)
@@ -778,7 +781,7 @@ async function main() {
     // Ethereum
 
     // await deployEntityResolver()
-    // await attachToEntityResolver()
+    await attachToEntityResolver()
     // await deployVotingProcess()
     // await attachToVotingProcess()
 
@@ -801,7 +804,7 @@ async function main() {
     // await fetchMerkleProof()
     // await checkSignature()
     // await gatewayRawRequest()
-    await testGatewayInitialization()
+    // await testGatewayInitialization()
 
     // await gatewayHealthCheck()
     // await ensResolver()

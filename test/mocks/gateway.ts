@@ -52,10 +52,8 @@ export class GatewayMock {
 
         const responseData: GatewayResponse = this.interactionList[idx].responseData
         responseData.id = this.interactionList[idx].actual.id
-        if (responseData.response) {
-            responseData.response.request = this.interactionList[idx].actual.id
-        }
-        else if (!responseData.response.ok) {
+
+        if (responseData.response || !responseData.response.ok) {
             responseData.response.request = this.interactionList[idx].actual.id
         }
         else {
@@ -66,6 +64,13 @@ export class GatewayMock {
         this.activeSocket.send(JSON.stringify(responseData))
 
         this.interactionCount++
+    }
+
+    public addResponse(res: GatewayResponse) {
+        this.interactionList.push({
+            actual: null,      // no request received yet
+            responseData: res
+        })
     }
 
     public stop(): Promise<void> {
