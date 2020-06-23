@@ -72,7 +72,7 @@ export function sortObjectFields(data: any) {
             return data
     }
 
-    if (Array.isArray(data)) return data
+    if (Array.isArray(data)) return data.map(item => sortObjectFields(item))
 
     // Ensure ordered key names
     return Object.keys(data).sort().reduce((prev, cur) => {

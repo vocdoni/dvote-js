@@ -29,8 +29,12 @@ describe("JSON signing", () => {
         strB = JSON.stringify(sortObjectFields({ b: { d: 4, c: 3 }, a: 1 }))
         expect(strA).to.equal(strB)
 
-        strA = JSON.stringify(sortObjectFields({ a: 1, b: [2, 3, 4, 5] }))
-        strB = JSON.stringify(sortObjectFields({ b: [2, 3, 4, 5], a: 1 }))
+        strA = JSON.stringify(sortObjectFields({ a: 1, b: [{ a: 10, m: 10, z: 10 }, { b: 11, n: 11, y: 11 }, 4, 5] }))
+        strB = JSON.stringify(sortObjectFields({ b: [{ z: 10, m: 10, a: 10 }, { y: 11, n: 11, b: 11 }, 4, 5], a: 1 }))
+        expect(strA).to.equal(strB)
+
+        strA = JSON.stringify(sortObjectFields({ a: 1, b: [5, 4, 3, 2, 1, 0] }))
+        strB = JSON.stringify(sortObjectFields({ b: [5, 4, 3, 2, 1, 0], a: 1 }))
         expect(strA).to.equal(strB)
     })
     it("Should sign a JSON payload, regardless of the order of the fields", async () => {
