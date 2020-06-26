@@ -10,7 +10,7 @@ import { providerFromUri } from "../util/providers"
 import GatewayInfo from "../wrappers/gateway-info"
 import { DVoteSupportedApi, WsGatewayMethod, fileApiMethods, voteApiMethods, censusApiMethods, dvoteGatewayApiMethods, resultsApiMethods } from "../models/gateway"
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
-import { signJsonBody, isSignatureValid } from "../util/json-sign"
+import { signJsonBody, isSignatureValid, sortObjectFields } from "../util/json-sign"
 import { getEntityResolverInstance, getVotingProcessInstance, IVotingProcessContract, IEntityResolverContract } from "../net/contracts"
 import axios from "axios"
 import { NetworkID, fetchDefaultBootNode, getGatewaysFromBootNodeData, fetchFromBootNode } from "./gateway-bootnodes"
@@ -464,7 +464,7 @@ export class DVoteGateway {
                     this.requestList = this.requestList.filter(r => r.id != requestId)
                 }, timeout * 1000)
             })
-            this.webSocket.send(JSON.stringify(content))
+            this.webSocket.send(JSON.stringify(sortObjectFields(content)))
         })
 
         const msg = (await reqPromise) as GatewayResponse
