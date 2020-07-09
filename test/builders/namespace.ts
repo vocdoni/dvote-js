@@ -2,7 +2,7 @@
 
 import { NamespaceContractMethods } from "dvote-solidity"
 import { Contract, ContractFactory } from "ethers"
-import { getAccounts, TestAccount } from "../utils"
+import { getAccounts, TestAccount } from "../mocks/all-services"
 
 const { abi: namespaceAbi, bytecode: namespaceByteCode } = require("dvote-solidity/build/namespace.json")
 

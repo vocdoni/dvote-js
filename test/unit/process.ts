@@ -13,7 +13,7 @@ import { ProcessContractMethods, ProcessContractParameters, ProcessStatus } from
 import { Buffer } from "buffer/"
 
 import { deployProcessContract, getProcessInstance } from "../../src/net/contracts"
-import { getSignedVoteNullifier, packageSignedEnvelope, IVotePackage, getProcessId, newProcess } from "../../src/api/vote"
+import { getSignedVoteNullifier, packageSignedEnvelope, IVotePackage, getProcessId, newProcess } from "../../src/api/voting"
 import { Asymmetric } from "../../src/util/encryption"
 import { checkValidProcessMetadata } from "../../src/models/process"
 import ProcessBuilder, {
@@ -34,7 +34,6 @@ import ProcessBuilder, {
     DEFAULT_PARAMS_SIGNATURE
 } from "../builders/process"
 import ProcessMetadataBuilder from "../builders/process-metadata"
-import { BigNumber } from "ethers/utils"
 import NamespaceBuilder from "../builders/namespace"
 import { ContractReceipt } from "ethers/contract"
 

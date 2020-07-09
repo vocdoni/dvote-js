@@ -11,13 +11,17 @@ import GatewayInfo from "../wrappers/gateway-info"
 import { DVoteSupportedApi, WsGatewayMethod, fileApiMethods, voteApiMethods, censusApiMethods, dvoteGatewayApiMethods, resultsApiMethods } from "../models/gateway"
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
 import { signJsonBody, isSignatureValid, sortObjectFields, isByteSignatureValid } from "../util/json-sign"
-import { getEntityResolverInstance, getProcessInstance, IProcessContract, IEnsPublicResolverContract } from "../net/contracts"
+import { getEntityResolverInstance, getProcessInstance, IProcessContract, IEnsPublicResolverContract, INamespaceContract } from "../net/contracts"
 import axios, { AxiosInstance } from "axios"
 import { NetworkID, fetchDefaultBootNode, getNetworkGatewaysFromBootNodeData, fetchFromBootNode } from "./gateway-bootnodes"
-import ContentURI from "wrappers/content-uri"
-import { EnsPublicResolver as EntityContractDefinition, Process as ProcessContractDefinition } from "dvote-solidity"
+import ContentURI from "../wrappers/content-uri"
 import { extractUint8ArrayJSONValue } from "../util/uint8array"
 import { readBlobText, readBlobArrayBuffer } from "../util/blob"
+import {
+    EnsPublicResolver as EntityContractDefinition,
+    Process as ProcessContractDefinition,
+    Namespace as NamespaceContractDefinition
+} from "dvote-solidity"
 import { entityResolverEnsDomain, processEnsDomain, entityResolverEnsDomainDev, processEnsDomainDev } from "../constants"
 
 const { JsonRpcProvider, Web3Provider, IpcProvider, InfuraProvider, FallbackProvider, EtherscanProvider } = providers
@@ -79,9 +83,6 @@ export class Gateway {
     public get health() { return this.dvote.health }
     public get publicKey() { return this.dvote.publicKey }
     public getSupportedApis() { return this.dvote.getSupportedApis() }
-
-    private entityResolverAddress() { return this.web3.entityResolverAddress }
-    private votingContractAddress() { return this.web3.votingContractAddress }
 
     /**
      * Returns a new Gateway
@@ -218,7 +219,7 @@ export class Gateway {
     }
     public isConnected(): Promise<boolean> {
         // If web3 is connected
-        if (this.entityResolverAddress && this.votingContractAddress)
+        if (this.web3.entityResolverAddress && this.web3.processContractAddress)
             // Check dvote connection
             return this.dvote.isConnected()
         else
@@ -278,19 +279,27 @@ export class Gateway {
     }
 
     public getEntityResolverInstance(walletOrSigner?: Wallet | Signer): IEnsPublicResolverContract {
-        if (!this.entityResolverAddress()) throw new Error("The gateway is not yet connected")
+        if (!this.web3.entityResolverAddress) throw new Error("The gateway is not yet connected")
 
         if (walletOrSigner && (walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer))
-            return this.web3.attach<IEnsPublicResolverContract>(this.entityResolverAddress(), EntityContractDefinition.abi as any).connect(walletOrSigner) as (IEnsPublicResolverContract)
-        return this.web3.attach<IEnsPublicResolverContract>(this.entityResolverAddress(), EntityContractDefinition.abi as any)
+            return this.web3.attach<IEnsPublicResolverContract>(this.web3.entityResolverAddress, EntityContractDefinition.abi as any).connect(walletOrSigner) as (IEnsPublicResolverContract)
+        return this.web3.attach<IEnsPublicResolverContract>(this.web3.entityResolverAddress, EntityContractDefinition.abi as any)
     }
 
     public getProcessInstance(walletOrSigner?: Wallet | Signer): IProcessContract {
-        if (!this.votingContractAddress()) throw new Error("The gateway is not yet connected")
+        if (!this.web3.processContractAddress) throw new Error("The gateway is not yet connected")
 
         if (walletOrSigner && (walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer))
-            return this.web3.attach<IProcessContract>(this.votingContractAddress(), ProcessContractDefinition.abi as any).connect(walletOrSigner) as (IProcessContract)
-        return this.web3.attach<IProcessContract>(this.votingContractAddress(), ProcessContractDefinition.abi as any)
+            return this.web3.attach<IProcessContract>(this.web3.processContractAddress, ProcessContractDefinition.abi as any).connect(walletOrSigner) as (IProcessContract)
+        return this.web3.attach<IProcessContract>(this.web3.processContractAddress, ProcessContractDefinition.abi as any)
+    }
+
+    public getNamespaceInstance(address: string, walletOrSigner?: Wallet | Signer): INamespaceContract {
+        // if (!this.web3.namespaceContractAddress) throw new Error("The gateway is not yet connected")
+
+        if (walletOrSigner && (walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer))
+            return this.web3.attach<INamespaceContract>(address, NamespaceContractDefinition.abi as any).connect(walletOrSigner) as (INamespaceContract)
+        return this.web3.attach<INamespaceContract>(address, NamespaceContractDefinition.abi as any)
     }
 }
 
@@ -700,7 +709,8 @@ export class DVoteGateway {
 export class Web3Gateway {
     private provider: providers.BaseProvider
     public entityResolverAddress: string
-    public votingContractAddress: string
+    // public namespaceContractAddress: string
+    public processContractAddress: string
 
     /** Returns a JSON RPC provider that can be used for Ethereum communication */
     public static providerFromUri(uri: string, networkId?: NetworkID, options: { testing: boolean } = { testing: false }) {
@@ -776,7 +786,7 @@ export class Web3Gateway {
     }
 
     public isUp(timeout: number = GATEWAY_SELECTION_TIMEOUT): Promise<void> {
-        // if (this.entityResolverAddress && this.votingContractAddress) return Promise.resolve()
+        // if (this.entityResolverAddress && this.processContractAddress) return Promise.resolve()
 
         return new Promise((resolve, reject) => {
             setTimeout(() => reject(new Error("The Web3 Gateway is too slow")), timeout)
@@ -795,10 +805,13 @@ export class Web3Gateway {
                             this.entityResolverAddress = entityResolverAddress
 
                             return this.provider.resolveName(processEnsDomain)
-                                .then(votingContractAddress => {
-                                    if (!votingContractAddress) return reject(new Error("The Web3 Gateway seems to be down"))
+                                .then(processContractAddress => {
+                                    if (!processContractAddress) return reject(new Error("The Web3 Gateway seems to be down"))
 
-                                    this.votingContractAddress = votingContractAddress
+                                    this.processContractAddress = processContractAddress
+
+                                    // TODO: retrieve `namespaceContractAddress`
+
                                     resolve()
                                 })
                         })
@@ -809,8 +822,8 @@ export class Web3Gateway {
             })
 
             // if (!entityResolverAddress) continue
-            // votingContractAddress = await w3.getProvider().resolveName(processEnsDomain).catch(() => { return false })
-            // if (!votingContractAddress) continue
+            // processContractAddress = await w3.getProvider().resolveName(processEnsDomain).catch(() => { return false })
+            // if (!processContractAddress) continue
             // getEntityResolverInstance({ provider: this.provider })
             //     .then(() => getProcessInstance({ provider: this.provider }))
             //     .then(() => resolve())

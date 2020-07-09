@@ -1,7 +1,7 @@
 // API
 import * as File from "./api/file"
 import * as Entity from "./api/entity"
-import * as Vote from "./api/vote"
+import * as Vote from "./api/voting"
 import * as Census from "./api/census"
 
 // NETWORK

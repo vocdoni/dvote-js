@@ -4,6 +4,7 @@ import GatewayInfo from "../../src/wrappers/gateway-info"
 import { Gateway } from "../../src/net/gateway"
 
 export { WSResponse, WSResponseBody, WebSocketMockedInteraction } from "./web-socket-service"
+export { getAccounts, TestAccount } from "./web3-service"
 
 export default class DevServices {
     readonly ws: DevWebSocketServer
@@ -36,6 +37,11 @@ export default class DevServices {
     get gateway() {
         const dvoteGw = this.ws.gatewayClient
         const web3Gw = this.web3.gatewayClient
-        return new Gateway(dvoteGw, web3Gw)
+
+        const gateway = new Gateway(dvoteGw, web3Gw)
+
+        // TODO: Override gateway.getEntityResolverInstance, ...
+
+        return gateway
     }
 }

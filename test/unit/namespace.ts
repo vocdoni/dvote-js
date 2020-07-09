@@ -8,7 +8,7 @@ import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { Contract, Wallet } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
-import { getAccounts, incrementTimestamp, TestAccount } from "../utils"
+import DevServices, { getAccounts, TestAccount } from "../mocks/all-services"
 import { NamespaceContractMethods } from "dvote-solidity"
 
 import { deployNamespaceContract, getNamespaceInstance } from "../../src/net/contracts"
@@ -29,7 +29,7 @@ const nullAddress = "0x0000000000000000000000000000000000000000"
 
 addCompletionHooks()
 
-describe("Voting Namespace", () => {
+describe("Namespaces", () => {
     beforeEach(async () => {
         accounts = getAccounts()
         baseAccount = accounts[0]
@@ -40,6 +40,8 @@ describe("Voting Namespace", () => {
 
         contractInstance = await new NamespaceBuilder().build()
     })
+
+    it("Should deploy the contract")
 
     describe("Genesis info", () => {
         it("Should allow to set the genesis Content Hashed URI", async () => {
