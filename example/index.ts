@@ -16,13 +16,11 @@ import { ProcessMetadata, ProcessMetadataTemplate } from "../src/models/process"
 import { deployEntityResolverContract, getEntityResolverInstance, deployProcessContract, getProcessInstance } from "../src/net/contracts"
 import { addFile, fetchFileString } from "../src/api/file"
 import GatewayInfo from "../src/wrappers/gateway-info"
-import ContentHashedURI from "../src/wrappers/content-hashed-uri"
 import { VOCHAIN_BLOCK_TIME } from "../src/constants"
 import { signJsonBody, isSignatureValid, recoverSignerPublicKey } from "../src/util/json-sign"
 import { WsGatewayMethod } from "../src/models/gateway"
 import { GatewayDiscoveryParameters } from "../src/net/gateway-discovery"
 import { ProcessEnvelopeType, ProcessMode, ProcessStatus } from "../src"
-import { IProcessCreateParams } from "dvote-solidity"
 
 const { Buffer } = require("buffer/")
 
@@ -412,7 +410,8 @@ async function cancelVotingProcess() {
     const pool = await GatewayPool.discover({ networkId: NETWORK_ID })
     await pool.connect()
 
-    const processId = await newProcess(ProcessMetadataTemplate, wallet, pool)
+    const params = { mode: ProcessMode.make({ autoStart: true }), envelopeType: ProcessEnvelopeType.make({ encryptedVotes: true }), metadata: ProcessMetadataTemplate, startBlock: 100, blockCount: 1000, censusMerkleRoot: "0x01234", censusMerkleTree: "ipfs://1234", maxCount: 1, questionCount: 2, costExponent: 1000, namespace: 1, paramsSignature: "0x1234...", uniqueValues: true, maxValue: 5, maxTotalCost: 0, maxVoteOverwrites: 1 }
+    const processId = await newProcess(params, wallet, pool)
     const processPre = await getProcessParameters(processId, pool)
     const canceledPre = processPre.status.isCanceled
 
@@ -430,10 +429,8 @@ async function cancelVotingProcess() {
 async function showProcessResults() {
     const wallet = walletFromSeededPassphrase(WALLET_PASSPHRASE, WALLET_SEED)
     const myEntityAddress = await wallet.getAddress()
-    const myEntityId = getEntityId(myEntityAddress)
 
     console.log("Entity Addr", myEntityAddress)
-    console.log("Entity ID", myEntityId)
     // const pool = await GatewayPool.discover({ networkId: "goerli" })
     const pool = await GatewayPool.discover({ networkId: NETWORK_ID })
     await pool.connect()
@@ -451,15 +448,35 @@ async function cloneVotingProcess() {
     await pool.connect()
 
     console.log("Updating...")
-    const PROCESS_ID_OLD = "0x6529717ebd0926f9096d6ae342c67bfd7dce90ce8eb2dbf9342a51d70fffb759"
-    const processMetadata = await getProcessMetadata(PROCESS_ID_OLD, pool)
-    const currentBlock = 765
-    const startBlock = currentBlock + 130
+    const PROCESS_ID_CURRENT = "0x6529717ebd0926f9096d6ae342c67bfd7dce90ce8eb2dbf9342a51d70fffb759"
+    const currentMetadata = await getProcessMetadata(PROCESS_ID_CURRENT, pool)
+    const currentParameters = await getProcessParameters(PROCESS_ID_CURRENT, pool)
+    const currentBlock = await getBlockHeight(pool)
+    const startBlock = currentBlock + 100
+    const blockCount = 2000
 
     const NEW_MERKLE_ROOT = "0xbae0912183e55c3173bad6eeb4408bfe4de6892f82123562475aca66b109ba13"
     const NEW_MERKLE_TREE_ORIGIN = "ipfs://QmUC4NokWrykhZwY9CNGPz7KS8AvHWD3M4SLk5doMRMCmA"
 
-    const processId = await newProcess(processMetadata, wallet, pool)
+    const params = {
+        mode: currentParameters.mode,
+        envelopeType: currentParameters.envelopeType,
+        metadata: currentMetadata,
+        startBlock,
+        blockCount,
+        censusMerkleRoot: NEW_MERKLE_ROOT,
+        censusMerkleTree: NEW_MERKLE_TREE_ORIGIN,
+        maxCount: currentParameters.maxCount,
+        questionCount: currentParameters.questionCount,
+        costExponent: currentParameters.costExponent,
+        namespace: currentParameters.namespace,
+        paramsSignature: "0x1234...",
+        uniqueValues: currentParameters.uniqueValues,
+        maxValue: currentParameters.maxCount,
+        maxTotalCost: currentParameters.maxTotalCost,
+        maxVoteOverwrites: currentParameters.maxVoteOverwrites
+    }
+    const processId = await newProcess(params, wallet, pool)
 
     console.log("CREATED", processId)
 
@@ -713,7 +730,7 @@ async function gatewayRawRequest() {
 
     const req = { method: "getGatewayInfo" as WsGatewayMethod }  // Low level raw request
     const timeout = 20
-    const r = await pool.sendMessage(req, wallet, timeout)
+    const r = await pool.sendRequest(req, wallet, timeout)
     console.log("RESPONSE:", r)
 
     // UNSIGNED

@@ -1,6 +1,6 @@
 # DVote JS changelog
 
-## 0.16.0
+## 0.17.0
 
 - Deep refactor to support the new Process contract methods
     - Adding `setStatus`, `incrementQuestionIndex`, `setCensus` and `setResults`
@@ -24,5 +24,7 @@
     - Renaming `ProcessResultItem.question` to `ProcessResultItem.title`
     - Renaming `ProcessResultItem.questions.options` to `ProcessResultItem.questions.choices`
     - Renaming `setEntityMetadata` into `setMetadata`
+    - Renaming `sendMessage` to `sendRequest` for consistency
 - Borrowing builders to test the contract method integration
 - Revamped tests
+- Adding WebSocket mocks and disposable Ethereum servers for testing

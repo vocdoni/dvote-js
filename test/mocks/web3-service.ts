@@ -3,6 +3,16 @@ import { Wallet, providers } from "ethers"
 import { Web3Gateway } from "../../src/net/gateway"
 import * as ganache from "ganache-core"
 
+// TYPES
+
+export type TestAccount = {
+    privateKey: string,
+    address: string,
+    provider: providers.Provider,
+    wallet: Wallet
+}
+
+const defaultPort = 8600
 const defaultMnemonic = "myth like bonus scare over problem client lizard pioneer submit female collect"
 
 /**
@@ -15,7 +25,7 @@ export class DevWeb3Service {
     accounts: TestAccount[]
 
     constructor(params: { port?: number, mnemonic?: string } = {}) {
-        this.port = params.port || 8600
+        this.port = params.port || defaultPort
         this.mnemonic = params.mnemonic || defaultMnemonic
 
         const wallets = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(idx => {
@@ -74,9 +84,3 @@ export class DevWeb3Service {
     }
 }
 
-export type TestAccount = {
-    privateKey: string,
-    address: string,
-    provider: providers.Provider,
-    wallet: Wallet
-}

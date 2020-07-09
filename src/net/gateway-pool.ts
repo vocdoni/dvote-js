@@ -116,17 +116,17 @@ export class GatewayPool {
         return this.activeGateway().getDVoteUri()
     }
 
-    public sendMessage(requestBody: IDvoteRequestParameters, wallet: Wallet | Signer = null, timeout: number = 50): Promise<any> {
+    public sendRequest(requestBody: IDvoteRequestParameters, wallet: Wallet | Signer = null, timeout: number = 50): Promise<any> {
         if (!isMethodSupported(this.supportedApis(), requestBody.method)) {
             this.errorCount += 1
             return this.shiftGateway()
                 .then(() => {
                     // Retry with the new one
-                    return this.sendMessage(requestBody, wallet, timeout)
+                    return this.sendRequest(requestBody, wallet, timeout)
                 })   // next gw
         }
 
-        return this.activeGateway().sendMessage(requestBody, wallet, timeout) // => capture time out exceptions
+        return this.activeGateway().sendRequest(requestBody, wallet, timeout) // => capture time out exceptions
             .then(response => {
                 this.errorCount = 0
                 this.refreshPoolCount = 0
@@ -150,7 +150,7 @@ export class GatewayPool {
                     return this.shiftGateway()
                         .then(() => {
                             // Retry with the new one
-                            return this.sendMessage(requestBody, wallet, timeout)
+                            return this.sendRequest(requestBody, wallet, timeout)
                         })   // next gw
                 }
                 throw err

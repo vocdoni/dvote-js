@@ -58,7 +58,7 @@ describe("DVoteGateway", () => {
             let gwClient = new DVoteGateway(gatewayInfo1)
             expect(await gwClient.getUri()).to.equal(gatewayInfo1.dvote)
             await gwClient.connect()
-            await gwClient.sendMessage({ method: "addClaim", processId: "1234", nullifier: "2345" })
+            await gwClient.sendRequest({ method: "addClaim", processId: "1234", nullifier: "2345" })
 
             await gwClient.disconnect()
             await gatewayServer1.stop()
@@ -73,7 +73,7 @@ describe("DVoteGateway", () => {
             gwClient = new DVoteGateway(gatewayInfo2)
             await gwClient.connect()
             expect(await gwClient.getUri()).to.equal(gatewayInfo2.dvote)
-            await gwClient.sendMessage({ method: "addClaim", processId: "5678", nullifier: "6789" })
+            await gwClient.sendRequest({ method: "addClaim", processId: "5678", nullifier: "6789" })
 
             await gwClient.disconnect()
             await gatewayServer2.stop()
@@ -99,11 +99,11 @@ describe("DVoteGateway", () => {
             const gwClient = new DVoteGateway(gatewayInfo)
             await gwClient.connect()
 
-            const response1 = await gwClient.sendMessage({ method: "addCensus", processId: "1234", nullifier: "2345" })
-            const response2 = await gwClient.sendMessage({ method: "addClaim", processId: "3456", nullifier: "4567" })
-            const response3 = await gwClient.sendMessage({ method: "addClaimBulk", processId: "5678", nullifier: "6789" })
-            const response4 = await gwClient.sendMessage({ method: "fetchFile", uri: "12345" })
-            const response5 = await gwClient.sendMessage({ method: "fetchFile", uri: "67890" })
+            const response1 = await gwClient.sendRequest({ method: "addCensus", processId: "1234", nullifier: "2345" })
+            const response2 = await gwClient.sendRequest({ method: "addClaim", processId: "3456", nullifier: "4567" })
+            const response3 = await gwClient.sendRequest({ method: "addClaimBulk", processId: "5678", nullifier: "6789" })
+            const response4 = await gwClient.sendRequest({ method: "fetchFile", uri: "12345" })
+            const response5 = await gwClient.sendRequest({ method: "fetchFile", uri: "67890" })
 
             expect(response1.result).to.equal("OK 1")
             expect(response2.result).to.equal("OK 2")
@@ -144,35 +144,35 @@ describe("DVoteGateway", () => {
             await gwClient.connect()
 
             try {
-                await gwClient.sendMessage({ method: "addCensus", processId: "1234", nullifier: "2345" })
+                await gwClient.sendRequest({ method: "addCensus", processId: "1234", nullifier: "2345" })
                 throw new Error("Request did not fail")
             }
             catch (err) {
                 expect(err.message).to.equal("ERROR 1")
             }
             try {
-                await gwClient.sendMessage({ method: "addCensus", processId: "3456", nullifier: "4567" })
+                await gwClient.sendRequest({ method: "addCensus", processId: "3456", nullifier: "4567" })
                 throw new Error("Request did not fail")
             }
             catch (err) {
                 expect(err.message).to.equal("ERROR 2")
             }
             try {
-                await gwClient.sendMessage({ method: "addCensus", processId: "5678", nullifier: "6789" })
+                await gwClient.sendRequest({ method: "addCensus", processId: "5678", nullifier: "6789" })
                 throw new Error("Request did not fail")
             }
             catch (err) {
                 expect(err.message).to.equal("ERROR 3")
             }
             try {
-                await gwClient.sendMessage({ method: "fetchFile", uri: "12345" })
+                await gwClient.sendRequest({ method: "fetchFile", uri: "12345" })
                 throw new Error("Request did not fail")
             }
             catch (err) {
                 expect(err.message).to.equal("ERROR 4")
             }
             try {
-                await gwClient.sendMessage({ method: "fetchFile", uri: "67890" })
+                await gwClient.sendRequest({ method: "fetchFile", uri: "67890" })
                 throw new Error("Request did not fail")
             }
             catch (err) {

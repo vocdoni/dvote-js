@@ -104,7 +104,7 @@ export function getBlockHeight(gateway: IGateway | IGatewayPool): Promise<number
 export function getBlockStatus(gateway: IGateway | IGatewayPool): Promise<{ blockNumber: number, blockTimestamp: number, blockTimes: number[] }> {
     if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
-    return gateway.sendMessage({ method: "getBlockStatus" })
+    return gateway.sendRequest({ method: "getBlockStatus" })
         .then((response) => {
             if (!(typeof response.height === 'number') || response.height < 0) throw new Error("The block height is not valid")
             else if (!(typeof response.blockTimestamp === 'number') || response.blockTimestamp < 0) throw new Error("The block timestamp is not valid")
@@ -306,7 +306,7 @@ export function estimateDateAtBlock(blockNumber: number, gateway: IGateway | IGa
 export function getProcessKeys(processId: string, gateway: IGateway | IGatewayPool): Promise<IProcessKeys> {
     if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
-    return gateway.sendMessage({ method: "getProcessKeys", processId })
+    return gateway.sendRequest({ method: "getProcessKeys", processId })
         .then((response) => {
             if (!response) throw new Error("The gateway response is not correct")
             const result: IProcessKeys = { encryptionPubKeys: [], encryptionPrivKeys: [], commitmentKeys: [], revealKeys: [] }
@@ -399,7 +399,7 @@ export async function newProcess(processParameters: Omit<IProcessCreateParams, "
 
         const count = await processInstance.getEntityProcessCount(address)
         if (!count || count.isZero()) return Promise.reject(new Error("The process could not be created"))
-        const processId = await processInstance.getProcessId(address, count.toNumber() - 1, parameters.namespace)
+        const processId = await processInstance.getProcessId(address, count.toNumber() - 1, contractParameters.namespace)
 
         // UPDATE THE ENTITY
         if (!entityMetadata.votingProcesses) entityMetadata.votingProcesses = { active: [], ended: [] }
@@ -529,7 +529,7 @@ export async function getEnvelope(processId: string, gateway: IGateway | IGatewa
     if (!processId) return Promise.reject(new Error("No process ID provided"))
     else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
-    return gateway.sendMessage({ method: "getEnvelope", nullifier, processId })
+    return gateway.sendRequest({ method: "getEnvelope", nullifier, processId })
         .then((response) => {
             if (!response.payload) throw new Error("The envelope could not be retrieved")
             // if (!(response.payload instanceof String)) return Promise.reject(new Error("Envlope content not correct"))
@@ -550,7 +550,7 @@ export function getEnvelopeHeight(processId: string, gateway: IGateway | IGatewa
     if (!processId) return Promise.reject(new Error("No process ID provided"))
     else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
-    return gateway.sendMessage({ method: "getEnvelopeHeight", processId })
+    return gateway.sendRequest({ method: "getEnvelopeHeight", processId })
         .then((response) => {
             if (!(typeof response.height === 'number') || response.height < 0) throw new Error("The gateway response is not correct")
             return response.height
@@ -578,7 +578,7 @@ export async function getProcessList(entityId: string, gateway: IGateway | IGate
         }
         if (afterId) req.fromId = afterId
 
-        const response = await gateway.sendMessage(req)
+        const response = await gateway.sendRequest(req)
         if (!response || !Array.isArray(response.processList)) throw new Error("Invalid response")
         return response.processList
     }
@@ -600,7 +600,7 @@ export function getEnvelopeList(processId: string,
     if (!processId || isNaN(from) || isNaN(listSize) || !gateway)
         return Promise.reject(new Error("Invalid parameters"))
 
-    return gateway.sendMessage({ method: "getEnvelopeList", processId, from, listSize })
+    return gateway.sendRequest({ method: "getEnvelopeList", processId, from, listSize })
         .then((response) => {
             if (!Array.isArray(response.nullifiers)) throw new Error("The gateway response is not correct")
             return response.nullifiers
@@ -623,7 +623,7 @@ export function getRawResults(processId: string, gateway: IGateway | IGatewayPoo
     else if (!((gateway instanceof Gateway || gateway instanceof GatewayPool)))
         return Promise.reject(new Error("Invalid Gateway object"))
 
-    return gateway.sendMessage({ method: "getResults", processId })
+    return gateway.sendRequest({ method: "getResults", processId })
         .then((response) => {
             if (!Array.isArray(response.results)) throw new Error("The gateway response is not valid")
             const results = (Array.isArray(response.results) && response.results.length) ? response.results : []
@@ -712,7 +712,7 @@ export async function submitEnvelope(voteEnvelope: IAnonymousVoteEnvelope | ISig
     if (!voteEnvelope) return Promise.reject(new Error("Invalid parameters"))
     else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
-    return gateway.sendMessage({ method: "submitEnvelope", payload: voteEnvelope })
+    return gateway.sendRequest({ method: "submitEnvelope", payload: voteEnvelope })
         .catch((error) => {
             const message = (error.message) ? "Could not submit the vote envelope: " + error.message : "Could not submit the vote envelope"
             throw new Error(message)
@@ -729,7 +729,7 @@ export function getEnvelopeStatus(processId: string, nullifier: string, gateway:
     if (!processId || !nullifier) return Promise.reject(new Error("Invalid parameters"))
     else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
-    return gateway.sendMessage({ method: "getEnvelopeStatus", processId, nullifier })
+    return gateway.sendRequest({ method: "getEnvelopeStatus", processId, nullifier })
         .then((response) => {
             if (response.registered === true) {
                 if (typeof response.blockTimestamp != "number") throw new Error("Invalid response received from the gateway")

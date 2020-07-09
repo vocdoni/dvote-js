@@ -9,10 +9,10 @@ import { Wallet, Signer } from "ethers"
 
 /**
  * Fetch the contents of a file and return them as a string
- * 
+ *
  * See https://vocdoni.io/docs/#/architecture/components/gateway?id=file-api
- * 
- * @param contentUri 
+ *
+ * @param contentUri
  * @param gateway (optional) A Vocdoni Gateway to use
  */
 export function fetchFileString(contentUri: ContentURI | ContentHashedURI | string, gateway: IDVoteGateway | IGateway | IGatewayPool = null): Promise<string> {
@@ -29,10 +29,10 @@ export function fetchFileString(contentUri: ContentURI | ContentHashedURI | stri
 
 /**
  * Fetch the contents of a file and return them as a byte array
- * 
+ *
  * See https://vocdoni.io/docs/#/architecture/components/gateway?id=file-api
- * 
- * @param contentUri 
+ *
+ * @param contentUri
  * @param gateway (optional) A Vocdoni Gateway to use
  */
 export async function fetchFileBytes(contentUri: ContentURI | ContentHashedURI | string, gateway: IDVoteGateway | IGateway | IGatewayPool = null): Promise<Buffer> {
@@ -48,7 +48,7 @@ export async function fetchFileBytes(contentUri: ContentURI | ContentHashedURI |
     if (gateway) {
         try {
             // Connect only if we created the client
-            const response = await gateway.sendMessage({ method: "fetchFile", uri: cUri.toContentUriString() })
+            const response = await gateway.sendRequest({ method: "fetchFile", uri: cUri.toContentUriString() })
 
             if (!response || !response.content) {
                 return Promise.reject(new Error("Invalid response received from the gateway"))
@@ -132,10 +132,10 @@ export async function fetchFileBytes(contentUri: ContentURI | ContentHashedURI |
 }
 
 /**
- * Upload static data to decentralized P2P filesystems. 
- * 
+ * Upload static data to decentralized P2P filesystems.
+ *
  * See https://vocdoni.io/docs/#/architecture/components/gateway?id=add-file
- * 
+ *
  * @param buffer Uint8Array or string with the file contents
  * @param type What type of P2P protocol should be used
  * @param wallet An Ethers.js wallet capable of signing the payload
@@ -158,7 +158,7 @@ export async function addFile(buffer: Uint8Array | string, name: string, walletO
         content: Buffer.from(buffer).toString("base64")
     }
 
-    return gateway.sendMessage(requestBody, walletOrSigner)
+    return gateway.sendRequest(requestBody, walletOrSigner)
         .then(response => {
             if (!response || !response.uri) throw new Error("The data could not be uploaded")
 
@@ -172,8 +172,8 @@ export async function addFile(buffer: Uint8Array | string, name: string, walletO
 
 /**
  * Retrieves the list of pinned filed for the current account
- * @param 1 
- * @param 2 
+ * @param 1
+ * @param 2
  * @param 3
  */
 export async function pinList(): Promise<string> {
@@ -184,8 +184,8 @@ export async function pinList(): Promise<string> {
 
 /**
  * Pins an extenal IPFS hash to that it becomes persistent
- * @param 1 
- * @param 2 
+ * @param 1
+ * @param 2
  * @param 3
  */
 export async function pinFile(): Promise<string> {
@@ -196,8 +196,8 @@ export async function pinFile(): Promise<string> {
 
 /**
  * Requests to remove the pin of a file
- * @param 1 
- * @param 2 
+ * @param 1
+ * @param 2
  * @param 3
  */
 export async function unpinFile(): Promise<string> {

@@ -9,7 +9,7 @@ import { hexStringToBuffer } from "../util/encoding"
 import { CENSUS_MAX_BULK_SIZE } from "../constants"
 
 
-/** 
+/**
  * A census ID consists of the Entity Address and the hash of the name.
  * This function returns the full Census ID
  */
@@ -19,7 +19,7 @@ export function generateCensusId(censusName: string, entityAddress: string) {
     return prefix + "/" + suffix
 }
 
-/** 
+/**
  * A census ID consists of the Entity Address and the hash of the name.
  * This function computes the second term
  */
@@ -29,7 +29,7 @@ export function generateCensusIdSuffix(censusName: string) {
     return "0x" + sha3_256(censusName.toLowerCase().trim())
 }
 
-/** 
+/**
  * Hashes the given hex string ECDSA public key and returns the
  * base 64 litte-endian representation of the Poseidon hash big int
  */
@@ -54,10 +54,10 @@ export function digestHexClaim(publicKey: string): string {
 
 /**
  * Asks the Gateway to create a new census and set the given public key as the ones who can manage it
- * @param censusName Name given to the census. Will be used to generate the census ID by trimming spaces and converting text to lowercase 
+ * @param censusName Name given to the census. Will be used to generate the census ID by trimming spaces and converting text to lowercase
  * @param managerPublicKeys ECDSA public key(s) that can manage this census
  * @param gateway A Gateway instance connected to a remote Gateway
- * @param walletOrSigner 
+ * @param walletOrSigner
  * @returns Promise resolving with the new merkleRoot
  */
 export async function addCensus(censusName: string, managerPublicKeys: string[], gateway: IGateway | IGatewayPool, walletOrSigner: Wallet | Signer): Promise<{ censusId: string, merkleRoot: string }> {
@@ -80,7 +80,7 @@ export async function addCensus(censusName: string, managerPublicKeys: string[],
 
     try {
         const censusIdSuffix = generateCensusIdSuffix(censusName)
-        const response = await gateway.sendMessage({ method: "addCensus", censusId: censusIdSuffix, pubKeys: managerPublicKeys }, walletOrSigner)
+        const response = await gateway.sendRequest({ method: "addCensus", censusId: censusIdSuffix, pubKeys: managerPublicKeys }, walletOrSigner)
         const merkleRoot = await getRoot(response.censusId, gateway)
         return { censusId: response.censusId, merkleRoot }
     } catch (error) {
@@ -92,12 +92,12 @@ export async function addCensus(censusName: string, managerPublicKeys: string[],
 /**
  * Asks the Gateway to add the given public key to a census previously registered on it.
  * NOTE: This function is intended to be called from NodeJS 10+
- * 
+ *
  * @param censusId Full Census ID containing the Entity ID and the hash of the original name
  * @param claimData A string containing a base64 encoded Public Key or the base64 encoded Poseidon Hash of it
  * @param digested Set to true if the claim is already hashed using Poseidon Hash. False otherwise.
  * @param gateway A Gateway instance pointing to a remote Gateway
- * @param walletOrSigner 
+ * @param walletOrSigner
  * @returns Promise resolving with the new merkleRoot
  */
 export function addClaim(censusId: string, claimData: string, digested: boolean, gateway: IGateway | IGatewayPool, walletOrSigner: Wallet | Signer): Promise<string> {
@@ -105,7 +105,7 @@ export function addClaim(censusId: string, claimData: string, digested: boolean,
     else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
     else if (!walletOrSigner || !(walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer)) return Promise.reject(new Error("Invalid WalletOrSinger object"))
 
-    return gateway.sendMessage({ method: "addClaim", censusId, digested, claimData }, walletOrSigner)
+    return gateway.sendRequest({ method: "addClaim", censusId, digested, claimData }, walletOrSigner)
         .then((response) => {
             return getRoot(censusId, gateway)
         })
@@ -118,12 +118,12 @@ export function addClaim(censusId: string, claimData: string, digested: boolean,
 /**
  * Asks the Gateway to add the given public key to a census previously registered on it
  * NOTE: This function is intended to be called from NodeJS 10+
- * 
+ *
  * @param censusId Full Census ID containing the Entity ID and the hash of the original name
  * @param claimsData A string array containing base64 encoded Public Keys or the base64 encoded Poseidon Hashes of them
  * @param digested Set to true if the claims are already hashed using Poseidon Hash. False otherwise.
  * @param gateway A Gateway instance pointing to a remote Gateway
- * @param walletOrSigner 
+ * @param walletOrSigner
  * @returns Promise resolving with the new merkleRoot
  */
 export async function addClaimBulk(censusId: string, claimsData: string[], digested: boolean, gateway: IGateway | IGatewayPool, walletOrSigner: Wallet | Signer): Promise<{ merkleRoot: string, invalidClaims: any[] }> {
@@ -152,7 +152,7 @@ function addClaimChunk(censusId: string, claimsData: string[], digested: boolean
     else if (!walletOrSigner || !(walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer)) return Promise.reject(new Error("Invalid WalletOrSinger object"))
 
 
-    return gateway.sendMessage({ method: "addClaimBulk", censusId, digested, claimsData }, walletOrSigner)
+    return gateway.sendRequest({ method: "addClaimBulk", censusId, digested, claimsData }, walletOrSigner)
         .then(response => {
             const invalidClaims = ("invalidClaims" in response) ? response.invalidClaims : []
             return invalidClaims
@@ -161,7 +161,7 @@ function addClaimChunk(censusId: string, claimsData: string[], digested: boolean
             throw new Error(message)
         })
     // try {
-    //     const response = await gateway.sendMessage({ method: "addClaimBulk", censusId, digested, claimsData }, walletOrSigner)
+    //     const response = await gateway.sendRequest({ method: "addClaimBulk", censusId, digested, claimsData }, walletOrSigner)
     //     const invalidClaims = ("invalidClaims" in response) ? response.invalidClaims : []
 
     //     return invalidClaims
@@ -173,7 +173,7 @@ function addClaimChunk(censusId: string, claimsData: string[], digested: boolean
 }
 
 /**
- * Asks the Gateway to fetch 
+ * Asks the Gateway to fetch
  * @param censusId The full Census ID to fetch from the Gateway
  * @param gateway A Gateway instance pointing to a remote Gateway
  * @returns Promise resolving with the merkleRoot
@@ -182,7 +182,7 @@ export function getRoot(censusId: string, gateway: IGateway | IGatewayPool): Pro
     if (!censusId || !gateway) return Promise.reject(new Error("Invalid parameters"))
     else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
-    return gateway.sendMessage({ method: "getRoot", censusId })
+    return gateway.sendRequest({ method: "getRoot", censusId })
         .then(response => {
             if (!response.root) throw new Error("The census merkle root could not be fetched")
             return response.root
@@ -202,7 +202,7 @@ export function getCensusSize(censusMerkleRootHash: string, gateway: IGateway | 
     if (!censusMerkleRootHash || !gateway) return Promise.reject(new Error("Invalid parameters"))
     else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
-    return gateway.sendMessage({ method: "getSize", censusId: censusMerkleRootHash }).then(response => {
+    return gateway.sendRequest({ method: "getSize", censusId: censusMerkleRootHash }).then(response => {
         if (isNaN(response.size)) throw new Error("The census size could not be retrieved")
         return response.size
     }).catch(error => {
@@ -211,11 +211,11 @@ export function getCensusSize(censusMerkleRootHash: string, gateway: IGateway | 
     })
 }
 
-/** Dumps the entire content of the census as an array of hexStrings rady to be imported to another census service 
- *  
+/** Dumps the entire content of the census as an array of hexStrings rady to be imported to another census service
+ *
  * @param censusId Full Census ID containing the Entity ID and the hash of the original name
  * @param gateway A Gateway instance pointing to a remote Gateway
- * @param walletOrSigner 
+ * @param walletOrSigner
  * @returns Promise resolving with the a hex array dump of the census claims
 */
 export function dump(censusId: string, gateway: IGateway | IGatewayPool, walletOrSigner: Wallet | Signer, rootHash?: String): Promise<string[]> {
@@ -224,7 +224,7 @@ export function dump(censusId: string, gateway: IGateway | IGatewayPool, walletO
 
     const msg: IDvoteRequestParameters = (rootHash) ? { method: "dump", censusId, rootHash } : { method: "dump", censusId }
 
-    return gateway.sendMessage(msg, walletOrSigner)
+    return gateway.sendRequest(msg, walletOrSigner)
         .then(response => {
             return (response.claimsData && response.claimsData.length) ? response.claimsData : []
         }).catch(error => {
@@ -234,10 +234,10 @@ export function dump(censusId: string, gateway: IGateway | IGatewayPool, walletO
 }
 
 /** Dumps the contents of a census in raw string format. Not valid to use with `importDump`
- *  
+ *
  * @param censusId Full Census ID containing the Entity ID and the hash of the original name
  * @param gateway A Gateway instance pointing to a remote Gateway
- * @param walletOrSigner 
+ * @param walletOrSigner
  * @returns Promise resolving with the a raw string dump of the census claims
 */
 export function dumpPlain(censusId: string, gateway: IGateway | IGatewayPool, walletOrSigner: Wallet | Signer, rootHash?: String): Promise<string[]> {
@@ -246,7 +246,7 @@ export function dumpPlain(censusId: string, gateway: IGateway | IGatewayPool, wa
 
     const msg: IDvoteRequestParameters = (rootHash) ? { method: "dumpPlain", censusId, rootHash } : { method: "dumpPlain", censusId }
 
-    return gateway.sendMessage(msg, walletOrSigner)
+    return gateway.sendRequest(msg, walletOrSigner)
         .then(response => {
             return (response.claimsData && response.claimsData.length) ? response.claimsData : []
         }).catch(error => {
@@ -271,7 +271,7 @@ export function publishCensus(censusId: string, gateway: IGateway | IGatewayPool
     else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
     else if (!walletOrSigner || !(walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer)) return Promise.reject(new Error("Invalid WalletOrSinger object"))
 
-    return gateway.sendMessage({ method: "publish", censusId }, walletOrSigner)
+    return gateway.sendRequest({ method: "publish", censusId }, walletOrSigner)
         .then(response => {
             if (!response.uri) throw new Error("The census claim URI could not be retrieved")
             return response.uri
@@ -286,13 +286,13 @@ export function publishCensus(censusId: string, gateway: IGateway | IGatewayPool
  * Fetch the proof of the given claim on the given census merkleTree using the given gateway
  * @param censusMerkleRoot The Merkle Root of the Census to query
  * @param base64Claim Base64-encoded claim of the leaf to request
- * @param gateway 
+ * @param gateway
  */
 export function generateProof(censusMerkleRoot: string, base64Claim: string, isDigested: boolean, gateway: IGateway | IGatewayPool): Promise<string> {
     if (!censusMerkleRoot || !base64Claim || !gateway) return Promise.reject(new Error("Invalid parameters"))
     else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
-    return gateway.sendMessage({
+    return gateway.sendRequest({
         method: "genProof",
         censusId: censusMerkleRoot,
         digested: isDigested,

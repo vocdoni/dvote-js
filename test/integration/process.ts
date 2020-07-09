@@ -14,8 +14,8 @@ describe("Process", () => {
     //     const gwClient = new DVoteGateway(gatewayInfo)
     //     await gwClient.connect()
 
-    //     const response1 = await gwClient.sendMessage({ method: "addCensus", processId: "1234", nullifier: "2345" })
-    //     const response2 = await gwClient.sendMessage({ method: "addClaim", processId: "3456", nullifier: "4567" })
+    //     const response1 = await gwClient.sendRequest({ method: "addCensus", processId: "1234", nullifier: "2345" })
+    //     const response2 = await gwClient.sendRequest({ method: "addClaim", processId: "3456", nullifier: "4567" })
 
     //     expect(response1.result).to.equal("OK 1")
     //     expect(response2.result).to.equal("OK 2")

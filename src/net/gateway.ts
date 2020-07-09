@@ -51,7 +51,7 @@ type WsRequest = {
     timeout: any
 }
 
-/** What is actually sent by sendMessage() to the Gateway */
+/** What is actually sent by sendRequest() to the Gateway */
 type MessageRequestContent = {
     id: string,
     request: IDvoteRequestParameters,
@@ -254,8 +254,8 @@ export class Gateway {
         return this.getProvider().getNetwork().then(network => network.chainId)
     }
 
-    public sendMessage(requestBody: IDvoteRequestParameters, wallet: Wallet | Signer = null, timeout: number = 50): Promise<any> {
-        return this.dvote.sendMessage(requestBody, wallet, timeout)
+    public sendRequest(requestBody: IDvoteRequestParameters, wallet: Wallet | Signer = null, timeout: number = 50): Promise<any> {
+        return this.dvote.sendRequest(requestBody, wallet, timeout)
     }
 
     public getGatewayInfo(timeout: number = 5): Promise<{ api: DVoteSupportedApi[], health: number }> {
@@ -347,7 +347,7 @@ export class DVoteGateway {
                 // wait until the promise is resolved
                 this.connectionPromise = new Promise((resolve, reject) => {
                     try {
-                        // Set up the web socket
+                        // Set up the connection
                         const buildResponse = msg => {
                             // Detect behavior on Browser/NodeJS
                             if (!msg) throw new Error("Invalid response message")
@@ -432,9 +432,8 @@ export class DVoteGateway {
                 throw new Error("Unsupported gateway protocol: " + url.protocol)
         }
 
-
         // if the caller of this function awaits this promise,
-        // an eventual call in sendMessage will not need to
+        // an eventual call in sendRequest will not need to
         return this.connectionPromise
     }
 
@@ -453,8 +452,8 @@ export class DVoteGateway {
      */
     public async isConnected(): Promise<boolean> {
         if (this.connectionPromise) await this.connectionPromise
-        if (this.http) return true
-        return this.webSocket != null &&
+        else if (this.http) return true
+        else return this.webSocket != null &&
             this.webSocket.readyState === this.webSocket.OPEN &&
             this.uri != null
     }
@@ -478,7 +477,7 @@ export class DVoteGateway {
      * @param wallet (optional) The wallet to use for signing (default: null)
      * @param timeout (optional) Timeout in seconds to wait before failing (default: 50)
      */
-    public async sendMessage(requestBody: IDvoteRequestParameters, wallet: Wallet | Signer = null, timeout: number = 50): Promise<any> {
+    public async sendRequest(requestBody: IDvoteRequestParameters, wallet: Wallet | Signer = null, timeout: number = 50): Promise<any> {
         if (typeof requestBody != "object") return Promise.reject(new Error("The payload should be a javascript object"))
         else if (typeof wallet != "object") return Promise.reject(new Error("The wallet is required"))
 
@@ -573,9 +572,9 @@ export class DVoteGateway {
         try {
             let result
             if (timeout)
-                result = await this.sendMessage({ method: "getGatewayInfo" }, null, timeout)
+                result = await this.sendRequest({ method: "getGatewayInfo" }, null, timeout)
             else
-                result = await this.sendMessage({ method: "getGatewayInfo" })
+                result = await this.sendRequest({ method: "getGatewayInfo" })
 
             if (!result.ok) throw new Error("Not OK")
             else if (!Array.isArray(result.apiList)) throw new Error("apiList is not an array")
@@ -689,6 +688,7 @@ export class DVoteGateway {
         if (responseBytes && responseBytes.length > 0) {
             response['responseBytes'] = responseBytes
         }
+        // The request payload is handled in `sendRequest`
         request.resolve(response)
         delete request.resolve
     }
