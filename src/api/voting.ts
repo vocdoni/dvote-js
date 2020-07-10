@@ -339,7 +339,7 @@ export function getProcessKeys(processId: string, gateway: IGateway | IGatewayPo
  * @param gateway
  * @returns The process ID
  */
-export async function newProcess(processParameters: Omit<IProcessCreateParams, "metadata"> & { metadata: ProcessMetadata },
+export async function newProcess(processParameters: Omit<Omit<IProcessCreateParams, "metadata">, "questionCount"> & { metadata: ProcessMetadata },
     walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
     if (!processParameters) return Promise.reject(new Error("Invalid process metadata"))
     else if (!processParameters.metadata) return Promise.reject(new Error("Invalid process metadata"))
@@ -349,7 +349,8 @@ export async function newProcess(processParameters: Omit<IProcessCreateParams, "
         return Promise.reject(new Error("Invalid Gateway object"))
 
     // Merge parameters and metadata, by now
-    const contractParameters = ProcessContractParameters.fromParams({ ...processParameters, metadata: "" })
+    const questionCount = processParameters.metadata.questions.length
+    const contractParameters = ProcessContractParameters.fromParams({ ...processParameters, questionCount, metadata: "" })
 
     // throw if not valid
     const metadata = checkValidProcessMetadata(processParameters.metadata)

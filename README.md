@@ -299,13 +299,13 @@ Simply run `npm run test`. It is an alias for `npm run test:unit` and `npm run t
 In order to avoid tedious and repetitive testing code, you can check out the `test/builders` folder. Entity and Process builders deploy a new instance and create an Entity/Process with default values. These default values can be overridden with one-liners, if needed:
 
 ```javascript
-const EntityBuilder = require("./test/builders/entity-resolver")
-const VoteBuilder = require("./test/builders/voting-process")
+const EntityResolverBuilder = require("./test/builders/entity-resolver")
+const ProcessBuilder = require("./test/builders/process")
 
-const contractInstance1 = await new EntityBuilder().build()
+const contractInstance1 = await new EntityResolverBuilder().build()
 const contractInstance2 = await new ProcessBuilder().build()
 
-const contractInstance3 = await new EntityBuilder()
+const contractInstance3 = await new EntityResolverBuilder()
     .withName("Another name")
     .build()
 

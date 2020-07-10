@@ -285,6 +285,7 @@ describe("DVote gateway client", () => {
 
             await wsServer.stop()
         })
+
         it("Should enforce authenticated unpin requests")
     })
 })

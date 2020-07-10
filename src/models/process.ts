@@ -24,6 +24,10 @@ export { ProcessMetadataTemplate } from "./templates/process"
  */
 export function checkValidProcessMetadata(processMetadata: ProcessMetadata): ProcessMetadata {
     if (typeof processMetadata != "object") throw new Error("The metadata must be a JSON object")
+    else if (processMetadata.questions.length < 1)
+        throw new Error("The metadata needs to have at least one question")
+    else if (processMetadata.questions.some(q => !Array.isArray(q.choices) || q.choices.length < 2))
+        throw new Error("All questions need to have at least two choices")
 
     try {
         processMetadataSchema.validateSync(processMetadata)
@@ -100,7 +104,7 @@ export interface ProcessMetadata {
     }>,
 }
 
-export type INewProcessParams = Omit<IProcessCreateParams, "metadata">
+export type INewProcessParams = Omit<Omit<IProcessCreateParams, "metadata">, "questionCount">
 
 export interface ProcessResults {
     questions: ProcessResultItem[],

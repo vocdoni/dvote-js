@@ -9,7 +9,7 @@ import { getAccounts, TestAccount } from "../helpers/all-services"
 export const DEFAULT_NAME = "Entity Name"
 
 // BUILDER
-export default class EntityBuilder {
+export default class EntityResolverBuilder {
     accounts: TestAccount[]
     entityAccount: TestAccount
 

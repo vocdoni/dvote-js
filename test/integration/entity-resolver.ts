@@ -7,7 +7,7 @@ import { EntityResolverContractMethods } from "dvote-solidity"
 
 import { ensHashAddress } from "dvote-solidity"
 import { deployEntityResolverContract, getEntityResolverInstance } from "../../src/net/contracts"
-import EntityBuilder, { DEFAULT_NAME } from "../builders/entity-resolver"
+import EntityResolverBuilder, { DEFAULT_NAME } from "../builders/entity-resolver"
 
 let accounts: TestAccount[]
 let baseAccount: TestAccount
@@ -27,7 +27,7 @@ describe("Entity Resolver", () => {
 
         entityNode = ensHashAddress(entityAccount.address)
 
-        contractInstance = await new EntityBuilder().build()
+        contractInstance = await new EntityResolverBuilder().build()
     })
 
     describe("Resolver Smart Contract", () => {
@@ -56,10 +56,10 @@ describe("Entity Resolver", () => {
         it("Should work for any creator account", async () => {
             entityNode = ensHashAddress(randomAccount.address)
 
-            contractInstance = await new EntityBuilder().withEntityAccount(randomAccount).build()
+            contractInstance = await new EntityResolverBuilder().withEntityAccount(randomAccount).build()
             expect(await contractInstance.text(entityNode, "key-name")).to.eq(DEFAULT_NAME)
 
-            contractInstance = await new EntityBuilder().withEntityAccount(randomAccount).withName("ENTITY NAME 3").build()
+            contractInstance = await new EntityResolverBuilder().withEntityAccount(randomAccount).withName("ENTITY NAME 3").build()
             expect(await contractInstance.text(entityNode, "key-name")).to.eq("ENTITY NAME 3")
         })
 
@@ -68,15 +68,15 @@ describe("Entity Resolver", () => {
     describe("Resolver Text Records", () => {
 
         it("Should set and retrieve the name of an entity", async () => {
-            contractInstance = await new EntityBuilder().build()
+            contractInstance = await new EntityResolverBuilder().build()
             expect(await contractInstance.text(entityNode, "key-name")).to.eq(DEFAULT_NAME)
 
-            contractInstance = await new EntityBuilder().withName("ENTITY NAME 2").build()
+            contractInstance = await new EntityResolverBuilder().withName("ENTITY NAME 2").build()
             expect(await contractInstance.text(entityNode, "key-name")).to.eq("ENTITY NAME 2")
         })
 
         it("Should allow to set any arbitrary key/value", async () => {
-            contractInstance = await new EntityBuilder().build()
+            contractInstance = await new EntityResolverBuilder().build()
 
             const data = [
                 { key: "123", value: "hello" },

@@ -1,7 +1,38 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
+import DevServices from "../helpers/all-services"
+import { Gateway } from "../../src/net/gateway"
+import EntityResolverBuilder from "../builders/entity-resolver"
+import NamespaceBuilder, { DEFAULT_NAMESPACE } from "../builders/namespace"
+import ProcessBuilder, { DEFAULT_PARAMS_SIGNATURE } from "../builders/process"
+import { ProcessMetadata } from "../../src/models/process"
+import { newProcess } from "../../src/api/voting"
+import { Wallet } from "ethers"
+import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType } from "dvote-solidity"
+import { EntityMetadataTemplate } from "../../src/models/entity"
+
+let server: DevServices
+let gateway: Gateway
+let entityAccount: Wallet
 
 describe("Process", () => {
+    before(() => {
+        server = new DevServices()
+        return server.start()
+    })
+    after(() => server.stop())
+
+    beforeEach(async () => {
+        const entityInstance = await new EntityResolverBuilder().build()
+        const namespaceInstance = await new NamespaceBuilder().build()
+        const processInstance = await new ProcessBuilder().build(0)
+        gateway = server.getGateway(entityInstance.address, namespaceInstance.address, processInstance.address)
+
+        entityAccount = server.web3.accounts[1].wallet
+    })
+
+
+
     // it("example", async () => {
     //     const gatewayServer = new GatewayMock({
     //         port,
@@ -38,9 +69,51 @@ describe("Process", () => {
     // })
 
     describe("Process metadata", () => {
-        it("Should fetch the metadata of a process")
-        it("Should set the metadata of a new process")
         it("Should register a new process on the blockchain")
+        //     it("Should register a new process on the blockchain", async () => {
+
+        //     const params = {
+        //         mode: ProcessMode.AUTO_START,
+        //         envelopeType: ProcessEnvelopeType.make(),
+        //         // metadata not needed
+        //         censusMerkleRoot: "0x1",
+        //         censusMerkleTree: "ipfs://1234",
+        //         startBlock: 200,
+        //         blockCount: 1000,
+        //         maxCount: 1,
+        //         maxValue: 5,
+        //         maxTotalCost: 10,
+        //         maxVoteOverwrites: 0,
+        //         uniqueValues: true,
+        //         costExponent: 10000,
+        //         questionCount: 5, /////
+        //         namespace: DEFAULT_NAMESPACE,
+        //         paramsSignature: DEFAULT_PARAMS_SIGNATURE
+        //     }
+        //     const metadata: ProcessMetadata = {
+        //         version: "1.1",
+        //         title: { default: "test" },
+        //         description: { default: "test" },
+        //         media: {
+        //             header: "header"
+        //         },
+        //         questions: [{
+        //             title: { default: "title" },
+        //             description: { default: "description" },
+        //             choices: [
+        //                 { title: { default: "Yes" }, value: 0 },
+        //                 { title: { default: "No" }, value: 1 },
+        //             ]
+        //         }]
+        //     }
+
+        //     server.ws.addResponse({ ok: true, content: Buffer.from(EntityMetadataTemplate).toString("base64") }) // internal getEntityMetadata > fetchFileString
+        //     server.ws.addResponse({ ok: true, ... }) // fetchFile
+        //     const processId = await newProcess(params, metadata, entityAccount, gateway)
+        // })
+
+
+        it("Should fetch the metadata of a process")
         it("Should fail creating a process if the Entity does not exist")
         it("Should return the processId after creating it")
     })

@@ -60,7 +60,7 @@ export default class ProcessBuilder {
         this.entityAccount = this.accounts[1]
     }
 
-    async build(processCount: number = 1): Promise<Contract & ProcessContractMethods> {
+    async build(processCount?: number): Promise<Contract & ProcessContractMethods> {
         if (this.predecessorInstanceAddress != DEFAULT_PREDECESSOR_INSTANCE_ADDRESS && processCount > 0) throw new Error("Unable to create " + processCount + " processes without a null parent, since the contract is inactive. Call .build(0) instead.")
 
         const deployAccount = this.accounts[0]
@@ -91,6 +91,8 @@ export default class ProcessBuilder {
         let contractInstance = await contractFactory.deploy(this.predecessorInstanceAddress, namespaceAddress) as Contract & ProcessContractMethods
 
         contractInstance = contractInstance.connect(this.entityAccount.wallet) as Contract & ProcessContractMethods
+
+        if (typeof processCount == "undefined") processCount = 1 // one by default
 
         for (let i = 0; i < processCount; i++) {
             const params = ProcessContractParameters.fromParams({
