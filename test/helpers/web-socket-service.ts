@@ -2,6 +2,8 @@ import * as WebSocket from "isomorphic-ws"
 import { Wallet } from "ethers"
 import { signJsonBody } from "../../src/util/json-sign"
 import { DVoteGateway } from "../../src/net/gateway"
+import GatewayInfo from "../../src/wrappers/gateway-info"
+import { getAccounts } from "./web3-service"
 
 export type WSResponse = {
     id: string,
@@ -20,8 +22,7 @@ export type WebSocketMockedInteraction = {
 }
 
 const defaultPort = 8500
-const defaultMnemonic = "myth like bonus scare over problem client lizard pioneer submit female collect"
-const defaultConnectResponse: WSResponseBody = { timestamp: 123, ok: true, apiList: ["file", "vote", "census", "results"], health: 100 }
+const defaultConnectResponse: WSResponseBody = { ok: true, apiList: ["file", "vote", "census", "results"], health: 100 }
 
 // THE GATEWAY SERVER MOCK
 
@@ -46,9 +47,10 @@ export class DevWebSocketServer {
             responseData: response
         }))
 
-        // Choose a pseudorandom wallet (lighter than generating random each time)
-        const idx = Number(Math.random().toString().substr(2)) % 10
-        this.wallet = Wallet.fromMnemonic(defaultMnemonic, `m/44'/60'/0'/0/${idx}`)
+        // Choose a pseudorandom wallet from the end of the ones available [5..9]
+        const accounts = getAccounts().slice(5)
+        const idx = Number(Math.random().toString().substr(2)) % accounts.length
+        this.wallet = accounts[idx].wallet
     }
 
     public start(): Promise<void> {
@@ -118,5 +120,8 @@ export class DevWebSocketServer {
     get publicKey() { return this.wallet["signingKey"].compressedPublicKey }
     get gatewayClient() {
         return new DVoteGateway({ uri: this.uri, supportedApis: ["file", "census", "vote", "results"], publicKey: this.publicKey })
+    }
+    get gatewayInfo() {
+        return new GatewayInfo(this.uri, ["file", "vote", "census", "results"], "http://dummy", this.publicKey)
     }
 }

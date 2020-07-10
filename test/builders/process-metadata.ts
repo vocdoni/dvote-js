@@ -15,21 +15,11 @@ export default class ProcessMetadataBuilder {
     build() {
         this.metadata.title = { default: "My Entity" }
         this.metadata.description = { default: "Description" }
-        this.metadata.questions.map(
+        this.metadata.questions.forEach(
             (question, index) => {
-                question.title = {
-                    default: "Question " +
-                        String(index)
-                }
-                question.description = {
-                    default: "Description " +
-                        String(index)
-                }
-                question.choices.map(
-                    (option, index) => {
-                        option.title = { default: "Yes " + String(index) }
-                    }
-                )
+                question.title = { default: "Question " + String(index) }
+                question.description = { default: "Description " + String(index) }
+                question.choices.map((option, index) => { option.title = { default: "Yes " + String(index) } })
             }
         )
         return this.metadata

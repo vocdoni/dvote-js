@@ -2,7 +2,7 @@ import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { Contract } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
-import { getAccounts, TestAccount } from "../mocks/all-services"
+import { getAccounts, TestAccount } from "../helpers/all-services"
 import { EntityResolverContractMethods } from "dvote-solidity"
 
 import { ensHashAddress } from "dvote-solidity"

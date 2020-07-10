@@ -2,7 +2,7 @@
 
 import { ProcessContractMethods, ProcessEnvelopeType, ProcessMode, IProcessEnvelopeType, IProcessMode, NamespaceContractMethods, ProcessContractParameters } from "dvote-solidity"
 import { Contract, ContractFactory } from "ethers"
-import { getAccounts, TestAccount } from "../mocks/all-services"
+import { getAccounts, TestAccount } from "../helpers/all-services"
 import NamespaceBuilder from "./namespace"
 import { assert } from "console"
 

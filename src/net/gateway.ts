@@ -219,7 +219,7 @@ export class Gateway {
     }
     public isConnected(): Promise<boolean> {
         // If web3 is connected
-        if (this.web3.entityResolverAddress && this.web3.processContractAddress)
+        if (this.web3.entityResolverContractAddress && this.web3.processContractAddress)
             // Check dvote connection
             return this.dvote.isConnected()
         else
@@ -279,11 +279,11 @@ export class Gateway {
     }
 
     public getEntityResolverInstance(walletOrSigner?: Wallet | Signer): IEnsPublicResolverContract {
-        if (!this.web3.entityResolverAddress) throw new Error("The gateway is not yet connected")
+        if (!this.web3.entityResolverContractAddress) throw new Error("The gateway is not yet connected")
 
         if (walletOrSigner && (walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer))
-            return this.web3.attach<IEnsPublicResolverContract>(this.web3.entityResolverAddress, EntityContractDefinition.abi as any).connect(walletOrSigner) as (IEnsPublicResolverContract)
-        return this.web3.attach<IEnsPublicResolverContract>(this.web3.entityResolverAddress, EntityContractDefinition.abi as any)
+            return this.web3.attach<IEnsPublicResolverContract>(this.web3.entityResolverContractAddress, EntityContractDefinition.abi as any).connect(walletOrSigner) as (IEnsPublicResolverContract)
+        return this.web3.attach<IEnsPublicResolverContract>(this.web3.entityResolverContractAddress, EntityContractDefinition.abi as any)
     }
 
     public getProcessInstance(walletOrSigner?: Wallet | Signer): IProcessContract {
@@ -708,7 +708,7 @@ export class DVoteGateway {
  */
 export class Web3Gateway {
     private provider: providers.BaseProvider
-    public entityResolverAddress: string
+    public entityResolverContractAddress: string
     public namespaceContractAddress: string
     public processContractAddress: string
 
@@ -786,7 +786,7 @@ export class Web3Gateway {
     }
 
     public isUp(timeout: number = GATEWAY_SELECTION_TIMEOUT): Promise<void> {
-        // if (this.entityResolverAddress && this.processContractAddress) return Promise.resolve()
+        // if (this.entityResolverContractAddress && this.processContractAddress) return Promise.resolve()
 
         return new Promise((resolve, reject) => {
             setTimeout(() => reject(new Error("The Web3 Gateway is too slow")), timeout)
@@ -844,11 +844,11 @@ export class Web3Gateway {
     /** Fetches the address of the entity resolver contract and returns it */
     public async fetchEntityResolverContractAddress(): Promise<string> {
         // Used by `isUp` => we fetch it always in order to check that connectivity is up
-        this.entityResolverAddress = await this.provider.resolveName(entityResolverEnsDomain)
+        this.entityResolverContractAddress = await this.provider.resolveName(entityResolverEnsDomain)
 
-        if (!this.entityResolverAddress) throw new Error("The entity resolver name is not available")
+        if (!this.entityResolverContractAddress) throw new Error("The entity resolver name is not available")
 
-        return this.entityResolverAddress
+        return this.entityResolverContractAddress
     }
 
     /** Fetches the address of the process contract and returns it */

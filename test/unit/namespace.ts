@@ -8,7 +8,7 @@ import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { Contract, Wallet } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
-import DevServices, { getAccounts, TestAccount } from "../mocks/all-services"
+import DevServices, { getAccounts, TestAccount } from "../helpers/all-services"
 import { NamespaceContractMethods } from "dvote-solidity"
 
 // import { deployNamespaceContract, getNamespaceInstance } from "../../src/net/contracts"
@@ -137,8 +137,7 @@ describe("Namespaces", () => {
             const publicKey1 = "0x123456"
             const publicKey2 = "0x234567"
 
-            contractInstance = await new NamespaceBuilder()
-                .build()
+            contractInstance = await new NamespaceBuilder().build()
 
             // add some
             await contractInstance.addValidator(DEFAULT_NAMESPACE, publicKey1)
@@ -164,8 +163,7 @@ describe("Namespaces", () => {
         it("Should notify about Validators removed", async () => {
             const publicKey1 = "0x123456"
 
-            contractInstance = await new NamespaceBuilder()
-                .build()
+            contractInstance = await new NamespaceBuilder().build()
 
             await contractInstance.addValidator(DEFAULT_NAMESPACE, publicKey1)
 
@@ -222,8 +220,7 @@ describe("Namespaces", () => {
             const publicKey1 = "0x123456"
             const publicKey2 = "0x234567"
 
-            contractInstance = await new NamespaceBuilder()
-                .build()
+            contractInstance = await new NamespaceBuilder().build()
 
             // add some
             await contractInstance.addOracle(DEFAULT_NAMESPACE, publicKey1)

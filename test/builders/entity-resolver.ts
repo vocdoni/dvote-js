@@ -3,7 +3,7 @@ import { deployEntityResolverContract } from "../../src/net/contracts"
 // import { TextRecordKeys } from "../../src/models/entity"
 import { EnsPublicResolverContractMethods } from "dvote-solidity"
 import { Contract } from "ethers"
-import { getAccounts, TestAccount } from "../mocks/all-services"
+import { getAccounts, TestAccount } from "../helpers/all-services"
 
 // DEFAULT VALUES
 export const DEFAULT_NAME = "Entity Name"

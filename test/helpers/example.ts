@@ -17,9 +17,13 @@ async function example() {
     console.log("Received", res)
 
     // Web3 client
-    const web3Gw = services.web3.gatewayClient
-    const testInstance = await web3Gw.attach("0x0", [])
-    const tx = await testInstance.myMethod()
+    const entityResolverAddr = "0x1234" // optional
+    const namespaceAddr = "0x1234" // optional
+    const processAddr = "0x1234" // optional
+
+    const web3Gw = services.web3.getGatewayClient(entityResolverAddr, namespaceAddr, processAddr)
+    const myInstance = await web3Gw.attach("0x0", [])
+    const tx = await myInstance.myMethod()
     await tx.wait()
 
     // Do your logic here

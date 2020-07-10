@@ -15,9 +15,7 @@ export type TestAccount = {
 const defaultPort = 8600
 const defaultMnemonic = "myth like bonus scare over problem client lizard pioneer submit female collect"
 
-const wallets = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(idx => {
-    return Wallet.fromMnemonic(this.mnemonic, `m/44'/60'/0'/0/${idx}`).connect(this.provider)
-})
+const wallets = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(idx => Wallet.fromMnemonic(this.mnemonic, `m/44'/60'/0'/0/${idx}`).connect(this.provider))
 
 const accounts: TestAccount[] = wallets.map(wallet => ({
     privateKey: wallet.privateKey,
@@ -47,17 +45,26 @@ export class DevWeb3Service {
     get uri() { return `http://localhost:${this.port}` }
 
     get provider() {
+        return new Web3Gateway(this.uri).getProvider() as providers.Web3Provider
+    }
+
+    /** Returns a gateway client that will skip the network checks and will use the given contract addresses as the official ones */
+    getGatewayClient(entityResolverAddress: string = "", namespaceAddress: string = "", processAddress: string = ""): Web3Gateway {
         const gw = new Web3Gateway(this.uri)
 
-        // Override health checks
+        // Bypass health checks
         gw.isUp = () => Promise.resolve()
         gw.isSyncing = () => Promise.resolve(false)
 
-        return gw.getProvider() as providers.Web3Provider
-    }
+        // Bypass contract address resolution
+        gw.fetchEntityResolverContractAddress = () => Promise.resolve(entityResolverAddress)
+        gw.getNamespaceContractAddress = () => Promise.resolve(namespaceAddress)
+        gw.fetchProcessContractAddress = () => Promise.resolve(processAddress)
+        gw.entityResolverContractAddress = entityResolverAddress
+        gw.namespaceContractAddress = namespaceAddress
+        gw.processContractAddress = processAddress
 
-    get gatewayClient() {
-        return new Web3Gateway(this.uri)
+        return gw
     }
 
     start(): Promise<any> {
@@ -92,4 +99,3 @@ export class DevWeb3Service {
         return this.provider.send("evm_mine", [])
     }
 }
-

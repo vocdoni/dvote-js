@@ -8,7 +8,7 @@ import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { Contract, Wallet } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
-import { getAccounts, incrementTimestamp, TestAccount } from "../utils"
+import { getAccounts, TestAccount } from "../helpers/all-services"
 import { ProcessContractMethods, ProcessContractParameters, ProcessStatus } from "dvote-solidity"
 import { Buffer } from "buffer/"
 
@@ -154,13 +154,10 @@ describe("Voting Process", () => {
             const result1 = await contractInstance.getResults(processId)
             expect(result1).to.equal("")
 
-            const tx1 = await contractInstance.publishPrivateKey(processId, "hello-world")
+            const tx1 = await contractInstance.setResults(processId, "1234-5678")
+            expect(tx1).to.be.ok
+            expect(tx1.to).to.equal(contractInstance.address)
             await tx1.wait()
-
-            const tx2 = await contractInstance.publishResults(processId, "1234-5678")
-            expect(tx2).to.be.ok
-            expect(tx2.to).to.equal(contractInstance.address)
-            await tx2.wait()
 
             const result2 = await contractInstance.getResults(processId)
             expect(result2).to.equal("1234-5678")

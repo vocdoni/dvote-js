@@ -6,8 +6,8 @@ describe("Process", () => {
     //     const gatewayServer = new GatewayMock({
     //         port,
     //         responses: [
-    //             { id: "123", response: { ok: true, request: "123", timestamp: 123, result: "OK 1" }, signature: "123" },
-    //             { id: "234", response: { ok: true, request: "234", timestamp: 234, result: "OK 2" }, signature: "234" },
+    //             { ok: true, request: "123", timestamp: 123, result: "OK 1" },
+    //             { ok: true, request: "234", timestamp: 234, result: "OK 2" },
     //         ]
     //     })
     //     const gatewayInfo = new GatewayInfo(gatewayUri, ["file", "vote", "census"], "https://server/path", "")
@@ -38,9 +38,9 @@ describe("Process", () => {
     // })
 
     describe("Process metadata", () => {
-        it("Should fetch the metadata of a voting process")
-        it("Should allow to upload the JSON metadata of a new Voting Process")
-        it("Should register a new voting process on the blockchain")
+        it("Should fetch the metadata of a process")
+        it("Should set the metadata of a new process")
+        it("Should register a new process on the blockchain")
         it("Should fail creating a process if the Entity does not exist")
         it("Should return the processId after creating it")
     })

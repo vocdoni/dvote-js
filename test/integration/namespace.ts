@@ -3,4 +3,6 @@ import { expect } from "chai"
 
 describe("Namespaces", () => {
 
+    it("should be implemented")
+
 })

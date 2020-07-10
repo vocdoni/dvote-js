@@ -1,42 +1,36 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
-import { getAccounts, TestAccount } from "../utils"
+import { getAccounts, TestAccount } from "../helpers/all-services"
 import { DVoteGateway, Web3Gateway, IDVoteGateway, Gateway, IGateway } from "../../src/net/gateway"
 import { addFile, fetchFileBytes } from "../../src/api/file"
-import { DevWebSocketServer, WebSocketMockedInteraction, WSResponse } from "../mocks/web-socket-service"
+import { DevWebSocketServer, WebSocketMockedInteraction, WSResponse, WSResponseBody } from "../helpers/web-socket-service"
 import { Buffer } from "buffer"
-import GatewayInfo from "../../src/wrappers/gateway-info";
-const ganacheRpcServer = require("ganache-core").server
-
-const port = 8500
-const gatewayUri = `ws://localhost:${port}`
-const gatewayInfo = new GatewayInfo(gatewayUri, ["file", "vote", "census"], "https://server/path", "")
+import GatewayInfo from "../../src/wrappers/gateway-info"
+import { DevWeb3Service } from "../helpers/web3-service"
 
 let accounts: TestAccount[]
 let baseAccount: TestAccount
 let entityAccount: TestAccount
 let randomAccount: TestAccount
+let port: number
 
-const defaultDummyResponse = { id: "123", response: { request: "123", timestamp: 123, ok: true }, signature: "123" }
-const defaultConnectResponse = { id: "123", response: { request: "123", timestamp: 123, ok: true, supportedApis: ["file", "vote", "census"], health: 100 }, signature: "123" }
+const defaultDummyResponse = { ok: true }
 
 addCompletionHooks()
 
-describe("DVoteGateway", () => {
-    beforeEach(async () => {
-        accounts = getAccounts()
-        baseAccount = accounts[0]
-        entityAccount = accounts[1]
-        randomAccount = accounts[2]
+describe("DVote gateway client", () => {
+    beforeEach(() => {
+        port = 8500
     })
 
     describe("Lifecycle", () => {
         it("Should create a DVoteGateway instance", async () => {
-            const gatewayServer = new DevWebSocketServer({ port, responses: [defaultConnectResponse] })
+            const wsServer = new DevWebSocketServer()
+            const gatewayInfo = wsServer.gatewayInfo
 
             expect(() => {
-                const gw1 = new DVoteGateway({ uri: "", supportedApis: [], publicKey: "" })
+                new DVoteGateway({ uri: "", supportedApis: [], publicKey: "" })
             }).to.throw
 
             const gw2 = new DVoteGateway(gatewayInfo)
@@ -45,14 +39,14 @@ describe("DVoteGateway", () => {
             expect(await gw2.getUri()).to.equal(gatewayInfo.dvote)
 
             gw2.disconnect()
-            await gatewayServer.stop()
+            await wsServer.stop()
         })
 
         it("Should update the gateway's URI and point to the new location", async () => {
             const port1 = port + 1
             const gatewayUri1 = `ws://127.0.0.1:${port1}`
-            const gatewayServer1 = new DevWebSocketServer({ port: port1, responses: [defaultDummyResponse] })
-            expect(gatewayServer1.interactionCount).to.equal(0)
+            const wsServer1 = new DevWebSocketServer({ port: port1, responses: [defaultDummyResponse] })
+            expect(wsServer1.interactionCount).to.equal(0)
 
             const gatewayInfo1 = new GatewayInfo(gatewayUri1, ["file", "vote", "census"], "https://server/path", "")
             let gwClient = new DVoteGateway(gatewayInfo1)
@@ -61,14 +55,14 @@ describe("DVoteGateway", () => {
             await gwClient.sendRequest({ method: "addClaim", processId: "1234", nullifier: "2345" })
 
             await gwClient.disconnect()
-            await gatewayServer1.stop()
+            await wsServer1.stop()
 
             const port2 = 9000
             const gatewayUri2 = `ws://127.0.0.1:${port2}`
             const gatewayInfo2 = new GatewayInfo(gatewayUri2, ["file", "vote", "census"], "https://server/path", "")
 
-            const gatewayServer2 = new DevWebSocketServer({ port: port2, responses: [defaultDummyResponse] })
-            expect(gatewayServer2.interactionCount).to.equal(0)
+            const wsServer2 = new DevWebSocketServer({ port: port2, responses: [defaultDummyResponse] })
+            expect(wsServer2.interactionCount).to.equal(0)
 
             gwClient = new DVoteGateway(gatewayInfo2)
             await gwClient.connect()
@@ -76,26 +70,26 @@ describe("DVoteGateway", () => {
             await gwClient.sendRequest({ method: "addClaim", processId: "5678", nullifier: "6789" })
 
             await gwClient.disconnect()
-            await gatewayServer2.stop()
+            await wsServer2.stop()
 
-            expect(gatewayServer1.interactionCount).to.equal(1)
-            expect(gatewayServer2.interactionCount).to.equal(1)
+            expect(wsServer1.interactionCount).to.equal(2)
+            expect(wsServer2.interactionCount).to.equal(2)
         })
     })
 
     describe("WebSocket requests", () => {
         it("Should send messages and provide responses in the right order", async () => {
-            const gatewayServer = new DevWebSocketServer({
+            const wsServer = new DevWebSocketServer({
                 port,
                 responses: [
-                    { id: "123", response: { ok: true, request: "123", timestamp: 123, result: "OK 1" }, signature: "123" },
-                    { id: "234", response: { ok: true, request: "234", timestamp: 234, result: "OK 2" }, signature: "234" },
-                    { id: "345", response: { ok: true, request: "345", timestamp: 345, result: "OK 3" }, signature: "345" },
-                    { id: "345", response: { ok: true, request: "345", timestamp: 345, result: "OK 4" }, signature: "345" },
-                    { id: "456", response: { ok: true, request: "456", timestamp: 456, result: "OK 5" }, signature: "456" },
+                    { ok: true, result: "OK 1" },
+                    { ok: true, result: "OK 2" },
+                    { ok: true, result: "OK 3" },
+                    { ok: true, result: "OK 4" },
+                    { ok: true, result: "OK 5" },
                 ]
             })
-            const gatewayInfo = new GatewayInfo(gatewayUri, ["file", "vote", "census"], "https://server/path", "")
+            const gatewayInfo = wsServer.gatewayInfo
             const gwClient = new DVoteGateway(gatewayInfo)
             await gwClient.connect()
 
@@ -110,38 +104,35 @@ describe("DVoteGateway", () => {
             expect(response3.result).to.equal("OK 3")
             expect(response4.result).to.equal("OK 4")
             expect(response5.result).to.equal("OK 5")
-            expect(gatewayServer.interactionCount).to.equal(5)
-            expect(gatewayServer.interactionList[0].actual.request.method).to.equal("addCensus")
-            expect(gatewayServer.interactionList[0].actual.request.processId).to.equal("1234")
-            expect(gatewayServer.interactionList[0].actual.request.nullifier).to.equal("2345")
-            expect(gatewayServer.interactionList[1].actual.request.method).to.equal("addClaim")
-            expect(gatewayServer.interactionList[1].actual.request.processId).to.equal("3456")
-            expect(gatewayServer.interactionList[1].actual.request.nullifier).to.equal("4567")
-            expect(gatewayServer.interactionList[2].actual.request.method).to.equal("addClaimBulk")
-            expect(gatewayServer.interactionList[2].actual.request.processId).to.equal("5678")
-            expect(gatewayServer.interactionList[2].actual.request.nullifier).to.equal("6789")
-            expect(gatewayServer.interactionList[3].actual.request.method).to.equal("fetchFile")
-            expect(gatewayServer.interactionList[3].actual.request.uri).to.equal("12345")
-            expect(gatewayServer.interactionList[4].actual.request.method).to.equal("fetchFile")
-            expect(gatewayServer.interactionList[4].actual.request.uri).to.equal("67890")
+            expect(wsServer.interactionCount).to.equal(5)
+            expect(wsServer.interactionList[0].requested.request.method).to.equal("addCensus")
+            expect(wsServer.interactionList[0].requested.request.processId).to.equal("1234")
+            expect(wsServer.interactionList[0].requested.request.nullifier).to.equal("2345")
+            expect(wsServer.interactionList[1].requested.request.method).to.equal("addClaim")
+            expect(wsServer.interactionList[1].requested.request.processId).to.equal("3456")
+            expect(wsServer.interactionList[1].requested.request.nullifier).to.equal("4567")
+            expect(wsServer.interactionList[2].requested.request.method).to.equal("addClaimBulk")
+            expect(wsServer.interactionList[2].requested.request.processId).to.equal("5678")
+            expect(wsServer.interactionList[2].requested.request.nullifier).to.equal("6789")
+            expect(wsServer.interactionList[3].requested.request.method).to.equal("fetchFile")
+            expect(wsServer.interactionList[3].requested.request.uri).to.equal("12345")
+            expect(wsServer.interactionList[4].requested.request.method).to.equal("fetchFile")
+            expect(wsServer.interactionList[4].requested.request.uri).to.equal("67890")
 
-            await gatewayServer.stop()
+            await wsServer.stop()
         })
         it("Should provide an encrypted channel to communicate with clients")
         it("Should report errors and throw them as an error", async () => {
-            const gatewayServer = new DevWebSocketServer({
-                port,
-                responses: [
-                    { id: "123", response: { ok: false, request: "123", timestamp: 123, message: "ERROR 1" }, signature: "123" },
-                    { id: "234", response: { ok: false, request: "234", timestamp: 234, message: "ERROR 2" }, signature: "234" },
-                    { id: "345", response: { ok: false, request: "345", timestamp: 345, message: "ERROR 3" }, signature: "345" },
-                    { id: "345", response: { ok: false, request: "345", timestamp: 345, message: "ERROR 4" }, signature: "345" },
-                    { id: "456", response: { ok: false, request: "456", timestamp: 456, message: "ERROR 5" }, signature: "456" },
-                ]
-            })
-            const gatewayInfo = new GatewayInfo(gatewayUri, ["file", "vote", "census"], "https://server/path", "")
+            const wsServer = new DevWebSocketServer()
+            const gatewayInfo = wsServer.gatewayInfo
             const gwClient = new DVoteGateway(gatewayInfo)
             await gwClient.connect()
+
+            wsServer.addResponse({ ok: false, message: "ERROR 1" })
+            wsServer.addResponse({ ok: false, message: "ERROR 2" })
+            wsServer.addResponse({ ok: false, message: "ERROR 3" })
+            wsServer.addResponse({ ok: false, message: "ERROR 4" })
+            wsServer.addResponse({ ok: false, message: "ERROR 5" })
 
             try {
                 await gwClient.sendRequest({ method: "addCensus", processId: "1234", nullifier: "2345" })
@@ -179,105 +170,24 @@ describe("DVoteGateway", () => {
                 expect(err.message).to.equal("ERROR 5")
             }
 
-            expect(gatewayServer.interactionCount).to.equal(5)
-            expect(gatewayServer.interactionList[0].actual.request.method).to.equal("addCensus")
-            expect(gatewayServer.interactionList[0].actual.request.processId).to.equal("1234")
-            expect(gatewayServer.interactionList[0].actual.request.nullifier).to.equal("2345")
-            expect(gatewayServer.interactionList[1].actual.request.method).to.equal("addCensus")
-            expect(gatewayServer.interactionList[1].actual.request.processId).to.equal("3456")
-            expect(gatewayServer.interactionList[1].actual.request.nullifier).to.equal("4567")
-            expect(gatewayServer.interactionList[2].actual.request.method).to.equal("addCensus")
-            expect(gatewayServer.interactionList[2].actual.request.processId).to.equal("5678")
-            expect(gatewayServer.interactionList[2].actual.request.nullifier).to.equal("6789")
-            expect(gatewayServer.interactionList[3].actual.request.method).to.equal("fetchFile")
-            expect(gatewayServer.interactionList[3].actual.request.uri).to.equal("12345")
-            expect(gatewayServer.interactionList[4].actual.request.method).to.equal("fetchFile")
-            expect(gatewayServer.interactionList[4].actual.request.uri).to.equal("67890")
+            expect(wsServer.interactionCount).to.equal(5)
+            expect(wsServer.interactionList[0].requested.request.method).to.equal("addCensus")
+            expect(wsServer.interactionList[0].requested.request.processId).to.equal("1234")
+            expect(wsServer.interactionList[0].requested.request.nullifier).to.equal("2345")
+            expect(wsServer.interactionList[1].requested.request.method).to.equal("addCensus")
+            expect(wsServer.interactionList[1].requested.request.processId).to.equal("3456")
+            expect(wsServer.interactionList[1].requested.request.nullifier).to.equal("4567")
+            expect(wsServer.interactionList[2].requested.request.method).to.equal("addCensus")
+            expect(wsServer.interactionList[2].requested.request.processId).to.equal("5678")
+            expect(wsServer.interactionList[2].requested.request.nullifier).to.equal("6789")
+            expect(wsServer.interactionList[3].requested.request.method).to.equal("fetchFile")
+            expect(wsServer.interactionList[3].requested.request.uri).to.equal("12345")
+            expect(wsServer.interactionList[4].requested.request.method).to.equal("fetchFile")
+            expect(wsServer.interactionList[4].requested.request.uri).to.equal("67890")
 
-            await gatewayServer.stop()
+            await wsServer.stop()
         })
     })
-
-    // describe("Swarm", () => {
-    //     it("Should upload a file", async () => {
-    //         const fileContent = "GOOD MORNING"
-    //         const buffData = Buffer.from(fileContent)
-
-    //         // DVoteGateway (server)
-    //         const responses: WSResponse[] = [{ error: false, response: ["bzz://1234"] }]
-    //         const gatewayServer = new DevWebSocketServer({ port, responses })
-
-    //         // Client
-    //         const gw = new DVoteGateway(gatewayUri)
-    //         const result1 = await addFile(buffData, "my-file.txt", baseAccount.wallet, gw)
-
-    //         expect(gatewayServer.interactionCount).to.equal(1)
-    //         expect(gatewayServer.interactionList[0].actual.request.method).to.equal("addFile")
-    //         expect(gatewayServer.interactionList[0].actual.request.type).to.equal("swarm")
-    //         expect(gatewayServer.interactionList[0].actual.request.content).to.equal(buffData)
-    //         expect(gatewayServer.interactionList[0].actual.request.address).to.equal(baseAccount.address)
-    //         expect(gatewayServer.interactionList[0].actual.id).to.match(/^0x[0-9a-fA-F]{64}$/)
-    //         expect(gatewayServer.interactionList[0].actual.signature).to.match(/^0x[0-9a-fA-F]{100,}$/)
-
-    //         expect(result1.length).to.be.ok
-    //         expect(result1).to.equal("bzz://1234")
-
-    //         await gatewayServer.stop()
-    //     })
-    //     it("Should retrieve a pinned file", async () => {
-    //         const fileContent = "HELLO WORLD"
-    //         const buffData = Buffer.from(fileContent)
-
-    //         // DVoteGateway (server)
-    //         const responses: WSResponse[] = [
-    //             { error: false, response: ["bzz://2345"] },
-    //             { error: false, response: [buffData.toString("base64")] }
-    //         ]
-    //         const gatewayServer = new DevWebSocketServer({ port, responses })
-
-    //         // Client
-    //         const gw = new DVoteGateway(gatewayUri)
-    //         const result1 = await addFile(buffData, "my-file.txt", baseAccount.wallet, gw)
-    //         expect(result1).to.equal("bzz://2345")
-
-    //         expect(gatewayServer.interactionCount).to.equal(1)
-
-    //         const result2 = (await fetchFileBytes(result1, gw)).toString("base64")
-    //         expect(result2).to.equal(buffData)
-
-    //         expect(gatewayServer.interactionCount).to.equal(2)
-    //         expect(gatewayServer.interactionList[1].actual.request.method).to.equal("fetchFile")
-    //         expect(gatewayServer.interactionList[1].actual.request.uri).to.equal(result1)
-    //         expect(gatewayServer.interactionList[1].actual.id).to.match(/^0x[0-9a-fA-F]{64}$/)
-
-    //         await gatewayServer.stop()
-    //     })
-    //     it("Should request to unpin an old file")
-    //     it("Should list the currently pinned files")
-    //     it("Should enforce authenticated upload requests", async () => {
-    //         const fileContent = "HI THERE"
-    //         const buffData = Buffer.from(fileContent)
-
-    //         // DVoteGateway (server)
-    //         const gatewayServer = new DevWebSocketServer({ port, responses: [] })
-
-    //         // Client
-    //         try {
-    //             const gw = new DVoteGateway(gatewayUri)
-    //             await new Promise(resolve => setTimeout(resolve, 10))
-    //             await addFile(buffData, "my-file.txt", null, gw)
-    //             throw new Error("Should have thrown an error but didn't")
-    //         }
-    //         catch (err) {
-    //             expect(err.message).to.equal("Invalid wallet")
-    //         }
-
-    //         expect(gatewayServer.interactionCount).to.equal(0)
-
-    //         await gatewayServer.stop()
-    //     })
-    //     it("Should enforce authenticated unpin requests")
-    // })
 
     describe("IPFS", () => {
         it("Should upload a file", async () => {
@@ -285,29 +195,29 @@ describe("DVoteGateway", () => {
             const buffData = Buffer.from(fileContent)
 
             // DVoteGateway (server)
-            const responses: WSResponse[] = [
-                { id: "123", response: { ok: true, request: "123", timestamp: 123, uri: "ipfs://1234" }, signature: "123" }
-            ]
-            const gatewayServer = new DevWebSocketServer({ port, responses })
+            const wsServer = new DevWebSocketServer()
 
             // Client
-            const gatewayInfo = new GatewayInfo(gatewayUri, ["file", "vote", "census"], "https://server/path", "")
+            const gatewayInfo = wsServer.gatewayInfo
             const gw = new DVoteGateway(gatewayInfo)
             await gw.connect()
+
+            wsServer.addResponse({ ok: true, uri: "ipfs://1234" })
+
             const result1 = await addFile(buffData, "my-file.txt", baseAccount.wallet, gw)
 
-            expect(gatewayServer.interactionCount).to.equal(1)
-            expect(gatewayServer.interactionList[0].actual.request.method).to.equal("addFile")
-            expect(gatewayServer.interactionList[0].actual.request.type).to.equal("ipfs")
-            expect(gatewayServer.interactionList[0].actual.request.content).to.equal(buffData.toString("base64"))
-            expect(gatewayServer.interactionList[0].actual.id).to.match(/^[0-9a-fA-F]{10}$/)
-            expect(gatewayServer.interactionList[0].actual.signature).to.match(/^0x[0-9a-fA-F]{100,}$/)
+            expect(wsServer.interactionCount).to.equal(1)
+            expect(wsServer.interactionList[0].requested.request.method).to.equal("addFile")
+            expect(wsServer.interactionList[0].requested.request.type).to.equal("ipfs")
+            expect(wsServer.interactionList[0].requested.request.content).to.equal(buffData.toString("base64"))
+            expect(wsServer.interactionList[0].requested.id).to.match(/^[0-9a-fA-F]{10}$/)
+            expect(wsServer.interactionList[0].requested.signature).to.match(/^0x[0-9a-fA-F]{100,}$/)
 
             expect(result1.length).to.be.ok
             expect(result1).to.equal("ipfs://1234")
 
             gw.disconnect()
-            await gatewayServer.stop()
+            await wsServer.stop()
         })
 
         it("Should retrieve a pinned file", async () => {
@@ -315,50 +225,50 @@ describe("DVoteGateway", () => {
             const buffData = Buffer.from(fileContent)
 
             // DVoteGateway (server)
-            const responses: WSResponse[] = [
-                { id: "123", response: { ok: true, request: "123", timestamp: 123, uri: "ipfs://2345" }, signature: "123" },
-                { id: "234", response: { ok: true, request: "234", timestamp: 234, content: buffData.toString("base64") }, signature: "234" }
+            const responses: WSResponseBody[] = [
+                { ok: true, uri: "ipfs://2345" },
+                { ok: true, request: "234", timestamp: 234, content: buffData.toString("base64") }
             ]
-            const gatewayServer = new DevWebSocketServer({ port, responses })
+            const wsServer = new DevWebSocketServer({ port, responses })
 
             // Client
-            const gatewayInfo = new GatewayInfo(gatewayUri, ["file"], "https://server/path", "")
+            const gatewayInfo = wsServer.gatewayInfo
             const gw = new DVoteGateway(gatewayInfo)
             await gw.connect()
 
             const result1 = await addFile(buffData, "my-file.txt", baseAccount.wallet, gw)
             expect(result1).to.equal("ipfs://2345")
 
-            expect(gatewayServer.interactionCount).to.equal(1)
+            expect(wsServer.interactionCount).to.equal(1)
 
             const result2 = await fetchFileBytes(result1, gw)
             expect(result2.toString()).to.equal(buffData.toString())
 
-            expect(gatewayServer.interactionCount).to.equal(2)
-            expect(gatewayServer.interactionList[1].actual.request.method).to.equal("fetchFile")
-            expect(gatewayServer.interactionList[1].actual.request.uri).to.equal(result1)
-            expect(gatewayServer.interactionList[1].actual.id).to.match(/^[0-9a-fA-F]{10}$/)
+            expect(wsServer.interactionCount).to.equal(2)
+            expect(wsServer.interactionList[1].requested.request.method).to.equal("fetchFile")
+            expect(wsServer.interactionList[1].requested.request.uri).to.equal(result1)
+            expect(wsServer.interactionList[1].requested.id).to.match(/^[0-9a-fA-F]{10}$/)
 
             gw.disconnect()
-            await gatewayServer.stop()
+            await wsServer.stop()
         })
+
         it("Should request to unpin an old file")
+
         it("Should list the currently pinned files")
+
         it("Should enforce authenticated upload requests", async () => {
             const fileContent = "HI THERE"
             const buffData = Buffer.from(fileContent)
 
             // DVoteGateway (server)
-            const gatewayServer = new DevWebSocketServer({
-                port, responses: [
-                    { id: "123", response: { ok: false, request: "123", timestamp: 123, message: "Invalid wallet" }, signature: "123" },
-                ]
-            })
+            const wsServer = new DevWebSocketServer()
+            wsServer.addResponse({ ok: false, message: "Invalid wallet" })
 
             // Client
             let gw: IDVoteGateway
             try {
-                const gatewayInfo = new GatewayInfo(gatewayUri, ["file"], "https://server/path", "")
+                const gatewayInfo = wsServer.gatewayInfo
                 gw = new DVoteGateway(gatewayInfo)
                 await gw.connect()
 
@@ -371,36 +281,37 @@ describe("DVoteGateway", () => {
             }
             gw.disconnect()
 
-            expect(gatewayServer.interactionCount).to.equal(1)
+            expect(wsServer.interactionCount).to.equal(1)
 
-            await gatewayServer.stop()
+            await wsServer.stop()
         })
         it("Should enforce authenticated unpin requests")
+    })
+})
+
+describe("Web3 gateway client", () => {
+    beforeEach(async () => {
+        accounts = getAccounts()
+        baseAccount = accounts[0]
+        entityAccount = accounts[1]
+        randomAccount = accounts[2]
     })
 
     describe("Web3 provider", () => {
         it("Should provide a Web3 JSON RPC provider to interact with the blockchain", async () => {
-            // Web socket server
-            // const webSocketServer = new DevWebSocketServer({ port, responses: [] })
-
             // Web3 node
-            const rpcServer = ganacheRpcServer()
-            const info: any = await new Promise(resolve => rpcServer.listen(port, (err, info) => resolve(info)))
+            const web3Server = new DevWeb3Service()
+            await web3Server.start()
 
-            expect(Object.keys(info.personal_accounts).length).to.be.approximately(10, 9)
-            expect(Object.keys(info.personal_accounts)[0]).to.match(/^0x[0-9a-fA-F]{40}$/)
+            const addr = web3Server.accounts[0].address
 
-            const addr = Object.keys(info.personal_accounts)[0]
-
-            const gatewayUri = `http://localhost:${port}`
-            const gw = new Web3Gateway(gatewayUri)
+            const gw = new Web3Gateway(web3Server.uri)
             const gwProvider = gw.getProvider()
             const balance = await gwProvider.getBalance(addr)
 
             expect(balance.toHexString()).to.match(/^0x[0-9a-fA-F]{10,}$/)
 
-            // webSocketServer.stop()
-            rpcServer.close()
+            await web3Server.stop()
         })
     })
 
