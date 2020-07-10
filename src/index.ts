@@ -3,6 +3,7 @@ import * as File from "./api/file"
 import * as Entity from "./api/entity"
 import * as Vote from "./api/voting"
 import * as Census from "./api/census"
+import * as Namespace from "./api/namespace"
 
 // NETWORK
 import * as Gateways from "./net/gateway"

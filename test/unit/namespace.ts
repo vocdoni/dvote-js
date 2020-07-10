@@ -11,9 +11,9 @@ import { addCompletionHooks } from "../mocha-hooks"
 import DevServices, { getAccounts, TestAccount } from "../mocks/all-services"
 import { NamespaceContractMethods } from "dvote-solidity"
 
-import { deployNamespaceContract, getNamespaceInstance } from "../../src/net/contracts"
+// import { deployNamespaceContract, getNamespaceInstance } from "../../src/net/contracts"
 import { BigNumber } from "ethers/utils"
-import NamespaceBuilder from "../builders/namespace"
+import NamespaceBuilder, { DEFAULT_NAMESPACE } from "../builders/namespace"
 import { ContractReceipt } from "ethers/contract"
 
 let accounts: TestAccount[]
@@ -47,7 +47,7 @@ describe("Namespaces", () => {
         it("Should allow to set the genesis Content Hashed URI", async () => {
             const genesis = "ipfs://12341234!56785678"
 
-            const tx = await contractInstance.setGenesis(genesis)
+            const tx = await contractInstance.setGenesis(DEFAULT_NAMESPACE, genesis)
             expect(tx).to.be.ok
             expect(tx.to).to.equal(contractInstance.address)
 
@@ -62,7 +62,7 @@ describe("Namespaces", () => {
                 contractInstance.on("GenesisChanged", (genesis: string) => {
                     resolve({ genesis })
                 })
-                contractInstance.setGenesis(genesis).catch(reject)
+                contractInstance.setGenesis(DEFAULT_NAMESPACE, genesis).catch(reject)
             })
 
             expect(result.genesis).to.equal(genesis)
@@ -71,9 +71,9 @@ describe("Namespaces", () => {
 
     describe("Chain ID", () => {
         it("Should allow to set the Chain ID", async () => {
-            const chainId = 1234
+            const chainId = "chain-id-name"
 
-            let tx = await contractInstance.setChainId(chainId)
+            let tx = await contractInstance.setChainId(DEFAULT_NAMESPACE, chainId)
             expect(tx).to.be.ok
             expect(tx.to).to.equal(contractInstance.address)
 
@@ -82,13 +82,13 @@ describe("Namespaces", () => {
         })
 
         it("Should notify the event", async () => {
-            const chainId = 1234
+            const chainId = "chain-id-name"
 
             const result: { chainId: BigNumber } = await new Promise((resolve, reject) => {
                 contractInstance.on("ChainIdChanged", (chainId: BigNumber) => {
                     resolve({ chainId })
                 })
-                contractInstance.setChainId(chainId).catch(reject)
+                contractInstance.setChainId(DEFAULT_NAMESPACE, chainId).catch(reject)
             })
 
             expect(result.chainId.toNumber()).to.equal(chainId)
@@ -102,7 +102,7 @@ describe("Namespaces", () => {
             const publicKey2 = "0x234567"
 
             // add one
-            const tx = await contractInstance.addValidator(publicKey1)
+            const tx = await contractInstance.addValidator(DEFAULT_NAMESPACE, publicKey1)
             expect(tx).to.be.ok
             expect(tx.to).to.equal(contractInstance.address)
 
@@ -110,7 +110,7 @@ describe("Namespaces", () => {
             expect(result1).to.deep.equal([publicKey1])
 
             // add another one
-            const tx2 = await contractInstance.addValidator(publicKey2)
+            const tx2 = await contractInstance.addValidator(DEFAULT_NAMESPACE, publicKey2)
             expect(tx2).to.be.ok
             expect(tx2.to).to.equal(contractInstance.address)
 
@@ -125,7 +125,7 @@ describe("Namespaces", () => {
                 contractInstance.on("ValidatorAdded", (validatorPublicKey: string) => {
                     resolve({ validatorPublicKey })
                 })
-                contractInstance.addValidator(publicKey1).catch(reject)
+                contractInstance.addValidator(DEFAULT_NAMESPACE, publicKey1).catch(reject)
             })
 
             expect(result.validatorPublicKey).to.equal(publicKey1)
@@ -141,11 +141,11 @@ describe("Namespaces", () => {
                 .build()
 
             // add some
-            await contractInstance.addValidator(publicKey1)
-            await contractInstance.addValidator(publicKey2)
+            await contractInstance.addValidator(DEFAULT_NAMESPACE, publicKey1)
+            await contractInstance.addValidator(DEFAULT_NAMESPACE, publicKey2)
 
             // remove one
-            const tx = await contractInstance.removeValidator(0, publicKey1)
+            const tx = await contractInstance.removeValidator(DEFAULT_NAMESPACE, 0, publicKey1)
             expect(tx).to.be.ok
             expect(tx.to).to.equal(contractInstance.address)
 
@@ -153,7 +153,7 @@ describe("Namespaces", () => {
             expect(result1).to.deep.equal([publicKey2])
 
             // remove the other one
-            const tx2 = await contractInstance.removeValidator(0, publicKey2)
+            const tx2 = await contractInstance.removeValidator(DEFAULT_NAMESPACE, 0, publicKey2)
             expect(tx2).to.be.ok
             expect(tx2.to).to.equal(contractInstance.address)
 
@@ -167,13 +167,13 @@ describe("Namespaces", () => {
             contractInstance = await new NamespaceBuilder()
                 .build()
 
-            await contractInstance.addValidator(publicKey1)
+            await contractInstance.addValidator(DEFAULT_NAMESPACE, publicKey1)
 
             const result: { validatorPublicKey: string } = await new Promise((resolve, reject) => {
                 contractInstance.on("ValidatorRemoved", (validatorPublicKey: string) => {
                     resolve({ validatorPublicKey })
                 })
-                contractInstance.removeValidator(0, publicKey1).catch(reject)
+                contractInstance.removeValidator(DEFAULT_NAMESPACE, 0, publicKey1).catch(reject)
             })
 
             expect(result.validatorPublicKey).to.equal(publicKey1)
@@ -187,7 +187,7 @@ describe("Namespaces", () => {
             const publicKey2 = "0x234567"
 
             // add one
-            const tx = await contractInstance.addOracle(publicKey1)
+            const tx = await contractInstance.addOracle(DEFAULT_NAMESPACE, publicKey1)
             expect(tx).to.be.ok
             expect(tx.to).to.equal(contractInstance.address)
 
@@ -195,7 +195,7 @@ describe("Namespaces", () => {
             expect(result1).to.deep.equal([publicKey1])
 
             // add another one
-            const tx2 = await contractInstance.addOracle(publicKey2)
+            const tx2 = await contractInstance.addOracle(DEFAULT_NAMESPACE, publicKey2)
             expect(tx2).to.be.ok
             expect(tx2.to).to.equal(contractInstance.address)
 
@@ -210,7 +210,7 @@ describe("Namespaces", () => {
                 contractInstance.on("OracleAdded", (oraclePublicKey: string) => {
                     resolve({ oraclePublicKey })
                 })
-                contractInstance.addOracle(publicKey1).catch(reject)
+                contractInstance.addOracle(DEFAULT_NAMESPACE, publicKey1).catch(reject)
             })
 
             expect(result.oraclePublicKey).to.equal(publicKey1)
@@ -226,11 +226,11 @@ describe("Namespaces", () => {
                 .build()
 
             // add some
-            await contractInstance.addOracle(publicKey1)
-            await contractInstance.addOracle(publicKey2)
+            await contractInstance.addOracle(DEFAULT_NAMESPACE, publicKey1)
+            await contractInstance.addOracle(DEFAULT_NAMESPACE, publicKey2)
 
             // remove one
-            const tx = await contractInstance.removeOracle(0, publicKey1)
+            const tx = await contractInstance.removeOracle(DEFAULT_NAMESPACE, 0, publicKey1)
             expect(tx).to.be.ok
             expect(tx.to).to.equal(contractInstance.address)
 
@@ -238,7 +238,7 @@ describe("Namespaces", () => {
             expect(result1).to.deep.equal([publicKey2])
 
             // remove the other one
-            const tx2 = await contractInstance.removeOracle(0, publicKey2)
+            const tx2 = await contractInstance.removeOracle(DEFAULT_NAMESPACE, 0, publicKey2)
             expect(tx2).to.be.ok
             expect(tx2.to).to.equal(contractInstance.address)
 
@@ -249,16 +249,15 @@ describe("Namespaces", () => {
         it("Should notify about oracles removed on a Namespace", async () => {
             const publicKey1 = "0x123456"
 
-            contractInstance = await new NamespaceBuilder()
-                .build()
+            contractInstance = await new NamespaceBuilder().build()
 
-            await contractInstance.addOracle(publicKey1)
+            await contractInstance.addOracle(DEFAULT_NAMESPACE, publicKey1)
 
             const result: { oraclePublicKey: string } = await new Promise((resolve, reject) => {
                 contractInstance.on("OracleRemoved", (oraclePublicKey: string) => {
                     resolve({ oraclePublicKey })
                 })
-                contractInstance.removeOracle(0, publicKey1).catch(reject)
+                contractInstance.removeOracle(DEFAULT_NAMESPACE, 0, publicKey1).catch(reject)
             })
 
             expect(result.oraclePublicKey).to.equal(publicKey1)

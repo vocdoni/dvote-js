@@ -6,6 +6,7 @@
     - Adding `setStatus`, `incrementQuestionIndex`, `setCensus` and `setResults`
     - Exposing `ProcessMode`, `ProcessEnvelopeType`, `ProcessStatus` and `ProcessContractParameters` from DVote Solidity
     - Updating the process metadata to feature `mode` and `envelopeType`. Deprecate `type`.
+    - Added Namespace contract method functions
     - Remove the type from the old Vote Package
     - Adding `deployNamespaceContract` and `getNamespaceInstance`
 - Improving the naming consistence (Vote API and Process-related methods)

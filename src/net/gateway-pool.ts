@@ -173,8 +173,8 @@ export class GatewayPool {
         return this.activeGateway().getProcessInstance(walletOrSigner)
     }
 
-    public getNamespaceInstance(address: string, walletOrSigner?: Wallet | Signer): INamespaceContract {
-        return this.activeGateway().getNamespaceInstance(address, walletOrSigner)
+    public getNamespaceInstance(walletOrSigner?: Wallet | Signer): Promise<INamespaceContract> {
+        return this.activeGateway().getNamespaceInstance(walletOrSigner)
     }
 }
 

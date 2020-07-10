@@ -294,8 +294,8 @@ export class Gateway {
         return this.web3.attach<IProcessContract>(this.web3.processContractAddress, ProcessContractDefinition.abi as any)
     }
 
-    public getNamespaceInstance(address: string, walletOrSigner?: Wallet | Signer): INamespaceContract {
-        // if (!this.web3.namespaceContractAddress) throw new Error("The gateway is not yet connected")
+    public async getNamespaceInstance(walletOrSigner?: Wallet | Signer): Promise<INamespaceContract> {
+        const address = await this.web3.getNamespaceContractAddress()
 
         if (walletOrSigner && (walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer))
             return this.web3.attach<INamespaceContract>(address, NamespaceContractDefinition.abi as any).connect(walletOrSigner) as (INamespaceContract)
@@ -709,7 +709,7 @@ export class DVoteGateway {
 export class Web3Gateway {
     private provider: providers.BaseProvider
     public entityResolverAddress: string
-    // public namespaceContractAddress: string
+    public namespaceContractAddress: string
     public processContractAddress: string
 
     /** Returns a JSON RPC provider that can be used for Ethereum communication */
@@ -791,43 +791,28 @@ export class Web3Gateway {
         return new Promise((resolve, reject) => {
             setTimeout(() => reject(new Error("The Web3 Gateway is too slow")), timeout)
 
-            return this.getPeers().then(peersNumber => {
-                // -1 probably does not support API
-                // >0 has at least one peer
-                if (peersNumber == 0) return reject(new Error("The Web3 gateway has no peers"))
-                return this.isSyncing().then(syncing => {
-                    if (syncing) return reject(new Error("The Web3 gateway is syncing"))
-
-                    return this.provider.resolveName(entityResolverEnsDomain)
-                        .then(entityResolverAddress => {
-                            if (!entityResolverAddress) return reject(new Error("The Web3 Gateway seems to be down"))
-
-                            this.entityResolverAddress = entityResolverAddress
-
-                            return this.provider.resolveName(processEnsDomain)
-                                .then(processContractAddress => {
-                                    if (!processContractAddress) return reject(new Error("The Web3 Gateway seems to be down"))
-
-                                    this.processContractAddress = processContractAddress
-
-                                    // TODO: retrieve `namespaceContractAddress`
-
-                                    resolve()
-                                })
-                        })
+            return this.getPeers()
+                .then(peersNumber => {
+                    if (peersNumber <= 0) throw new Error("The Web3 gateway has no peers")
+                    return this.isSyncing()
                 })
-            }).catch(err => {
-                console.error(err)
-                reject(new Error("The Web3 Gateway seems to be down"))
-            })
+                .then(syncing => {
+                    if (syncing) throw new Error("The Web3 gateway is syncing")
 
-            // if (!entityResolverAddress) continue
-            // processContractAddress = await w3.getProvider().resolveName(processEnsDomain).catch(() => { return false })
-            // if (!processContractAddress) continue
-            // getEntityResolverInstance({ provider: this.provider })
-            //     .then(() => getProcessInstance({ provider: this.provider }))
-            //     .then(() => resolve())
-            //     .catch(() => reject(new Error("The Web3 Gateway seems to be down")))
+                    // Fetch and set the contract addresses
+                    return Promise.all([
+                        this.fetchEntityResolverContractAddress(),
+                        this.fetchProcessContractAddress().then(() => this.getNamespaceContractAddress()),
+                    ])
+                })
+                .then(() => resolve())
+                .catch(err => {
+                    console.error(err)
+                    if (err.message == "The Web3 gateway is syncing")
+                        reject(new Error(err.message))
+                    else
+                        reject(new Error("The Web3 Gateway seems to be down"))
+                })
         })
     }
 
@@ -842,6 +827,7 @@ export class Web3Gateway {
         return Promise.resolve(false)
     }
 
+    /** Request the amount of peers the Gateway is currently connected to */
     public getPeers(): Promise<number> {
         if (!this.provider) return Promise.resolve(0)
         else if (!(this.provider instanceof JsonRpcProvider) && !(this.provider instanceof Web3Provider) &&
@@ -853,5 +839,42 @@ export class Web3Gateway {
             if (!result) return -1
             return utils.bigNumberify(result).toNumber()
         })
+    }
+
+    /** Fetches the address of the entity resolver contract and returns it */
+    public async fetchEntityResolverContractAddress(): Promise<string> {
+        // Used by `isUp` => we fetch it always in order to check that connectivity is up
+        this.entityResolverAddress = await this.provider.resolveName(entityResolverEnsDomain)
+
+        if (!this.entityResolverAddress) throw new Error("The entity resolver name is not available")
+
+        return this.entityResolverAddress
+    }
+
+    /** Fetches the address of the process contract and returns it */
+    public async fetchProcessContractAddress(): Promise<string> {
+        // Used by `isUp` => we fetch it always in order to check that connectivity is up
+        this.processContractAddress = await this.provider.resolveName(processEnsDomain)
+
+        if (!this.processContractAddress) throw new Error("The process domain name is not available")
+
+        return this.processContractAddress
+    }
+
+    /** Returns the address of the namespace contract and fetches it if not present */
+    public async getNamespaceContractAddress(): Promise<string> {
+        if (!this.processContractAddress) {
+            await this.fetchProcessContractAddress()
+        }
+
+        if (!this.namespaceContractAddress) {
+            // Get it from the process contract
+            const processInstance = this.attach<IProcessContract>(this.processContractAddress, ProcessContractDefinition.abi)
+            this.namespaceContractAddress = await processInstance.namespaceAddress()
+
+            if (!this.namespaceContractAddress) throw new Error("The process contract didn't return a namespace address")
+        }
+
+        return this.namespaceContractAddress
     }
 }
