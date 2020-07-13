@@ -1,6 +1,6 @@
 import { Gateway, IDvoteRequestParameters } from "./gateway"
 import { dvoteApis, DVoteSupportedApi, WsGatewayMethod } from "../models/gateway"
-import { discoverGateways, GatewayDiscoveryParameters } from "./gateway-discovery"
+import { discoverGateways, IGatewayDiscoveryParameters } from "./gateway-discovery"
 import { Wallet, Signer, providers } from "ethers"
 import { IProcessContract, IEntityResolverContract, INamespaceContract } from "./contracts"
 
@@ -22,12 +22,12 @@ export type IGatewayPool = InstanceType<typeof GatewayPool>
  */
 export class GatewayPool {
     private pool: Gateway[] = []
-    private params: GatewayDiscoveryParameters = null
+    private params: IGatewayDiscoveryParameters = null
     private errorCount: number = 0
     private refreshPoolCount: number = 0
     public supportedApis() { return this.activeGateway().getSupportedApis() }
 
-    constructor(newPool: Gateway[], p: GatewayDiscoveryParameters) {
+    constructor(newPool: Gateway[], p: IGatewayDiscoveryParameters) {
         this.pool = newPool
         this.params = p
         // set active
@@ -35,7 +35,7 @@ export class GatewayPool {
     }
 
     // factory
-    static discover(params: GatewayDiscoveryParameters): Promise<GatewayPool> {
+    static discover(params: IGatewayDiscoveryParameters): Promise<GatewayPool> {
         let pool: GatewayPool
         return discoverGateways(params)
             .then((bestNodes: Gateway[]) => {

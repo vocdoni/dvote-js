@@ -4,7 +4,7 @@ import { addCompletionHooks } from "../mocha-hooks"
 import { utils } from "ethers"
 
 import { walletFromSeededPassphrase, generateRandomHexSeed } from "../../src/util/signers"
-import { signJsonBody, isSignatureValid } from "../../src/util/json-sign"
+import { signJsonBody, isValidSignature } from "../../src/util/json-sign"
 
 addCompletionHooks()
 
@@ -136,6 +136,6 @@ describe("Standalone Ethereum wallets", () => {
 
         const signature = await signJsonBody(jsonBody, wallet)
 
-        expect(isSignatureValid(signature, wallet["signingKey"].publicKey, jsonBody)).to.be.true
+        expect(isValidSignature(signature, wallet["signingKey"].publicKey, jsonBody)).to.be.true
     })
 })

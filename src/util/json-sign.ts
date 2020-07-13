@@ -1,9 +1,9 @@
 import { Wallet, Signer, utils } from "ethers"
 /**
- * Sign a JSON payload using the given Ethers wallet or signer. 
+ * Sign a JSON payload using the given Ethers wallet or signer.
  * Ensures that the object keys are alphabetically sorted.
- * @param request 
- * @param walletOrSigner 
+ * @param request
+ * @param walletOrSigner
  */
 export function signJsonBody(request: any, walletOrSigner: Wallet | Signer): Promise<string> {
     if (!walletOrSigner) throw new Error("Invalid wallet/signer")
@@ -33,7 +33,7 @@ export function signBytes(request: Uint8Array, walletOrSigner: Wallet | Signer):
  * @param publicKey
  * @param responseBody JSON object of the `response` or `error` fields
  */
-export function isSignatureValid(signature: string, publicKey: string, responseBody: any): boolean {
+export function isValidSignature(signature: string, publicKey: string, responseBody: any): boolean {
     if (!publicKey) return true
     else if (!signature) return false
 
@@ -70,7 +70,7 @@ export function isByteSignatureValid(signature: string, publicKey: string, respo
 }
 /**
  * Returns the public key that signed the given JSON data, with its fields sorted alphabetically
- * 
+ *
  * @param signature Hex encoded signature (created with the Ethereum prefix)
  * @param responseBody JSON object of the `response` or `error` fields
  */

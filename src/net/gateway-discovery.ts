@@ -13,7 +13,7 @@ const PARALLEL_GATEWAY_TESTS = 5
 // Otherwise, the next threshold rate will be attempted
 const MIN_ROUND_SUCCESS_COUNT = 2
 
-export type GatewayDiscoveryParameters = {
+export type IGatewayDiscoveryParameters = {
     networkId: NetworkID,
     bootnodesContentUri?: string | ContentURI
     numberOfGateways?: number
@@ -38,7 +38,7 @@ export type GatewayDiscoveryParameters = {
  */
 // export function discoverGateways(networkId: NetworkID, bootnodesContentUri?: string | ContentURI, walletOrSigner?: Wallet | Signer,
 // params: DiscoveryParameters = { numberOfGateways: 1, timeout: GATEWAY_SELECTION_TIMEOUT, race: false }): Promise<Gateway[]> {
-export function discoverGateways(params: GatewayDiscoveryParameters): Promise<Gateway[]> {
+export function discoverGateways(params: IGatewayDiscoveryParameters): Promise<Gateway[]> {
     if (!params) return Promise.reject(new Error("Invalid parameters"))
     else if (!params.networkId)
         return Promise.reject(new Error("Invalid parameters. No networkId provided"))
@@ -66,7 +66,7 @@ export function discoverGateways(params: GatewayDiscoveryParameters): Promise<Ga
  * @param bootnodesContentUri (optional) The Content URI from which the list of gateways will be extracted
  * @returns A Gateway Object
  */
-async function getWorkingGateways(p: GatewayDiscoveryParameters): Promise<{ dvote: IDVoteGateway, web3: IWeb3Gateway }[]> {
+async function getWorkingGateways(p: IGatewayDiscoveryParameters): Promise<{ dvote: IDVoteGateway, web3: IWeb3Gateway }[]> {
     // TODO: Handle duplicates?
     const networkId = p.networkId
     const bootnodesContentUri = (p.bootnodesContentUri) ? p.bootnodesContentUri : null

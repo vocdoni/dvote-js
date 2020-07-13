@@ -10,7 +10,7 @@ import { providerFromUri } from "../util/providers"
 import GatewayInfo from "../wrappers/gateway-info"
 import { DVoteSupportedApi, WsGatewayMethod, fileApiMethods, voteApiMethods, censusApiMethods, dvoteGatewayApiMethods, resultsApiMethods } from "../models/gateway"
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
-import { signJsonBody, isSignatureValid, sortObjectFields, isByteSignatureValid } from "../util/json-sign"
+import { signJsonBody, isValidSignature, sortObjectFields, isByteSignatureValid } from "../util/json-sign"
 import { getEntityResolverInstance, getProcessInstance, IProcessContract, IEnsPublicResolverContract, INamespaceContract } from "../net/contracts"
 import axios, { AxiosInstance } from "axios"
 import { NetworkID, fetchDefaultBootNode, getNetworkGatewaysFromBootNodeData, fetchFromBootNode } from "./gateway-bootnodes"
@@ -558,7 +558,7 @@ export class DVoteGateway {
                 if (!isByteSignatureValid(msg.signature, this.publicKey, msg.responseBytes)) {
                     return Promise.reject(new Error("The signature of the response does not match the expected one"))
                 }
-            } else if (!isSignatureValid(msg.signature, this.publicKey, msg.response)) {
+            } else if (!isValidSignature(msg.signature, this.publicKey, msg.response)) {
                 return Promise.reject(new Error("The signature of the response does not match the expected one"))
             }
         }

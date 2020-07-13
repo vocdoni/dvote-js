@@ -4,23 +4,38 @@ import { Wallet, utils } from "ethers"
 import * as assert from "assert"
 import { readFileSync, writeFileSync } from "fs"
 import * as YAML from 'yaml'
+import { GatewayPool } from "../src/net/gateway-pool"
+import { NetworkID } from "../src/net/gateway-bootnodes"
+import { ensHashAddress } from "../src/net/contracts"
+import { EntityMetadataTemplate } from "../src/models/entity"
+import { setMetadata, getEntityMetadata } from "../src/api/entity"
+import { digestHexClaim, addCensus, addClaimBulk, publishCensus, dumpPlain, generateProof } from "../src/api/census"
+import { ProcessMetadata, ProcessMetadataTemplate } from "../src/models/process"
+import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus } from "dvote-solidity"
+import { getProcessMetadata, getProcessParameters, getBlockHeight, newProcess, getProcessList, getProcessKeys, packageSignedEnvelope, submitEnvelope, getSignedVoteNullifier, getEnvelopeStatus, getEnvelopeHeight, setStatus, getResultsDigest } from "../src/api/voting"
+import { signJsonBody } from "../src/util/json-sign"
+import { waitUntilVochainBlock, waitEthBlocks } from "../src/util/waiters"
 
 const CONFIG_PATH = "./config.yaml"
 const config = getConfig()
 
-import { NetworkID } from "../src/net/gateway-bootnodes"
-import { GatewayPool } from "../src/net/gateway-pool"
-import { getProcessKeys, setStatus, getBlockHeight, newProcess, getProcessList, packageSignedEnvelope, submitEnvelope, getSignedVoteNullifier, getEnvelopeStatus, getEnvelopeHeight, getResultsDigest, getProcessMetadata, ProcessStatus } from "../src/api/vote"
-import { waitUntilVochainBlock, waitEthBlocks } from "../src/util/waiters"
-import { ProcessMetadata, ProcessMetadataTemplate } from "../src/models/process"
-import { getEntityId, getEntityMetadataByAddress, setMetadata } from "../src/api/entity"
-import { EntityMetadataTemplate } from "../src/models/entity"
-import { addCensus, addClaimBulk, digestHexClaim, dumpPlain, generateProof, publishCensus } from "../src/api/census"
-import { signJsonBody } from "../src/util/json-sign"
+// <<<<<<< HEAD
+// import { NetworkID } from "../src/net/gateway-bootnodes"
+// import { GatewayPool } from "../src/net/gateway-pool"
+// import { getProcessKeys, setStatus, getBlockHeight, newProcess, getProcessList, packageSignedEnvelope, submitEnvelope, getSignedVoteNullifier, getEnvelopeStatus, getEnvelopeHeight, getResultsDigest, getProcessMetadata, ProcessStatus } from "../src/api/vote"
+// import { waitUntilVochainBlock, waitEthBlocks } from "../src/util/waiters"
+// import { ProcessMetadata, ProcessMetadataTemplate } from "../src/models/process"
+// import { getEntityId, getEntityMetadataByAddress, setMetadata } from "../src/api/entity"
+// import { EntityMetadataTemplate } from "../src/models/entity"
+// import { addCensus, addClaimBulk, digestHexClaim, dumpPlain, generateProof, publishCensus } from "../src/api/census"
+// import { signJsonBody } from "../src/util/json-sign"
 
-// let entityResolver = null, votingProcess = null
+// // let entityResolver = null, votingProcess = null
 
-let pool: GatewayPool, entityId: string, entityWallet: Wallet, processId: string, voteMetadata: ProcessMetadata, accounts: Account[]
+// let pool: GatewayPool, entityId: string, entityWallet: Wallet, processId: string, voteMetadata: ProcessMetadata, accounts: Account[]
+// =======
+// >>>>>>> 88be3c1... Example and Benchmark work in progress
+let pool: GatewayPool, entityAddr: string, entityWallet: Wallet, processId: string, processParams: ProcessContractParameters, processMetadata: ProcessMetadata, accounts: Account[]
 
 async function main() {
     // Connect to a GW
@@ -54,12 +69,12 @@ async function main() {
 
     if (config.readExistingProcess) {
         console.log("Reading process metadata")
-        const procInfo = JSON.parse(readFileSync(config.processInfoFilePath).toString())
+        const procInfo: { processId: string, processMetadata: ProcessMetadata } = JSON.parse(readFileSync(config.processInfoFilePath).toString())
         processId = procInfo.processId
-        voteMetadata = procInfo.voteMetadata
+        processMetadata = procInfo.processMetadata
 
         assert(processId)
-        assert(voteMetadata)
+        assert(processMetadata)
     }
     else {
         let adminAccesstoken
@@ -78,21 +93,22 @@ async function main() {
         // Create a new voting process
         await launchNewVote(merkleRoot, merkleTreeUri)
         assert(processId)
-        assert(voteMetadata)
-        writeFileSync(config.processInfoFilePath, JSON.stringify({ processId, voteMetadata }, null, 2))
+        assert(processMetadata)
+        writeFileSync(config.processInfoFilePath, JSON.stringify({ processId, processMetadata }, null, 2))
 
         console.log("The voting process is ready")
     }
 
+    assert(processParams)
 
-    console.log("- Entity ID", voteMetadata.details.entityId)
+    console.log("- Entity Addr", processParams.entityAddress)
     console.log("- Process ID", processId)
-    console.log("- Process start block", voteMetadata.startBlock)
-    console.log("- Process end block", voteMetadata.startBlock + voteMetadata.blockCount)
-    console.log("- Process merkle root", voteMetadata.census.merkleRoot)
-    console.log("- Process merkle tree", voteMetadata.census.merkleTree)
+    console.log("- Process start block", processParams.startBlock)
+    console.log("- Process end block", processParams.startBlock + processParams.blockCount)
+    console.log("- Process merkle root", processParams.censusMerkleRoot)
+    console.log("- Process merkle tree", processParams.censusMerkleTree)
     console.log("-", accounts.length, "accounts on the census")
-    console.log("- Entity Manager link:", config.entityManagerUriPrefix + "/processes/#/" + entityId + "/" + processId)
+    console.log("- Entity Manager link:", config.entityManagerUriPrefix + "/processes/#/" + entityAddr + "/" + processId)
 
     // Wait until the current block >= startBlock
     await waitUntilStarted()
@@ -126,9 +142,9 @@ async function connectGateways(): Promise<GatewayPool> {
     entityWallet = Wallet.fromMnemonic(config.mnemonic, config.ethPath)
         .connect(pool.getProvider())
 
-    entityId = ensHashAddress(await entityWallet.getAddress())
+    entityAddr = ensHashAddress(await entityWallet.getAddress())
     console.log("Entity Address", await entityWallet.getAddress())
-    console.log("Entity ID", entityId)
+    console.log("Entity ID", entityAddr)
 
     return pool
 }
@@ -136,7 +152,7 @@ async function connectGateways(): Promise<GatewayPool> {
 async function setEntityMetadata() {
     if ((await entityWallet.getBalance()).eq(0))
         throw new Error("The account has no ether")
-    console.log("Setting Metadata for entity", entityId)
+    console.log("Setting Metadata for entity", entityAddr)
 
     const metadata = JSON.parse(JSON.stringify(EntityMetadataTemplate))
     metadata.name = { default: "[Test] Entity " + Date.now() }
@@ -162,7 +178,7 @@ async function setEntityMetadata() {
     console.log("Metadata updated")
 
     // Read back
-    const entityMetaPost = await getEntityMetadataByAddress(await entityWallet.getAddress(), pool)
+    const entityMetaPost = await getEntityMetadata(await entityWallet.getAddress(), pool)
     assert(entityMetaPost)
     assert.equal(entityMetaPost.name.default, metadata.name.default)
     assert.equal(entityMetaPost.description.default, metadata.description.default)
@@ -286,7 +302,7 @@ async function submitAccountsToRegistry(accounts) {
                 email: `user${idx}@mail.com`,
                 phone: "1234 5678",
                 dateOfBirth: `19${10 + (idx % 90)}-10-20T12:00:00.000Z`,
-                entityId: entityId,
+                entityAddr: entityAddr,
                 timestamp: timestamp,
             },
             signature: ""
@@ -383,19 +399,19 @@ async function generatePublicCensusFromDb(token) {
     // Adding claims
     console.log("Registering the new census to the Census Service")
 
-    const { censusId } = await addCensus(censusIdSuffix, managerPublicKeys, pool, entityWallet)
+    const { censusId } = await addCensus(censusIdSuffix, managerPublicKeys, entityWallet, pool)
 
     console.log("Adding", publicKeyDigests.length, "claims")
-    const result = await addClaimBulk(censusId, publicKeyDigests, true, pool, entityWallet)
+    const result = await addClaimBulk(censusId, publicKeyDigests, true, entityWallet, pool)
 
     if (result.invalidClaims.length > 0) throw new Error("Census Service invalid claims count is " + result.invalidClaims.length)
 
     // Publish the census
     console.log("Publishing the new census")
-    const merkleTreeUri = await publishCensus(censusId, pool, entityWallet)
+    const merkleTreeUri = await publishCensus(censusId, entityWallet, pool)
 
     // Check that the census is published
-    const exportedMerkleTree = await dumpPlain(censusId, pool, entityWallet)
+    const exportedMerkleTree = await dumpPlain(censusId, entityWallet, pool)
     if (config.stopOnError) {
         assert(Array.isArray(exportedMerkleTree))
         assert(exportedMerkleTree.length == config.numAccounts)
@@ -427,19 +443,19 @@ async function generatePublicCensusFromAccounts(accounts) {
     // Adding claims
     console.log("Registering the new census to the Census Service")
 
-    const { censusId } = await addCensus(censusIdSuffix, managerPublicKeys, pool, entityWallet)
+    const { censusId } = await addCensus(censusIdSuffix, managerPublicKeys, entityWallet, pool)
 
     console.log("Adding", publicKeyDigests.length, "claims")
-    const result = await addClaimBulk(censusId, publicKeyDigests, true, pool, entityWallet)
+    const result = await addClaimBulk(censusId, publicKeyDigests, true, entityWallet, pool)
 
     if (result.invalidClaims.length > 0) throw new Error("Census Service invalid claims count is " + result.invalidClaims.length)
 
     // Publish the census
     console.log("Publishing the new census")
-    const merkleTreeUri = await publishCensus(censusId, pool, entityWallet)
+    const merkleTreeUri = await publishCensus(censusId, entityWallet, pool)
 
     // Check that the census is published
-    const exportedMerkleTree = await dumpPlain(censusId, pool, entityWallet)
+    const exportedMerkleTree = await dumpPlain(censusId, entityWallet, pool)
     if (config.stopOnError) {
         assert(Array.isArray(exportedMerkleTree))
         assert(exportedMerkleTree.length == config.numAccounts)
@@ -458,58 +474,73 @@ async function launchNewVote(merkleRoot, merkleTreeUri) {
     console.log("Preparing the new vote metadata")
 
     const processMetadataPre: ProcessMetadata = JSON.parse(JSON.stringify(ProcessMetadataTemplate)) // make a copy of the template
-    processMetadataPre.type = config.encryptedVote ? "encrypted-poll" : "poll-vote"
-    processMetadataPre.census.merkleRoot = merkleRoot
-    processMetadataPre.census.merkleTree = merkleTreeUri
-    processMetadataPre.details.entityId = entityId
-    processMetadataPre.details.title.default = "E2E process"
-    processMetadataPre.details.description.default = "E2E process"
-    processMetadataPre.details.questions[0].question.default = "Should 1+1 equal 2?"
-    processMetadataPre.details.questions[0].description.default = "Description here"
-    processMetadataPre.details.questions[0].voteOptions[0].title.default = "Yes"
-    processMetadataPre.details.questions[0].voteOptions[0].value = 0
-    processMetadataPre.details.questions[0].voteOptions[1].title.default = "No"
-    processMetadataPre.details.questions[0].voteOptions[1].value = 1
+    processMetadataPre.title.default = "E2E process"
+    processMetadataPre.description.default = "E2E process"
+    processMetadataPre.questions[0].title.default = "Should 1+1 equal 2?"
+    processMetadataPre.questions[0].description.default = "Description here"
+    processMetadataPre.questions[0].choices[0].title.default = "Yes"
+    processMetadataPre.questions[0].choices[0].value = 0
+    processMetadataPre.questions[0].choices[1].title.default = "No"
+    processMetadataPre.questions[0].choices[1].value = 1
+
+    const processParamsPre = {
+        mode: ProcessMode.make({ autoStart: true, interruptible: true }), // helper
+        envelopeType: ProcessEnvelopeType.ENCRYPTED_VOTES | ProcessEnvelopeType.SERIAL, // bit mask
+        metadata: ProcessMetadataTemplate,
+        censusMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000",
+        censusMerkleTree: "ipfs://1234123412341234",
+        startBlock: 500,
+        blockCount: 1000,
+        maxCount: 1,
+        maxValue: 3,
+        maxTotalCost: 0,
+        uniqueValues: false,
+        costExponent: 10000,
+        maxVoteOverwrites: 1,
+        namespace: 0,
+        paramsSignature: "0x0"
+    }
 
     console.log("Getting the block height")
     const currentBlock = await getBlockHeight(pool)
     const startBlock = currentBlock + 25
-    processMetadataPre.startBlock = startBlock
-    processMetadataPre.blockCount = 60480
+    processParams.startBlock = startBlock
+    processParams.blockCount = 60480
     console.log("Creating the process")
-    processId = await newProcess(processMetadataPre, entityWallet, pool)
+    processId = await newProcess(processParamsPre, entityWallet, pool)
 
     console.log("Reading the process metadata back")
-    const entityMetaPost = await getEntityMetadataByAddress(await entityWallet.getAddress(), pool)
+    const entityMetaPost = await getEntityMetadata(await entityWallet.getAddress(), pool)
 
     assert(processId)
     assert(entityMetaPost)
 
     // Reading back
-    voteMetadata = await getProcessMetadata(processId, pool)
-    assert.equal(voteMetadata.details.entityId, entityId)
-    assert.equal(voteMetadata.startBlock, processMetadataPre.startBlock, "SENT " + JSON.stringify(processMetadataPre) + " GOT " + JSON.stringify(voteMetadata))
-    assert.equal(voteMetadata.blockCount, processMetadataPre.blockCount)
-    assert.equal(voteMetadata.census.merkleRoot, processMetadataPre.census.merkleRoot)
-    assert.equal(voteMetadata.census.merkleTree, processMetadataPre.census.merkleTree)
+    processParams = await getProcessParameters(processId, pool)
+    processMetadata = await getProcessMetadata(processId, pool)
+    assert.equal(processParams.entityAddress, entityAddr)
+    assert.equal(processParams.startBlock, processParamsPre.startBlock, "SENT " + JSON.stringify(processParamsPre) + " GOT " + JSON.stringify(processParams))
+    assert.equal(processParams.blockCount, processParamsPre.blockCount)
+    assert.equal(processParams.censusMerkleRoot, processParamsPre.censusMerkleRoot)
+    assert.equal(processParams.censusMerkleTree, processParamsPre.censusMerkleTree)
 }
 
 async function waitUntilStarted() {
     assert(pool)
     assert(processId)
-    assert(voteMetadata)
+    assert(processParams)
 
-    await waitUntilVochainBlock(voteMetadata.startBlock, pool, { verbose: true })
+    await waitUntilVochainBlock(processParams.startBlock, pool, { verbose: true })
 
     console.log("Checking that the Process ID is on the list")
 
-    let processList: string[] = await getProcessList(entityId, pool)
+    let processList: string[] = await getProcessList(entityAddr, pool)
     assert(processList.length > 0)
 
     let lastId = processList[processList.length - 1]
     const trimProcId = processId.replace(/^0x/, "")
     while (!processList.some(v => v == trimProcId) && processList.length > 1) {
-        processList = await getProcessList(entityId, pool, lastId)
+        processList = await getProcessList(entityAddr, pool, lastId)
         if (processList.length) {
             if (lastId == processList[processList.length - 1]) break
             lastId = processList[processList.length - 1]
@@ -521,7 +552,7 @@ async function waitUntilStarted() {
 async function launchVotes(accounts) {
     console.log("Launching votes")
 
-    const processKeys = voteMetadata.type == "encrypted-poll" ? await getProcessKeys(processId, pool) : null
+    const processKeys = processParams.envelopeType.hasEncryptedVotes ? await getProcessKeys(processId, pool) : null
 
     await Bluebird.map(accounts, async (account, idx) => {
         process.stdout.write(`Starting [${idx}] ; `)
@@ -529,7 +560,7 @@ async function launchVotes(accounts) {
         const wallet = new Wallet(account.privateKey)
 
         process.stdout.write(`Gen Proof [${idx}] ; `)
-        const merkleProof = await generateProof(voteMetadata.census.merkleRoot, account.publicKeyHash, true, pool)
+        const merkleProof = await generateProof(processParams.censusMerkleRoot, account.publicKeyHash, true, pool)
             .catch(err => {
                 console.error("\ngenerateProof ERR", account, err)
                 if (config.stopOnError) throw err
@@ -540,7 +571,7 @@ async function launchVotes(accounts) {
         process.stdout.write(`Pkg Envelope [${idx}] ; `)
         const choices = getChoicesForVoter(idx)
 
-        const voteEnvelope = voteMetadata.type == "encrypted-poll" ?
+        const voteEnvelope = processParams.envelopeType.hasEncryptedVotes ?
             await packageSignedEnvelope({ votes: choices, merkleProof, processId, walletOrSigner: wallet, processKeys }) :
             await packageSignedEnvelope({ votes: choices, merkleProof, processId, walletOrSigner: wallet })
 
@@ -582,7 +613,9 @@ async function checkVoteResults() {
         const envelopeHeight = await getEnvelopeHeight(processId, pool)
         assert.equal(envelopeHeight, config.numAccounts)
 
-        if (!(await isCanceled(processId, pool))) {
+        processParams = await getProcessParameters(processId, pool)
+
+        if (!processParams.status.isEnded) {
             console.log("Canceling/ending the process", processId)
             await setStatus(processId, ProcessStatus.ENDED, entityWallet, pool)
 
@@ -666,10 +699,10 @@ main()
 
 function getChoicesForVoter(voterIdx) {
     assert.equal(typeof voterIdx, "number")
-    assert(voteMetadata.details)
-    assert(voteMetadata.details.questions)
+    assert(processMetadata)
+    assert(processMetadata.questions)
 
-    return voteMetadata.details.questions.map((_, idx) => {
+    return processMetadata.questions.map((_, idx) => {
         switch (config.votesPattern) {
             case "all-0": return 0
             case "all-1": return 1

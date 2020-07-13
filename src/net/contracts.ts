@@ -13,6 +13,7 @@ import {
 export interface IEnsPublicResolverContract extends Contract, EnsPublicResolverContractMethods { }
 export interface INamespaceContract extends Contract, NamespaceContractMethods { }
 export interface IProcessContract extends Contract, ProcessContractMethods { }
+export { ensHashAddress } from "dvote-solidity"
 
 type DeployContractParams = { gateway?: string, provider?: providers.BaseProvider, signer?: Signer; wallet?: Wallet; }
 type AttachToContractParams = { gateway?: string, provider?: providers.BaseProvider, signer?: Signer; wallet?: Wallet; }

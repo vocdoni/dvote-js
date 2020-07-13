@@ -21,7 +21,7 @@ export function checkValidMetadata(entityMetadata: EntityMetadata) {
  * Fetch the JSON metadata file for the given entity ID using the given gateway instances
  * @param address
  * @param web3Gateway Web3Gateway instance already connected
- * @param dboteGateway Gateway instance already connected to an active service
+ * @param dvoteGateway Gateway instance already connected to an active service
  */
 export async function getEntityMetadata(address: string, gateway: Gateway | IGatewayPool): Promise<EntityMetadata> {
     if (!address) return Promise.reject(new Error("Invalid address"))

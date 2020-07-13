@@ -29,3 +29,4 @@
 - Borrowing builders to test the contract method integration
 - Revamped tests
 - Adding WebSocket mocks and disposable Ethereum servers for testing
+- Census methods now have wallet and gateway parameters swapped, for consistency with the rest of API methods

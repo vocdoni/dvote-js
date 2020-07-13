@@ -32,7 +32,7 @@ export {
 } from "./net/contracts"
 
 export {
-    GatewayDiscoveryParameters
+    IGatewayDiscoveryParameters
 } from "./net/gateway-discovery"
 
 export {

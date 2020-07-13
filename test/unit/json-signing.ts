@@ -4,8 +4,9 @@ import { addCompletionHooks } from "../mocha-hooks"
 import { Wallet } from "ethers"
 import { TextEncoder, TextDecoder } from "util"
 
-import { sortObjectFields, signJsonBody, signBytes, isSignatureValid, isByteSignatureValid, recoverSignerPublicKey } from "../../src/util/json-sign"
+import { sortObjectFields, signJsonBody, signBytes, isValidSignature, isByteSignatureValid, recoverSignerPublicKey } from "../../src/util/json-sign"
 import { extractUint8ArrayJSONValue } from "../../src/util/uint8array"
+
 addCompletionHooks()
 
 describe("JSON signing", () => {
@@ -50,7 +51,7 @@ describe("JSON signing", () => {
         expect(signature1).to.equal("0xc99cf591678a1eb545d9c77cf6b8d3873552624c3631e77c82cc160f8c9593354f369a4e57e8438e596073bbe89c8f4474ba45bae2ca7f6c257a0a879d10d4281b")
         expect(signature2).to.equal("0xc99cf591678a1eb545d9c77cf6b8d3873552624c3631e77c82cc160f8c9593354f369a4e57e8438e596073bbe89c8f4474ba45bae2ca7f6c257a0a879d10d4281b")
     })
-    it("Should produce and recognize valid signatures, regardless of the order of the fields (isSignatureValid)", async () => {
+    it("Should produce and recognize valid signatures, regardless of the order of the fields (isValidSignature)", async () => {
         let wallet = new Wallet("8d7d56a9efa4158d232edbeaae601021eb3477ad77b5f3c720601fd74e8e04bb")
 
         const jsonBody1 = { "method": "getVisibility", "timestamp": 1582196988554 }
@@ -59,8 +60,8 @@ describe("JSON signing", () => {
         const signature1 = await signJsonBody(jsonBody1, wallet)
         const signature2 = await signJsonBody(jsonBody2, wallet)
 
-        expect(isSignatureValid(signature1, wallet["signingKey"].publicKey, jsonBody1)).to.be.true
-        expect(isSignatureValid(signature2, wallet["signingKey"].publicKey, jsonBody2)).to.be.true
+        expect(isValidSignature(signature1, wallet["signingKey"].publicKey, jsonBody1)).to.be.true
+        expect(isValidSignature(signature2, wallet["signingKey"].publicKey, jsonBody2)).to.be.true
     })
     it("Should produce and recognize valid signatures with UTF-8 data (isByteSignatureValid)", async () => {
         const wallet = new Wallet("8d7d56a9efa4158d232edbeaae601021eb3477ad77b5f3c720601fd74e8e04bb")

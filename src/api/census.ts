@@ -60,7 +60,7 @@ export function digestHexClaim(publicKey: string): string {
  * @param walletOrSigner
  * @returns Promise resolving with the new merkleRoot
  */
-export async function addCensus(censusName: string, managerPublicKeys: string[], gateway: IGateway | IGatewayPool, walletOrSigner: Wallet | Signer): Promise<{ censusId: string, merkleRoot: string }> {
+export async function addCensus(censusName: string, managerPublicKeys: string[], walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<{ censusId: string, merkleRoot: string }> {
     if (!censusName || !managerPublicKeys || !managerPublicKeys.length || !gateway) return Promise.reject(new Error("Invalid parameters"))
     else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
     else if (!walletOrSigner || !(walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer)) return Promise.reject(new Error("Invalid WalletOrSinger object"))
@@ -100,7 +100,7 @@ export async function addCensus(censusName: string, managerPublicKeys: string[],
  * @param walletOrSigner
  * @returns Promise resolving with the new merkleRoot
  */
-export function addClaim(censusId: string, claimData: string, digested: boolean, gateway: IGateway | IGatewayPool, walletOrSigner: Wallet | Signer): Promise<string> {
+export function addClaim(censusId: string, claimData: string, digested: boolean, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
     if (!censusId || !claimData || !claimData.length || !gateway) return Promise.reject(new Error("Invalid parameters"))
     else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
     else if (!walletOrSigner || !(walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer)) return Promise.reject(new Error("Invalid WalletOrSinger object"))
@@ -126,7 +126,7 @@ export function addClaim(censusId: string, claimData: string, digested: boolean,
  * @param walletOrSigner
  * @returns Promise resolving with the new merkleRoot
  */
-export async function addClaimBulk(censusId: string, claimsData: string[], digested: boolean, gateway: IGateway | IGatewayPool, walletOrSigner: Wallet | Signer): Promise<{ merkleRoot: string, invalidClaims: any[] }> {
+export async function addClaimBulk(censusId: string, claimsData: string[], digested: boolean, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<{ merkleRoot: string, invalidClaims: any[] }> {
     if (!censusId || !claimsData || !claimsData.length || !gateway) return Promise.reject(new Error("Invalid parameters"))
     else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
     else if (!walletOrSigner || !(walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer)) return Promise.reject(new Error("Invalid WalletOrSinger object"))
@@ -134,9 +134,9 @@ export async function addClaimBulk(censusId: string, claimsData: string[], diges
     let invalidClaims = []
     let addedClaims = 0
     while (addedClaims < claimsData.length) {
-        let claims = claimsData.slice(addedClaims, addedClaims+CENSUS_MAX_BULK_SIZE)
+        let claims = claimsData.slice(addedClaims, addedClaims + CENSUS_MAX_BULK_SIZE)
         addedClaims += CENSUS_MAX_BULK_SIZE
-        const partialInvalidClaims = await addClaimChunk(censusId, claims, digested, gateway, walletOrSigner)
+        const partialInvalidClaims = await addClaimChunk(censusId, claims, digested, walletOrSigner, gateway)
         invalidClaims = invalidClaims.concat(partialInvalidClaims)
     }
 
@@ -145,7 +145,7 @@ export async function addClaimBulk(censusId: string, claimsData: string[], diges
     return { merkleRoot, invalidClaims }
 }
 
-function addClaimChunk(censusId: string, claimsData: string[], digested: boolean, gateway: IGateway | IGatewayPool, walletOrSigner: Wallet | Signer): Promise<any[]> {
+function addClaimChunk(censusId: string, claimsData: string[], digested: boolean, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<any[]> {
     if (!censusId || !claimsData || claimsData.length > CENSUS_MAX_BULK_SIZE || !gateway) return Promise.reject(new Error("Invalid parameters"))
     else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
     else if (!claimsData.length) return Promise.resolve([])
@@ -160,16 +160,6 @@ function addClaimChunk(censusId: string, claimsData: string[], digested: boolean
             const message = (error.message) ? "The given claims could not be added" + error.message : "The given claims could not be added"
             throw new Error(message)
         })
-    // try {
-    //     const response = await gateway.sendRequest({ method: "addClaimBulk", censusId, digested, claimsData }, walletOrSigner)
-    //     const invalidClaims = ("invalidClaims" in response) ? response.invalidClaims : []
-
-    //     return invalidClaims
-
-    // } catch (error) {
-    //     const message = (error.message) ? "The given claims could not be added" + error.message : "The given claims could not be added"
-    //     throw new Error(message)
-    // }
 }
 
 /**
@@ -218,7 +208,7 @@ export function getCensusSize(censusMerkleRootHash: string, gateway: IGateway | 
  * @param walletOrSigner
  * @returns Promise resolving with the a hex array dump of the census claims
 */
-export function dump(censusId: string, gateway: IGateway | IGatewayPool, walletOrSigner: Wallet | Signer, rootHash?: String): Promise<string[]> {
+export function dump(censusId: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool, rootHash?: String): Promise<string[]> {
     if (!censusId || !gateway) return Promise.reject(new Error("Invalid parameters"))
     else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -240,7 +230,7 @@ export function dump(censusId: string, gateway: IGateway | IGatewayPool, walletO
  * @param walletOrSigner
  * @returns Promise resolving with the a raw string dump of the census claims
 */
-export function dumpPlain(censusId: string, gateway: IGateway | IGatewayPool, walletOrSigner: Wallet | Signer, rootHash?: String): Promise<string[]> {
+export function dumpPlain(censusId: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool, rootHash?: String): Promise<string[]> {
     if (!censusId || !gateway) return Promise.reject(new Error("Invalid parameters"))
     else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -266,7 +256,7 @@ export function importRemote() {
 }
 
 /** Exports and publish the entire census on the storage of the backend (usually IPFS). Returns the URI of the set of claims */
-export function publishCensus(censusId: string, gateway: IGateway | IGatewayPool, walletOrSigner: Wallet | Signer): Promise<string> {
+export function publishCensus(censusId: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
     if (!censusId || !gateway) return Promise.reject(new Error("Invalid parameters"))
     else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
     else if (!walletOrSigner || !(walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer)) return Promise.reject(new Error("Invalid WalletOrSinger object"))
