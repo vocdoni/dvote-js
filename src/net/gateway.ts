@@ -23,7 +23,7 @@ import { entityResolverEnsDomain, votingProcessEnsDomain } from "../constants"
 
 const { JsonRpcProvider, Web3Provider, IpcProvider, InfuraProvider, FallbackProvider, EtherscanProvider } = providers
 
-const uriPattern = /^([a-z][a-z0-9+.-]+):(\/\/([^@]+@)?([a-z0-9.\-_~]+)(:\d+)?)?((?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])*)*|(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+)*)?(\?(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?(\#(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?$/i
+// const uriPattern = /^([a-z][a-z0-9+.-]+):(\/\/([^@]+@)?([a-z0-9.\-_~]+)(:\d+)?)?((?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])*)*|(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+)*)?(\?(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?(\#(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?$/i
 
 ///////////////////////////////////////////////////////////////////////////////
 // DVOTE GATEWAY
@@ -250,6 +250,10 @@ export class Gateway {
         return this.dvote.getUri()
     }
 
+    public getChainId(): Promise<number> {
+        return this.getProvider().getNetwork().then(network => network.chainId)
+    }
+
     public sendMessage(requestBody: IDvoteRequestParameters, wallet: Wallet | Signer = null, timeout: number = 50): Promise<any> {
         return this.dvote.sendMessage(requestBody, wallet, timeout)
     }
@@ -317,7 +321,7 @@ export class DVoteGateway {
             this.pubKey = gatewayOrParams.publicKey
         } else {
             const { uri, supportedApis, publicKey } = gatewayOrParams
-            if (!uriPattern.test(uri)) throw new Error("Invalid gateway URI")
+            if (!uri) throw new Error("Invalid gateway URI")
 
             this.uri = uri
             this.supportedApis = supportedApis
@@ -650,7 +654,7 @@ export class Web3Gateway {
     constructor(gatewayOrProvider: string | GatewayInfo | providers.BaseProvider) {
         if (!gatewayOrProvider) throw new Error("Invalid Gateway or provider")
         else if (typeof gatewayOrProvider == "string") {
-            if (!gatewayOrProvider.match(uriPattern)) throw new Error("Invalid Gateway URI")
+            if (!gatewayOrProvider) throw new Error("Invalid Gateway URI")
 
             const url = parseURL(gatewayOrProvider)
             if (url.protocol != "http:" && url.protocol != "https:") throw new Error("Unsupported gateway protocol: " + url.protocol)

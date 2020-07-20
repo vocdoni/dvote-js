@@ -1,6 +1,6 @@
 import { DVoteSupportedApi } from "../models/gateway"
 
-const uriPattern = /^([a-z][a-z0-9+.-]+):(\/\/([^@]+@)?([a-z0-9.\-_~]+)(:\d+)?)?((?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])*)*|(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+)*)?(\?(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?(\#(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?$/i
+// const uriPattern = /^([a-z][a-z0-9+.-]+):(\/\/([^@]+@)?([a-z0-9.\-_~]+)(:\d+)?)?((?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])*)*|(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+)*)?(\?(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?(\#(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?$/i
 
 export default class GatewayInfo {
     private dvoteUri: string
@@ -18,11 +18,11 @@ export default class GatewayInfo {
         if (!dvoteUri && !web3Uri) throw new Error("DVote URI or Web3 URI is required")
 
         if (dvoteUri) {
-            if (typeof dvoteUri != "string" || !uriPattern.test(dvoteUri)) throw new Error("Invalid Gateway URI")
+            if (typeof dvoteUri != "string") throw new Error("Invalid Gateway URI")
             else if (!Array.isArray(supportedApis) || !supportedApis.length) throw new Error("Supported API's should have at least one API")
         }
         if (web3Uri) {
-            if (typeof web3Uri != "string" || !uriPattern.test(web3Uri)) throw new Error("Invalid Web3 URI")
+            if (typeof web3Uri != "string") throw new Error("Invalid Web3 URI")
         }
 
         this.dvoteUri = dvoteUri || null

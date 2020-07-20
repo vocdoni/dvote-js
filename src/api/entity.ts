@@ -4,10 +4,11 @@ import { Gateway, IGateway, Web3Gateway, IWeb3Gateway } from "../net/gateway"
 import { TextRecordKeys } from "../models/entity"
 import { fetchFileString, addFile } from "./file"
 import { IGatewayPool, GatewayPool } from "../net/gateway-pool"
+import { XDAI_CHAIN_ID } from "../constants"
 
 /**
  * Computes the ID of an entity given its address
- * @param entityAddress 
+ * @param entityAddress
  */
 export function getEntityId(entityAddress: string): string {
     return utils.keccak256(entityAddress)
@@ -23,7 +24,7 @@ export function checkValidMetadata(entityMetadata: EntityMetadata) {
 
 /**
  * Fetch the JSON metadata file for the given entity ID using the given gateway instances
- * @param entityId 
+ * @param entityId
  * @param web3Gateway Web3Gateway instance already connected
  * @param dboteGateway Gateway instance already connected to an active service
  */
@@ -43,7 +44,7 @@ export async function getEntityMetadata(entityId: string, gateway: Gateway | IGa
 
 /**
  * Fetch the JSON metadata file for the given entity address using the given gateway instances
- * @param entityAddress 
+ * @param entityAddress
  * @param web3Gateway Web3Gateway instance already connected
  * @param dboteGateway Gateway instance already connected to an active service
  */
@@ -80,7 +81,11 @@ export async function updateEntity(entityAddress: string, entityMetadata: Entity
     const resolverInstance = await gateway.getEntityResolverInstance(walletOrSigner)
 
     const entityId = getEntityId(entityAddress)
-    const tx = await resolverInstance.setText(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI, ipfsUri)
+    const chainId = await gateway.getChainId()
+    const tx =
+        chainId == XDAI_CHAIN_ID ?
+            await resolverInstance.setText(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI, ipfsUri)
+            : await resolverInstance.setText(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI, ipfsUri)
 
     // TODO: Unpin oldMetaContentUri
 

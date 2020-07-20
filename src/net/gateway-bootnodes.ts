@@ -4,14 +4,14 @@
 
 import ContentURI from "../wrappers/content-uri"
 import { fetchFileString } from "../api/file"
-import { vocdoniMainnetEntityId, vocdoniGoerliEntityId } from "../constants"
+import { vocdoniMainnetEntityId, vocdoniGoerliEntityId, vocdoniXDaiEntityId, XDAI_ENS_REGISTRY_ADDRESS, XDAI_PROVIDER_URI, XDAI_CHAIN_ID } from "../constants"
 import { getEntityResolverInstance } from "../net/contracts"
 import { TextRecordKeys } from "../models/entity"
 import { GatewayBootNodes } from "../models/gateway"
 import { DVoteGateway, Web3Gateway, IDVoteGateway, IWeb3Gateway } from "./gateway"
 import { getDefaultProvider, providers } from "ethers"
 
-export type NetworkID = "mainnet" | "goerli"
+export type NetworkID = "mainnet" | "goerli" | "xdai"
 
 /**
  * Retrieve the Content URI of the boot nodes Content URI provided by Vocdoni
@@ -25,12 +25,26 @@ export function getDefaultBootnodeContentUri(networkId: NetworkID): Promise<Cont
         case "mainnet":
         case "goerli":
             provider = getDefaultProvider(networkId)
-            break;
+            break
+        case "xdai":
+            provider = new providers.JsonRpcProvider(XDAI_PROVIDER_URI, { chainId: XDAI_CHAIN_ID, name: "xdai", ensAddress: XDAI_ENS_REGISTRY_ADDRESS })
+            break
         default: throw new Error("Invalid Network ID")
     }
 
     return getEntityResolverInstance({ provider }).then(instance => {
-        const entityId = networkId == "mainnet" ? vocdoniMainnetEntityId : vocdoniGoerliEntityId
+        let entityId: string
+        switch (networkId) {
+            case "mainnet":
+                entityId = vocdoniMainnetEntityId
+                break
+            case "goerli":
+                entityId = vocdoniGoerliEntityId
+                break
+            case "xdai":
+                entityId = vocdoniXDaiEntityId
+                break
+        }
         return instance.text(entityId, TextRecordKeys.VOCDONI_BOOT_NODES)
     }).then(uri => {
         if (!uri) throw new Error("The boot nodes Content URI is not defined on " + networkId)
@@ -44,7 +58,6 @@ export function getDefaultBootnodeContentUri(networkId: NetworkID): Promise<Cont
  * @returns An object with a list of IDVoteGateway(s) and IWeb3Gateway(s)
  */
 export function getGatewaysFromBootNodeData(bootnodeData: GatewayBootNodes): { [networkId: string]: { dvote: IDVoteGateway[], web3: IWeb3Gateway[] } } {
-
     const result: { [networkId: string]: { dvote: IDVoteGateway[], web3: IWeb3Gateway[] } } = {}
     Object.keys(bootnodeData).forEach(networkId => {
         result[networkId] = {

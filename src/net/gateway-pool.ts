@@ -14,6 +14,7 @@ const GATEWAY_UPDATE_ERRORS = [
 const MAX_POOL_REFRESH = 10
 
 export type IGatewayPool = InstanceType<typeof GatewayPool>
+
 // GLOBAL
 
 /**
@@ -159,6 +160,10 @@ export class GatewayPool {
     // WEB3
 
     public getProvider(): providers.BaseProvider { return this.activeGateway().getProvider() }
+
+    public getChainId(): Promise<number> {
+        return this.getProvider().getNetwork().then(network => network.chainId)
+    }
 
     public getEntityResolverInstance(walletOrSigner?: Wallet | Signer): IEntityResolverContract {
         return this.activeGateway().getEntityResolverInstance(walletOrSigner)
