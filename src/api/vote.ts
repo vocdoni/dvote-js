@@ -57,7 +57,7 @@ export async function createVotingProcess(processMetadata: ProcessMetadata,
         if (!processMetaOrigin) return Promise.reject(new Error("The process metadata could not be uploaded"))
 
         // REGISTER THE NEW PROCESS
-        const tx = await processInstance.create(processMetadata.type as any, processMetaOrigin, merkleRoot, merkleTree.toContentUriString(),
+        const tx = await processInstance.create(processMetadata.type, processMetaOrigin, merkleRoot, merkleTree.toContentUriString(),
             processMetadata.startBlock, processMetadata.numberOfBlocks)
         if (!tx) throw new Error("Could not start the blockchain transaction")
         await tx.wait()

@@ -1,6 +1,6 @@
 {
   "name": "dvote-js",
-  "version": "0.15.22-xdai",
+  "version": "0.15.23-xdai",
   "description": "Javascript/Typescript library to interact with Vocdoni voting processes",
   "main": "dist/index",
   "types": "dist/index",
@@ -23,7 +23,7 @@
     "axios": "^0.19.2",
     "buffer": "^5.2.1",
     "circomlib": "^0.1.2",
-    "dvote-solidity": "^0.5.0-xdai",
+    "dvote-solidity": "^0.5.1-xdai",
     "ethers": "^4.0.44",
     "iso-language-codes": "^1.0.6",
     "isomorphic-ws": "^4.0.1",

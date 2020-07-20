@@ -9,11 +9,11 @@ import {
     ContentUriString,
     ContentHashedUriString
 } from "./common"
+import { ProcessType } from "dvote-solidity"
 import { object, array, string, number } from "yup"
 import { by639_1 } from 'iso-language-codes'
 
 export { ProcessMetadataTemplate } from "./templates/voting-process"
-
 
 ///////////////////////////////////////////////////////////////////////////////
 // VALIDATION
@@ -91,7 +91,7 @@ const voteMetadataSchema = object().shape({
 
 type ProtocolVersion = "1.0"
 type QuestionType = "single-choice"
-export type ProcessType = "snark-vote" | "poll-vote" | "encrypted-poll" | "petition-sign"
+export { ProcessType }
 export type VochainProcessState = "scheduled" | "active" | "paused" | "finished" | "canceled"
 
 /**
