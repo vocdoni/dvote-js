@@ -5,7 +5,7 @@ import { ProcessMetadata, checkValidProcessMetadata, ProcessResults, ProcessType
 // import { HexString } from "../models/common"
 import ContentHashedURI from "../wrappers/content-hashed-uri"
 import { getEntityMetadataByAddress, updateEntity, getEntityId } from "./entity"
-import { VOCHAIN_BLOCK_TIME } from "../constants"
+import { VOCHAIN_BLOCK_TIME, XDAI_GAS_PRICE, XDAI_CHAIN_ID } from "../constants"
 import { signJsonBody } from "../util/json-sign"
 import { Buffer } from "buffer/"  // Previously using "arraybuffer-to-string"
 import { Asymmetric } from "../util/encryption"
@@ -57,8 +57,13 @@ export async function createVotingProcess(processMetadata: ProcessMetadata,
         if (!processMetaOrigin) return Promise.reject(new Error("The process metadata could not be uploaded"))
 
         // REGISTER THE NEW PROCESS
-        const tx = await processInstance.create(processMetadata.type, processMetaOrigin, merkleRoot, merkleTree.toContentUriString(),
-            processMetadata.startBlock, processMetadata.numberOfBlocks)
+        const chainId = await gateway.getChainId()
+        const tx = chainId == XDAI_CHAIN_ID ?
+            await processInstance.create(processMetadata.type, processMetaOrigin, merkleRoot, merkleTree.toContentUriString(),
+                processMetadata.startBlock, processMetadata.numberOfBlocks, { gasPrice: XDAI_GAS_PRICE }) :
+            await processInstance.create(processMetadata.type, processMetaOrigin, merkleRoot, merkleTree.toContentUriString(),
+                processMetadata.startBlock, processMetadata.numberOfBlocks)
+
         if (!tx) throw new Error("Could not start the blockchain transaction")
         await tx.wait()
 
@@ -131,7 +136,11 @@ export async function cancelProcess(processId: string,
     try {
         const processInstance = await gateway.getVotingProcessInstance(walletOrSigner)
 
-        const tx = await processInstance.cancel(processId)
+        const chainId = await gateway.getChainId()
+        const tx = chainId == XDAI_CHAIN_ID ?
+            await processInstance.cancel(processId, { gasPrice: XDAI_GAS_PRICE }) :
+            await processInstance.cancel(processId)
+
         if (!tx) throw new Error("Could not start the blockchain transaction")
         await tx.wait()
     }

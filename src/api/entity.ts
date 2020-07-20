@@ -4,7 +4,7 @@ import { Gateway, IGateway, Web3Gateway, IWeb3Gateway } from "../net/gateway"
 import { TextRecordKeys } from "../models/entity"
 import { fetchFileString, addFile } from "./file"
 import { IGatewayPool, GatewayPool } from "../net/gateway-pool"
-import { XDAI_CHAIN_ID } from "../constants"
+import { XDAI_CHAIN_ID, XDAI_GAS_PRICE } from "../constants"
 
 /**
  * Computes the ID of an entity given its address
@@ -82,10 +82,9 @@ export async function updateEntity(entityAddress: string, entityMetadata: Entity
 
     const entityId = getEntityId(entityAddress)
     const chainId = await gateway.getChainId()
-    const tx =
-        chainId == XDAI_CHAIN_ID ?
-            await resolverInstance.setText(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI, ipfsUri)
-            : await resolverInstance.setText(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI, ipfsUri)
+    const tx = chainId == XDAI_CHAIN_ID ?
+        await resolverInstance.setText(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI, ipfsUri, { gasPrice: XDAI_GAS_PRICE }) :
+        await resolverInstance.setText(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI, ipfsUri)
 
     // TODO: Unpin oldMetaContentUri
 
