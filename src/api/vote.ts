@@ -40,6 +40,10 @@ export async function createVotingProcess(processMetadata: ProcessMetadata,
     const merkleRoot = processMetadata.census.merkleRoot
     const merkleTree = new ContentHashedURI(processMetadata.census.merkleTree)
 
+    if (walletOrSigner instanceof Wallet && !walletOrSigner.provider) {
+        walletOrSigner = walletOrSigner.connect(gateway.getProvider())
+    }
+
     try {
         const processInstance = gateway.getVotingProcessInstance(walletOrSigner)
 
@@ -132,6 +136,10 @@ export async function cancelProcess(processId: string,
     if (!processId) throw new Error("Invalid process ID")
     else if (!walletOrSigner) throw new Error("Invalid Wallet or Signer")
     else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) throw new Error("Invalid Gateway object")
+
+    if (walletOrSigner instanceof Wallet && !walletOrSigner.provider) {
+        walletOrSigner = walletOrSigner.connect(gateway.getProvider())
+    }
 
     try {
         const processInstance = await gateway.getVotingProcessInstance(walletOrSigner)
