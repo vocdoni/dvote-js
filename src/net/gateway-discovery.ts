@@ -193,7 +193,6 @@ async function testingLoop(totalDvoteNodes: IDVoteGateway[], totalWeb3Nodes: IWe
         // If enough gateways collected then return
         if (dvoteGateways.length >= numberOfGateways && web3Gateways.length >= numberOfGateways) {
             // return generateResults(dvoteGateways, web3Gateways, gatewayPairs, totalDvoteNodes, totalWeb3Nodes)
-            console.log("Done discovering gateways", { dvote: dvoteGateways, web3: web3Gateways })
             return { dvote: dvoteGateways, web3: web3Gateways }
         }
     }

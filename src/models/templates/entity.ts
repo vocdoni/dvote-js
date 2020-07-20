@@ -33,8 +33,8 @@ export const EntityMetadataTemplate: EntityMetadata = {
                 default: "Sign up",
                 // fr: "S'inscrire"
             },
-            url: "https://registry.vocdoni.net/api/actions",
-            visible: "https://registry.vocdoni.net/api/actions"
+            url: "wss://my-server/endpoint",
+            visible: "wss://my-server/endpoint"
         }
     ],
     bootEntities: [],

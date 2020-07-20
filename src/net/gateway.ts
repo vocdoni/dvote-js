@@ -643,27 +643,27 @@ export class Web3Gateway {
     public votingContractAddress: string
 
     /** Returns a JSON RPC provider that can be used for Ethereum communication */
-    public static providerFromUri(uri: string) {
-        return providerFromUri(uri)
+    public static providerFromUri(uri: string, networkId?: NetworkID) {
+        return providerFromUri(uri, networkId)
     }
 
     /**
      * Returns a wrapped Ethereum Web3 client.
      * @param gatewayOrProvider Can be a string with the host's URI or an Ethers Provider
      */
-    constructor(gatewayOrProvider: string | GatewayInfo | providers.BaseProvider) {
+    constructor(gatewayOrProvider: string | GatewayInfo | providers.BaseProvider, networkId?: NetworkID) {
         if (!gatewayOrProvider) throw new Error("Invalid Gateway or provider")
         else if (typeof gatewayOrProvider == "string") {
             if (!gatewayOrProvider) throw new Error("Invalid Gateway URI")
 
             const url = parseURL(gatewayOrProvider)
             if (url.protocol != "http:" && url.protocol != "https:") throw new Error("Unsupported gateway protocol: " + url.protocol)
-            this.provider = Web3Gateway.providerFromUri(gatewayOrProvider)
+            this.provider = Web3Gateway.providerFromUri(gatewayOrProvider, networkId)
         }
         else if (gatewayOrProvider instanceof GatewayInfo) {
             const url = parseURL(gatewayOrProvider.web3)
             if (url.protocol != "http:" && url.protocol != "https:") throw new Error("Unsupported gateway protocol: " + url.protocol)
-            this.provider = Web3Gateway.providerFromUri(gatewayOrProvider.web3)
+            this.provider = Web3Gateway.providerFromUri(gatewayOrProvider.web3, networkId)
         }
         else if (gatewayOrProvider instanceof providers.BaseProvider) { // use as a provider
             this.provider = gatewayOrProvider

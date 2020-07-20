@@ -65,7 +65,7 @@ export function getGatewaysFromBootNodeData(bootnodeData: GatewayBootNodes): { [
                 return new DVoteGateway({ uri: item.uri, supportedApis: item.apis, publicKey: item.pubKey })
             }),
             web3: (bootnodeData[networkId].web3 || []).map(item => {
-                return new Web3Gateway(item.uri)
+                return new Web3Gateway(item.uri, networkId as NetworkID)
             })
         }
     })
