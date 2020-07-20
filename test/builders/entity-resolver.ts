@@ -1,7 +1,7 @@
 import { getEntityId } from "../../src/api/entity"
 import { deployEntityResolverContract } from "../../src/net/contracts"
 // import { TextRecordKeys } from "../../src/models/entity"
-import { EntityResolverContractMethods } from "dvote-solidity"
+import { EnsPublicResolverContractMethods } from "dvote-solidity"
 import { Contract } from "ethers"
 import { getAccounts, TestAccount } from "../testing-eth-utils"
 
@@ -20,7 +20,7 @@ export default class EntityBuilder {
         this.entityAccount = this.accounts[1]
     }
 
-    async build(): Promise<EntityResolverContractMethods & Contract> {
+    async build(): Promise<EnsPublicResolverContractMethods & Contract> {
         const contractInstance = await deployEntityResolverContract({ provider: this.entityAccount.provider, wallet: this.entityAccount.wallet })
 
         const entityId = getEntityId(this.entityAccount.address)

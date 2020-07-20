@@ -3,7 +3,7 @@ import { expect } from "chai"
 import { Contract } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
 import { getAccounts, incrementTimestamp, TestAccount } from "../testing-eth-utils"
-import { EntityResolver, EntityResolverContractMethods } from "dvote-solidity"
+import { EnsPublicResolver, EnsPublicResolverContractMethods } from "dvote-solidity"
 const fs = require("fs")
 
 import { getEntityId } from "../../src/api/entity"
@@ -16,7 +16,7 @@ let baseAccount: TestAccount
 let entityAccount: TestAccount
 let randomAccount: TestAccount
 let entityId: string
-let contractInstance: EntityResolverContractMethods & Contract
+let contractInstance: EnsPublicResolverContractMethods & Contract
 
 addCompletionHooks()
 
@@ -71,8 +71,6 @@ describe("Entity Resolver", () => {
 
             for (let item of data) {
                 expect(getEntityId(item.address)).to.equal(item.id)
-
-                expect(await contractInstance.getEntityId(item.address)).to.equal(item.id, "Solidity and JS entity Id's should match")
             }
         })
 

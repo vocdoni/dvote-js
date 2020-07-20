@@ -2,17 +2,19 @@ import { Contract, providers, Wallet, Signer } from "ethers"
 import { Web3Gateway } from "./gateway"
 import { entityResolverEnsDomain, votingProcessEnsDomain } from "../constants"
 import {
-    EntityResolver as EntityContractDefinition,
+    EnsPublicResolver as EntityContractDefinition,
     VotingProcess as VotingContractDefinition,
-    EntityResolverContractMethods,
+    EnsPublicResolverContractMethods,
     VotingProcessContractMethods
 } from "dvote-solidity"
 
-export interface IEntityResolverContract extends Contract, EntityResolverContractMethods { }
+export interface IEntityResolverContract extends Contract, EnsPublicResolverContractMethods { }
 export interface IVotingProcessContract extends Contract, VotingProcessContractMethods { }
 
 type DeployContractParams = { gateway?: string, provider?: providers.BaseProvider, signer?: Signer; wallet?: Wallet; }
 type AttachToContractParams = { gateway?: string, provider?: providers.BaseProvider, signer?: Signer; wallet?: Wallet; }
+
+const nullAddress = "0x0000000000000000000000000000000000000000"
 
 ///////////////////////////////////////////////////////////////////////////////
 // DEPLOYMENT
@@ -32,7 +34,7 @@ export async function deployEntityResolverContract(params: DeployContractParams 
     let { gateway, provider, signer, wallet } = params
 
     const gw = new Web3Gateway(gateway || provider)
-    const instance = await gw.deploy<EntityResolverContractMethods>(EntityContractDefinition.abi, EntityContractDefinition.bytecode, { signer, wallet })
+    const instance = await gw.deploy<EnsPublicResolverContractMethods>(EntityContractDefinition.abi, EntityContractDefinition.bytecode, { signer, wallet }, [nullAddress])
 
     if (signer) {
         return instance.connect(signer) as IEntityResolverContract

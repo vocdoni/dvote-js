@@ -1,4 +1,7 @@
 # DVote JS
+
+**IMPORTANT**: The current release is a workaround to support **xDAI** with legacy code until current contract support is added to dvote-solidity. Expect a few internal naming inconsistencies until branch 35 is finally merged.
+
 DVoteJS aims to provide utility classes and methods to invoke decentralized operations within a voting process. It covers the typical functionality of Client applications, as well as the Process Manager or the Census Manager.
 
 The intended functionality is to interact with a public Ethereum blockchain, to fetch data from a decentralized filesystem, to enforce data schema validity, to prepare vote packages and using decentralized messaging networks through Gateways.

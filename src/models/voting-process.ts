@@ -9,7 +9,6 @@ import {
     ContentUriString,
     ContentHashedUriString
 } from "./common"
-import { ProcessType } from "dvote-solidity"
 import { object, array, string, number } from "yup"
 import { by639_1 } from 'iso-language-codes'
 
@@ -52,7 +51,7 @@ const multiLanguageStringKeys = {
 
 // MAIN ENTITY SCHEMA
 
-const processTypes: ProcessType[] = ["snark-vote", "poll-vote", "encrypted-poll", "petition-sign"]
+const processTypes: string[] = ["snark-vote", "poll-vote", "encrypted-poll", "petition-sign"]
 const questionTypes = ["single-choice"]
 
 const voteMetadataSchema = object().shape({
@@ -92,7 +91,7 @@ const voteMetadataSchema = object().shape({
 
 type ProtocolVersion = "1.0"
 type QuestionType = "single-choice"
-export { ProcessType }
+export type ProcessType = "snark-vote" | "poll-vote" | "encrypted-poll" | "petition-sign"
 export type VochainProcessState = "scheduled" | "active" | "paused" | "finished" | "canceled"
 
 /**

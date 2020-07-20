@@ -16,7 +16,7 @@ import axios from "axios"
 import { NetworkID, fetchDefaultBootNode, getGatewaysFromBootNodeData, fetchFromBootNode } from "./gateway-bootnodes"
 import ContentURI from "wrappers/content-uri"
 import {
-    EntityResolver as EntityContractDefinition,
+    EnsPublicResolver as EntityContractDefinition,
     VotingProcess as VotingProcessContractDefinition
 } from "dvote-solidity"
 import { entityResolverEnsDomain, votingProcessEnsDomain } from "../constants"
@@ -673,7 +673,7 @@ export class Web3Gateway {
      * If a wallet is given, the Gateway URI will be used unless the wallet is already connected
      */
     async deploy<CustomContractMethods>(abi: string | (string | utils.ParamType)[] | utils.Interface, bytecode: string,
-        signParams: { signer?: Signer, wallet?: Wallet } = {}, deployArguments: any[] = []): Promise<(Contract & CustomContractMethods)> {
+        signParams: { signer?: Signer, wallet?: Wallet } = {}, deployArguments?: any[]): Promise<(Contract & CustomContractMethods)> {
         var contractFactory: ContractFactory
 
         if (!signParams) throw new Error("Invalid signing parameters")
@@ -691,7 +691,7 @@ export class Web3Gateway {
 
             contractFactory = new ContractFactory(abi, bytecode, wallet)
         }
-        return (await contractFactory.deploy(deployArguments)) as (Contract & CustomContractMethods)
+        return (await contractFactory.deploy(...deployArguments)) as (Contract & CustomContractMethods)
     }
 
     /**
