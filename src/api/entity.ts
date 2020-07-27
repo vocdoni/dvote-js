@@ -5,6 +5,7 @@ import { TextRecordKeys } from "../models/entity"
 import { fetchFileString, addFile } from "./file"
 import { IGatewayPool, GatewayPool } from "../net/gateway-pool"
 import { XDAI_CHAIN_ID, XDAI_GAS_PRICE } from "../constants"
+import { IMethodOverrides } from "dvote-solidity"
 
 /**
  * Computes the ID of an entity given its address
@@ -82,8 +83,9 @@ export async function updateEntity(entityAddress: string, entityMetadata: Entity
 
     const entityId = getEntityId(entityAddress)
     const chainId = await gateway.getChainId()
+    const options: IMethodOverrides = { gasPrice: XDAI_GAS_PRICE }
     const tx = chainId == XDAI_CHAIN_ID ?
-        await resolverInstance.setText(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI, ipfsUri, { gasPrice: XDAI_GAS_PRICE }) :
+        await resolverInstance.setText(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI, ipfsUri, options) :
         await resolverInstance.setText(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI, ipfsUri)
 
     // TODO: Unpin oldMetaContentUri

@@ -11,6 +11,7 @@ import { Buffer } from "buffer/"  // Previously using "arraybuffer-to-string"
 import { Asymmetric } from "../util/encryption"
 import { GatewayPool, IGatewayPool } from "../net/gateway-pool"
 import { waitVochainBlocks } from "../util/waiters"
+import { IMethodOverrides } from "dvote-solidity"
 
 type IProcessKeys = {
     encryptionPubKeys: { idx: number, key: string }[],
@@ -62,9 +63,10 @@ export async function createVotingProcess(processMetadata: ProcessMetadata,
 
         // REGISTER THE NEW PROCESS
         const chainId = await gateway.getChainId()
+        const options: IMethodOverrides = { gasPrice: XDAI_GAS_PRICE }
         const tx = chainId == XDAI_CHAIN_ID ?
-            await processInstance.create(processMetadata.type, processMetaOrigin, merkleRoot, merkleTree.toContentUriString(),
-                processMetadata.startBlock, processMetadata.numberOfBlocks, { gasPrice: XDAI_GAS_PRICE }) :
+            await processInstance.populateTransaction.create(processMetadata.type, processMetaOrigin, merkleRoot, merkleTree.toContentUriString(),
+                processMetadata.startBlock, processMetadata.numberOfBlocks, options) :
             await processInstance.create(processMetadata.type, processMetaOrigin, merkleRoot, merkleTree.toContentUriString(),
                 processMetadata.startBlock, processMetadata.numberOfBlocks)
 
@@ -145,8 +147,9 @@ export async function cancelProcess(processId: string,
         const processInstance = await gateway.getVotingProcessInstance(walletOrSigner)
 
         const chainId = await gateway.getChainId()
+        const options: IMethodOverrides = { gasPrice: XDAI_GAS_PRICE }
         const tx = chainId == XDAI_CHAIN_ID ?
-            await processInstance.cancel(processId, { gasPrice: XDAI_GAS_PRICE }) :
+            await processInstance.populateTransaction.cancel(processId, options) :
             await processInstance.cancel(processId)
 
         if (!tx) throw new Error("Could not start the blockchain transaction")
