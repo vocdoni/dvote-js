@@ -65,7 +65,7 @@ export async function createVotingProcess(processMetadata: ProcessMetadata,
         const chainId = await gateway.getChainId()
         const options: IMethodOverrides = { gasPrice: XDAI_GAS_PRICE }
         const tx = chainId == XDAI_CHAIN_ID ?
-            await processInstance.populateTransaction.create(processMetadata.type, processMetaOrigin, merkleRoot, merkleTree.toContentUriString(),
+            await processInstance.create(processMetadata.type, processMetaOrigin, merkleRoot, merkleTree.toContentUriString(),
                 processMetadata.startBlock, processMetadata.numberOfBlocks, options) :
             await processInstance.create(processMetadata.type, processMetaOrigin, merkleRoot, merkleTree.toContentUriString(),
                 processMetadata.startBlock, processMetadata.numberOfBlocks)
@@ -149,7 +149,7 @@ export async function cancelProcess(processId: string,
         const chainId = await gateway.getChainId()
         const options: IMethodOverrides = { gasPrice: XDAI_GAS_PRICE }
         const tx = chainId == XDAI_CHAIN_ID ?
-            await processInstance.populateTransaction.cancel(processId, options) :
+            await processInstance.cancel(processId, options) :
             await processInstance.cancel(processId)
 
         if (!tx) throw new Error("Could not start the blockchain transaction")
