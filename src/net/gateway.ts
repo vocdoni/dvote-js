@@ -570,9 +570,7 @@ export class DVoteGateway {
      */
     public async checkPing(): Promise<boolean> {
         const uri = parseURL(this.uri)
-        let pingUrl: string = uri.port
-            ? `https://${uri.host}:${uri.port}/ping`
-            : `https://${uri.host}/ping`
+        let pingUrl: string = `https://${uri.host}/ping`
 
         try {
             let response = await axios.get(pingUrl).catch(err => {
@@ -585,9 +583,7 @@ export class DVoteGateway {
             }
 
             // HTTP fallback
-            pingUrl = uri.port
-                ? `http://${uri.host}:${uri.port}/ping`
-                : `http://${uri.host}/ping`
+            pingUrl = `http://${uri.host}/ping`
 
             response = await axios.get(pingUrl).catch(err => {
                 return null
