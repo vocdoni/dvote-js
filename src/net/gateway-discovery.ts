@@ -1,7 +1,7 @@
 import ContentURI from "../wrappers/content-uri"
 // import GatewayInfo from "../wrappers/gateway-info"
 import { IDVoteGateway, IWeb3Gateway, Gateway } from "./gateway"
-import { fetchFromBootNode, fetchDefaultBootNode, getGatewaysFromBootNodeData, NetworkID } from "./gateway-bootnodes"
+import { fetchFromBootNode, fetchDefaultBootNode, getNetworkGatewaysFromBootNodeData, NetworkID } from "./gateway-bootnodes"
 import { parseURL } from 'universal-parse-url'
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
 import { GatewayBootNodes } from "../models/gateway"
@@ -90,9 +90,9 @@ async function getWorkingGateways(p: GatewayDiscoveryParameters): Promise<{ dvot
         bootnodeData[networkId].web3 = shuffle(bootnodeData[networkId].web3)
 
         // Instantiate gateways
-        const defaultGateways = getGatewaysFromBootNodeData(bootnodeData)
-        totalDvoteNodes = defaultGateways[networkId].dvote
-        const totalWeb3Nodes: IWeb3Gateway[] = defaultGateways[networkId].web3
+        const defaultGateways = getNetworkGatewaysFromBootNodeData(bootnodeData, networkId)
+        totalDvoteNodes = defaultGateways.dvote
+        const totalWeb3Nodes: IWeb3Gateway[] = defaultGateways.web3
 
         // Create mapping of colocated web3/dvote services
         const gatewayPairs = mapWeb3DvoteGateways(bootnodeData[networkId], totalDvoteNodes, totalWeb3Nodes)

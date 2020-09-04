@@ -13,7 +13,7 @@ import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
 import { signJsonBody, isSignatureValid, sortObjectFields } from "../util/json-sign"
 import { getEntityResolverInstance, getVotingProcessInstance, IVotingProcessContract, IEntityResolverContract } from "../net/contracts"
 import axios from "axios"
-import { NetworkID, fetchDefaultBootNode, getGatewaysFromBootNodeData, fetchFromBootNode } from "./gateway-bootnodes"
+import { NetworkID, fetchDefaultBootNode, getNetworkGatewaysFromBootNodeData, fetchFromBootNode } from "./gateway-bootnodes"
 import ContentURI from "wrappers/content-uri"
 import {
     EnsPublicResolver as EntityContractDefinition,
@@ -107,7 +107,7 @@ export class Gateway {
     static randomFromDefault(networkId: NetworkID, requiredApis: DVoteSupportedApi[] = []): Promise<Gateway> {
         return fetchDefaultBootNode(networkId)
             .then(async bootNodeData => {
-                const gateways = getGatewaysFromBootNodeData(bootNodeData)[networkId]
+                const gateways = getNetworkGatewaysFromBootNodeData(bootNodeData,networkId)
                 let web3: Web3Gateway
                 for (let i = 0; i < gateways.web3.length; i++) {
                     let w3 = gateways.web3[i]
@@ -142,7 +142,7 @@ export class Gateway {
     static randomfromUri(networkId: NetworkID, bootnodesContentUri: string | ContentURI, requiredApis: DVoteSupportedApi[] = []): Promise<Gateway> {
         return fetchFromBootNode(bootnodesContentUri)
             .then(async bootNodeData => {
-                const gateways = getGatewaysFromBootNodeData(bootNodeData)[networkId]
+                const gateways = getNetworkGatewaysFromBootNodeData(bootNodeData,networkId)
                 let web3: Web3Gateway
                 for (let i = 0; i < gateways.web3.length; i++) {
                     let w3 = gateways.web3[i]

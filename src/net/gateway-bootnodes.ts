@@ -73,6 +73,23 @@ export function getGatewaysFromBootNodeData(bootnodeData: GatewayBootNodes): { [
 }
 
 /**
+ * Retrieve the list of gateways from the data derrived from a BootNode Content URI.
+ * @param bootnodeData A GatewayBootNodes objects that represents the ata derrived from a BootNode Content URI.
+ * @returns An object with a list of IDVoteGateway(s) and IWeb3Gateway(s)
+ */
+export function getNetworkGatewaysFromBootNodeData(bootnodeData: GatewayBootNodes, networkId: string): {  dvote: IDVoteGateway[], web3: IWeb3Gateway[] }  {
+    console.log('network gateways')
+    return {
+            dvote: (bootnodeData[networkId].dvote || []).map(item => {
+                return new DVoteGateway({ uri: item.uri, supportedApis: item.apis, publicKey: item.pubKey })
+            }),
+            web3: (bootnodeData[networkId].web3 || []).map(item => {
+                return new Web3Gateway(item.uri, networkId as NetworkID)
+            })
+        }
+}
+
+/**
  * Retrieve the list of gateways provided by default by Vocdoni in the network
  * @param networkId The Ethereum network to which the gateways should be associated
  * @returns A GatewayBootnodes object that represents the ata derrived from a BootNode Content URI.
