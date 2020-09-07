@@ -2,7 +2,7 @@ console.log("Reading .env (if present)...")
 require('dotenv').config({ path: __dirname + "/.env" })
 
 import axios from "axios"
-import fs from "fs"
+import * as fs from "fs"
 import { utils, providers, Wallet } from "ethers"
 import { walletFromSeededPassphrase, generateRandomHexSeed } from "../src/util/signers"
 import { getEntityId, updateEntity, getEntityMetadata, getEntityMetadataByAddress } from "../src/api/entity"
