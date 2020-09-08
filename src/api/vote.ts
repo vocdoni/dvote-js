@@ -1,11 +1,11 @@
-import { Wallet, Signer, utils } from "ethers"
+import { Wallet, Signer, utils, ContractTransaction } from "ethers"
 import { Gateway, IGateway } from "../net/gateway"
 import { fetchFileString, addFile } from "./file"
 import { ProcessMetadata, checkValidProcessMetadata, ProcessResults, ProcessType, VochainProcessState, ProcessResultItem } from "../models/voting-process"
 // import { HexString } from "../models/common"
 import ContentHashedURI from "../wrappers/content-hashed-uri"
 import { getEntityMetadataByAddress, updateEntity, getEntityId } from "./entity"
-import { VOCHAIN_BLOCK_TIME, XDAI_GAS_PRICE, XDAI_CHAIN_ID } from "../constants"
+import { VOCHAIN_BLOCK_TIME, XDAI_GAS_PRICE, XDAI_CHAIN_ID, SOKOL_CHAIN_ID, SOKOL_GAS_PRICE } from "../constants"
 import { signJsonBody } from "../util/json-sign"
 import { Buffer } from "buffer/"  // Previously using "arraybuffer-to-string"
 import { Asymmetric } from "../util/encryption"
@@ -147,10 +147,26 @@ export async function cancelProcess(processId: string,
         const processInstance = await gateway.getVotingProcessInstance(walletOrSigner)
 
         const chainId = await gateway.getChainId()
-        const options: IMethodOverrides = { gasPrice: XDAI_GAS_PRICE }
-        const tx = chainId == XDAI_CHAIN_ID ?
-            await processInstance.cancel(processId, options) :
-            await processInstance.cancel(processId)
+        let options: IMethodOverrides
+        let tx : ContractTransaction
+        switch (chainId) {
+            case XDAI_CHAIN_ID : 
+                options = { gasPrice: XDAI_GAS_PRICE }
+                tx = await processInstance.cancel(processId, options)
+                break
+            case SOKOL_CHAIN_ID :
+                const addr = await walletOrSigner.getAddress()
+                const nonce = await walletOrSigner.provider.getTransactionCount(addr)
+                options = {
+                    gasPrice: SOKOL_GAS_PRICE,
+                    nonce,
+                }
+                tx = await  processInstance.cancel(processId, options)
+                break
+            default :
+                tx = await processInstance.cancel(processId)
+
+        }
 
         if (!tx) throw new Error("Could not start the blockchain transaction")
         await tx.wait()

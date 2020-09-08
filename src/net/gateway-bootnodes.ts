@@ -4,14 +4,15 @@
 
 import ContentURI from "../wrappers/content-uri"
 import { fetchFileString } from "../api/file"
-import { vocdoniMainnetEntityId, vocdoniGoerliEntityId, vocdoniXDaiEntityId, XDAI_ENS_REGISTRY_ADDRESS, XDAI_PROVIDER_URI, XDAI_CHAIN_ID } from "../constants"
+import { vocdoniMainnetEntityId, vocdoniGoerliEntityId, vocdoniXDaiEntityId, vocdoniSokolEntityId, XDAI_ENS_REGISTRY_ADDRESS, XDAI_PROVIDER_URI, XDAI_CHAIN_ID,
+        SOKOL_CHAIN_ID, SOKOL_PROVIDER_URI, SOKOL_ENS_REGISTRY_ADDRESS } from "../constants"
 import { getEntityResolverInstance } from "../net/contracts"
 import { TextRecordKeys } from "../models/entity"
 import { GatewayBootNodes } from "../models/gateway"
 import { DVoteGateway, Web3Gateway, IDVoteGateway, IWeb3Gateway } from "./gateway"
 import { getDefaultProvider, providers } from "ethers"
 
-export type NetworkID = "mainnet" | "goerli" | "xdai"
+export type NetworkID = "mainnet" | "goerli" | "xdai" | "sokol"
 
 /**
  * Retrieve the Content URI of the boot nodes Content URI provided by Vocdoni
@@ -29,10 +30,13 @@ export function getDefaultBootnodeContentUri(networkId: NetworkID): Promise<Cont
         case "xdai":
             provider = new providers.JsonRpcProvider(XDAI_PROVIDER_URI, { chainId: XDAI_CHAIN_ID, name: "xdai", ensAddress: XDAI_ENS_REGISTRY_ADDRESS })
             break
+        case "sokol":
+            provider = new providers.JsonRpcProvider(SOKOL_PROVIDER_URI, { chainId: SOKOL_CHAIN_ID, name: "sokol", ensAddress: SOKOL_ENS_REGISTRY_ADDRESS });
+            break
         default: throw new Error("Invalid Network ID")
     }
 
-    return getEntityResolverInstance({ provider }).then(instance => {
+    return getEntityResolverInstance({ provider } ).then(instance => {
         let entityId: string
         switch (networkId) {
             case "mainnet":
@@ -43,6 +47,9 @@ export function getDefaultBootnodeContentUri(networkId: NetworkID): Promise<Cont
                 break
             case "xdai":
                 entityId = vocdoniXDaiEntityId
+                break
+            case "sokol":
+                entityId = vocdoniSokolEntityId
                 break
         }
         return instance.text(entityId, TextRecordKeys.VOCDONI_BOOT_NODES)

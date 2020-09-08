@@ -94,6 +94,20 @@ describe("Boot nodes", () => {
         expect(Array.isArray(bootnodes["xdai"].dvote[0].apis)).to.be.true
 
         expect(typeof bootnodes["xdai"].web3[0].uri).to.equal("string")
+
+        // SOKOL
+        bootnodes = await fetchDefaultBootNode("sokol")
+        console.log(JSON.stringify(bootnodes, null, 2))
+        for (let networkId in bootnodes) {
+            expect(typeof networkId).to.equal("string")
+        }
+
+        expect(Array.isArray(bootnodes["sokol"].dvote)).to.be.true
+        expect(typeof bootnodes["sokol"].dvote[0].uri).to.equal("string")
+        expect(typeof bootnodes["sokol"].dvote[0].pubKey).to.equal("string")
+        expect(Array.isArray(bootnodes["sokol"].dvote[0].apis)).to.be.true
+
+        expect(typeof bootnodes["sokol"].web3[0].uri).to.equal("string")
     }).timeout(20000)
 
     it("fetchFromBootNode should provide a bootnode JSON structure", async () => {
@@ -123,6 +137,6 @@ describe("Boot nodes", () => {
         expect(Array.isArray(bootnodes["xdai"].dvote[0].apis)).to.be.true
 
         expect(typeof bootnodes["xdai"].web3[0].uri).to.equal("string")
-    })
+    }).timeout(20000)
 
 })

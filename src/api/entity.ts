@@ -1,10 +1,10 @@
-import { utils, Wallet, Signer } from "ethers"
+import { utils, Wallet, Signer, ContractTransaction } from "ethers"
 import { checkValidEntityMetadata, EntityMetadata } from "../models/entity"
 import { Gateway, IGateway, Web3Gateway, IWeb3Gateway } from "../net/gateway"
 import { TextRecordKeys } from "../models/entity"
 import { fetchFileString, addFile } from "./file"
 import { IGatewayPool, GatewayPool } from "../net/gateway-pool"
-import { XDAI_CHAIN_ID, XDAI_GAS_PRICE } from "../constants"
+import { XDAI_CHAIN_ID, XDAI_GAS_PRICE, SOKOL_CHAIN_ID, SOKOL_GAS_PRICE } from "../constants"
 import { IMethodOverrides } from "dvote-solidity"
 
 /**
@@ -83,10 +83,26 @@ export async function updateEntity(entityAddress: string, entityMetadata: Entity
 
     const entityId = getEntityId(entityAddress)
     const chainId = await gateway.getChainId()
-    const options: IMethodOverrides = { gasPrice: XDAI_GAS_PRICE }
-    const tx = chainId == XDAI_CHAIN_ID ?
-        await resolverInstance.setText(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI, ipfsUri, options) :
-        await resolverInstance.setText(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI, ipfsUri)
+    let options: IMethodOverrides
+    let tx : ContractTransaction
+    switch (chainId) {
+        case XDAI_CHAIN_ID :
+            options = { gasPrice: XDAI_GAS_PRICE }
+            tx = await resolverInstance.setText(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI, ipfsUri, options)
+            break
+        case SOKOL_CHAIN_ID :
+            const addr = await walletOrSigner.getAddress()
+            const nonce = await walletOrSigner.provider.getTransactionCount(addr)
+            options = {
+                gasPrice: SOKOL_GAS_PRICE,
+                nonce,
+            }
+            tx = await resolverInstance.setText(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI, ipfsUri, options)
+            break
+        default :
+            tx = await resolverInstance.setText(entityId, TextRecordKeys.JSON_METADATA_CONTENT_URI, ipfsUri)
+
+    }
 
     // TODO: Unpin oldMetaContentUri
 
