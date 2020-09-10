@@ -26,9 +26,9 @@ const MNEMONIC = process.env.MNEMONIC || "bar bundle start frog dish gauge squar
 const PATH = "m/44'/60'/0'/0/0"
 const GATEWAY_PUB_KEY = process.env.GATEWAY_PUB_KEY || "02325f284f50fa52d53579c7873a480b351cc20f7780fa556929f5017283ad2449"
 const GATEWAY_DVOTE_URI = process.env.GATEWAY_DVOTE_URI || "wss://myhost/dvote"
-const GATEWAY_WEB3_URI = process.env.GATEWAY_WEB3_URI || "https://rpc.slock.it/goerli"
+const GATEWAY_WEB3_URI = process.env.GATEWAY_WEB3_URI || "https://sokol.poa.network"
 
-const NETWORK_ID = "xdai"
+const NETWORK_ID = "sokol"
 const WALLET_SEED = process.env.WALLET_SEED
 const WALLET_PASSPHRASE = process.env.WALLET_PASSPHRASE
 
@@ -217,7 +217,7 @@ async function registerEntity() {
     console.log("Entity Addr", myEntityAddress)
     console.log("Entity ID", myEntityId)
     // const pool = await GatewayPool.discover({ networkId: "goerli" })
-    const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: "https://bootnodes.vocdoni.net/gateways.dev.json" })
+    const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: "http://bootnodes.vocdoni.net/gateways.dev.json" })
     await pool.connect()
 
     // const entityMetadata: EntityMetadata = JSON.parse(JSON.stringify(EntityMetadataTemplate))
@@ -225,7 +225,7 @@ async function registerEntity() {
     // entityMetadata.actions[0].url = "wss://registry.vocdoni.net/api/registry"
     // entityMetadata.actions[0].visible = "wss://registry.vocdoni.net/api/registry"
 
-    const entityMetadata: EntityMetadata = { version: '1.0', languages: ['default'], name: { default: 'Vilafourier' }, description: { default: 'Official communication and participation channel administered by the city council' }, votingProcesses: { active: ['0x254f0f1789e05de5574eb305fc39d1adbadef83ef0fa2cbed30fb9f18dc9247f'], ended: ['0x711b6a0f5f50211efa3fbc3f4456ffd2b0ec274e638434579dae7d903fdbe1dd'] }, newsFeed: { default: 'ipfs://QmRg675gU924YM5eKQ72Dfe1aYkZsdriT4fnHbAbTtoBvq' }, media: { avatar: 'https://ipfs.io/ipfs/QmWm23t4FdCYdEpTmYYWdjPZFepCvk9GJTSSMdv8xU3Hm9', header: 'https://ipfs.io/ipfs/Qmb4tMak41v6WigrFqovo6AATy23pNZGFCa9PHJDjg6kWz' }, actions: [{ type: 'register', actionKey: 'register', name: { default: "Sign up" }, url: 'wss://registry.vocdoni.net/api/registry', visible: 'wss://registry.vocdoni.net/api/registry' }], bootEntities: [], fallbackBootNodeEntities: [], trustedEntities: [], censusServiceManagedEntities: [] }
+    const entityMetadata: EntityMetadata = { version: '1.0', languages: ['default'], name: { default: 'Vilafourier18' }, description: { default: 'Official communication and participation channel administered by the city council' }, votingProcesses: { active: ['0x254f0f1789e05de5574eb305fc39d1adbadef83ef0fa2cbed30fb9f18dc9247f'], ended: ['0x711b6a0f5f50211efa3fbc3f4456ffd2b0ec274e638434579dae7d903fdbe1dd'] }, newsFeed: { default: 'ipfs://QmRg675gU924YM5eKQ72Dfe1aYkZsdriT4fnHbAbTtoBvq' }, media: { avatar: 'https://ipfs.io/ipfs/QmWm23t4FdCYdEpTmYYWdjPZFepCvk9GJTSSMdv8xU3Hm9', header: 'https://ipfs.io/ipfs/Qmb4tMak41v6WigrFqovo6AATy23pNZGFCa9PHJDjg6kWz' }, actions: [{ type: 'register', actionKey: 'register', name: { default: "Sign up" }, url: 'wss://registry.vocdoni.net/api/registry', visible: 'wss://registry.vocdoni.net/api/registry' }], bootEntities: [], fallbackBootNodeEntities: [], trustedEntities: [], censusServiceManagedEntities: [] }
     const contentUri = await updateEntity(myEntityAddress, entityMetadata, wallet, pool)
 
     // show stored values
@@ -260,7 +260,7 @@ async function updateEntityInfo() {
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
     const myEntityAddress = await wallet.getAddress()
-    const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: "https://bootnodes.vocdoni.net/gateways.json" })
+    const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: "https://bootnodes.vocdoni.net/gateways.dev.json" })
     await pool.connect()
 
     console.log("UPDATING ENTITY ID:", getEntityId(myEntityAddress))
@@ -325,15 +325,18 @@ async function gwCensusOperations() {
 }
 
 async function createVotingProcessManual() {
-    const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI)
-    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+    const wallet = walletFromSeededPassphrase(WALLET_PASSPHRASE, WALLET_SEED)
+    const myEntityAddress = await wallet.getAddress()
+    const myEntityId = getEntityId(myEntityAddress)
 
-    const gw = new DVoteGateway({ uri: GATEWAY_DVOTE_URI, supportedApis: ["file"], publicKey: GATEWAY_PUB_KEY })
+    console.log("Entity Addr", myEntityAddress)
+    console.log("Entity ID", myEntityId)
+    // const pool = await GatewayPool.discover({ networkId: "goerli" })
+    const gw = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: "http://bootnodes.vocdoni.net/gateways.dev.json" })
     await gw.connect()
 
     console.log("Attaching to contract")
-    const contractInstance = await getVotingProcessInstance({ provider, wallet })
-
+    const contractInstance = await gw.getVotingProcessInstance(wallet)
     console.log("Uploading metadata...")
     const processMetadata = Object.assign({}, ProcessMetadataTemplate, { startBlock: 20000 })
     const strData = JSON.stringify(processMetadata)
@@ -379,8 +382,8 @@ async function createVotingProcessFull() {
         "startBlock": 0,
         "numberOfBlocks": 200000,
         "census": {
-            "merkleRoot": "0x1234...",
-            "merkleTree": "ipfs://2345..."
+            "merkleRoot": "0x1234",
+            "merkleTree": "ipfs://2345"
         },
         "details": {
             "entityId": "",
