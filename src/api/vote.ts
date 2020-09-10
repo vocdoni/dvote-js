@@ -63,12 +63,28 @@ export async function createVotingProcess(processMetadata: ProcessMetadata,
 
         // REGISTER THE NEW PROCESS
         const chainId = await gateway.getChainId()
-        const options: IMethodOverrides = { gasPrice: XDAI_GAS_PRICE }
-        const tx = chainId == XDAI_CHAIN_ID ?
-            await processInstance.create(processMetadata.type, processMetaOrigin, merkleRoot, merkleTree.toContentUriString(),
-                processMetadata.startBlock, processMetadata.numberOfBlocks, options) :
-            await processInstance.create(processMetadata.type, processMetaOrigin, merkleRoot, merkleTree.toContentUriString(),
+        let options: IMethodOverrides
+        let tx : ContractTransaction
+        switch (chainId) {
+            case XDAI_CHAIN_ID : 
+                options = { gasPrice: XDAI_GAS_PRICE }
+                tx = await processInstance.create(processMetadata.type, processMetaOrigin, merkleRoot, merkleTree.toContentUriString(),
+                processMetadata.startBlock, processMetadata.numberOfBlocks, options)
+                break
+            case SOKOL_CHAIN_ID :
+                const addr = await walletOrSigner.getAddress()
+                const nonce = await walletOrSigner.provider.getTransactionCount(addr)
+                options = {
+                    gasPrice: SOKOL_GAS_PRICE,
+                    nonce,
+                }
+                tx = await processInstance.create(processMetadata.type, processMetaOrigin, merkleRoot, merkleTree.toContentUriString(),
+                processMetadata.startBlock, processMetadata.numberOfBlocks, options)
+                break
+            default :
+                tx = await processInstance.create(processMetadata.type, processMetaOrigin, merkleRoot, merkleTree.toContentUriString(),
                 processMetadata.startBlock, processMetadata.numberOfBlocks)
+        }
 
         if (!tx) throw new Error("Could not start the blockchain transaction")
         await tx.wait()

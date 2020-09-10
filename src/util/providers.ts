@@ -10,7 +10,7 @@ export function providerFromUri(uri: string, networkId?: NetworkID) {
     if (networkId == "xdai")
         return new providers.JsonRpcProvider(uri, { chainId: XDAI_CHAIN_ID, name: "xdai", ensAddress: XDAI_ENS_REGISTRY_ADDRESS })
     else if (networkId == "sokol")
-        return new providers.JsonRpcProvider(uri, { chainId: SOKOL_CHAIN_ID, name: "xdai", ensAddress: SOKOL_ENS_REGISTRY_ADDRESS })
+        return new providers.JsonRpcProvider(uri, { chainId: SOKOL_CHAIN_ID, name: "sokol", ensAddress: SOKOL_ENS_REGISTRY_ADDRESS })
     else
         return new providers.JsonRpcProvider(uri)
 }
