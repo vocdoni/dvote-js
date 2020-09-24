@@ -19,6 +19,7 @@ export type GatewayDiscoveryParameters = {
     numberOfGateways?: number
     race?: boolean
     timeout?: number
+    testing?: boolean
 }
 
 /**
@@ -72,6 +73,7 @@ async function getWorkingGateways(p: GatewayDiscoveryParameters): Promise<{ dvot
     const numberOfGateways = (p.numberOfGateways) ? p.numberOfGateways : MIN_ROUND_SUCCESS_COUNT
     const race = (p.race) ? p.race : false
     const timeout = (p.timeout) ? p.timeout : GATEWAY_SELECTION_TIMEOUT
+    const test = (p.testing) ? {testing: p.testing} : {testing: false}
 
     const timeoutsToTest = [timeout, 2 * timeout, 4 * timeout, 16 * timeout]
     let totalDvoteNodes: IDVoteGateway[]
@@ -90,7 +92,8 @@ async function getWorkingGateways(p: GatewayDiscoveryParameters): Promise<{ dvot
         bootnodeData[networkId].web3 = shuffle(bootnodeData[networkId].web3)
 
         // Instantiate gateways
-        const defaultGateways = getNetworkGatewaysFromBootNodeData(bootnodeData, networkId)
+        // set test environment
+        const defaultGateways = getNetworkGatewaysFromBootNodeData(bootnodeData, networkId, test)
         totalDvoteNodes = defaultGateways.dvote
         const totalWeb3Nodes: IWeb3Gateway[] = defaultGateways.web3
 

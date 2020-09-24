@@ -5,7 +5,7 @@
 import ContentURI from "../wrappers/content-uri"
 import { fetchFileString } from "../api/file"
 import { vocdoniMainnetEntityId, vocdoniGoerliEntityId, vocdoniXDaiEntityId, vocdoniSokolEntityId, XDAI_ENS_REGISTRY_ADDRESS, XDAI_PROVIDER_URI, XDAI_CHAIN_ID,
-        SOKOL_CHAIN_ID, SOKOL_PROVIDER_URI, SOKOL_ENS_REGISTRY_ADDRESS } from "../constants"
+        SOKOL_CHAIN_ID, SOKOL_PROVIDER_URI, SOKOL_ENS_REGISTRY_ADDRESS, XDAI_TEST_ENS_REGISTRY_ADDRESS, vocdoniXDaiTestEntityId } from "../constants"
 import { getEntityResolverInstance } from "../net/contracts"
 import { TextRecordKeys } from "../models/entity"
 import { GatewayBootNodes } from "../models/gateway"
@@ -13,13 +13,12 @@ import { DVoteGateway, Web3Gateway, IDVoteGateway, IWeb3Gateway } from "./gatewa
 import { getDefaultProvider, providers } from "ethers"
 
 export type NetworkID = "mainnet" | "goerli" | "xdai" | "sokol"
-
 /**
  * Retrieve the Content URI of the boot nodes Content URI provided by Vocdoni
  * @param networkId Either "mainnet" or "goerli" (test)
  * @returns A ContentURI object
  */
-export function getDefaultBootnodeContentUri(networkId: NetworkID): Promise<ContentURI> {
+export function getDefaultBootnodeContentUri(networkId: NetworkID, options:{testing: boolean} = {testing: false}): Promise<ContentURI> {
     let provider: providers.BaseProvider
 
     switch (networkId) {
@@ -28,7 +27,11 @@ export function getDefaultBootnodeContentUri(networkId: NetworkID): Promise<Cont
             provider = getDefaultProvider(networkId)
             break
         case "xdai":
-            provider = new providers.JsonRpcProvider(XDAI_PROVIDER_URI, { chainId: XDAI_CHAIN_ID, name: "xdai", ensAddress: XDAI_ENS_REGISTRY_ADDRESS })
+            if (options.testing) {
+                provider = new providers.JsonRpcProvider(XDAI_PROVIDER_URI, { chainId: XDAI_CHAIN_ID, name: "xdai", ensAddress: XDAI_TEST_ENS_REGISTRY_ADDRESS })
+            } else {
+                provider = new providers.JsonRpcProvider(XDAI_PROVIDER_URI, { chainId: XDAI_CHAIN_ID, name: "xdai", ensAddress: XDAI_ENS_REGISTRY_ADDRESS })
+            }
             break
         case "sokol":
             provider = new providers.JsonRpcProvider(SOKOL_PROVIDER_URI, { chainId: SOKOL_CHAIN_ID, name: "sokol", ensAddress: SOKOL_ENS_REGISTRY_ADDRESS });
@@ -46,7 +49,7 @@ export function getDefaultBootnodeContentUri(networkId: NetworkID): Promise<Cont
                 entityId = vocdoniGoerliEntityId
                 break
             case "xdai":
-                entityId = vocdoniXDaiEntityId
+                entityId = options.testing ? vocdoniXDaiTestEntityId : vocdoniXDaiEntityId
                 break
             case "sokol":
                 entityId = vocdoniSokolEntityId
@@ -64,7 +67,7 @@ export function getDefaultBootnodeContentUri(networkId: NetworkID): Promise<Cont
  * @param bootnodeData A GatewayBootNodes objects that represents the ata derrived from a BootNode Content URI.
  * @returns An object with a list of IDVoteGateway(s) and IWeb3Gateway(s)
  */
-export function getGatewaysFromBootNodeData(bootnodeData: GatewayBootNodes): { [networkId: string]: { dvote: IDVoteGateway[], web3: IWeb3Gateway[] } } {
+export function getGatewaysFromBootNodeData(bootnodeData: GatewayBootNodes, options:{testing: boolean} = {testing: false}): { [networkId: string]: { dvote: IDVoteGateway[], web3: IWeb3Gateway[] } } {
     const result: { [networkId: string]: { dvote: IDVoteGateway[], web3: IWeb3Gateway[] } } = {}
     Object.keys(bootnodeData).forEach(networkId => {
         result[networkId] = {
@@ -72,7 +75,7 @@ export function getGatewaysFromBootNodeData(bootnodeData: GatewayBootNodes): { [
                 return new DVoteGateway({ uri: item.uri, supportedApis: item.apis, publicKey: item.pubKey })
             }),
             web3: (bootnodeData[networkId].web3 || []).map(item => {
-                return new Web3Gateway(item.uri, networkId as NetworkID)
+                return new Web3Gateway(item.uri, networkId as NetworkID, options)
             })
         }
     })
@@ -84,14 +87,14 @@ export function getGatewaysFromBootNodeData(bootnodeData: GatewayBootNodes): { [
  * @param bootnodeData A GatewayBootNodes objects that represents the ata derrived from a BootNode Content URI.
  * @returns An object with a list of IDVoteGateway(s) and IWeb3Gateway(s)
  */
-export function getNetworkGatewaysFromBootNodeData(bootnodeData: GatewayBootNodes, networkId: string): {  dvote: IDVoteGateway[], web3: IWeb3Gateway[] }  {
+export function getNetworkGatewaysFromBootNodeData(bootnodeData: GatewayBootNodes, networkId: string, options:{testing: boolean} = {testing: false}): {  dvote: IDVoteGateway[], web3: IWeb3Gateway[] }  {
     console.log('network gateways')
     return {
             dvote: (bootnodeData[networkId].dvote || []).map(item => {
                 return new DVoteGateway({ uri: item.uri, supportedApis: item.apis, publicKey: item.pubKey })
             }),
             web3: (bootnodeData[networkId].web3 || []).map(item => {
-                return new Web3Gateway(item.uri, networkId as NetworkID)
+                return new Web3Gateway(item.uri, networkId as NetworkID, options)
             })
         }
 }
@@ -101,8 +104,8 @@ export function getNetworkGatewaysFromBootNodeData(bootnodeData: GatewayBootNode
  * @param networkId The Ethereum network to which the gateways should be associated
  * @returns A GatewayBootnodes object that represents the ata derrived from a BootNode Content URI.
  */
-export function fetchDefaultBootNode(networkId: NetworkID): Promise<GatewayBootNodes> {
-    return getDefaultBootnodeContentUri(networkId)
+export function fetchDefaultBootNode(networkId: NetworkID, options:{testing: boolean} = {testing: false}): Promise<GatewayBootNodes> {
+    return getDefaultBootnodeContentUri(networkId, options)
         .then(contentUri => {
             return fetchFileString(contentUri)
         }).then(strResult => {

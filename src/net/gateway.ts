@@ -104,10 +104,10 @@ export class Gateway {
      * @param networkId Either "mainnet" or "goerli" (test)
      * @param requiredApis A list of the required APIs
      */
-    static randomFromDefault(networkId: NetworkID, requiredApis: DVoteSupportedApi[] = []): Promise<Gateway> {
+    static randomFromDefault(networkId: NetworkID, requiredApis: DVoteSupportedApi[] = [], options:{testing: boolean} = {testing: false}): Promise<Gateway> {
         return fetchDefaultBootNode(networkId)
             .then(async bootNodeData => {
-                const gateways = getNetworkGatewaysFromBootNodeData(bootNodeData,networkId)
+                const gateways = getNetworkGatewaysFromBootNodeData(bootNodeData,networkId, options)
                 let web3: Web3Gateway
                 for (let i = 0; i < gateways.web3.length; i++) {
                     let w3 = gateways.web3[i]
@@ -139,10 +139,10 @@ export class Gateway {
      * @param bootnodesContentUri The uri from which contains the available gateways
      * @param requiredApis A list of the required APIs
      */
-    static randomfromUri(networkId: NetworkID, bootnodesContentUri: string | ContentURI, requiredApis: DVoteSupportedApi[] = []): Promise<Gateway> {
+    static randomfromUri(networkId: NetworkID, bootnodesContentUri: string | ContentURI, requiredApis: DVoteSupportedApi[] = [], options:{testing: boolean} = {testing: false}): Promise<Gateway> {
         return fetchFromBootNode(bootnodesContentUri)
             .then(async bootNodeData => {
-                const gateways = getNetworkGatewaysFromBootNodeData(bootNodeData,networkId)
+                const gateways = getNetworkGatewaysFromBootNodeData(bootNodeData,networkId, options)
                 let web3: Web3Gateway
                 for (let i = 0; i < gateways.web3.length; i++) {
                     let w3 = gateways.web3[i]
@@ -169,11 +169,11 @@ export class Gateway {
      * Returns a new *connected* Gateway that is instantiated based on the given parameters
      * @param gatewayOrParams Either a gatewayInfo object or an object with the defined parameters
      */
-    static fromInfo(gatewayOrParams: GatewayInfo | { dvoteUri: string, supportedApis: DVoteSupportedApi[], web3Uri: string, publicKey?: string }): Promise<Gateway> {
+    static fromInfo(gatewayOrParams: GatewayInfo | { dvoteUri: string, supportedApis: DVoteSupportedApi[], web3Uri: string, publicKey?: string}, options:{testing: boolean} = {testing: false}): Promise<Gateway> {
         let dvoteGateway, web3Gateway
         if (gatewayOrParams instanceof GatewayInfo) {
             dvoteGateway = new DVoteGateway(gatewayOrParams)
-            web3Gateway = new Web3Gateway(gatewayOrParams)
+            web3Gateway = new Web3Gateway(gatewayOrParams,null,options)
         } else if (gatewayOrParams instanceof Object) {
             if (!(typeof gatewayOrParams.dvoteUri === "string") ||
                 !(Array.isArray(gatewayOrParams.supportedApis)) ||
@@ -184,7 +184,7 @@ export class Gateway {
                 supportedApis: gatewayOrParams.supportedApis,
                 publicKey: gatewayOrParams.publicKey
             })
-            web3Gateway = new Web3Gateway(gatewayOrParams.web3Uri)
+            web3Gateway = new Web3Gateway(gatewayOrParams.web3Uri,null,options)
         }
         const gateway = new Gateway(dvoteGateway, web3Gateway)
         return gateway.connect()
@@ -639,27 +639,27 @@ export class Web3Gateway {
     public votingContractAddress: string
 
     /** Returns a JSON RPC provider that can be used for Ethereum communication */
-    public static providerFromUri(uri: string, networkId?: NetworkID) {
-        return providerFromUri(uri, networkId)
+    public static providerFromUri(uri: string, networkId?: NetworkID, options:{testing: boolean} = {testing: false}) {
+        return providerFromUri(uri, networkId, options)
     }
 
     /**
      * Returns a wrapped Ethereum Web3 client.
      * @param gatewayOrProvider Can be a string with the host's URI or an Ethers Provider
      */
-    constructor(gatewayOrProvider: string | GatewayInfo | providers.BaseProvider, networkId?: NetworkID) {
+    constructor(gatewayOrProvider: string | GatewayInfo | providers.BaseProvider, networkId?: NetworkID , options:{testing: boolean} = {testing: false} ) {
         if (!gatewayOrProvider) throw new Error("Invalid Gateway or provider")
         else if (typeof gatewayOrProvider == "string") {
             if (!gatewayOrProvider) throw new Error("Invalid Gateway URI")
 
             const url = parseURL(gatewayOrProvider)
             if (url.protocol != "http:" && url.protocol != "https:") throw new Error("Unsupported gateway protocol: " + url.protocol)
-            this.provider = Web3Gateway.providerFromUri(gatewayOrProvider, networkId)
+            this.provider = Web3Gateway.providerFromUri(gatewayOrProvider, networkId, options)
         }
         else if (gatewayOrProvider instanceof GatewayInfo) {
             const url = parseURL(gatewayOrProvider.web3)
             if (url.protocol != "http:" && url.protocol != "https:") throw new Error("Unsupported gateway protocol: " + url.protocol)
-            this.provider = Web3Gateway.providerFromUri(gatewayOrProvider.web3, networkId)
+            this.provider = Web3Gateway.providerFromUri(gatewayOrProvider.web3, networkId, options)
         }
         else if (gatewayOrProvider instanceof providers.BaseProvider) { // use as a provider
             this.provider = gatewayOrProvider
