@@ -132,8 +132,10 @@ export async function addClaimBulk(censusId: string, claimsData: string[], diges
     else if (!walletOrSigner || !(walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer)) return Promise.reject(new Error("Invalid WalletOrSinger object"))
 
     let invalidClaims = []
-    while (claimsData.length) {
-        const claims = claimsData.splice(0, CENSUS_MAX_BULK_SIZE)
+    let addedClaims = 0
+    while (addedClaims < claimsData.length) {
+        let claims = claimsData.slice(addedClaims, addedClaims+CENSUS_MAX_BULK_SIZE)
+        addedClaims += CENSUS_MAX_BULK_SIZE
         const partialInvalidClaims = await addClaimChunk(censusId, claims, digested, gateway, walletOrSigner)
         invalidClaims = invalidClaims.concat(partialInvalidClaims)
     }
