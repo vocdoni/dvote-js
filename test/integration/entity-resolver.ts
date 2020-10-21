@@ -3,10 +3,10 @@ import { expect } from "chai"
 import { Contract } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
 import { getAccounts, TestAccount } from "../helpers/all-services"
-import { EntityResolverContractMethods } from "dvote-solidity"
+import { EnsPublicResolverContractMethods } from "dvote-solidity"
 
 import { ensHashAddress } from "dvote-solidity"
-import { deployEntityResolverContract, getEntityResolverInstance } from "../../src/net/contracts"
+import { deployEnsPublicResolverContract, getEnsPublicResolverInstance } from "../../src/net/contracts"
 import EntityResolverBuilder, { DEFAULT_NAME } from "../builders/entity-resolver"
 
 let accounts: TestAccount[]
@@ -14,7 +14,7 @@ let baseAccount: TestAccount
 let entityAccount: TestAccount
 let randomAccount: TestAccount
 let entityNode: string
-let contractInstance: EntityResolverContractMethods & Contract
+let contractInstance: EnsPublicResolverContractMethods & Contract
 
 addCompletionHooks()
 
@@ -33,21 +33,21 @@ describe("Entity Resolver", () => {
     describe("Resolver Smart Contract", () => {
 
         it("Should deploy the smart contract", async () => {
-            contractInstance = await deployEntityResolverContract({ provider: entityAccount.provider, wallet: entityAccount.wallet })
+            contractInstance = await deployEnsPublicResolverContract({ provider: entityAccount.provider, wallet: entityAccount.wallet })
 
             expect(contractInstance).to.be.ok
             expect(contractInstance.address.match(/^0x[0-9a-fA-F]{40}$/)).to.be.ok
         })
 
         it("Should attach to a given instance", async () => {
-            contractInstance = await deployEntityResolverContract({ provider: entityAccount.provider, wallet: entityAccount.wallet })
+            contractInstance = await deployEnsPublicResolverContract({ provider: entityAccount.provider, wallet: entityAccount.wallet })
 
             expect(contractInstance.address).to.be.ok
 
             await contractInstance.setText(entityNode, "custom-key", "custom value")
             expect(await contractInstance.text(entityNode, "custom-key")).to.equal("custom value")
 
-            const newInstance = await getEntityResolverInstance({ provider: entityAccount.provider }, contractInstance.address)
+            const newInstance = await getEnsPublicResolverInstance({ provider: entityAccount.provider }, contractInstance.address)
 
             expect(newInstance.address).to.equal(contractInstance.address)
             expect(await newInstance.text(entityNode, "custom-key")).to.equal("custom value")

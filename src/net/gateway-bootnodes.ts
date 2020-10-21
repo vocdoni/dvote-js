@@ -6,7 +6,7 @@ import ContentURI from "../wrappers/content-uri"
 import { fetchFileString } from "../api/file"
 import { vocdoniMainnetEntityId, vocdoniGoerliEntityId, vocdoniXDaiEntityId, vocdoniSokolEntityId, XDAI_ENS_REGISTRY_ADDRESS, XDAI_PROVIDER_URI, XDAI_CHAIN_ID,
         SOKOL_CHAIN_ID, SOKOL_PROVIDER_URI, SOKOL_ENS_REGISTRY_ADDRESS, XDAI_TEST_ENS_REGISTRY_ADDRESS, vocdoniXDaiTestEntityId } from "../constants"
-import { getEntityResolverInstance } from "../net/contracts"
+import { getEnsPublicResolverInstance } from "../net/contracts"
 import { TextRecordKeys } from "../models/entity"
 import { GatewayBootNodes } from "../models/gateway"
 import { DVoteGateway, Web3Gateway, IDVoteGateway, IWeb3Gateway } from "./gateway"
@@ -39,7 +39,7 @@ export function getDefaultBootnodeContentUri(networkId: NetworkID, options:{test
         default: throw new Error("Invalid Network ID")
     }
 
-    return getEntityResolverInstance({ provider } ).then(instance => {
+    return getEnsPublicResolverInstance({ provider } ).then(instance => {
         let entityId: string
         switch (networkId) {
             case "mainnet":

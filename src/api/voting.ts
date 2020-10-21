@@ -373,14 +373,13 @@ export async function newProcess(processParameters: Omit<Omit<IProcessCreatePara
         contractParameters.metadata = processMetaOrigin
 
         // REGISTER THE NEW PROCESS
-        const newProcessParamsTuple = contractParameters.toContractParams()
         const chainId = await gateway.getChainId()
         let options: IMethodOverrides
         let tx: ContractTransaction
         switch (chainId) {
             case XDAI_CHAIN_ID:
                 options = { gasPrice: XDAI_GAS_PRICE }
-                tx = await processInstance.newProcess(...newProcessParamsTuple.concat(options))
+                tx = await processInstance.newProcess(...contractParameters.toContractParams(options))
                 break
             case SOKOL_CHAIN_ID:
                 const addr = await walletOrSigner.getAddress()
@@ -389,10 +388,10 @@ export async function newProcess(processParameters: Omit<Omit<IProcessCreatePara
                     gasPrice: SOKOL_GAS_PRICE,
                     nonce,
                 }
-                tx = await processInstance.newProcess(...newProcessParamsTuple.concat(options))
+                tx = await processInstance.newProcess(...contractParameters.toContractParams(options))
                 break
             default:
-                tx = await processInstance.newProcess(...newProcessParamsTuple)
+                tx = await processInstance.newProcess(...contractParameters.toContractParams())
         }
 
         if (!tx) throw new Error("Could not start the blockchain transaction")

@@ -165,8 +165,8 @@ export class GatewayPool {
         return this.getProvider().getNetwork().then(network => network.chainId)
     }
 
-    public getEntityResolverInstance(walletOrSigner?: Wallet | Signer): IEnsPublicResolverContract {
-        return this.activeGateway().getEntityResolverInstance(walletOrSigner)
+    public getEnsPublicResolverInstance(walletOrSigner?: Wallet | Signer): IEnsPublicResolverContract {
+        return this.activeGateway().getEnsPublicResolverInstance(walletOrSigner)
     }
 
     public getProcessInstance(walletOrSigner?: Wallet | Signer): IProcessContract {

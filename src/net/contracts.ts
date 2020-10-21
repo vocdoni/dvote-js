@@ -34,7 +34,7 @@ const nullAddress = "0x0000000000000000000000000000000000000000"
  *
  * One of `gateway`/`provider` and `signer`/`wallet` is required
  */
-export async function deployEntityResolverContract(params: DeployContractParams = {}): Promise<IEnsPublicResolverContract> {
+export async function deployEnsPublicResolverContract(params: DeployContractParams = {}): Promise<IEnsPublicResolverContract> {
     let { gateway, provider, signer, wallet } = params
 
     const gw = new Web3Gateway(gateway || provider)
@@ -118,7 +118,7 @@ export async function deployProcessContract(params: DeployContractParams = {}, d
  *
  * One of `gateway`/`provider` and `signer`/`wallet` is required
  */
-export async function getEntityResolverInstance(params: AttachToContractParams = {}, address: string = null): Promise<(IEnsPublicResolverContract)> {
+export async function getEnsPublicResolverInstance(params: AttachToContractParams = {}, address: string = null): Promise<(IEnsPublicResolverContract)> {
     let { gateway, provider, signer, wallet } = params
 
     const gw = new Web3Gateway(gateway || provider)

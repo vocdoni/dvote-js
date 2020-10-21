@@ -16,13 +16,13 @@ import { addCensus, addClaim, addClaimBulk, getRoot, publishCensus, dump, dumpPl
 import { fetchDefaultBootNode, getGatewaysFromBootNodeData } from "../src/net/gateway-bootnodes"
 import { EntityMetadataTemplate, EntityMetadata, TextRecordKeys } from "../src/models/entity"
 import { ProcessMetadata, ProcessMetadataTemplate } from "../src/models/process"
-import { deployEntityResolverContract, getEntityResolverInstance, deployProcessContract, getProcessInstance, deployNamespaceContract } from "../src/net/contracts"
+import { deployEnsPublicResolverContract, getEnsPublicResolverInstance, deployProcessContract, getProcessInstance, deployNamespaceContract } from "../src/net/contracts"
 import { addFile, fetchFileString } from "../src/api/file"
 import GatewayInfo from "../src/wrappers/gateway-info"
 import { VOCHAIN_BLOCK_TIME } from "../src/constants"
 import { signJsonBody, isValidSignature, recoverSignerPublicKey } from "../src/util/json-sign"
 import { WsGatewayMethod } from "../src/models/gateway"
-import { GatewayDiscoveryParameters } from "../src/net/gateway-discovery"
+import { IGatewayDiscoveryParameters } from "../src/net/gateway-discovery"
 import { ProcessEnvelopeType, ProcessMode, ProcessStatus } from "../src"
 import ContentHashedURI from "../src/wrappers/content-hashed-uri"
 
@@ -45,7 +45,7 @@ async function deployEntityResolver() {
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
     console.log("Deploying Entity Resolver contract...")
-    const contractInstance = await deployEntityResolverContract({ provider, wallet })
+    const contractInstance = await deployEnsPublicResolverContract({ provider, wallet })
     await contractInstance.deployTransaction.wait()
     console.log("Entity Resolver deployed at", contractInstance.address)
 
@@ -69,7 +69,7 @@ async function attachToEntityResolver() {
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
     console.log("Attaching to contract...")
-    const contractInstance = await getEntityResolverInstance({ provider, wallet })
+    const contractInstance = await getEnsPublicResolverInstance({ provider, wallet })
 
     const myEntityAddress = await wallet.getAddress()
     const entityEnsNode = ensHashAddress(myEntityAddress)
@@ -788,7 +788,7 @@ async function gatewayHealthCheck() {
         for (let gw of gws[networkId].web3) {
             console.log("Checking Web3 GW...")
 
-            const instance = await getEntityResolverInstance({ provider: gw.getProvider(), wallet })
+            const instance = await getEnsPublicResolverInstance({ provider: gw.getProvider(), wallet })
             const tx = await instance.setText(entityEnsNode, "dummy", "1234")
             await tx.wait()
         }
@@ -836,7 +836,7 @@ async function testGatewayInitialization() {
     // const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
     const ETH_NETWORK_ID = NETWORK_ID
     let pool, gateway
-    let options: GatewayDiscoveryParameters = {
+    let options: IGatewayDiscoveryParameters = {
         networkId: ETH_NETWORK_ID,
         bootnodesContentUri: BOOTNODES_URL_RO,
         numberOfGateways: 2,

@@ -27,7 +27,7 @@ export async function getEntityMetadata(address: string, gateway: Gateway | IGat
     if (!address) return Promise.reject(new Error("Invalid address"))
     else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
-    const resolverInstance = await gateway.getEntityResolverInstance()
+    const resolverInstance = await gateway.getEnsPublicResolverInstance()
 
     const metadataContentUri = await resolverInstance.text(ensHashAddress(address), TextRecordKeys.JSON_METADATA_CONTENT_URI)
     if (!metadataContentUri) return Promise.reject(new Error("The given entity has no metadata defined yet"))
@@ -59,7 +59,7 @@ export async function setMetadata(address: string, metadata: EntityMetadata, wal
     const ipfsUri = await addFile(strJsonMeta, "entity-metadata.json", walletOrSigner, gateway)
 
     // Set the IPFS origin on the blockchain
-    const resolverInstance = await gateway.getEntityResolverInstance(walletOrSigner)
+    const resolverInstance = await gateway.getEnsPublicResolverInstance(walletOrSigner)
 
     const entityAddrHash = ensHashAddress(address)
     const chainId = await gateway.getChainId()

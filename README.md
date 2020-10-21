@@ -91,9 +91,9 @@ const {
 } = require("dvote-js")
 
 const {
-    getEntityResolverInstance,
+    getEnsPublicResolverInstance,
     // getProcessInstance,
-    // deployEntityResolverContract,
+    // deployEnsPublicResolverContract,
     // deployProcessContract
 } = Contracts
 const { getEntityMetadata, setMetadata } = Entity
@@ -110,7 +110,7 @@ const provider = gw.getProvider()
 const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
 // Attach to the Entity Resolver contract
-const resolverInstance = await gw.getEntityResolverInstance(wallet)
+const resolverInstance = await gw.getEnsPublicResolverInstance(wallet)
 
 const myEntityAddress = await wallet.getAddress()
 const jsonMetadata = { ... } // EDIT THIS
@@ -134,9 +134,9 @@ const {
 } = require("dvote-js")
 
 const {
-    getEntityResolverInstance,
+    getEnsPublicResolverInstance,
     // getProcessInstance,
-    // deployEntityResolverContract,
+    // deployEnsPublicResolverContract,
     // deployProcessContract
 } = Contracts
 const { getEntityMetadata, setMetadata } = Entity
@@ -175,9 +175,9 @@ const {
 } = require("dvote-js")
 
 const {
-    getEntityResolverInstance,
+    getEnsPublicResolverInstance,
     // getProcessInstance,
-    // deployEntityResolverContract,
+    // deployEnsPublicResolverContract,
     // deployProcessContract
 } = Contracts
 const { setMetadata } = Entity
@@ -192,7 +192,7 @@ const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
 const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
 // Attach to the Entity Resolver contract
-const resolverInstance = await getEntityResolverInstance({ provider, wallet })
+const resolverInstance = await getEnsPublicResolverInstance({ provider, wallet })
 
 const myEntityAddress = await wallet.getAddress()
 const entityNode = ensHashAddress(myEntityAddress)

@@ -1,5 +1,5 @@
 import { ensHashAddress } from "dvote-solidity"
-import { deployEntityResolverContract } from "../../src/net/contracts"
+import { deployEnsPublicResolverContract } from "../../src/net/contracts"
 // import { TextRecordKeys } from "../../src/models/entity"
 import { EnsPublicResolverContractMethods } from "dvote-solidity"
 import { Contract } from "ethers"
@@ -21,7 +21,7 @@ export default class EntityResolverBuilder {
     }
 
     async build(): Promise<EnsPublicResolverContractMethods & Contract> {
-        const contractInstance = await deployEntityResolverContract({ provider: this.entityAccount.provider, wallet: this.entityAccount.wallet })
+        const contractInstance = await deployEnsPublicResolverContract({ provider: this.entityAccount.provider, wallet: this.entityAccount.wallet })
 
         const entityNode = ensHashAddress(this.entityAccount.address)
 

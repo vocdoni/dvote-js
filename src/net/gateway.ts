@@ -278,7 +278,7 @@ export class Gateway {
         return this.web3.deploy<CustomContractMethods>(abi, bytecode, signParams, deployArguments)
     }
 
-    public getEntityResolverInstance(walletOrSigner?: Wallet | Signer): IEnsPublicResolverContract {
+    public getEnsPublicResolverInstance(walletOrSigner?: Wallet | Signer): IEnsPublicResolverContract {
         if (!this.web3.entityResolverContractAddress) throw new Error("The gateway is not yet connected")
 
         if (walletOrSigner && (walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer))
