@@ -37,8 +37,9 @@ export const Wrappers = { ContentURI, ContentHashedURI, GatewayInfo }
 export const EtherUtils = { Providers, Signers }
 export { JsonSign }
 
-// SOLIDITY WRAPPERS
+// SOLIDITY HELPERS
 export { ProcessMode, ProcessEnvelopeType, ProcessStatus } from "dvote-solidity"
+export { IMethodOverrides } from "dvote-solidity"
 
 // EXPORT TYPES
 export * from "./types"

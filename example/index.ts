@@ -5,8 +5,8 @@ import axios from "axios"
 import * as fs from "fs"
 import { utils, providers, Wallet } from "ethers"
 import { walletFromSeededPassphrase, generateRandomHexSeed } from "../src/util/signers"
-import { getEntityId, updateEntity, getEntityMetadata, getEntityMetadataByAddress } from "../src/api/entity"
-import { newProcess, getProcessMetadata, estimateBlockAtDateTime, isCanceled, cancelProcess, getRawResults, getResultsDigest, getBlockHeight, getEnvelopeHeight, estimateDateAtBlock, packageSignedEnvelope, submitEnvelope, getEnvelopeList, getEnvelope, setStatus } from "../src/api/vote"
+import { ensHashAddress, getEntityMetadata, setMetadata } from "../src/api/entity"
+import { newProcess, getProcessMetadata, estimateBlockAtDateTime, setResults, getRawResults, getResultsDigest, getBlockHeight, getEnvelopeHeight, estimateDateAtBlock, packageSignedEnvelope, submitEnvelope, getEnvelopeList, getEnvelope, setStatus, getProcessParameters, ProcessContractParameters } from "../src/api/vote"
 import { DVoteGateway, Web3Gateway, Gateway } from "../src/net/gateway"
 import { GatewayPool } from "../src/net/gateway-pool"
 import { addCensus, addClaim, addClaimBulk, getRoot, publishCensus, dump, dumpPlain, getCensusSize, digestHexClaim, generateProof } from "../src/api/census"
@@ -21,7 +21,10 @@ import { VOCHAIN_BLOCK_TIME } from "../src/constants"
 import { signJsonBody, isSignatureValid, recoverSignerPublicKey } from "../src/util/json-sign"
 import { WsGatewayMethod } from "../src/models/gateway"
 import { GatewayDiscoveryParameters } from "../src/net/gateway-discovery"
-import { ProcessStatus } from "dvote-solidity"
+import { ProcessEnvelopeType, ProcessMode, ProcessStatus } from "../src"
+import { IProcessCreateParams } from "dvote-solidity"
+
+const { Buffer } = require("buffer/")
 
 const MNEMONIC = process.env.MNEMONIC || "bar bundle start frog dish gauge square subway load easily south bamboo"
 const PATH = "m/44'/60'/0'/0/0"
@@ -43,10 +46,10 @@ async function deployEntityResolver() {
     console.log("Entity Resolver deployed at", contractInstance.address)
 
     const myEntityAddress = await wallet.getAddress()
-    const myEntityId = getEntityId(myEntityAddress)
+    const myEntityId = ensHashAddress(myEntityAddress)
 
     console.log("Entity Address:", myEntityAddress)
-    console.log("Entity ID:", myEntityId)
+    console.log("Entity NODE:", myEntityId)
 
     console.log("Setting 'my-key' = '1234'")
     const tx = await contractInstance.setText(myEntityId, "my-key", "1234")
@@ -65,10 +68,10 @@ async function attachToEntityResolver() {
     const contractInstance = await getEntityResolverInstance({ provider, wallet })
 
     const myEntityAddress = await wallet.getAddress()
-    const myEntityId = getEntityId(myEntityAddress)
+    const myEntityId = ensHashAddress(myEntityAddress)
 
     console.log("Entity Address:", myEntityAddress)
-    console.log("Entity ID:", myEntityId)
+    console.log("Entity NODE:", myEntityId)
 
     const tx = await contractInstance.setText(myEntityId, TextRecordKeys.VOCDONI_BOOT_NODES, "https://bootnodes.vocdoni.net/gateways.json")
     await tx.wait()
@@ -216,7 +219,7 @@ async function registerEntity() {
     const wallet = walletFromSeededPassphrase(WALLET_PASSPHRASE, WALLET_SEED)
 
     const myEntityAddress = await wallet.getAddress()
-    const myEntityId = getEntityId(myEntityAddress)
+    const myEntityId = ensHashAddress(myEntityAddress)
 
     console.log("Entity Addr", myEntityAddress)
     console.log("Entity ID", myEntityId)
@@ -229,8 +232,8 @@ async function registerEntity() {
     // entityMetadata.actions[0].url = "wss://registry.vocdoni.net/api/registry"
     // entityMetadata.actions[0].visible = "wss://registry.vocdoni.net/api/registry"
 
-    const entityMetadata: EntityMetadata = { version: '1.0', languages: ['default'], name: { default: 'Vilafourier18' }, description: { default: 'Official communication and participation channel administered by the city council' }, votingProcesses: { active: ['0x254f0f1789e05de5574eb305fc39d1adbadef83ef0fa2cbed30fb9f18dc9247f'], ended: ['0x711b6a0f5f50211efa3fbc3f4456ffd2b0ec274e638434579dae7d903fdbe1dd'] }, newsFeed: { default: 'ipfs://QmRg675gU924YM5eKQ72Dfe1aYkZsdriT4fnHbAbTtoBvq' }, media: { avatar: 'https://ipfs.io/ipfs/QmWm23t4FdCYdEpTmYYWdjPZFepCvk9GJTSSMdv8xU3Hm9', header: 'https://ipfs.io/ipfs/Qmb4tMak41v6WigrFqovo6AATy23pNZGFCa9PHJDjg6kWz' }, actions: [{ type: 'register', actionKey: 'register', name: { default: "Sign up" }, url: 'wss://registry.vocdoni.net/api/registry', visible: 'wss://registry.vocdoni.net/api/registry' }], bootEntities: [], fallbackBootNodeEntities: [], trustedEntities: [], censusServiceManagedEntities: [] }
-    const contentUri = await updateEntity(myEntityAddress, entityMetadata, wallet, pool)
+    const entityMetadata = Object.assign({}, EntityMetadataTemplate, { name: { default: "TEST ENTITY" } })
+    const contentUri = await setMetadata(myEntityAddress, entityMetadata, wallet, pool)
 
     // show stored values
     console.log("\nEntity registered!\n")
@@ -246,15 +249,14 @@ async function readEntity() {
     const wallet = walletFromSeededPassphrase(WALLET_PASSPHRASE, WALLET_SEED)
 
     const myEntityAddress = await wallet.getAddress()
-    const myEntityId = getEntityId(myEntityAddress)
 
     console.log("Entity Addr", myEntityAddress)
-    console.log("Entity ID", myEntityId)
     // const pool = await GatewayPool.discover({ networkId: "goerli", bootnodesContentUri: "https://bootnodes.vocdoni.net/gateways.json" })
     const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: "https://bootnodes.vocdoni.net/gateways.json" })
     await pool.connect()
 
-    const meta = await getEntityMetadata(myEntityId, pool)
+    console.log("ENTITY NODE:", ensHashAddress(myEntityAddress))
+    const meta = await getEntityMetadata(myEntityAddress, pool)
     console.log("JSON METADATA\n", meta)
 
     pool.disconnect()
@@ -267,14 +269,14 @@ async function updateEntityInfo() {
     const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: "https://bootnodes.vocdoni.net/gateways.dev.json" })
     await pool.connect()
 
-    console.log("UPDATING ENTITY ID:", getEntityId(myEntityAddress))
-    const meta = await getEntityMetadataByAddress(myEntityAddress, pool)
+    console.log("UPDATING ENTITY NODE:", ensHashAddress(myEntityAddress))
+    const meta = await getEntityMetadata(myEntityAddress, pool)
 
     // meta.votingProcesses.active = []  // Unlist voting processes
     // meta.votingProcesses.ended = []  // Unlist voting processes
     // meta.actions[0].url = "wss://my-server/endpoint"
     // meta.actions[0].visible = "wss://my-server/endpoint"
-    await updateEntity(myEntityAddress, meta, wallet, pool)
+    await setMetadata(myEntityAddress, meta, wallet, pool)
     console.log("updated")
 
     pool.disconnect()
@@ -328,110 +330,70 @@ async function gwCensusOperations() {
     gw.disconnect()
 }
 
-async function createVotingProcessManual() {
-    const wallet = walletFromSeededPassphrase(WALLET_PASSPHRASE, WALLET_SEED)
-    const myEntityAddress = await wallet.getAddress()
-    const myEntityId = getEntityId(myEntityAddress)
-
-    console.log("Entity Addr", myEntityAddress)
-    console.log("Entity ID", myEntityId)
-    // const pool = await GatewayPool.discover({ networkId: "goerli" })
-    const gw = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: "http://bootnodes.vocdoni.net/gateways.dev.json" })
-    await gw.connect()
-
-    console.log("Attaching to contract")
-    const contractInstance = await gw.getProcessInstance(wallet)
-
-    console.log("Uploading metadata...")
-    const processMetadata = Object.assign({}, ProcessMetadataTemplate, { startBlock: 20000 })
-    const strData = JSON.stringify(processMetadata)
-    const origin = await addFile(Buffer.from(strData), "process-metadata.json", wallet, gw)
-    console.log("process-metadata.json\nDATA STORED ON:", origin)
-
-    const metaCuri = new ContentHashedURI(`ipfs://${origin}`)
-    metaCuri.setHashFrom(strData)
-
-    const censusCuri = new ContentHashedURI("http://localhost/")
-    censusCuri.setHashFrom("")
-
-    console.log("Creating process with parameters:", metaCuri.toString(), "0x0", censusCuri.toString())
-    const tx = await contractInstance.newProcess("poll-vote", metaCuri.toString(), "0x0", censusCuri.toString(), 500, 100)
-    const result = await tx.wait()
-    console.log("RESULT", result)
-
-    gw.disconnect()
-}
-
 async function createVotingProcessFull() {
     // const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
     const wallet = walletFromSeededPassphrase(WALLET_PASSPHRASE, WALLET_SEED)
     const myEntityAddress = await wallet.getAddress()
-    const myEntityId = getEntityId(myEntityAddress)
-    // const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
-    // const web3Gateway = new Web3Gateway(gwInfo)
-    // const dvoteGateway = new DVoteGateway(gwInfo)
-    // await dvoteGateway.connect()
 
-    console.log("Entity Addr", myEntityAddress)
-    console.log("Entity ID", myEntityId)
-    // const pool = await GatewayPool.discover({ networkId: "goerli" })
     const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: "https://bootnodes.vocdoni.net/gateways.dev.json" })
     await pool.connect()
 
-    // const entityMetaPre = await getEntityMetadata(myEntityId, pool)
-
     const processMetadata: ProcessMetadata = {
-        "version": "1.0",
-        "startBlock": 0,
-        "blockCount": 200000,
-        "census": {
-            "merkleRoot": "0x1234",
-            "merkleTree": "ipfs://2345"
+        "version": "1.1",
+        "title": { "default": "Board election" },
+        "description": {
+            "default": ""
         },
-        "details": {
-            "entityId": "",
-            "title": { "default": "Board election" },
-            "description": {
-                "default": ""
+        "media": {
+            "header": "https://ipfs.io/ipfs/1234...",
+            "streamUri": ""
+        },
+        "questions": [
+            {
+                "title": { "default": "CEO" },
+                "description": { "default": "Chief Executive Officer" },
+                "choices": [
+                    { "title": { "default": "Yellow list" }, "value": 0 },
+                    { "title": { "default": "Pink list" }, "value": 1 },
+                    { "title": { "default": "Abstention" }, "value": 2 },
+                    { "title": { "default": "White vote" }, "value": 3 }
+                ]
             },
-            "headerImage": "https://ipfs.io/ipfs/1234...",
-            "streamUrl": "",
-            "questions": [
-                {
-                    "type": "single-choice",
-                    "question": { "default": "CEO" },
-                    "description": { "default": "Chief Executive Officer" },
-                    "voteOptions": [
-                        { "title": { "default": "Yellow list" }, "value": 0 },
-                        { "title": { "default": "Pink list" }, "value": 1 },
-                        { "title": { "default": "Abstention" }, "value": 2 },
-                        { "title": { "default": "White vote" }, "value": 3 }
-                    ]
-                },
-                {
-                    "type": "single-choice",
-                    "question": { "default": "CFO" },
-                    "description": { "default": "Chief Financial Officer" },
-                    "voteOptions": [
-                        { "title": { "default": "Yellow list" }, "value": 0 },
-                        { "title": { "default": "Pink list" }, "value": 1 },
-                        { "title": { "default": "Abstention" }, "value": 2 },
-                        { "title": { "default": "White vote" }, "value": 3 }
-                    ]
-                },
-            ]
-        }
+            {
+                "title": { "default": "CFO" },
+                "description": { "default": "Chief Financial Officer" },
+                "choices": [
+                    { "title": { "default": "Yellow list" }, "value": 0 },
+                    { "title": { "default": "Pink list" }, "value": 1 },
+                    { "title": { "default": "Abstention" }, "value": 2 },
+                    { "title": { "default": "White vote" }, "value": 3 }
+                ]
+            },
+        ]
     }
-    processMetadata.details.entityId = myEntityId
-    processMetadata.startBlock = await estimateBlockAtDateTime(new Date(Date.now() + 1000 * 60 * 5), pool)
-    processMetadata.blockCount = 6 * 60 * 24 // 1 day
 
-    const processId = await newProcess(processMetadata, wallet, pool)
-    const entityMetaPost = await getEntityMetadataByAddress(myEntityAddress, pool)
+    const params = {
+        mode: ProcessMode.make({ autoStart: true }),
+        envelopeType: ProcessEnvelopeType.make({ encryptedVotes: true }),
+        metadata: processMetadata,
+        startBlock: 100,
+        blockCount: 1000,
+        censusMerkleRoot: "0x01234",
+        censusMerkleTree: "ipfs://1234",
+        maxCount: 1,
+        questionCount: 2,
+        costExponent: 1000,
+        namespace: 1,
+        paramsSignature: "0x1234...",
+        uniqueValues: true,
+        maxValue: 5,
+        maxTotalCost: 0,
+        maxVoteOverwrites: 1
+    }
+
+    const processId = await newProcess(params, wallet, pool)
 
     console.log("CREATED", processId)
-    // console.log("METADATA BEFORE:", entityMetaPre.votingProcesses.active)
-    // console.log("METADATA AFTER:", entityMetaPost.votingProcesses.active)
 
     // READING BACK:
     const metadata = await getProcessMetadata(processId, pool)
@@ -444,18 +406,19 @@ async function cancelVotingProcess() {
     // const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
     const wallet = walletFromSeededPassphrase(WALLET_PASSPHRASE, WALLET_SEED)
     const myEntityAddress = await wallet.getAddress()
-    const myEntityId = getEntityId(myEntityAddress)
 
     console.log("Entity Addr", myEntityAddress)
-    console.log("Entity ID", myEntityId)
 
     const pool = await GatewayPool.discover({ networkId: NETWORK_ID })
     await pool.connect()
 
     const processId = await newProcess(ProcessMetadataTemplate, wallet, pool)
-    const canceledPre = await isCanceled(processId, pool)
+    const processPre = await getProcessParameters(processId, pool)
+    const canceledPre = processPre.status.isCanceled
+
     await setStatus(processId, ProcessStatus.CANCELED, wallet, pool)
-    const canceledPost = await isCanceled(processId, pool)
+    const processPost = await getProcessParameters(processId, pool)
+    const canceledPost = processPost.status.isCanceled
 
     console.log("Created", processId)
     console.log("Canceled (before)", canceledPre)
@@ -492,12 +455,9 @@ async function cloneVotingProcess() {
     const processMetadata = await getProcessMetadata(PROCESS_ID_OLD, pool)
     const currentBlock = 765
     const startBlock = currentBlock + 130
-    processMetadata.startBlock = startBlock
-    processMetadata.blockCount = 60480
+
     const NEW_MERKLE_ROOT = "0xbae0912183e55c3173bad6eeb4408bfe4de6892f82123562475aca66b109ba13"
     const NEW_MERKLE_TREE_ORIGIN = "ipfs://QmUC4NokWrykhZwY9CNGPz7KS8AvHWD3M4SLk5doMRMCmA"
-    processMetadata.census.merkleRoot = NEW_MERKLE_ROOT
-    processMetadata.census.merkleTree = NEW_MERKLE_TREE_ORIGIN
 
     const processId = await newProcess(processMetadata, wallet, pool)
 
@@ -518,29 +478,29 @@ async function useVoteApi() {
     const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL })
     await pool.connect()
 
-    const entityMeta = await getEntityMetadataByAddress(myEntityAddress, pool)
+    const entityMeta = await getEntityMetadata(myEntityAddress, pool)
     console.log("- Active processes:", entityMeta.votingProcesses.active)
     const processId = entityMeta.votingProcesses.active[entityMeta.votingProcesses.active.length - 1]
     // const processId = "0xf36b729d6226b8257922a60cea6ab80e47686c3f86edbd0749b1c3291e2651ed"
     // const processId = "0x04eff29970a18ff5e46ff9b1eae5b320ee782ecadaaef341e842cb97ef310477"
-    const processMeta = await getProcessMetadata(processId, pool)
+    const processParams = await getProcessParameters(processId, pool)
 
     // const censusMerkleRoot = process.env.CENSUS_MERKLE_ROOT // TODO: use the one below
-    const censusMerkleRoot = processMeta.census.merkleRoot
+    const censusMerkleRoot = processParams.censusMerkleRoot
 
     console.log("Reading", processId)
 
     console.log("BLOCKCHAIN INFO:\n")
-    console.log("- Process startBlock:", processMeta.startBlock)
-    console.log("- Process endBlock:", processMeta.startBlock + processMeta.blockCount)
+    console.log("- Process startBlock:", processParams.startBlock)
+    console.log("- Process endBlock:", processParams.startBlock + processParams.blockCount)
     console.log("- Census size:", await getCensusSize(censusMerkleRoot, pool))
     console.log("- Block height:", await getBlockHeight(pool))
     console.log("- Envelope height:", await getEnvelopeHeight(processId, pool))
 
-    const startDate = await estimateDateAtBlock(processMeta.startBlock, pool)
+    const startDate = await estimateDateAtBlock(processParams.startBlock, pool)
     console.log("- Start date:", startDate < new Date() ? "[already started]" : startDate)
 
-    const endDate = await estimateDateAtBlock(processMeta.startBlock + processMeta.blockCount, pool)
+    const endDate = await estimateDateAtBlock(processParams.startBlock + processParams.blockCount, pool)
     console.log("- End date:", endDate < new Date() ? "[already ended]" : endDate)
 
     console.log("- Date at block 500:", await estimateDateAtBlock(500, pool))
@@ -585,8 +545,8 @@ async function submitVoteBatch() {
     const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL })
     await pool.connect()
 
-    const processMeta = await getProcessMetadata(processId, pool)
-    const censusMerkleRoot = processMeta.census.merkleRoot
+    const processParams = await getProcessParameters(processId, pool)
+    const censusMerkleRoot = processParams.censusMerkleRoot
 
     console.log("On Process", processId)
 
@@ -713,7 +673,7 @@ async function gatewayHealthCheck() {
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
     const myEntityAddress = await wallet.getAddress()
-    const myEntityId = getEntityId(myEntityAddress)
+    const myEntityId = ensHashAddress(myEntityAddress)
 
     const bootNodeData = await fetchDefaultBootNode(NETWORK_ID)
     const gws = getGatewaysFromBootNodeData(bootNodeData)

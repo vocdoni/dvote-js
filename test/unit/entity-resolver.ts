@@ -2,11 +2,11 @@ import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { Contract } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
-import { getAccounts, incrementTimestamp, TestAccount } from "../testing-eth-utils"
+import { getAccounts, incrementTimestamp, TestAccount } from "../utils"
 import { EnsPublicResolver, EnsPublicResolverContractMethods } from "dvote-solidity"
 const fs = require("fs")
 
-import { getEntityId } from "../../src/api/entity"
+import { ensHashAddress } from "../../src/api/entity"
 import { deployEntityResolverContract, getEntityResolverInstance } from "../../src/net/contracts"
 import { checkValidEntityMetadata, EntityMetadataTemplate } from "../../src/models/entity"
 import EntityBuilder, { DEFAULT_NAME } from "../builders/entity-resolver"
@@ -27,7 +27,7 @@ describe("Entity Resolver", () => {
         entityAccount = accounts[1]
         randomAccount = accounts[2]
 
-        entityId = getEntityId(entityAccount.address)
+        entityId = ensHashAddress(entityAccount.address)
 
         contractInstance = await new EntityBuilder().build()
     })
@@ -70,12 +70,14 @@ describe("Entity Resolver", () => {
             ]
 
             for (let item of data) {
-                expect(getEntityId(item.address)).to.equal(item.id)
+                expect(ensHashAddress(item.address)).to.equal(item.id)
+
+                expect(await contractInstance.ensHashAddress(item.address)).to.equal(item.id, "Solidity and JS entity Id's should match")
             }
         })
 
         it("Should work for any creator account", async () => {
-            entityId = getEntityId(randomAccount.address)
+            entityId = ensHashAddress(randomAccount.address)
 
             contractInstance = await new EntityBuilder().withEntityAccount(randomAccount).build()
             expect(await contractInstance.text(entityId, "key-name")).to.eq(DEFAULT_NAME)

@@ -1,9 +1,9 @@
-import { getEntityId } from "../../src/api/entity"
+import { ensHashAddress } from "dvote-solidity"
 import { deployEntityResolverContract } from "../../src/net/contracts"
 // import { TextRecordKeys } from "../../src/models/entity"
 import { EnsPublicResolverContractMethods } from "dvote-solidity"
 import { Contract } from "ethers"
-import { getAccounts, TestAccount } from "../testing-eth-utils"
+import { getAccounts, TestAccount } from "../utils"
 
 // DEFAULT VALUES
 export const DEFAULT_NAME = "Organizer Entity Name"
@@ -23,9 +23,9 @@ export default class EntityBuilder {
     async build(): Promise<EnsPublicResolverContractMethods & Contract> {
         const contractInstance = await deployEntityResolverContract({ provider: this.entityAccount.provider, wallet: this.entityAccount.wallet })
 
-        const entityId = getEntityId(this.entityAccount.address)
+        const entityNode = ensHashAddress(this.entityAccount.address)
 
-        await contractInstance.setText(entityId, "key-name", this.name)
+        await contractInstance.setText(entityNode, "key-name", this.name)
 
         return contractInstance
     }

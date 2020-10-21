@@ -4,13 +4,13 @@
 // - A metadata JSON template
 
 import {
-    HexString,
+    // HexString,
     MultiLanguage,
     ContentUriString,
-    ContentHashedUriString
 } from "./common"
 import { object, array, string, number } from "yup"
 import { by639_1 } from 'iso-language-codes'
+import { IProcessCreateParams } from "dvote-solidity"
 
 export { ProcessMetadataTemplate } from "./templates/process"
 
@@ -50,46 +50,33 @@ const multiLanguageStringKeys = {
 
 // MAIN ENTITY SCHEMA
 
-const questionTypes = ["single-choice"]
-
 const processMetadataSchema = object().shape({
     version: string().matches(/^[0-9]\.[0-9]$/).required(),
-    mode: number().min(0).required(),
-    envelopeType: number().min(0).required(),
-    startBlock: number().integer().min(0).required(),
-    blockCount: number().integer().min(0).required(),
-    census: object().shape({ // DEPRECATED
-        merkleRoot: string().matches(/^0x[a-z0-9]+$/).required(),
-        merkleTree: string().required()
-    }),
-    details: object().shape({
-        entityId: string().matches(/^0x[a-z0-9]+$/).required(),
-        title: object().shape(multiLanguageStringKeys).required(),
-        description: object().shape(multiLanguageStringKeys).required(),
+    title: object().shape(multiLanguageStringKeys).required(),
+    description: object().shape(multiLanguageStringKeys).required(),
+    media: object().shape({
         headerImage: string().required(),
-        streamUrl: string().optional(),
-        questions: array().of(
-            object().shape({
-                type: string().oneOf(questionTypes), // DEPRECATED
-                question: object().shape(multiLanguageStringKeys).optional(),
-                description: object().shape(multiLanguageStringKeys).required(),
-                voteOptions: array().of(
-                    object().shape({
-                        title: object().shape(multiLanguageStringKeys).required(),
-                        value: number().integer().required(),
-                    })
-                ).required()
-            })
-        ).required()
-    })
+        streamUri: string().optional()
+    }),
+    questions: array().of(
+        object().shape({
+            title: object().shape(multiLanguageStringKeys).required(),
+            description: object().shape(multiLanguageStringKeys).optional(),
+            choices: array().of(
+                object().shape({
+                    title: object().shape(multiLanguageStringKeys).required(),
+                    value: number().integer().required()
+                })
+            ).required()
+        })
+    ).required()
 }).unknown(true) // allow deprecated or unknown fields beyond the required ones
 
 ///////////////////////////////////////////////////////////////////////////////
 // TYPE DEFINITIONS
 ///////////////////////////////////////////////////////////////////////////////
 
-type ProtocolVersion = "1.0"
-type QuestionType = "single-choice"
+type ProtocolVersion = "1.1"
 
 /**
  * JSON metadata. Intended to be stored on IPFS or similar.
@@ -97,42 +84,32 @@ type QuestionType = "single-choice"
  */
 export interface ProcessMetadata {
     version: ProtocolVersion, // Version of the metadata schema used
-    type?: string, // DEPRECATED
-    mode: number,
-    envelopeType: number,
-    startBlock: number, // Block number on the votchain since the process will be open
-    blockCount: number,
-    census: { // DEPRECATED
-        merkleRoot: HexString,
-        merkleTree: ContentHashedUriString
+    title: MultiLanguage<string>,
+    description: MultiLanguage<string>,
+    media: {
+        header: ContentUriString,
+        streamUri?: string
     },
-    details: {
-        entityId: HexString,
+    questions: Array<{
         title: MultiLanguage<string>,
-        description: MultiLanguage<string>,
-        headerImage: ContentUriString,
-        streamUrl?: ContentUriString,
-        questions: Array<{
-            type: QuestionType, // DEPRECATED
-            question?: MultiLanguage<string>,
-            description: MultiLanguage<string>,
-            voteOptions: Array<{
-                title: MultiLanguage<string>,
-                value: number
-            }>,
+        description?: MultiLanguage<string>,
+        choices: Array<{
+            title: MultiLanguage<string>,
+            value: number
         }>,
-    }
+    }>,
 }
+
+export type INewProcessParams = Omit<IProcessCreateParams, "metadata">
 
 export interface ProcessResults {
     questions: ProcessResultItem[],
 }
 
 export interface ProcessResultItem {
-    type: QuestionType, // Defines how the UI should allow to choose among the votingOptions.
-    question: MultiLanguage<string>,
-    voteResults: Array<{
+    title: MultiLanguage<string>,
+    voteResults: {
         title: MultiLanguage<string>,
         votes: number,
-    }>,
+    }[],
 }

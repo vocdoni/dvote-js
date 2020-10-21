@@ -1,17 +1,16 @@
 import { Wallet, Signer, utils, ContractTransaction } from "ethers"
 import { Gateway, IGateway } from "../net/gateway"
 import { fetchFileString, addFile } from "./file"
-import { ProcessMetadata, checkValidProcessMetadata, ProcessResults, ProcessResultItem } from "../models/process"
+import { ProcessMetadata, checkValidProcessMetadata, ProcessResults, ProcessResultItem, INewProcessParams } from "../models/process"
 // import { HexString } from "../models/common"
-import ContentHashedURI from "../wrappers/content-hashed-uri"
-import { getEntityMetadataByAddress, updateEntity, getEntityId } from "./entity"
+import { setMetadata, getEntityMetadata } from "./entity"
 import { VOCHAIN_BLOCK_TIME, XDAI_GAS_PRICE, XDAI_CHAIN_ID, SOKOL_CHAIN_ID, SOKOL_GAS_PRICE } from "../constants"
 import { signJsonBody } from "../util/json-sign"
 import { Buffer } from "buffer/"  // Previously using "arraybuffer-to-string"
 import { Asymmetric } from "../util/encryption"
 import { GatewayPool, IGatewayPool } from "../net/gateway-pool"
 import { waitVochainBlocks } from "../util/waiters"
-import { IMethodOverrides, ProcessStatus, ProcessContractParameters, IProcessStatus } from "dvote-solidity"
+import { IMethodOverrides, ProcessStatus, ProcessContractParameters, IProcessCreateParams, IProcessStatus } from "dvote-solidity"
 
 export { ProcessStatus, ProcessContractParameters, IProcessStatus } from "dvote-solidity"
 
@@ -320,27 +319,26 @@ export function getProcessKeys(processId: string, gateway: IGateway | IGatewayPo
 /**
  * Use the given JSON metadata to create a new voting process from the Entity ID associated to the given wallet account.
  * The Census Merkle Root and Merkle Tree will be published to the blockchain, and the Metadata will be stored on IPFS
- * @param processMetadata JSON object containing the schema defined on  https://vocdoni.io/docs/#/architecture/components/process?id=process-metadata-json
+ * @param parameters The details sent to the smart contract, except the metadata origin  https://vocdoni.io/docs/#/architecture/components/process?id=internal-structs
+ * @param metadata The human readable content displayed on the clients https://vocdoni.io/docs/#/architecture/components/process?id=process-metadata-json
  * @param walletOrSigner
  * @param gateway
  * @returns The process ID
  */
-export async function newProcess(processMetadata: ProcessMetadata,
+export async function newProcess(processParameters: Omit<IProcessCreateParams, "metadata"> & { metadata: ProcessMetadata },
     walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
-    if (!processMetadata) return Promise.reject(new Error("Invalid process metadata"))
+    if (!processParameters) return Promise.reject(new Error("Invalid process metadata"))
+    else if (!processParameters.metadata) return Promise.reject(new Error("Invalid process metadata"))
     else if (!walletOrSigner || !(walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer))
         return Promise.reject(new Error("Invalid Wallet or Signer"))
     else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool))
         return Promise.reject(new Error("Invalid Gateway object"))
 
-    // throw if not valid
-    processMetadata = checkValidProcessMetadata(processMetadata)
-    const merkleRoot = processMetadata.census.merkleRoot
-    const merkleTree = new ContentHashedURI(processMetadata.census.merkleTree)
+    // Merge parameters and metadata, by now
+    const contractParameters = ProcessContractParameters.fromParams({ ...processParameters, metadata: "" })
 
-    // if (walletOrSigner instanceof Wallet && !walletOrSigner.provider) {
-    //     walletOrSigner = walletOrSigner.connect(gateway.getProvider())
-    // }
+    // throw if not valid
+    const metadata = checkValidProcessMetadata(processParameters.metadata)
 
     try {
         const processInstance = gateway.getProcessInstance(walletOrSigner)
@@ -348,25 +346,26 @@ export async function newProcess(processMetadata: ProcessMetadata,
         const address = await walletOrSigner.getAddress()
 
         // CHECK THAT THE ENTITY EXISTS
-        const entityMeta = await getEntityMetadataByAddress(address, gateway)
-        if (!entityMeta) return Promise.reject(new Error("The entity is not yet registered on the blockchain"))
-        else if (getEntityId(address) != processMetadata.details.entityId)
-            return Promise.reject(new Error("The EntityId on the metadata does not match the given wallet's address"))
+        const entityMetadata = await getEntityMetadata(address, gateway)
+        if (!entityMetadata) return Promise.reject(new Error("The entity is not yet registered on the blockchain"))
 
         // UPLOAD THE METADATA
-        const strJsonMeta = JSON.stringify(processMetadata)
-        const processMetaOrigin = await addFile(strJsonMeta, `merkle-root-${merkleRoot}.json`, walletOrSigner, gateway)
+        const strJsonMeta = JSON.stringify(metadata)
+        const processMetaOrigin = await addFile(strJsonMeta, `process-metadata.json`, walletOrSigner, gateway)
         if (!processMetaOrigin) return Promise.reject(new Error("The process metadata could not be uploaded"))
 
+        // SET METADATA IN PARAMS
+        contractParameters.metadata = processMetaOrigin
+
         // REGISTER THE NEW PROCESS
+        const newProcessParamsTuple = contractParameters.toContractParams()
         const chainId = await gateway.getChainId()
         let options: IMethodOverrides
         let tx: ContractTransaction
         switch (chainId) {
             case XDAI_CHAIN_ID:
                 options = { gasPrice: XDAI_GAS_PRICE }
-                tx = await processInstance.newProcess(processMetadata.type, processMetaOrigin, merkleRoot, merkleTree.toContentUriString(),
-                    processMetadata.startBlock, processMetadata.blockCount, options)
+                tx = await processInstance.newProcess(...newProcessParamsTuple.concat(options))
                 break
             case SOKOL_CHAIN_ID:
                 const addr = await walletOrSigner.getAddress()
@@ -375,12 +374,10 @@ export async function newProcess(processMetadata: ProcessMetadata,
                     gasPrice: SOKOL_GAS_PRICE,
                     nonce,
                 }
-                tx = await processInstance.newProcess(processMetadata.type, processMetaOrigin, merkleRoot, merkleTree.toContentUriString(),
-                    processMetadata.startBlock, processMetadata.blockCount, options)
+                tx = await processInstance.newProcess(...newProcessParamsTuple.concat(options))
                 break
             default:
-                tx = await processInstance.newProcess(processMetadata.type, processMetaOrigin, merkleRoot, merkleTree.toContentUriString(),
-                    processMetadata.startBlock, processMetadata.blockCount)
+                tx = await processInstance.newProcess(...newProcessParamsTuple)
         }
 
         if (!tx) throw new Error("Could not start the blockchain transaction")
@@ -388,13 +385,13 @@ export async function newProcess(processMetadata: ProcessMetadata,
 
         const count = await processInstance.getEntityProcessCount(address)
         if (!count || count.isZero()) return Promise.reject(new Error("The process could not be created"))
-        const processId = await processInstance.getProcessId(address, count.toNumber() - 1, namespace)
+        const processId = await processInstance.getProcessId(address, count.toNumber() - 1, parameters.namespace)
 
         // UPDATE THE ENTITY
-        if (!entityMeta.votingProcesses) entityMeta.votingProcesses = { active: [], ended: [] }
-        entityMeta.votingProcesses.active = [processId].concat(entityMeta.votingProcesses.active || [])
+        if (!entityMetadata.votingProcesses) entityMetadata.votingProcesses = { active: [], ended: [] }
+        entityMetadata.votingProcesses.active = [processId].concat(entityMetadata.votingProcesses.active || [])
 
-        await updateEntity(address, entityMeta, walletOrSigner, gateway)
+        await setMetadata(address, entityMetadata, walletOrSigner, gateway)
 
         return processId
     }
@@ -670,12 +667,11 @@ export async function getResultsDigest(processId: string, gateway: IGateway | IG
         const metadata = await getProcessMetadata(processId, gateway)
 
         const resultsDigest: ProcessResults = { questions: [] }
-        const zippedQuestions = metadata.details.questions.map((e, i) => ({ meta: e, result: results[i] }))
+        const zippedQuestions = metadata.questions.map((e, i) => ({ meta: e, result: results[i] }))
         resultsDigest.questions = zippedQuestions.map((zippedEntry, idx): ProcessResultItem => {
-            const zippedOptions = zippedEntry.meta.voteOptions.map((e, i) => ({ title: e.title, value: zippedEntry.result[i] }))
+            const zippedOptions = zippedEntry.meta.choices.map((e, i) => ({ title: e.title, value: zippedEntry.result[i] }))
             return {
-                question: zippedEntry.meta.question,
-                type: metadata.details.questions[idx].type,
+                title: zippedEntry.meta.title,
                 voteResults: zippedOptions.map((option) => ({
                     title: option.title,
                     votes: option.value || 0,

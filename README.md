@@ -96,7 +96,7 @@ const {
     // deployEntityResolverContract,
     // deployProcessContract
 } = Contracts
-const { getEntityId, getEntityMetadataByAddress, updateEntity } = Entity
+const { getEntityMetadata, setMetadata } = Entity
 const { Gateway } = Gateways
 const { getRandomGateway } = Discovery
 const { Wallet, providers } = require("ethers")
@@ -113,11 +113,10 @@ const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 const resolverInstance = await gw.getEntityResolverInstance(wallet)
 
 const myEntityAddress = await wallet.getAddress()
-const myEntityId = getEntityId(myEntityAddress)
 const jsonMetadata = { ... } // EDIT THIS
 
 // Request the update
-const contentUri = await updateEntity(myEntityAddress, jsonMetadata, wallet, gw)
+const contentUri = await setMetadata(myEntityAddress, jsonMetadata, wallet, gw)
 
 console.log("IPFS ORIGIN:", contentUri)
 
@@ -140,7 +139,7 @@ const {
     // deployEntityResolverContract,
     // deployProcessContract
 } = Contracts
-const { getEntityId, getEntityMetadataByAddress, updateEntity } = Entity
+const { getEntityMetadata, setMetadata } = Entity
 const { addFile, fetchFileString } = File
 
 const { Wallet, providers } = require("ethers")
@@ -159,7 +158,7 @@ const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, GATEWAY_SUPPORTED_APIS, GATEWA
 const gateway = await Gateway.fromInfo(gwInfo)
 
 
-const meta = await getEntityMetadataByAddress(myEntityAddress, gateway)
+const meta = await getEntityMetadata(myEntityAddress, gateway)
 console.log("JSON METADATA", meta)
 
 dvoteGw.disconnect()
@@ -181,7 +180,7 @@ const {
     // deployEntityResolverContract,
     // deployProcessContract
 } = Contracts
-const { getEntityId, getEntityMetadataByAddress, updateEntity } = Entity
+const { setMetadata } = Entity
 const { addFile, fetchFileString } = File
 
 const { Wallet, providers } = require("ethers")
@@ -196,14 +195,14 @@ const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 const resolverInstance = await getEntityResolverInstance({ provider, wallet })
 
 const myEntityAddress = await wallet.getAddress()
-const myEntityId = getEntityId(myEntityAddress)
+const entityNode = ensHashAddress(myEntityAddress)
 
 // Set an ENS Text record
-const tx = await contractInstance.setText(myEntityId, "my-key", "1234")
+const tx = await contractInstance.setText(entityNode, "my-key", "1234")
 await tx.wait()
 
 // Read the value
-const val = await contractInstance.text(myEntityId, "my-key")
+const val = await contractInstance.text(entityNode, "my-key")
 console.log("Value stored on the blockchain:", val)
 ```
 

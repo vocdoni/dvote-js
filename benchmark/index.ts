@@ -1,9 +1,8 @@
-const fs = require("fs")
 import * as Bluebird from "bluebird"
 import axios from "axios"
 import { Wallet, utils } from "ethers"
 import * as assert from "assert"
-import { readFileSync } from "fs"
+import { readFileSync, writeFileSync } from "fs"
 import * as YAML from 'yaml'
 
 const CONFIG_PATH = "./config.yaml"
@@ -11,10 +10,10 @@ const config = getConfig()
 
 import { NetworkID } from "../src/net/gateway-bootnodes"
 import { GatewayPool } from "../src/net/gateway-pool"
-import { getProcessKeys, setStatus, isCanceled, getBlockHeight, newProcess, getProcessList, packageSignedEnvelope, submitEnvelope, getSignedVoteNullifier, getEnvelopeStatus, getEnvelopeHeight, getResultsDigest, getProcessMetadata, ProcessStatus } from "../src/api/vote"
+import { getProcessKeys, setStatus, getBlockHeight, newProcess, getProcessList, packageSignedEnvelope, submitEnvelope, getSignedVoteNullifier, getEnvelopeStatus, getEnvelopeHeight, getResultsDigest, getProcessMetadata, ProcessStatus } from "../src/api/vote"
 import { waitUntilVochainBlock, waitEthBlocks } from "../src/util/waiters"
 import { ProcessMetadata, ProcessMetadataTemplate } from "../src/models/process"
-import { getEntityId, getEntityMetadataByAddress, updateEntity } from "../src/api/entity"
+import { getEntityId, getEntityMetadataByAddress, setMetadata } from "../src/api/entity"
 import { EntityMetadataTemplate } from "../src/models/entity"
 import { addCensus, addClaimBulk, digestHexClaim, dumpPlain, generateProof, publishCensus } from "../src/api/census"
 import { signJsonBody } from "../src/util/json-sign"
@@ -30,7 +29,7 @@ async function main() {
 
     if (config.readExistingAccounts) {
         console.log("Reading account list")
-        accounts = JSON.parse(fs.readFileSync(config.accountListFilePath).toString())
+        accounts = JSON.parse(readFileSync(config.accountListFilePath).toString())
     }
     else {
         // Create from scratch
@@ -43,7 +42,7 @@ async function main() {
         accounts = createWallets(config.numAccounts)
 
         // Write them to a file
-        fs.writeFileSync(config.accountListFilePath, JSON.stringify(accounts, null, 2))
+        writeFileSync(config.accountListFilePath, JSON.stringify(accounts, null, 2))
 
         // Submit the accounts to the entity
         const adminAccesstoken = await adminLogin()
@@ -55,7 +54,7 @@ async function main() {
 
     if (config.readExistingProcess) {
         console.log("Reading process metadata")
-        const procInfo = JSON.parse(fs.readFileSync(config.processInfoFilePath).toString())
+        const procInfo = JSON.parse(readFileSync(config.processInfoFilePath).toString())
         processId = procInfo.processId
         voteMetadata = procInfo.voteMetadata
 
@@ -80,7 +79,7 @@ async function main() {
         await launchNewVote(merkleRoot, merkleTreeUri)
         assert(processId)
         assert(voteMetadata)
-        fs.writeFileSync(config.processInfoFilePath, JSON.stringify({ processId, voteMetadata }, null, 2))
+        writeFileSync(config.processInfoFilePath, JSON.stringify({ processId, voteMetadata }, null, 2))
 
         console.log("The voting process is ready")
     }
@@ -127,7 +126,7 @@ async function connectGateways(): Promise<GatewayPool> {
     entityWallet = Wallet.fromMnemonic(config.mnemonic, config.ethPath)
         .connect(pool.getProvider())
 
-    entityId = getEntityId(await entityWallet.getAddress())
+    entityId = ensHashAddress(await entityWallet.getAddress())
     console.log("Entity Address", await entityWallet.getAddress())
     console.log("Entity ID", entityId)
 
@@ -159,7 +158,7 @@ async function setEntityMetadata() {
         }
     ]
 
-    await updateEntity(await entityWallet.getAddress(), metadata, entityWallet, pool)
+    await setMetadata(await entityWallet.getAddress(), metadata, entityWallet, pool)
     console.log("Metadata updated")
 
     // Read back
