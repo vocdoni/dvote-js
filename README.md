@@ -323,13 +323,13 @@ When adding new test suites, don't forget to add a call to `addCompletionHooks()
 
 ### Simulating future timestamps
 
-If you need a transaction to happen in a future timestamp, use `test/testing-eth-utils > incrementTimestamp()` instead of forcing your code to wait.
+If you need a transaction to happen in a future timestamp, use `test/utils > incrementTimestamp()` instead of forcing your code to wait.
 
 Be aware that from this point, if you use `Date.now()` on the Javascript side, values will not match the timestamp of the blockchain. So make sure to call `getBlockNumber()` and `getBlock(<num>) > timestamp`.
 
 ### Testing accounts
 
-Use `test/testing-eth-utils > getAccounts()` to retrieve a list of 10 funded accounts with the following data schema:
+Use `test/utils > getAccounts()` to retrieve a list of 10 funded accounts with the following data schema:
 
 ```javascript
 {

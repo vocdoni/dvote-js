@@ -3,7 +3,8 @@ import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
 import { DVoteGateway, IDVoteGateway, Gateway, IGateway, Web3Gateway } from "../../src/net/gateway"
 import { getBlockHeight, getBlockStatus, estimateBlockAtDateTime, estimateDateAtBlock } from "../../src/api/vote"
-import { GatewayMock, InteractionMock, GatewayResponse } from "../mocks/gateway"
+import { DevWebSocketServer, WebSocketMockedInteraction, WSResponse } from "../mocks/web-socket-service"
+import { Buffer } from "buffer"
 import GatewayInfo from "../../src/wrappers/gateway-info"
 import { VOCHAIN_BLOCK_TIME } from "../../src/constants"
 const ganacheRpcServer = require("ganache-core").server
@@ -35,7 +36,7 @@ describe("DVote Block Status", () => {
     })
 
     it("Should return the current block number and the timestamp", async () => {
-        const gatewayServer = new GatewayMock({
+        const gatewayServer = new DevWebSocketServer({
             port: dvotePort,
             responses: [
                 defaultConnectResponse,
@@ -67,7 +68,7 @@ describe("DVote Block Status", () => {
         const blockTimestampA = Math.floor(now.getTime() / 1000)
         const baseBlock = 1000
 
-        const gatewayServer = new GatewayMock({
+        const gatewayServer = new DevWebSocketServer({
             port: dvotePort,
             responses: [
                 defaultConnectResponse,
@@ -120,7 +121,7 @@ describe("DVote Block Status", () => {
 
         it("Should return 0 if the date is before the first block", async () => {
             let now: number
-            const gatewayServer = new GatewayMock({ port: dvotePort, responses: [defaultConnectResponse] })
+            const gatewayServer = new DevWebSocketServer({ port: dvotePort, responses: [defaultConnectResponse] })
 
             const w3 = new Web3Gateway(gatewayInfo)
             w3.isUp = () => Promise.resolve()
@@ -141,7 +142,7 @@ describe("DVote Block Status", () => {
 
         it("On standard block times", async () => {
             let now: number
-            const gatewayServer = new GatewayMock({ port: dvotePort, responses: [defaultConnectResponse] })
+            const gatewayServer = new DevWebSocketServer({ port: dvotePort, responses: [defaultConnectResponse] })
 
             const w3 = new Web3Gateway(gatewayInfo)
             w3.isUp = () => Promise.resolve()
@@ -243,7 +244,7 @@ describe("DVote Block Status", () => {
 
         it("On slow block times", async () => {
             let now: number
-            const gatewayServer = new GatewayMock({ port: dvotePort, responses: [defaultConnectResponse] })
+            const gatewayServer = new DevWebSocketServer({ port: dvotePort, responses: [defaultConnectResponse] })
 
             const w3 = new Web3Gateway(gatewayInfo)
             w3.isUp = () => Promise.resolve()
@@ -326,7 +327,7 @@ describe("DVote Block Status", () => {
         it("On very slow block times", async () => {
             let now: number
 
-            const gatewayServer = new GatewayMock({ port: dvotePort, responses: [defaultConnectResponse] })
+            const gatewayServer = new DevWebSocketServer({ port: dvotePort, responses: [defaultConnectResponse] })
 
             const w3 = new Web3Gateway(gatewayInfo)
             w3.isUp = () => Promise.resolve()
@@ -363,7 +364,7 @@ describe("DVote Block Status", () => {
         it("On shorter block times", async () => {
             let now: number
 
-            const gatewayServer = new GatewayMock({ port: dvotePort, responses: [defaultConnectResponse] })
+            const gatewayServer = new DevWebSocketServer({ port: dvotePort, responses: [defaultConnectResponse] })
 
             const w3 = new Web3Gateway(gatewayInfo)
             w3.isUp = () => Promise.resolve()
@@ -448,7 +449,7 @@ describe("DVote Block Status", () => {
             const baseBlock = 20000 // 20x to allow for two days
             let now: number
 
-            const gatewayServer = new GatewayMock({ port: dvotePort, responses: [defaultConnectResponse] })
+            const gatewayServer = new DevWebSocketServer({ port: dvotePort, responses: [defaultConnectResponse] })
 
             const w3 = new Web3Gateway(gatewayInfo)
             w3.isUp = () => Promise.resolve()
@@ -585,7 +586,7 @@ describe("DVote Block Status", () => {
             const baseBlock = 20000 // 20x to allow for two days
             const zero = 0
 
-            const gatewayServer = new GatewayMock({ port: dvotePort, responses: [defaultConnectResponse,] })
+            const gatewayServer = new DevWebSocketServer({ port: dvotePort, responses: [defaultConnectResponse,] })
 
             const w3 = new Web3Gateway(gatewayInfo)
             w3.isUp = () => Promise.resolve()
@@ -719,7 +720,7 @@ describe("DVote Block Status", () => {
             let now: number
             const zero = 0
 
-            const gatewayServer = new GatewayMock({ port: dvotePort, responses: [defaultConnectResponse] })
+            const gatewayServer = new DevWebSocketServer({ port: dvotePort, responses: [defaultConnectResponse] })
 
             const w3 = new Web3Gateway(gatewayInfo)
             w3.isUp = () => Promise.resolve()
@@ -826,7 +827,7 @@ describe("DVote Block Status", () => {
 
         it("When average times are stable", async () => {
             let now: number
-            const gatewayServer = new GatewayMock({ port: dvotePort, responses: [defaultConnectResponse] })
+            const gatewayServer = new DevWebSocketServer({ port: dvotePort, responses: [defaultConnectResponse] })
 
             const w3 = new Web3Gateway(gatewayInfo)
             w3.isUp = () => Promise.resolve()
@@ -853,7 +854,7 @@ describe("DVote Block Status", () => {
 
         it("When average times are unstable", async () => {
             let now: number, blockDiff: number
-            const gatewayServer = new GatewayMock({ port: dvotePort, responses: [defaultConnectResponse] })
+            const gatewayServer = new DevWebSocketServer({ port: dvotePort, responses: [defaultConnectResponse] })
 
             const w3 = new Web3Gateway(gatewayInfo)
             w3.isUp = () => Promise.resolve()
@@ -888,7 +889,7 @@ describe("DVote Block Status", () => {
         it("When average times are not available", async () => {
             let now: number
             const zero = 0
-            const gatewayServer = new GatewayMock({ port: dvotePort, responses: [defaultConnectResponse] })
+            const gatewayServer = new DevWebSocketServer({ port: dvotePort, responses: [defaultConnectResponse] })
 
             const w3 = new Web3Gateway(gatewayInfo)
             w3.isUp = () => Promise.resolve()

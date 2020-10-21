@@ -4,7 +4,7 @@ import { NamespaceContractMethods } from "dvote-solidity"
 import { Contract, ContractFactory } from "ethers"
 import { getAccounts, TestAccount } from "../utils"
 
-const { abi: namespaceAbi, bytecode: namespaceByteCode } = require("../../build/namespace.json")
+const { abi: namespaceAbi, bytecode: namespaceByteCode } = require("dvote-solidity/build/namespace.json")
 
 export const DEFAULT_NAMESPACE = 1
 export const DEFAULT_CHAIN_ID = "namespace-1"

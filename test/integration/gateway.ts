@@ -1,10 +1,10 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
-import { getAccounts, TestAccount } from "../testing-eth-utils"
+import { getAccounts, TestAccount } from "../utils"
 import { DVoteGateway, Web3Gateway, IDVoteGateway, Gateway, IGateway } from "../../src/net/gateway"
 import { addFile, fetchFileBytes } from "../../src/api/file"
-import { GatewayMock, InteractionMock, GatewayResponse } from "../mocks/gateway"
+import { DevWebSocketServer, WebSocketMockedInteraction, WSResponse } from "../mocks/web-socket-service"
 import { Buffer } from "buffer"
 import GatewayInfo from "../../src/wrappers/gateway-info";
 const ganacheRpcServer = require("ganache-core").server
@@ -33,7 +33,7 @@ describe("DVoteGateway", () => {
 
     describe("Lifecycle", () => {
         it("Should create a DVoteGateway instance", async () => {
-            const gatewayServer = new GatewayMock({ port, responses: [defaultConnectResponse] })
+            const gatewayServer = new DevWebSocketServer({ port, responses: [defaultConnectResponse] })
 
             expect(() => {
                 const gw1 = new DVoteGateway({ uri: "", supportedApis: [], publicKey: "" })
@@ -51,7 +51,7 @@ describe("DVoteGateway", () => {
         it("Should update the gateway's URI and point to the new location", async () => {
             const port1 = port + 1
             const gatewayUri1 = `ws://127.0.0.1:${port1}`
-            const gatewayServer1 = new GatewayMock({ port: port1, responses: [defaultDummyResponse] })
+            const gatewayServer1 = new DevWebSocketServer({ port: port1, responses: [defaultDummyResponse] })
             expect(gatewayServer1.interactionCount).to.equal(0)
 
             const gatewayInfo1 = new GatewayInfo(gatewayUri1, ["file", "vote", "census"], "https://server/path", "")
@@ -67,7 +67,7 @@ describe("DVoteGateway", () => {
             const gatewayUri2 = `ws://127.0.0.1:${port2}`
             const gatewayInfo2 = new GatewayInfo(gatewayUri2, ["file", "vote", "census"], "https://server/path", "")
 
-            const gatewayServer2 = new GatewayMock({ port: port2, responses: [defaultDummyResponse] })
+            const gatewayServer2 = new DevWebSocketServer({ port: port2, responses: [defaultDummyResponse] })
             expect(gatewayServer2.interactionCount).to.equal(0)
 
             gwClient = new DVoteGateway(gatewayInfo2)
@@ -85,7 +85,7 @@ describe("DVoteGateway", () => {
 
     describe("WebSocket requests", () => {
         it("Should send messages and provide responses in the right order", async () => {
-            const gatewayServer = new GatewayMock({
+            const gatewayServer = new DevWebSocketServer({
                 port,
                 responses: [
                     { id: "123", response: { ok: true, request: "123", timestamp: 123, result: "OK 1" }, signature: "123" },
@@ -129,7 +129,7 @@ describe("DVoteGateway", () => {
         })
         it("Should provide an encrypted channel to communicate with clients")
         it("Should report errors and throw them as an error", async () => {
-            const gatewayServer = new GatewayMock({
+            const gatewayServer = new DevWebSocketServer({
                 port,
                 responses: [
                     { id: "123", response: { ok: false, request: "123", timestamp: 123, message: "ERROR 1" }, signature: "123" },
@@ -204,8 +204,8 @@ describe("DVoteGateway", () => {
     //         const buffData = Buffer.from(fileContent)
 
     //         // DVoteGateway (server)
-    //         const responses: GatewayResponse[] = [{ error: false, response: ["bzz://1234"] }]
-    //         const gatewayServer = new GatewayMock({ port, responses })
+    //         const responses: WSResponse[] = [{ error: false, response: ["bzz://1234"] }]
+    //         const gatewayServer = new DevWebSocketServer({ port, responses })
 
     //         // Client
     //         const gw = new DVoteGateway(gatewayUri)
@@ -229,11 +229,11 @@ describe("DVoteGateway", () => {
     //         const buffData = Buffer.from(fileContent)
 
     //         // DVoteGateway (server)
-    //         const responses: GatewayResponse[] = [
+    //         const responses: WSResponse[] = [
     //             { error: false, response: ["bzz://2345"] },
     //             { error: false, response: [buffData.toString("base64")] }
     //         ]
-    //         const gatewayServer = new GatewayMock({ port, responses })
+    //         const gatewayServer = new DevWebSocketServer({ port, responses })
 
     //         // Client
     //         const gw = new DVoteGateway(gatewayUri)
@@ -259,7 +259,7 @@ describe("DVoteGateway", () => {
     //         const buffData = Buffer.from(fileContent)
 
     //         // DVoteGateway (server)
-    //         const gatewayServer = new GatewayMock({ port, responses: [] })
+    //         const gatewayServer = new DevWebSocketServer({ port, responses: [] })
 
     //         // Client
     //         try {
@@ -285,10 +285,10 @@ describe("DVoteGateway", () => {
             const buffData = Buffer.from(fileContent)
 
             // DVoteGateway (server)
-            const responses: GatewayResponse[] = [
+            const responses: WSResponse[] = [
                 { id: "123", response: { ok: true, request: "123", timestamp: 123, uri: "ipfs://1234" }, signature: "123" }
             ]
-            const gatewayServer = new GatewayMock({ port, responses })
+            const gatewayServer = new DevWebSocketServer({ port, responses })
 
             // Client
             const gatewayInfo = new GatewayInfo(gatewayUri, ["file", "vote", "census"], "https://server/path", "")
@@ -315,11 +315,11 @@ describe("DVoteGateway", () => {
             const buffData = Buffer.from(fileContent)
 
             // DVoteGateway (server)
-            const responses: GatewayResponse[] = [
+            const responses: WSResponse[] = [
                 { id: "123", response: { ok: true, request: "123", timestamp: 123, uri: "ipfs://2345" }, signature: "123" },
                 { id: "234", response: { ok: true, request: "234", timestamp: 234, content: buffData.toString("base64") }, signature: "234" }
             ]
-            const gatewayServer = new GatewayMock({ port, responses })
+            const gatewayServer = new DevWebSocketServer({ port, responses })
 
             // Client
             const gatewayInfo = new GatewayInfo(gatewayUri, ["file"], "https://server/path", "")
@@ -349,7 +349,7 @@ describe("DVoteGateway", () => {
             const buffData = Buffer.from(fileContent)
 
             // DVoteGateway (server)
-            const gatewayServer = new GatewayMock({
+            const gatewayServer = new DevWebSocketServer({
                 port, responses: [
                     { id: "123", response: { ok: false, request: "123", timestamp: 123, message: "Invalid wallet" }, signature: "123" },
                 ]
@@ -381,7 +381,7 @@ describe("DVoteGateway", () => {
     describe("Web3 provider", () => {
         it("Should provide a Web3 JSON RPC provider to interact with the blockchain", async () => {
             // Web socket server
-            // const webSocketServer = new GatewayMock({ port, responses: [] })
+            // const webSocketServer = new DevWebSocketServer({ port, responses: [] })
 
             // Web3 node
             const rpcServer = ganacheRpcServer()

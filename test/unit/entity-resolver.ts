@@ -3,10 +3,10 @@ import { expect } from "chai"
 import { Contract } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
 import { getAccounts, incrementTimestamp, TestAccount } from "../utils"
-import { EnsPublicResolver, EnsPublicResolverContractMethods } from "dvote-solidity"
+import { EnsPublicResolverContractMethods } from "dvote-solidity"
 const fs = require("fs")
 
-import { ensHashAddress } from "../../src/api/entity"
+import { ensHashAddress } from "dvote-solidity"
 import { deployEntityResolverContract, getEntityResolverInstance } from "../../src/net/contracts"
 import { checkValidEntityMetadata, EntityMetadataTemplate } from "../../src/models/entity"
 import EntityBuilder, { DEFAULT_NAME } from "../builders/entity-resolver"

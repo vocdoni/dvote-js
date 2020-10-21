@@ -1,10 +1,6 @@
 import * as WebSocket from "isomorphic-ws"
 
-type ConstructorParams = {
-    port: number,
-    responses: GatewayResponse[]
-}
-export type GatewayResponse = {
+export type WSResponse = {
     id: string
     response: {
         ok: boolean
@@ -15,20 +11,20 @@ export type GatewayResponse = {
     }
     signature?: string
 }
-export type InteractionMock = {
+export type WebSocketMockedInteraction = {
     actual?: any,                     // What the client actually sent
-    responseData: GatewayResponse    // What to send as a response
+    responseData: WSResponse     // What to send as a response
 }
 
 // THE GATEWAY SERVER MOCK
 
-export class GatewayMock {
+export class DevWebSocketServer {
     private socketServer: WebSocket.Server = null
     private activeSocket: any = null
-    public interactionList: InteractionMock[] = []
+    public interactionList: WebSocketMockedInteraction[] = []
     public interactionCount: number = 0
 
-    constructor(params: ConstructorParams) {
+    constructor(params: { port: number, responses: WSResponse[] }) {
         this.socketServer = new WebSocket.Server({ port: params.port || 8000 })
         this.interactionList = params.responses.map(response => ({
             actual: null,             // no requests received yet
@@ -50,7 +46,7 @@ export class GatewayMock {
 
         if (!this.activeSocket) throw new Error("No socket client to reply to")
 
-        const responseData: GatewayResponse = this.interactionList[idx].responseData
+        const responseData: WSResponse = this.interactionList[idx].responseData
         responseData.id = this.interactionList[idx].actual.id
 
         if (responseData.response || !responseData.response.ok) {
@@ -66,7 +62,7 @@ export class GatewayMock {
         this.interactionCount++
     }
 
-    public addResponse(res: GatewayResponse) {
+    public addResponse(res: WSResponse) {
         this.interactionList.push({
             actual: null,      // no request received yet
             responseData: res

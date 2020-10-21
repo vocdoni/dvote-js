@@ -9,14 +9,14 @@ import { expect } from "chai"
 import { Contract, Wallet } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
 import { getAccounts, incrementTimestamp, TestAccount } from "../utils"
-import { ProcessContractMethods } from "dvote-solidity"
+import { ProcessContractMethods, ProcessContractParameters, ProcessStatus } from "dvote-solidity"
 import { Buffer } from "buffer/"
 
 import { deployProcessContract, getProcessInstance } from "../../src/net/contracts"
-import { getSignedVoteNullifier, packageSignedEnvelope, IVotePackage } from "../../src/api/vote"
+import { getSignedVoteNullifier, packageSignedEnvelope, IVotePackage, getProcessId, newProcess } from "../../src/api/vote"
 import { Asymmetric } from "../../src/util/encryption"
 import { checkValidProcessMetadata } from "../../src/models/process"
-import VotingProcessBuilder, {
+import ProcessBuilder, {
     DEFAULT_PROCESS_MODE,
     DEFAULT_ENVELOPE_TYPE,
     DEFAULT_METADATA_CONTENT_HASHED_URI,
@@ -24,10 +24,19 @@ import VotingProcessBuilder, {
     DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI,
     DEFAULT_BLOCK_COUNT,
     DEFAULT_START_BLOCK,
-    DEFAULT_NAMESPACE
+    DEFAULT_NAMESPACE,
+    DEFAULT_MAX_COUNT,
+    DEFAULT_MAX_VALUE,
+    DEFAULT_MAX_TOTAL_COST,
+    DEFAULT_COST_EXPONENT,
+    DEFAULT_UNIQUE_VALUES,
+    DEFAULT_MAX_VOTE_OVERWRITES,
+    DEFAULT_PARAMS_SIGNATURE
 } from "../builders/process"
 import ProcessMetadataBuilder from "../builders/process-metadata"
 import { BigNumber } from "ethers/utils"
+import NamespaceBuilder from "../builders/namespace"
+import { ContractReceipt } from "ethers/contract"
 
 let accounts: TestAccount[]
 let baseAccount: TestAccount
@@ -37,6 +46,9 @@ let randomAccount1: TestAccount
 let randomAccount2: TestAccount
 let processId: string
 let contractInstance: ProcessContractMethods & Contract
+let tx: ContractReceipt
+
+const nullAddress = "0x0000000000000000000000000000000000000000"
 
 addCompletionHooks()
 
@@ -49,14 +61,16 @@ describe("Voting Process", () => {
         randomAccount1 = accounts[3]
         randomAccount2 = accounts[4]
 
-        contractInstance = await new VotingProcessBuilder().build()
+        contractInstance = await new ProcessBuilder().build()
         processId = await contractInstance.getProcessId(entityAccount.address, 0, DEFAULT_NAMESPACE)
     })
 
     describe("Smart Contract", () => {
 
         it("Should deploy the smart contract", async () => {
-            contractInstance = await deployProcessContract({ provider: entityAccount.provider, wallet: entityAccount.wallet }, [123])
+            const namespaceInstance = await new NamespaceBuilder().build()
+
+            contractInstance = await deployProcessContract({ provider: entityAccount.provider, wallet: entityAccount.wallet }, [nullAddress, namespaceInstance.address])
 
             expect(contractInstance).to.be.ok
             expect(contractInstance.address.match(/^0x[0-9a-fA-F]{40}$/)).to.be.ok
@@ -65,398 +79,76 @@ describe("Voting Process", () => {
         it("Should attach to a given instance and deal with the same data", async () => {
             // set custom data on a deployed instance
             expect(contractInstance.address).to.be.ok
-            const customProcessId = await contractInstance.getNextProcessId(entityAccount.address, DEFAULT_NAMESPACE)
+            const newProcessId = await contractInstance.getNextProcessId(entityAccount.address, DEFAULT_NAMESPACE)
 
-            await contractInstance.newProcess(DEFAULT_PROCESS_TYPE, DEFAULT_METADATA_CONTENT_HASHED_URI, DEFAULT_MERKLE_ROOT, DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI,
-                DEFAULT_START_BLOCK, DEFAULT_BLOCK_COUNT)
+            const namespaceInstance = await new NamespaceBuilder().build()
+            await ProcessBuilder.createDefaultProcess(contractInstance)
 
             // attach from a new object
 
             const newInstance = await getProcessInstance({ provider: entityAccount.provider }, contractInstance.address)
             expect(newInstance.address).to.equal(contractInstance.address)
 
-            const data = await newInstance.get(customProcessId)
-            expect(data.processType.toLowerCase()).to.equal(DEFAULT_PROCESS_TYPE)
+            const data = ProcessContractParameters.fromContract(await newInstance.get(newProcessId))
+            expect(data.mode.value).to.equal(DEFAULT_PROCESS_MODE)
+            expect(data.envelopeType.value).to.equal(DEFAULT_PROCESS_MODE)
             expect(data.metadata.toLowerCase()).to.equal(DEFAULT_METADATA_CONTENT_HASHED_URI)
             expect(data.censusMerkleRoot).to.equal(DEFAULT_MERKLE_ROOT)
             expect(data.censusMerkleTree).to.equal(DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI)
             expect(data.entityAddress).to.equal(entityAccount.address)
-            expect(data.voteEncryptionPrivateKey).to.equal("")
-            expect(data.canceled).to.equal(false)
-            expect(data.startBlock.toNumber()).to.equal(DEFAULT_START_BLOCK)
-            expect(data.blockCount.toNumber()).to.equal(DEFAULT_BLOCK_COUNT)
+            expect(data.status.value).to.eq(ProcessStatus.PAUSED)
+            expect(data.maxCount).to.eq(DEFAULT_MAX_COUNT)
+            expect(data.maxValue).to.eq(DEFAULT_MAX_VALUE)
+            expect(data.maxTotalCost).to.eq(DEFAULT_MAX_TOTAL_COST)
+            expect(data.costExponent).to.eq(DEFAULT_COST_EXPONENT)
+            expect(data.uniqueValues).to.eq(DEFAULT_UNIQUE_VALUES)
+            expect(data.maxVoteOverwrites).to.eq(DEFAULT_MAX_VOTE_OVERWRITES)
+            expect(data.namespace).to.eq(DEFAULT_NAMESPACE)
+            expect(data.paramsSignature).to.eq(DEFAULT_PARAMS_SIGNATURE)
         })
 
-        // it("Should compute process ID's in the same way as the on-chain version", async () => {
-        //     const indexes = []
-        //     for (let i = 0; i < 30; i++) {
-        //         indexes.push(Math.round(Math.random() * 1000000000))
-        //     }
+        it("Should compute process ID's in the same way as the on-chain version", async () => {
+            const indexes = []
+            for (let i = 0; i < 30; i++) {
+                indexes.push(Math.round(Math.random() * 1000000000))
+            }
 
-        //     for (let account of accounts.filter(() => Math.random() >= 0.5)) {
-        //         for (let index of indexes) {
-        //             let expected = getProcessId(account.address, index)
-        //             let received = await contractInstance.getProcessId(account.address, index)
-        //             expect(received).to.equal(expected)
-        //         }
-        //     }
-        // }).timeout(5000)
+            for (let account of accounts.filter(() => Math.random() >= 0.5)) {
+                for (let index of indexes) {
+                    let expected = getProcessId(account.address, index, DEFAULT_NAMESPACE)
+                    let received = await contractInstance.getProcessId(account.address, index, DEFAULT_NAMESPACE)
+                    expect(received).to.equal(expected)
+                }
+            }
+        }).timeout(5000)
 
         it("The getProcessId() should match getNextProcessId()", async () => {
             // entityAddress has one process created by default from the builder
             expect(await contractInstance.getNextProcessId(entityAccount.address, DEFAULT_NAMESPACE)).to.equal(await contractInstance.getProcessId(entityAccount.address, 1, DEFAULT_NAMESPACE))
 
             // randomAccount has no process yet
-            expect(await contractInstance.getNextProcessId(randomAccount.address)).to.equal(await contractInstance.getProcessId(randomAccount.address, 0))
+            expect(await contractInstance.getNextProcessId(randomAccount.address, DEFAULT_NAMESPACE)).to.equal(await contractInstance.getProcessId(randomAccount.address, 0, DEFAULT_NAMESPACE))
         })
 
         it("Should work for any creator account", async () => {
-            processId = await contractInstance.getNextProcessId(randomAccount.address)
-            const builder = new VotingProcessBuilder()
+            processId = await contractInstance.getNextProcessId(randomAccount.address, DEFAULT_NAMESPACE)
+            const builder = new ProcessBuilder()
 
             contractInstance = await builder.withEntityAccount(randomAccount).build()
-            expect((await contractInstance.get(processId)).entityAddress).to.eq(randomAccount.address)
+            let params = ProcessContractParameters.fromContract(await contractInstance.get(processId))
+            expect(params.entityAddress).to.eq(randomAccount.address)
 
             contractInstance = await builder.withEntityAccount(randomAccount2).build()
-            expect((await contractInstance.get(processId)).entityAddress).to.eq(randomAccount2.address)
+            params = ProcessContractParameters.fromContract(await contractInstance.get(processId))
+            expect(params.entityAddress).to.eq(randomAccount2.address)
         })
-
-    })
-
-    describe("Process creation", () => {
-
-        it("Should allow to create voting processess", async () => {
-            const procType = "poll-vote"
-            const metadata = "ipfs://yyyyyyyyyyyy,https://host/file!0987654321"
-            const merkleRoot = "0x09876543210987654321"
-            const merkleTree = "ipfs://zzzzzzzzzzz,https://host/file!1234567812345678"
-            const startBlock = 12341234
-            const blockCount = 500000
-
-            processId = await contractInstance.getNextProcessId(entityAccount.address, DEFAULT_NAMESPACE)
-
-            await contractInstance.newProcess(procType, metadata, merkleRoot, merkleTree, startBlock, blockCount)
-
-            const data = await contractInstance.get(processId)
-            expect(data.processType).to.equal(procType)
-            expect(data.entityAddress).to.equal(entityAccount.address)
-            expect(data.metadata).to.equal(metadata)
-            expect(data.censusMerkleRoot).to.equal(merkleRoot)
-            expect(data.censusMerkleTree).to.equal(merkleTree)
-            expect(data.voteEncryptionPrivateKey).to.equal("")
-            expect(data.canceled).to.equal(false)
-            expect(data.startBlock.toNumber()).to.equal(startBlock)
-            expect(data.blockCount.toNumber()).to.equal(blockCount)
-        })
-
-        it("Should notify creation events", async () => {
-            // Skip the event of the process created by beforeEach()
-            const prevProcessId = await contractInstance.getProcessId(entityAccount.address, 0, DEFAULT_NAMESPACE)
-            processId = await contractInstance.getNextProcessId(entityAccount.address, DEFAULT_NAMESPACE)
-
-            const result: { entityAddress: string, processId: string } = await new Promise((resolve, reject) => {
-                contractInstance.on("ProcessCreated", (entityAddress: string, processId: string) => {
-                    if (processId === prevProcessId) return // skip the previous process's event
-                    resolve({ entityAddress, processId })
-                })
-                contractInstance.newProcess(DEFAULT_PROCESS_TYPE, DEFAULT_METADATA_CONTENT_HASHED_URI, DEFAULT_MERKLE_ROOT, DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI,
-                    DEFAULT_START_BLOCK, DEFAULT_BLOCK_COUNT)
-                    .catch(reject)
-            })
-
-            expect(result.entityAddress).to.equal(entityAccount.address)
-            expect(result.processId).to.equal(processId)
-        }).timeout(8000)
-
-    })
-
-    describe("Process cancelation", () => {
-
-        it("Should allow to cancel processes", async () => {
-            const tx = await contractInstance.cancel(processId)
-            expect(tx).to.be.ok
-            expect(tx.to).to.equal(contractInstance.address)
-
-            const data = await contractInstance.get(processId)
-            expect(data.entityAddress).to.equal(entityAccount.address)
-            expect(data.metadata).to.equal(DEFAULT_METADATA_CONTENT_HASHED_URI)
-            expect(data.censusMerkleRoot).to.equal(DEFAULT_MERKLE_ROOT)
-            expect(data.censusMerkleTree).to.equal(DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI)
-        })
-
-        it("Should notify event cancelation", async () => {
-            const result: { entityAddress: string, processId: string } = await new Promise((resolve, reject) => {
-                contractInstance.on("ProcessCanceled", (entityAddress: string, processId: string) => {
-                    resolve({ entityAddress, processId })
-                })
-                contractInstance.cancel(processId).catch(reject)
-            })
-
-            expect(result.entityAddress).to.equal(entityAccount.address)
-            expect(result.processId).to.equal(processId)
-        }).timeout(8000)
-    })
-
-    describe("Genesis info", () => {
-        it("Should allow to set the genesis Content Hashed URI", async () => {
-            const genesis = "ipfs://12341234!56785678"
-
-            const tx = await contractInstance.setGenesis(genesis)
-            expect(tx).to.be.ok
-            expect(tx.to).to.equal(contractInstance.address)
-
-            const data = await contractInstance.getGenesis()
-            expect(data).to.equal(genesis)
-        })
-
-        it("Should notify the event", async () => {
-            const genesis = "ipfs://12341234!56785678"
-
-            const result: { genesis: string } = await new Promise((resolve, reject) => {
-                contractInstance.on("GenesisChanged", (genesis: string) => {
-                    resolve({ genesis })
-                })
-                contractInstance.setGenesis(genesis).catch(reject)
-            })
-
-            expect(result.genesis).to.equal(genesis)
-        }).timeout(8000)
-    })
-
-    describe("Chain ID", () => {
-        it("Should allow to set the Chain ID", async () => {
-            const chainId = 1234
-
-            let tx = await contractInstance.setChainId(chainId)
-            expect(tx).to.be.ok
-            expect(tx.to).to.equal(contractInstance.address)
-
-            let data = await contractInstance.getChainId()
-            expect(data.toNumber()).to.equal(chainId)
-        })
-
-        it("Should notify the event", async () => {
-            const chainId = 1234
-
-            const result: { chainId: BigNumber } = await new Promise((resolve, reject) => {
-                contractInstance.on("ChainIdChanged", (chainId: BigNumber) => {
-                    resolve({ chainId })
-                })
-                contractInstance.setChainId(chainId).catch(reject)
-            })
-
-            expect(result.chainId.toNumber()).to.equal(chainId)
-        }).timeout(8000)
-    })
-
-    describe("Validator addition", () => {
-
-        it("Should allow to add validators", async () => {
-            const publicKey1 = "0x123456"
-            const publicKey2 = "0x234567"
-
-            // add one
-            const tx = await contractInstance.addValidator(publicKey1)
-            expect(tx).to.be.ok
-            expect(tx.to).to.equal(contractInstance.address)
-
-            const result1 = await contractInstance.getValidators()
-            expect(result1).to.deep.equal([publicKey1])
-
-            // add another one
-            const tx2 = await contractInstance.addValidator(publicKey2)
-            expect(tx2).to.be.ok
-            expect(tx2.to).to.equal(contractInstance.address)
-
-            const result3 = await contractInstance.getValidators()
-            expect(result3).to.deep.equal([publicKey1, publicKey2])
-        })
-
-        it("Should notify about validators added to a process", async () => {
-            const publicKey1 = "0x123456"
-
-            const result: { validatorPublicKey: string } = await new Promise((resolve, reject) => {
-                contractInstance.on("ValidatorAdded", (validatorPublicKey: string) => {
-                    resolve({ validatorPublicKey })
-                })
-                contractInstance.addValidator(publicKey1).catch(reject)
-            })
-
-            expect(result.validatorPublicKey).to.equal(publicKey1)
-        }).timeout(8000)
-    })
-
-    describe("Removing validators", () => {
-        it("Should allow to remove a Validator", async () => {
-            const publicKey1 = "0x123456"
-            const publicKey2 = "0x234567"
-
-            contractInstance = await new VotingProcessBuilder()
-                .build()
-
-            // add some
-            await contractInstance.addValidator(publicKey1)
-            await contractInstance.addValidator(publicKey2)
-
-            // remove one
-            const tx = await contractInstance.removeValidator(0, publicKey1)
-            expect(tx).to.be.ok
-            expect(tx.to).to.equal(contractInstance.address)
-
-            const result1 = await contractInstance.getValidators()
-            expect(result1).to.deep.equal([publicKey2])
-
-            // remove the other one
-            const tx2 = await contractInstance.removeValidator(0, publicKey2)
-            expect(tx2).to.be.ok
-            expect(tx2.to).to.equal(contractInstance.address)
-
-            const result2 = await contractInstance.getValidators()
-            expect(result2).to.deep.equal([])
-        })
-
-        it("Should notify about Validators removed", async () => {
-            const publicKey1 = "0x123456"
-
-            contractInstance = await new VotingProcessBuilder()
-                .build()
-
-            await contractInstance.addValidator(publicKey1)
-
-            const result: { validatorPublicKey: string } = await new Promise((resolve, reject) => {
-                contractInstance.on("ValidatorRemoved", (validatorPublicKey: string) => {
-                    resolve({ validatorPublicKey })
-                })
-                contractInstance.removeValidator(0, publicKey1).catch(reject)
-            })
-
-            expect(result.validatorPublicKey).to.equal(publicKey1)
-        }).timeout(8000)
-    })
-
-    describe("Oracle addition", () => {
-
-        it("Should allow to add oracles", async () => {
-            const publicKey1 = "0x123456"
-            const publicKey2 = "0x234567"
-
-            // add one
-            const tx = await contractInstance.addOracle(publicKey1)
-            expect(tx).to.be.ok
-            expect(tx.to).to.equal(contractInstance.address)
-
-            const result1 = await contractInstance.getOracles()
-            expect(result1).to.deep.equal([publicKey1])
-
-            // add another one
-            const tx2 = await contractInstance.addOracle(publicKey2)
-            expect(tx2).to.be.ok
-            expect(tx2.to).to.equal(contractInstance.address)
-
-            const result3 = await contractInstance.getOracles()
-            expect(result3).to.deep.equal([publicKey1, publicKey2])
-        })
-
-        it("Should notify about oracles added to a process", async () => {
-            const publicKey1 = "0x123456"
-
-            const result: { oraclePublicKey: string } = await new Promise((resolve, reject) => {
-                contractInstance.on("OracleAdded", (oraclePublicKey: string) => {
-                    resolve({ oraclePublicKey })
-                })
-                contractInstance.addOracle(publicKey1).catch(reject)
-            })
-
-            expect(result.oraclePublicKey).to.equal(publicKey1)
-        }).timeout(8000)
-    })
-
-    describe("Removing oracles", () => {
-        it("Should allow to remove an Oracle", async () => {
-            const publicKey1 = "0x123456"
-            const publicKey2 = "0x234567"
-
-            contractInstance = await new VotingProcessBuilder()
-                .build()
-
-            // add some
-            await contractInstance.addOracle(publicKey1)
-            await contractInstance.addOracle(publicKey2)
-
-            // remove one
-            const tx = await contractInstance.removeOracle(0, publicKey1)
-            expect(tx).to.be.ok
-            expect(tx.to).to.equal(contractInstance.address)
-
-            const result1 = await contractInstance.getOracles()
-            expect(result1).to.deep.equal([publicKey2])
-
-            // remove the other one
-            const tx2 = await contractInstance.removeOracle(0, publicKey2)
-            expect(tx2).to.be.ok
-            expect(tx2.to).to.equal(contractInstance.address)
-
-            const result2 = await contractInstance.getOracles()
-            expect(result2).to.deep.equal([])
-        })
-
-        it("Should notify about oracles removed on a process", async () => {
-            const publicKey1 = "0x123456"
-
-            contractInstance = await new VotingProcessBuilder()
-                .build()
-
-            await contractInstance.addOracle(publicKey1)
-
-            const result: { oraclePublicKey: string } = await new Promise((resolve, reject) => {
-                contractInstance.on("OracleRemoved", (oraclePublicKey: string) => {
-                    resolve({ oraclePublicKey })
-                })
-                contractInstance.removeOracle(0, publicKey1).catch(reject)
-            })
-
-            expect(result.oraclePublicKey).to.equal(publicKey1)
-        }).timeout(8000)
-    })
-
-    describe("Decryption key publishing", () => {
-
-        it("Should allow to reveal the decryption key", async () => {
-            // created by the entity
-            contractInstance = await new VotingProcessBuilder()
-                .withEntityAccount(entityAccount)
-                .build()
-
-            const result1 = await contractInstance.getPrivateKey(processId)
-            expect(result1).to.equal("")
-
-            const tx1 = await contractInstance.publishPrivateKey(processId, "1234-5678")
-            expect(tx1).to.be.ok
-            expect(tx1.to).to.equal(contractInstance.address)
-
-            const result2 = await contractInstance.getPrivateKey(processId)
-            expect(result2).to.equal("1234-5678")
-        })
-
-        it("Should notify about decryption keys revealed", async () => {
-            const result: { privateKey: string, processId: string } = await new Promise((resolve, reject) => {
-                contractInstance.on("PrivateKeyPublished", (processId: string, privateKey: string) => {
-                    resolve({ processId, privateKey })
-                })
-
-                return contractInstance.publishPrivateKey(processId, "1234-5678").catch(reject)
-            })
-
-            expect(result.processId).to.equal(processId)
-            expect(result.privateKey).to.equal("1234-5678")
-        }).timeout(8000)
     })
 
     describe("Results publishing", () => {
 
         it("Should allow to publish the results", async () => {
             // created by the entity
-            contractInstance = await new VotingProcessBuilder()
+            contractInstance = await new ProcessBuilder()
                 .withEntityAccount(entityAccount)
                 .build()
 
@@ -476,65 +168,43 @@ describe("Voting Process", () => {
         })
 
         it("should change the state to RESULTS")
-
-        it("Should notify about results available", async () => {
-            const result: { results: string, processId: string } = await new Promise((resolve, reject) => {
-                contractInstance.on("ResultsAvailable", (processId: string, results: string) => {
-                    resolve({ processId, results })
-                })
-
-                return contractInstance.publishPrivateKey(processId, "hello-world").then(() =>
-                    contractInstance.publishResults(processId, "1234-5678")
-                ).catch(reject)
-            })
-
-            expect(result.processId).to.equal(processId)
-            expect(result.results).to.equal("1234-5678")
-        }).timeout(8000)
     })
 
-    describe("Census keys derivation", () => {
-        it("Should derive a keypair with a processId")
-        it("Should be able to sign with a derived private key")
-        it("Should produce valid signatures that match with the derived public key")
-    })
-
-    // describe("Linkable Ring Signatures", () => {
-    //     it("Should produce a ring signature using a private key and a ring of public keys")
-    //     it("Should allow to verify that a valid signature is within a public key ring")
-    //     it("Should deny the validity of a signature produced by key that don't belong to the given ring")
-    //     it("Should link two signatures that have been issued with the same key pair")
-    //     it("Should not link two signatures that have been issued with different key pairs")
-    //     it("Should bundle a Vote Package into a valid Vote Envelope")
-    // })
-
-    describe("ZK Snarks", () => {
-        it("Should produce a valid ZK proof if the user is eligible to vote in an election")
-        it("Should allow to verify that a ZK proof is valid")
-        it("Should bundle a Vote Package into a valid Vote Envelope")
-    })
-
-    describe("Polls", () => {
-        it("Should retrieve a valid merkle proof if the user is eligible to vote in an election")
-        it("Should compute valid poll nullifiers", () => {
-            const processId = "0x8b35e10045faa886bd2e18636cd3cb72e80203a04e568c47205bf0313a0f60d1"
-
-            const wallet = Wallet.fromMnemonic("seven family better journey display approve crack burden run pattern filter topple")
-            expect(wallet.privateKey).to.eq("0xdc44bf8c260abe06a7265c5775ea4fb68ecd1b1940cfa76c1726141ec0da5ddc")
-            expect(wallet.address).to.eq("0xaDDAa28Fb1fe87362A6dFdC9d3EEA03d0C221d81")
-
-            let nullifier = getSignedVoteNullifier(wallet.address, processId)
-            expect(nullifier).to.eq("0xf6e3fe2d68f3ccc3af2a7835b302e42c257e2de6539c264542f11e5588e8c162")
-
-            nullifier = getSignedVoteNullifier(baseAccount.address, processId)
-            expect(nullifier).to.eq("0x13bf966813b5299110d34b1e565d62d8c26ecb1f76f92ca8bd21fd91600360bc")
-
-            nullifier = getSignedVoteNullifier(randomAccount.address, processId)
-            expect(nullifier).to.eq("0x25e1ec205509664e2433b9f9930c901eb1f2e31e851468a6ef7329dd9ada3bc8")
-
-            nullifier = getSignedVoteNullifier(randomAccount1.address, processId)
-            expect(nullifier).to.eq("0x419761e28c5103fa4ddac3d575a940c683aa647c31a8ac1073c8780f4664efcb")
+    describe("Voting", () => {
+        describe("Vote Package", () => {
+            it("Should process a Vote Package")
+            it("Should process an encrypted Vote Package")
         })
+
+        describe("Anonymous votes", () => {
+            it("Should produce a valid ZK proof if the user is eligible to vote in an election")
+            it("Should allow to verify that a ZK proof is valid")
+            it("Should compute valid anonymous nullifiers")
+            it("Should package an anonymous envelope")
+        })
+        describe("Signed votes", () => {
+            it("Should compute valid signed envelope nullifiers", () => {
+                const processId = "0x8b35e10045faa886bd2e18636cd3cb72e80203a04e568c47205bf0313a0f60d1"
+
+                const wallet = Wallet.fromMnemonic("seven family better journey display approve crack burden run pattern filter topple")
+                expect(wallet.privateKey).to.eq("0xdc44bf8c260abe06a7265c5775ea4fb68ecd1b1940cfa76c1726141ec0da5ddc")
+                expect(wallet.address).to.eq("0xaDDAa28Fb1fe87362A6dFdC9d3EEA03d0C221d81")
+
+                let nullifier = getSignedVoteNullifier(wallet.address, processId)
+                expect(nullifier).to.eq("0xf6e3fe2d68f3ccc3af2a7835b302e42c257e2de6539c264542f11e5588e8c162")
+
+                nullifier = getSignedVoteNullifier(baseAccount.address, processId)
+                expect(nullifier).to.eq("0x13bf966813b5299110d34b1e565d62d8c26ecb1f76f92ca8bd21fd91600360bc")
+
+                nullifier = getSignedVoteNullifier(randomAccount.address, processId)
+                expect(nullifier).to.eq("0x25e1ec205509664e2433b9f9930c901eb1f2e31e851468a6ef7329dd9ada3bc8")
+
+                nullifier = getSignedVoteNullifier(randomAccount1.address, processId)
+                expect(nullifier).to.eq("0x419761e28c5103fa4ddac3d575a940c683aa647c31a8ac1073c8780f4664efcb")
+            })
+            it("Should package a signed envelope")
+        })
+
         it("Should bundle a Vote Package into a valid Vote Envelope", async () => {
             const wallet = Wallet.fromMnemonic("seven family better journey display approve crack burden run pattern filter topple")
 
@@ -545,7 +215,6 @@ describe("Voting Process", () => {
             expect(envelope1.processId).to.eq(processId)
             expect(envelope1.proof).to.eq(siblings)
             const pkg1: IVotePackage = JSON.parse(Buffer.from(envelope1.votePackage, "base64").toString())
-            expect(pkg1.type).to.eq("poll-vote")
             expect(pkg1.votes.length).to.eq(3)
             expect(pkg1.votes).to.deep.equal([1, 2, 3])
 
@@ -556,7 +225,6 @@ describe("Voting Process", () => {
             expect(envelope2.processId).to.eq(processId)
             expect(envelope2.proof).to.eq(siblings)
             const pkg2: IVotePackage = JSON.parse(Buffer.from(envelope2.votePackage, "base64").toString())
-            expect(pkg2.type).to.eq("poll-vote")
             expect(pkg2.votes.length).to.eq(3)
             expect(pkg2.votes).to.deep.equal([5, 6, 7])
         })
@@ -595,11 +263,9 @@ describe("Voting Process", () => {
                 expect(Buffer.from(envelope.votePackage, "base64").length).to.be.greaterThan(0)
 
                 const pkg: IVotePackage = JSON.parse(Asymmetric.decryptString(envelope.votePackage, votePrivateKey))
-                expect(pkg.type).to.eq("poll-vote")
                 expect(pkg.votes).to.deep.equal(item.votes)
             }
         })
-
         it("Should bundle a Vote Package encrypted with N keys in the right order", async () => {
             const wallet = Wallet.fromMnemonic("seven family better journey display approve crack burden run pattern filter topple")
 
@@ -667,13 +333,12 @@ describe("Voting Process", () => {
                     else decryptedBuff = Asymmetric.decryptRaw(Buffer.from(envelope.votePackage, "base64"), encryptionKeys[i].privateKey)
                 }
                 const pkg: IVotePackage = JSON.parse(decryptedBuff.toString())
-                expect(pkg.type).to.eq("poll-vote")
                 expect(pkg.votes).to.deep.equal(item.votes)
             }
         })
     })
 
-    describe("Metadata validator", () => {
+    describe("Metadata validation", () => {
 
         it("Should accept a valid Process Metadata JSON", () => {
             const processMetadata = new ProcessMetadataBuilder().build()
@@ -687,26 +352,6 @@ describe("Voting Process", () => {
             expect(() => {
                 checkValidProcessMetadata(processMetadata)
             }).to.throw()
-        })
-
-        it("Should accept an integer vote value", () => {
-            const payload = new ProcessMetadataBuilder().withIntegerVoteValues().build()
-            expect(() => {
-                checkValidProcessMetadata(payload)
-            }).to.not.throw()
-        })
-
-        it("Should accept a string vote value", () => {
-            const payload = new ProcessMetadataBuilder().withStringVoteValues().build()
-            expect(() => {
-                checkValidProcessMetadata(payload)
-            }).to.not.throw()
-        })
-
-        it("Should convert a string value vote to integer in the Process Metadata JSON", () => {
-            const payload = new ProcessMetadataBuilder().withStringVoteValues().build()
-            const result = checkValidProcessMetadata(payload)
-            expect(result.details.questions[0].voteOptions[0].value).to.be.a("number")
         })
 
         it("Should reject invalid Process Metadata JSON payloads", () => {
@@ -723,7 +368,7 @@ describe("Voting Process", () => {
             }).to.throw()
 
             expect(() => {
-                processMetadata.details.questions[0].voteOptions[0].value = "a" as any
+                processMetadata.questions[0].choices[0].value = "a" as any
                 checkValidProcessMetadata(processMetadata)
             }).to.throw()
         })
@@ -735,19 +380,16 @@ describe("Voting Process", () => {
                 checkValidProcessMetadata(Object.assign({}, processMetadata, { version: null }))
             }).to.throw()
             expect(() => {
-                checkValidProcessMetadata(Object.assign({}, processMetadata, { type: null }))
+                checkValidProcessMetadata(Object.assign({}, processMetadata, { title: null }))
             }).to.throw()
             expect(() => {
-                checkValidProcessMetadata(Object.assign({}, processMetadata, { startBlock: null }))
+                checkValidProcessMetadata(Object.assign({}, processMetadata, { description: null }))
             }).to.throw()
             expect(() => {
-                checkValidProcessMetadata(Object.assign({}, processMetadata, { blockCount: null }))
+                checkValidProcessMetadata(Object.assign({}, processMetadata, { media: null }))
             }).to.throw()
             expect(() => {
-                checkValidProcessMetadata(Object.assign({}, processMetadata, { census: null }))
-            }).to.throw()
-            expect(() => {
-                checkValidProcessMetadata(Object.assign({}, processMetadata, { details: null }))
+                checkValidProcessMetadata(Object.assign({}, processMetadata, { questions: null }))
             }).to.throw()
         })
 
@@ -758,17 +400,17 @@ describe("Voting Process", () => {
             }).to.not.throw()
 
             const result = checkValidProcessMetadata(processMetadata)
-            expect(result.details.questions.length).to.equal(200)
+            expect(result.questions.length).to.equal(200)
         }).timeout(10000)
 
-        it("Should accept big number of options", () => {
-            const processMetadata = new ProcessMetadataBuilder().withNumberOfOptions(200)
+        it("Should accept big number of choices", () => {
+            const processMetadata = new ProcessMetadataBuilder().withNumberOfChoices(200)
             expect(() => {
                 checkValidProcessMetadata(processMetadata)
             }).to.not.throw()
 
             const result = checkValidProcessMetadata(processMetadata)
-            expect(result.details.questions[0].voteOptions.length).to.equal(200)
+            expect(result.questions[0].choices.length).to.equal(200)
         }).timeout(4000)
     })
 })

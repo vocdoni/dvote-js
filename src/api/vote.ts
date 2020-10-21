@@ -26,6 +26,20 @@ type IProcessKeys = {
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
+ * Compute the process ID of an Entity at a given index and namespace
+ * @param entityAddress
+ * @param processCountIndex
+ * @param namespace
+ */
+export function getProcessId(entityAddress: string, processCountIndex: number, namespace: number): string {
+    if (!entityAddress) throw new Error("Invalid address")
+
+    return utils.keccak256(
+        utils.solidityPack(["address", "uint256", "uint16"], [entityAddress, processCountIndex, namespace])
+    )
+}
+
+/**
  * Fetch the raw parameters for the given processId using the given gateway
  * @param processId
  * @param gateway

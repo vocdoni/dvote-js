@@ -6,8 +6,8 @@ import { getAccounts, TestAccount } from "../utils"
 import NamespaceBuilder from "./namespace"
 import { assert } from "console"
 
-const { abi: processAbi, bytecode: processByteCode } = require("../../build/process.json")
-const { abi: namespaceAbi } = require("../../build/namespace.json")
+const { abi: processAbi, bytecode: processByteCode } = require("dvote-solidity/build/process.json")
+const { abi: namespaceAbi } = require("dvote-solidity/build/namespace.json")
 
 // DEFAULT VALUES
 export const DEFAULT_PREDECESSOR_INSTANCE_ADDRESS = "0x0000000000000000000000000000000000000000"
