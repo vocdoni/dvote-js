@@ -8,23 +8,25 @@ import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { Contract, Wallet } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
-import { getAccounts, incrementTimestamp, TestAccount } from "../testing-eth-utils"
-import { VotingProcessContractMethods } from "dvote-solidity"
+import { getAccounts, incrementTimestamp, TestAccount } from "../utils"
+import { ProcessContractMethods } from "dvote-solidity"
 import { Buffer } from "buffer/"
 
-import { deployVotingProcessContract, getVotingProcessInstance } from "../../src/net/contracts"
-import { getPollNullifier, packagePollEnvelope, PollVotePackage } from "../../src/api/vote"
+import { deployProcessContract, getProcessInstance } from "../../src/net/contracts"
+import { getSignedVoteNullifier, packageSignedEnvelope, IVotePackage } from "../../src/api/vote"
 import { Asymmetric } from "../../src/util/encryption"
-import { checkValidProcessMetadata } from "../../src/models/voting-process"
+import { checkValidProcessMetadata } from "../../src/models/process"
 import VotingProcessBuilder, {
-    DEFAULT_PROCESS_TYPE,
+    DEFAULT_PROCESS_MODE,
+    DEFAULT_ENVELOPE_TYPE,
     DEFAULT_METADATA_CONTENT_HASHED_URI,
     DEFAULT_MERKLE_ROOT,
     DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI,
-    DEFAULT_NUMBER_OF_BLOCKS,
-    DEFAULT_START_BLOCK
-} from "../builders/voting-process"
-import ProcessMetadataBuilder from "../builders/voting-process-metadata"
+    DEFAULT_BLOCK_COUNT,
+    DEFAULT_START_BLOCK,
+    DEFAULT_NAMESPACE
+} from "../builders/process"
+import ProcessMetadataBuilder from "../builders/process-metadata"
 import { BigNumber } from "ethers/utils"
 
 let accounts: TestAccount[]
@@ -34,7 +36,7 @@ let randomAccount: TestAccount
 let randomAccount1: TestAccount
 let randomAccount2: TestAccount
 let processId: string
-let contractInstance: VotingProcessContractMethods & Contract
+let contractInstance: ProcessContractMethods & Contract
 
 addCompletionHooks()
 
@@ -48,13 +50,13 @@ describe("Voting Process", () => {
         randomAccount2 = accounts[4]
 
         contractInstance = await new VotingProcessBuilder().build()
-        processId = await contractInstance.getProcessId(entityAccount.address, 0)
+        processId = await contractInstance.getProcessId(entityAccount.address, 0, DEFAULT_NAMESPACE)
     })
 
     describe("Smart Contract", () => {
 
         it("Should deploy the smart contract", async () => {
-            contractInstance = await deployVotingProcessContract({ provider: entityAccount.provider, wallet: entityAccount.wallet }, [123])
+            contractInstance = await deployProcessContract({ provider: entityAccount.provider, wallet: entityAccount.wallet }, [123])
 
             expect(contractInstance).to.be.ok
             expect(contractInstance.address.match(/^0x[0-9a-fA-F]{40}$/)).to.be.ok
@@ -63,14 +65,14 @@ describe("Voting Process", () => {
         it("Should attach to a given instance and deal with the same data", async () => {
             // set custom data on a deployed instance
             expect(contractInstance.address).to.be.ok
-            const customProcessId = await contractInstance.getNextProcessId(entityAccount.address)
+            const customProcessId = await contractInstance.getNextProcessId(entityAccount.address, DEFAULT_NAMESPACE)
 
-            await contractInstance.create(DEFAULT_PROCESS_TYPE, DEFAULT_METADATA_CONTENT_HASHED_URI, DEFAULT_MERKLE_ROOT, DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI,
-                DEFAULT_START_BLOCK, DEFAULT_NUMBER_OF_BLOCKS)
+            await contractInstance.newProcess(DEFAULT_PROCESS_TYPE, DEFAULT_METADATA_CONTENT_HASHED_URI, DEFAULT_MERKLE_ROOT, DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI,
+                DEFAULT_START_BLOCK, DEFAULT_BLOCK_COUNT)
 
             // attach from a new object
 
-            const newInstance = await getVotingProcessInstance({ provider: entityAccount.provider }, contractInstance.address)
+            const newInstance = await getProcessInstance({ provider: entityAccount.provider }, contractInstance.address)
             expect(newInstance.address).to.equal(contractInstance.address)
 
             const data = await newInstance.get(customProcessId)
@@ -82,7 +84,7 @@ describe("Voting Process", () => {
             expect(data.voteEncryptionPrivateKey).to.equal("")
             expect(data.canceled).to.equal(false)
             expect(data.startBlock.toNumber()).to.equal(DEFAULT_START_BLOCK)
-            expect(data.numberOfBlocks.toNumber()).to.equal(DEFAULT_NUMBER_OF_BLOCKS)
+            expect(data.blockCount.toNumber()).to.equal(DEFAULT_BLOCK_COUNT)
         })
 
         // it("Should compute process ID's in the same way as the on-chain version", async () => {
@@ -102,7 +104,7 @@ describe("Voting Process", () => {
 
         it("The getProcessId() should match getNextProcessId()", async () => {
             // entityAddress has one process created by default from the builder
-            expect(await contractInstance.getNextProcessId(entityAccount.address)).to.equal(await contractInstance.getProcessId(entityAccount.address, 1))
+            expect(await contractInstance.getNextProcessId(entityAccount.address, DEFAULT_NAMESPACE)).to.equal(await contractInstance.getProcessId(entityAccount.address, 1, DEFAULT_NAMESPACE))
 
             // randomAccount has no process yet
             expect(await contractInstance.getNextProcessId(randomAccount.address)).to.equal(await contractInstance.getProcessId(randomAccount.address, 0))
@@ -129,11 +131,11 @@ describe("Voting Process", () => {
             const merkleRoot = "0x09876543210987654321"
             const merkleTree = "ipfs://zzzzzzzzzzz,https://host/file!1234567812345678"
             const startBlock = 12341234
-            const numberOfBlocks = 500000
+            const blockCount = 500000
 
-            processId = await contractInstance.getNextProcessId(entityAccount.address)
+            processId = await contractInstance.getNextProcessId(entityAccount.address, DEFAULT_NAMESPACE)
 
-            await contractInstance.create(procType, metadata, merkleRoot, merkleTree, startBlock, numberOfBlocks)
+            await contractInstance.newProcess(procType, metadata, merkleRoot, merkleTree, startBlock, blockCount)
 
             const data = await contractInstance.get(processId)
             expect(data.processType).to.equal(procType)
@@ -144,21 +146,21 @@ describe("Voting Process", () => {
             expect(data.voteEncryptionPrivateKey).to.equal("")
             expect(data.canceled).to.equal(false)
             expect(data.startBlock.toNumber()).to.equal(startBlock)
-            expect(data.numberOfBlocks.toNumber()).to.equal(numberOfBlocks)
+            expect(data.blockCount.toNumber()).to.equal(blockCount)
         })
 
         it("Should notify creation events", async () => {
             // Skip the event of the process created by beforeEach()
-            const prevProcessId = await contractInstance.getProcessId(entityAccount.address, 0)
-            processId = await contractInstance.getNextProcessId(entityAccount.address)
+            const prevProcessId = await contractInstance.getProcessId(entityAccount.address, 0, DEFAULT_NAMESPACE)
+            processId = await contractInstance.getNextProcessId(entityAccount.address, DEFAULT_NAMESPACE)
 
             const result: { entityAddress: string, processId: string } = await new Promise((resolve, reject) => {
                 contractInstance.on("ProcessCreated", (entityAddress: string, processId: string) => {
                     if (processId === prevProcessId) return // skip the previous process's event
                     resolve({ entityAddress, processId })
                 })
-                contractInstance.create(DEFAULT_PROCESS_TYPE, DEFAULT_METADATA_CONTENT_HASHED_URI, DEFAULT_MERKLE_ROOT, DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI,
-                    DEFAULT_START_BLOCK, DEFAULT_NUMBER_OF_BLOCKS)
+                contractInstance.newProcess(DEFAULT_PROCESS_TYPE, DEFAULT_METADATA_CONTENT_HASHED_URI, DEFAULT_MERKLE_ROOT, DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI,
+                    DEFAULT_START_BLOCK, DEFAULT_BLOCK_COUNT)
                     .catch(reject)
             })
 
@@ -180,8 +182,6 @@ describe("Voting Process", () => {
             expect(data.metadata).to.equal(DEFAULT_METADATA_CONTENT_HASHED_URI)
             expect(data.censusMerkleRoot).to.equal(DEFAULT_MERKLE_ROOT)
             expect(data.censusMerkleTree).to.equal(DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI)
-            expect(data.voteEncryptionPrivateKey).to.equal("")
-            expect(data.canceled).to.equal(true)
         })
 
         it("Should notify event cancelation", async () => {
@@ -475,9 +475,11 @@ describe("Voting Process", () => {
             expect(result2).to.equal("1234-5678")
         })
 
-        it("Should notify about results published", async () => {
+        it("should change the state to RESULTS")
+
+        it("Should notify about results available", async () => {
             const result: { results: string, processId: string } = await new Promise((resolve, reject) => {
-                contractInstance.on("ResultsPublished", (processId: string, results: string) => {
+                contractInstance.on("ResultsAvailable", (processId: string, results: string) => {
                     resolve({ processId, results })
                 })
 
@@ -521,16 +523,16 @@ describe("Voting Process", () => {
             expect(wallet.privateKey).to.eq("0xdc44bf8c260abe06a7265c5775ea4fb68ecd1b1940cfa76c1726141ec0da5ddc")
             expect(wallet.address).to.eq("0xaDDAa28Fb1fe87362A6dFdC9d3EEA03d0C221d81")
 
-            let nullifier = getPollNullifier(wallet.address, processId)
+            let nullifier = getSignedVoteNullifier(wallet.address, processId)
             expect(nullifier).to.eq("0xf6e3fe2d68f3ccc3af2a7835b302e42c257e2de6539c264542f11e5588e8c162")
 
-            nullifier = getPollNullifier(baseAccount.address, processId)
+            nullifier = getSignedVoteNullifier(baseAccount.address, processId)
             expect(nullifier).to.eq("0x13bf966813b5299110d34b1e565d62d8c26ecb1f76f92ca8bd21fd91600360bc")
 
-            nullifier = getPollNullifier(randomAccount.address, processId)
+            nullifier = getSignedVoteNullifier(randomAccount.address, processId)
             expect(nullifier).to.eq("0x25e1ec205509664e2433b9f9930c901eb1f2e31e851468a6ef7329dd9ada3bc8")
 
-            nullifier = getPollNullifier(randomAccount1.address, processId)
+            nullifier = getSignedVoteNullifier(randomAccount1.address, processId)
             expect(nullifier).to.eq("0x419761e28c5103fa4ddac3d575a940c683aa647c31a8ac1073c8780f4664efcb")
         })
         it("Should bundle a Vote Package into a valid Vote Envelope", async () => {
@@ -539,10 +541,10 @@ describe("Voting Process", () => {
             let processId = "0x8b35e10045faa886bd2e18636cd3cb72e80203a04e568c47205bf0313a0f60d1"
             let siblings = "0x0003000000000000000000000000000000000000000000000000000000000006f0d72fbd8b3a637488107b0d8055410180ec017a4d76dbb97bee1c3086a25e25b1a6134dbd323c420d6fc2ac3aaf8fff5f9ac5bc0be5949be64b7cfd1bcc5f1f"
 
-            const envelope1 = await packagePollEnvelope({ votes: [1, 2, 3], merkleProof: siblings, processId, walletOrSigner: wallet })
+            const envelope1 = await packageSignedEnvelope({ votes: [1, 2, 3], merkleProof: siblings, processId, walletOrSigner: wallet })
             expect(envelope1.processId).to.eq(processId)
             expect(envelope1.proof).to.eq(siblings)
-            const pkg1: PollVotePackage = JSON.parse(Buffer.from(envelope1.votePackage, "base64").toString())
+            const pkg1: IVotePackage = JSON.parse(Buffer.from(envelope1.votePackage, "base64").toString())
             expect(pkg1.type).to.eq("poll-vote")
             expect(pkg1.votes.length).to.eq(3)
             expect(pkg1.votes).to.deep.equal([1, 2, 3])
@@ -550,10 +552,10 @@ describe("Voting Process", () => {
             processId = "0x36c886bd2e18605bf03a0428be100313a0f6e568c470d135d3cb72e802045faa"
             siblings = "0x0003000000100000000002000000000300000000000400000000000050000006f0d72fbd8b3a637488107b0d8055410180ec017a4d76dbb97bee1c3086a25e25b1a6134dbd323c420d6fc2ac3aaf8fff5f9ac5bc0be5949be64b7cfd1bcc5f1f"
 
-            const envelope2 = await packagePollEnvelope({ votes: [5, 6, 7], merkleProof: siblings, processId, walletOrSigner: wallet })
+            const envelope2 = await packageSignedEnvelope({ votes: [5, 6, 7], merkleProof: siblings, processId, walletOrSigner: wallet })
             expect(envelope2.processId).to.eq(processId)
             expect(envelope2.proof).to.eq(siblings)
-            const pkg2: PollVotePackage = JSON.parse(Buffer.from(envelope2.votePackage, "base64").toString())
+            const pkg2: IVotePackage = JSON.parse(Buffer.from(envelope2.votePackage, "base64").toString())
             expect(pkg2.type).to.eq("poll-vote")
             expect(pkg2.votes.length).to.eq(3)
             expect(pkg2.votes).to.deep.equal([5, 6, 7])
@@ -585,14 +587,14 @@ describe("Voting Process", () => {
             // one key
             for (let item of processes) {
                 const processKeys = { encryptionPubKeys: [{ idx: 1, key: votePublicKey }] }
-                const envelope = await packagePollEnvelope({ votes: item.votes, merkleProof: item.siblings, processId: item.processId, walletOrSigner: wallet, processKeys })
+                const envelope = await packageSignedEnvelope({ votes: item.votes, merkleProof: item.siblings, processId: item.processId, walletOrSigner: wallet, processKeys })
                 expect(envelope.processId).to.eq(item.processId)
                 expect(envelope.proof).to.eq(item.siblings)
                 expect(envelope.encryptionKeyIndexes).to.be.deep.equal([1])
                 expect(envelope.votePackage).to.be.a("string")
                 expect(Buffer.from(envelope.votePackage, "base64").length).to.be.greaterThan(0)
 
-                const pkg: PollVotePackage = JSON.parse(Asymmetric.decryptString(envelope.votePackage, votePrivateKey))
+                const pkg: IVotePackage = JSON.parse(Asymmetric.decryptString(envelope.votePackage, votePrivateKey))
                 expect(pkg.type).to.eq("poll-vote")
                 expect(pkg.votes).to.deep.equal(item.votes)
             }
@@ -642,7 +644,7 @@ describe("Voting Process", () => {
             for (let item of processes) {
                 const processKeys = { encryptionPubKeys: encryptionKeys.map((kp, idx) => ({ idx, key: kp.publicKey })) }
 
-                const envelope = await packagePollEnvelope({
+                const envelope = await packageSignedEnvelope({
                     votes: item.votes,
                     merkleProof: item.siblings,
                     processId: item.processId,
@@ -664,7 +666,7 @@ describe("Voting Process", () => {
                     }
                     else decryptedBuff = Asymmetric.decryptRaw(Buffer.from(envelope.votePackage, "base64"), encryptionKeys[i].privateKey)
                 }
-                const pkg: PollVotePackage = JSON.parse(decryptedBuff.toString())
+                const pkg: IVotePackage = JSON.parse(decryptedBuff.toString())
                 expect(pkg.type).to.eq("poll-vote")
                 expect(pkg.votes).to.deep.equal(item.votes)
             }
@@ -739,7 +741,7 @@ describe("Voting Process", () => {
                 checkValidProcessMetadata(Object.assign({}, processMetadata, { startBlock: null }))
             }).to.throw()
             expect(() => {
-                checkValidProcessMetadata(Object.assign({}, processMetadata, { numberOfBlocks: null }))
+                checkValidProcessMetadata(Object.assign({}, processMetadata, { blockCount: null }))
             }).to.throw()
             expect(() => {
                 checkValidProcessMetadata(Object.assign({}, processMetadata, { census: null }))

@@ -85,16 +85,16 @@ dvoteGw.disconnect()
 ```javascript
 const {
     API: { File, Entity, Census, Vote },
-    Network: { Bootnodes, Gateways, Contracts },
+    Network: { Bootnodes, Gateway, Contracts },
     Wrappers: { GatewayInfo, ContentURI, ContentHashedURI },
     // EtherUtils: { Providers, Signers }
 } = require("dvote-js")
 
 const {
     getEntityResolverInstance,
-    // getVotingProcessInstance,
+    // getProcessInstance,
     // deployEntityResolverContract,
-    // deployVotingProcessContract
+    // deployProcessContract
 } = Contracts
 const { getEntityId, getEntityMetadataByAddress, updateEntity } = Entity
 const { Gateway } = Gateways
@@ -136,9 +136,9 @@ const {
 
 const {
     getEntityResolverInstance,
-    // getVotingProcessInstance,
+    // getProcessInstance,
     // deployEntityResolverContract,
-    // deployVotingProcessContract
+    // deployProcessContract
 } = Contracts
 const { getEntityId, getEntityMetadataByAddress, updateEntity } = Entity
 const { addFile, fetchFileString } = File
@@ -177,9 +177,9 @@ const {
 
 const {
     getEntityResolverInstance,
-    // getVotingProcessInstance,
+    // getProcessInstance,
     // deployEntityResolverContract,
-    // deployVotingProcessContract
+    // deployProcessContract
 } = Contracts
 const { getEntityId, getEntityMetadataByAddress, updateEntity } = Entity
 const { addFile, fetchFileString } = File
@@ -304,13 +304,13 @@ const EntityBuilder = require("./test/builders/entity-resolver")
 const VoteBuilder = require("./test/builders/voting-process")
 
 const contractInstance1 = await new EntityBuilder().build()
-const contractInstance2 = await new VotingProcessBuilder().build()
+const contractInstance2 = await new ProcessBuilder().build()
 
 const contractInstance3 = await new EntityBuilder()
     .withName("Another name")
     .build()
 
-const contractInstance4 = await new VotingProcessBuilder()
+const contractInstance4 = await new ProcessBuilder()
     .withVotingPublicKey("...")
     .build(3)  // create 3 voting processess within the new contract
 

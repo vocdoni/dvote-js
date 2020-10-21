@@ -9,11 +9,10 @@ import {
     ContentUriString,
     ContentHashedUriString
 } from "./common"
-import { ProcessType } from "dvote-solidity"
 import { object, array, string, number } from "yup"
 import { by639_1 } from 'iso-language-codes'
 
-export { ProcessMetadataTemplate } from "./templates/voting-process"
+export { ProcessMetadataTemplate } from "./templates/process"
 
 ///////////////////////////////////////////////////////////////////////////////
 // VALIDATION
@@ -23,12 +22,12 @@ export { ProcessMetadataTemplate } from "./templates/voting-process"
  * Asserts that the given metadata is valid.
  * Throws an exception if it is not.
  */
-export function checkValidProcessMetadata(voteMetadata: ProcessMetadata): ProcessMetadata {
-    if (typeof voteMetadata != "object") throw new Error("The metadata must be a JSON object")
+export function checkValidProcessMetadata(processMetadata: ProcessMetadata): ProcessMetadata {
+    if (typeof processMetadata != "object") throw new Error("The metadata must be a JSON object")
 
     try {
-        voteMetadataSchema.validateSync(voteMetadata)
-        return voteMetadataSchema.cast(voteMetadata) as ProcessMetadata
+        processMetadataSchema.validateSync(processMetadata)
+        return processMetadataSchema.cast(processMetadata) as ProcessMetadata
     }
     catch (err) {
         if (Array.isArray(err.errors)) throw new Error("ValidationError: " + err.errors.join(", "))
@@ -51,15 +50,15 @@ const multiLanguageStringKeys = {
 
 // MAIN ENTITY SCHEMA
 
-const processTypes: string[] = ["snark-vote", "poll-vote", "encrypted-poll", "petition-sign"]
 const questionTypes = ["single-choice"]
 
-const voteMetadataSchema = object().shape({
+const processMetadataSchema = object().shape({
     version: string().matches(/^[0-9]\.[0-9]$/).required(),
-    type: string().oneOf(processTypes).required(),
+    mode: number().min(0).required(),
+    envelopeType: number().min(0).required(),
     startBlock: number().integer().min(0).required(),
-    numberOfBlocks: number().integer().min(0).required(),
-    census: object().shape({
+    blockCount: number().integer().min(0).required(),
+    census: object().shape({ // DEPRECATED
         merkleRoot: string().matches(/^0x[a-z0-9]+$/).required(),
         merkleTree: string().required()
     }),
@@ -71,7 +70,7 @@ const voteMetadataSchema = object().shape({
         streamUrl: string().optional(),
         questions: array().of(
             object().shape({
-                type: string().oneOf(questionTypes).required(),
+                type: string().oneOf(questionTypes), // DEPRECATED
                 question: object().shape(multiLanguageStringKeys).optional(),
                 description: object().shape(multiLanguageStringKeys).required(),
                 voteOptions: array().of(
@@ -91,8 +90,6 @@ const voteMetadataSchema = object().shape({
 
 type ProtocolVersion = "1.0"
 type QuestionType = "single-choice"
-export { ProcessType }
-export type VochainProcessState = "scheduled" | "active" | "paused" | "finished" | "canceled"
 
 /**
  * JSON metadata. Intended to be stored on IPFS or similar.
@@ -100,10 +97,12 @@ export type VochainProcessState = "scheduled" | "active" | "paused" | "finished"
  */
 export interface ProcessMetadata {
     version: ProtocolVersion, // Version of the metadata schema used
-    type: ProcessType, // details depends on the type
+    type?: string, // DEPRECATED
+    mode: number,
+    envelopeType: number,
     startBlock: number, // Block number on the votchain since the process will be open
-    numberOfBlocks: number,
-    census: {
+    blockCount: number,
+    census: { // DEPRECATED
         merkleRoot: HexString,
         merkleTree: ContentHashedUriString
     },
@@ -114,7 +113,7 @@ export interface ProcessMetadata {
         headerImage: ContentUriString,
         streamUrl?: ContentUriString,
         questions: Array<{
-            type: QuestionType, // Defines how the UI should allow to choose among the votingOptions.
+            type: QuestionType, // DEPRECATED
             question?: MultiLanguage<string>,
             description: MultiLanguage<string>,
             voteOptions: Array<{

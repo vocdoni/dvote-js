@@ -8,7 +8,7 @@ const { getConfig } = require("./util")
 const config = getConfig()
 
 const { abi: entityResolverAbi, bytecode: entityResolverByteCode } = require("../build/entity-resolver.json")
-const { abi: votingProcessAbi, bytecode: votingProcessByteCode } = require("../build/voting-process.json")
+const { abi: votingProcessAbi, bytecode: votingProcessByteCode } = require("../build/process.json")
 
 async function main() {
 

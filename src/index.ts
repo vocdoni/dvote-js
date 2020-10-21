@@ -24,18 +24,21 @@ import * as Waiters from "./util/waiters"
 
 // MODELS
 import * as EntityModel from "./models/entity"
-import * as VotingProcessModel from "./models/voting-process"
+import * as ProcessModel from "./models/process"
 import * as JsonFeedModel from "./models/json-feed"
 import * as GatewayModel from "./models/gateway"
 
 
 // EXPORTS
 export const API = { File, Entity, Vote, Census }
-export const Models = { Entity: EntityModel, Vote: VotingProcessModel, Gateway: GatewayModel, JsonFeed: JsonFeedModel }
+export const Models = { Entity: EntityModel, Process: ProcessModel, Gateway: GatewayModel, JsonFeed: JsonFeedModel }
 export const Network = { Bootnodes, Gateways, Contracts, Discovery, Pool, Waiters }
 export const Wrappers = { ContentURI, ContentHashedURI, GatewayInfo }
 export const EtherUtils = { Providers, Signers }
 export { JsonSign }
+
+// SOLIDITY WRAPPERS
+export { ProcessMode, ProcessEnvelopeType, ProcessStatus } from "dvote-solidity"
 
 // EXPORT TYPES
 export * from "./types"

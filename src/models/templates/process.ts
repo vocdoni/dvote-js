@@ -1,10 +1,12 @@
-import { ProcessMetadata } from "../voting-process"
+import { ProcessMetadata } from "../process"
+import { ProcessMode, ProcessEnvelopeType } from "dvote-solidity"
 
 export const ProcessMetadataTemplate: ProcessMetadata = {
     version: "1.0",
-    type: "poll-vote",
+    mode: ProcessMode.make(),
+    envelopeType: ProcessEnvelopeType.make(),
     startBlock: 10000, // Block number on the votchain since the process will be open
-    numberOfBlocks: 400,
+    blockCount: 400,
     census: {
         merkleRoot: "", // 0x1234...
         merkleTree: "" // ipfs://12345678,https://server/file!12345678

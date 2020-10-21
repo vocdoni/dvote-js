@@ -2,7 +2,7 @@ import { Gateway, IDvoteRequestParameters } from "./gateway"
 import { dvoteApis, DVoteSupportedApi, WsGatewayMethod } from "../models/gateway"
 import { discoverGateways, GatewayDiscoveryParameters } from "./gateway-discovery"
 import { Wallet, Signer, providers } from "ethers"
-import { IVotingProcessContract, IEntityResolverContract } from "./contracts"
+import { IProcessContract, IEntityResolverContract } from "./contracts"
 
 const SEQUENTIAL_METHODS = ['addClaimBulk', 'publishCensus'] //generateProof and vote?
 const ERROR_SKIP_METHODS = ['getRoot']
@@ -169,8 +169,8 @@ export class GatewayPool {
         return this.activeGateway().getEntityResolverInstance(walletOrSigner)
     }
 
-    public getVotingProcessInstance(walletOrSigner?: Wallet | Signer): IVotingProcessContract {
-        return this.activeGateway().getVotingProcessInstance(walletOrSigner)
+    public getProcessInstance(walletOrSigner?: Wallet | Signer): IProcessContract {
+        return this.activeGateway().getProcessInstance(walletOrSigner)
     }
 }
 

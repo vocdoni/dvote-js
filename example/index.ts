@@ -6,14 +6,14 @@ import * as fs from "fs"
 import { utils, providers, Wallet } from "ethers"
 import { walletFromSeededPassphrase, generateRandomHexSeed } from "../src/util/signers"
 import { getEntityId, updateEntity, getEntityMetadata, getEntityMetadataByAddress } from "../src/api/entity"
-import { createVotingProcess, getVoteMetadata, estimateBlockAtDateTime, isCanceled, cancelProcess, getRawResults, getResultsDigest, getBlockHeight, getEnvelopeHeight, estimateDateAtBlock, packagePollEnvelope, submitEnvelope, getEnvelopeList, getEnvelope } from "../src/api/vote"
+import { newProcess, getProcessMetadata, estimateBlockAtDateTime, isCanceled, cancelProcess, getRawResults, getResultsDigest, getBlockHeight, getEnvelopeHeight, estimateDateAtBlock, packageSignedEnvelope, submitEnvelope, getEnvelopeList, getEnvelope, setStatus } from "../src/api/vote"
 import { DVoteGateway, Web3Gateway, Gateway } from "../src/net/gateway"
 import { GatewayPool } from "../src/net/gateway-pool"
 import { addCensus, addClaim, addClaimBulk, getRoot, publishCensus, dump, dumpPlain, getCensusSize, digestHexClaim, generateProof } from "../src/api/census"
 import { fetchDefaultBootNode, getGatewaysFromBootNodeData } from "../src/net/gateway-bootnodes"
 import { EntityMetadataTemplate, EntityMetadata, TextRecordKeys } from "../src/models/entity"
-import { ProcessMetadata, ProcessMetadataTemplate } from "../src/models/voting-process"
-import { deployEntityResolverContract, getEntityResolverInstance, deployVotingProcessContract, getVotingProcessInstance } from "../src/net/contracts"
+import { ProcessMetadata, ProcessMetadataTemplate } from "../src/models/process"
+import { deployEntityResolverContract, getEntityResolverInstance, deployProcessContract, getProcessInstance } from "../src/net/contracts"
 import { addFile, fetchFileString } from "../src/api/file"
 import GatewayInfo from "../src/wrappers/gateway-info"
 import ContentHashedURI from "../src/wrappers/content-hashed-uri"
@@ -21,6 +21,7 @@ import { VOCHAIN_BLOCK_TIME } from "../src/constants"
 import { signJsonBody, isSignatureValid, recoverSignerPublicKey } from "../src/util/json-sign"
 import { WsGatewayMethod } from "../src/models/gateway"
 import { GatewayDiscoveryParameters } from "../src/net/gateway-discovery"
+import { ProcessStatus } from "dvote-solidity"
 
 const MNEMONIC = process.env.MNEMONIC || "bar bundle start frog dish gauge square subway load easily south bamboo"
 const PATH = "m/44'/60'/0'/0/0"
@@ -77,12 +78,15 @@ async function attachToEntityResolver() {
 }
 
 async function deployVotingProcess() {
-    const CHAIN_ID = 5
     const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI)
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
+    // Set your values here
+    const PREDECESSOR_ADDRESS = "0x0000000000000000000000000000000000000000"
+    const NAMESPACE_CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000"
+
     console.log("Deploying Voting Process contract...")
-    const contractInstance = await deployVotingProcessContract({ provider, wallet }, [CHAIN_ID])
+    const contractInstance = await deployProcessContract({ provider, wallet }, [PREDECESSOR_ADDRESS, NAMESPACE_CONTRACT_ADDRESS])
     await contractInstance.deployTransaction.wait()
     console.log("Voting Process deployed at", contractInstance.address)
 
@@ -98,7 +102,7 @@ async function attachToVotingProcess() {
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
     console.log("Attaching to contract at from")
-    const contractInstance = await getVotingProcessInstance({ provider, wallet })
+    const contractInstance = await getProcessInstance({ provider, wallet })
 
     console.log("Reading 'genesis'")
     let val = await contractInstance.getGenesis()
@@ -336,7 +340,8 @@ async function createVotingProcessManual() {
     await gw.connect()
 
     console.log("Attaching to contract")
-    const contractInstance = await gw.getVotingProcessInstance(wallet)
+    const contractInstance = await gw.getProcessInstance(wallet)
+
     console.log("Uploading metadata...")
     const processMetadata = Object.assign({}, ProcessMetadataTemplate, { startBlock: 20000 })
     const strData = JSON.stringify(processMetadata)
@@ -350,7 +355,7 @@ async function createVotingProcessManual() {
     censusCuri.setHashFrom("")
 
     console.log("Creating process with parameters:", metaCuri.toString(), "0x0", censusCuri.toString())
-    const tx = await contractInstance.create("poll-vote", metaCuri.toString(), "0x0", censusCuri.toString(), 500, 100)
+    const tx = await contractInstance.newProcess("poll-vote", metaCuri.toString(), "0x0", censusCuri.toString(), 500, 100)
     const result = await tx.wait()
     console.log("RESULT", result)
 
@@ -377,10 +382,8 @@ async function createVotingProcessFull() {
 
     const processMetadata: ProcessMetadata = {
         "version": "1.0",
-        // "type": "poll-vote",
-        "type": "encrypted-poll",
         "startBlock": 0,
-        "numberOfBlocks": 200000,
+        "blockCount": 200000,
         "census": {
             "merkleRoot": "0x1234",
             "merkleTree": "ipfs://2345"
@@ -421,18 +424,17 @@ async function createVotingProcessFull() {
     }
     processMetadata.details.entityId = myEntityId
     processMetadata.startBlock = await estimateBlockAtDateTime(new Date(Date.now() + 1000 * 60 * 5), pool)
-    processMetadata.numberOfBlocks = 6 * 60 * 24 // 1 day
+    processMetadata.blockCount = 6 * 60 * 24 // 1 day
 
-    const processId = await createVotingProcess(processMetadata, wallet, pool)
-    // const entityMetaPost = await getEntityMetadata(myEntityId, pool)
+    const processId = await newProcess(processMetadata, wallet, pool)
+    const entityMetaPost = await getEntityMetadataByAddress(myEntityAddress, pool)
 
     console.log("CREATED", processId)
     // console.log("METADATA BEFORE:", entityMetaPre.votingProcesses.active)
     // console.log("METADATA AFTER:", entityMetaPost.votingProcesses.active)
 
     // READING BACK:
-    const metadata = await getVoteMetadata(processId, pool)
-    console.log("PROCESS ID", processId)
+    const metadata = await getProcessMetadata(processId, pool)
     console.log("PROCESS METADATA", metadata)
 
     pool.disconnect()
@@ -446,17 +448,13 @@ async function cancelVotingProcess() {
 
     console.log("Entity Addr", myEntityAddress)
     console.log("Entity ID", myEntityId)
-    // const pool = await GatewayPool.discover({ networkId: "goerli" })
+
     const pool = await GatewayPool.discover({ networkId: NETWORK_ID })
     await pool.connect()
 
-    const processId = "0xc69acd6435f622f5dda70e887cbebe3994b67d68686ca31872cb9b4a64525374"
-
+    const processId = await newProcess(ProcessMetadataTemplate, wallet, pool)
     const canceledPre = await isCanceled(processId, pool)
-    if (!canceledPre) {
-        console.log("Canceling process", processId)
-        await cancelProcess(processId, wallet, pool)
-    }
+    await setStatus(processId, ProcessStatus.CANCELED, wallet, pool)
     const canceledPost = await isCanceled(processId, pool)
 
     console.log("Created", processId)
@@ -491,22 +489,22 @@ async function cloneVotingProcess() {
 
     console.log("Updating...")
     const PROCESS_ID_OLD = "0x6529717ebd0926f9096d6ae342c67bfd7dce90ce8eb2dbf9342a51d70fffb759"
-    const processMetadata = await getVoteMetadata(PROCESS_ID_OLD, pool)
+    const processMetadata = await getProcessMetadata(PROCESS_ID_OLD, pool)
     const currentBlock = 765
     const startBlock = currentBlock + 130
     processMetadata.startBlock = startBlock
-    processMetadata.numberOfBlocks = 60480
+    processMetadata.blockCount = 60480
     const NEW_MERKLE_ROOT = "0xbae0912183e55c3173bad6eeb4408bfe4de6892f82123562475aca66b109ba13"
     const NEW_MERKLE_TREE_ORIGIN = "ipfs://QmUC4NokWrykhZwY9CNGPz7KS8AvHWD3M4SLk5doMRMCmA"
     processMetadata.census.merkleRoot = NEW_MERKLE_ROOT
     processMetadata.census.merkleTree = NEW_MERKLE_TREE_ORIGIN
 
-    const processId = await createVotingProcess(processMetadata, wallet, pool)
+    const processId = await newProcess(processMetadata, wallet, pool)
 
     console.log("CREATED", processId)
 
     // READING BACK:
-    const metadata = await getVoteMetadata(processId, pool)
+    const metadata = await getProcessMetadata(processId, pool)
     console.log("PROCESS METADATA", metadata)
 
     pool.disconnect()
@@ -524,16 +522,17 @@ async function useVoteApi() {
     console.log("- Active processes:", entityMeta.votingProcesses.active)
     const processId = entityMeta.votingProcesses.active[entityMeta.votingProcesses.active.length - 1]
     // const processId = "0xf36b729d6226b8257922a60cea6ab80e47686c3f86edbd0749b1c3291e2651ed"
-    const processMeta = await getVoteMetadata(processId, pool)
+    // const processId = "0x04eff29970a18ff5e46ff9b1eae5b320ee782ecadaaef341e842cb97ef310477"
+    const processMeta = await getProcessMetadata(processId, pool)
 
-    const censusMerkleRoot = process.env.CENSUS_MERKLE_ROOT // TODO: use the one below
-    // const censusMerkleRoot = processMeta.census.merkleRoot
+    // const censusMerkleRoot = process.env.CENSUS_MERKLE_ROOT // TODO: use the one below
+    const censusMerkleRoot = processMeta.census.merkleRoot
 
     console.log("Reading", processId)
 
     console.log("BLOCKCHAIN INFO:\n")
     console.log("- Process startBlock:", processMeta.startBlock)
-    console.log("- Process endBlock:", processMeta.startBlock + processMeta.numberOfBlocks)
+    console.log("- Process endBlock:", processMeta.startBlock + processMeta.blockCount)
     console.log("- Census size:", await getCensusSize(censusMerkleRoot, pool))
     console.log("- Block height:", await getBlockHeight(pool))
     console.log("- Envelope height:", await getEnvelopeHeight(processId, pool))
@@ -541,7 +540,7 @@ async function useVoteApi() {
     const startDate = await estimateDateAtBlock(processMeta.startBlock, pool)
     console.log("- Start date:", startDate < new Date() ? "[already started]" : startDate)
 
-    const endDate = await estimateDateAtBlock(processMeta.startBlock + processMeta.numberOfBlocks, pool)
+    const endDate = await estimateDateAtBlock(processMeta.startBlock + processMeta.blockCount, pool)
     console.log("- End date:", endDate < new Date() ? "[already ended]" : endDate)
 
     console.log("- Date at block 500:", await estimateDateAtBlock(500, pool))
@@ -552,10 +551,10 @@ async function useVoteApi() {
     const votes = [1, 2, 1]
 
     // Open vote version:
-    const voteEnvelope = await packagePollEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet })
+    const voteEnvelope = await packageSignedEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet })
 
     // Encrypted vote version:
-    // const voteEnvelope = await packagePollEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
+    // const voteEnvelope = await packageSignedEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
 
     console.log("- Poll Envelope:", voteEnvelope)
 
@@ -586,7 +585,7 @@ async function submitVoteBatch() {
     const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL })
     await pool.connect()
 
-    const processMeta = await getVoteMetadata(processId, pool)
+    const processMeta = await getProcessMetadata(processId, pool)
     const censusMerkleRoot = processMeta.census.merkleRoot
 
     console.log("On Process", processId)
@@ -608,9 +607,9 @@ async function submitVoteBatch() {
             const publicKeyHash = digestHexClaim(wallet["signingKey"].publicKey)
             const merkleProof = await generateProof(censusMerkleRoot, publicKeyHash, true, pool)
             const votes = [1]
-            const voteEnvelope = await packagePollEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet })
+            const voteEnvelope = await packageSignedEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet })
             // Encrypted version:
-            // const voteEnvelope = await packagePollEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
+            // const voteEnvelope = await packageSignedEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
 
             console.log("- Submitting vote envelope")
             await submitEnvelope(voteEnvelope, pool)
@@ -868,7 +867,7 @@ async function main() {
     // await cancelVotingProcess()
     // await showProcessResults()
     // await cloneVotingProcess()
-    // await useVoteApi()
+    await useVoteApi()
     // await submitVoteBatch()
     // await fetchMerkleProof()
     // await checkSignature()

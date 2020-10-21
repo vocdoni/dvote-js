@@ -1,7 +1,7 @@
 import { Wallet, Signer, utils, ContractTransaction } from "ethers"
 import { Gateway, IGateway } from "../net/gateway"
 import { fetchFileString, addFile } from "./file"
-import { ProcessMetadata, checkValidProcessMetadata, ProcessResults, ProcessType, VochainProcessState, ProcessResultItem } from "../models/voting-process"
+import { ProcessMetadata, checkValidProcessMetadata, ProcessResults, ProcessResultItem } from "../models/process"
 // import { HexString } from "../models/common"
 import ContentHashedURI from "../wrappers/content-hashed-uri"
 import { getEntityMetadataByAddress, updateEntity, getEntityId } from "./entity"
@@ -11,7 +11,9 @@ import { Buffer } from "buffer/"  // Previously using "arraybuffer-to-string"
 import { Asymmetric } from "../util/encryption"
 import { GatewayPool, IGatewayPool } from "../net/gateway-pool"
 import { waitVochainBlocks } from "../util/waiters"
-import { IMethodOverrides } from "dvote-solidity"
+import { IMethodOverrides, ProcessStatus, ProcessContractParameters, IProcessStatus } from "dvote-solidity"
+
+export { ProcessStatus, ProcessContractParameters, IProcessStatus } from "dvote-solidity"
 
 type IProcessKeys = {
     encryptionPubKeys: { idx: number, key: string }[],
@@ -20,91 +22,26 @@ type IProcessKeys = {
     revealKeys?: { idx: number, key: string }[]
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// CONTRACT GETTERS
+///////////////////////////////////////////////////////////////////////////////
+
 /**
- * Use the given JSON metadata to create a new voting process from the Entity ID associated to the given wallet account.
- * The Census Merkle Root and Merkle Tree will be published to the blockchain, and the Metadata will be stored on IPFS
- * @param processMetadata JSON object containing the schema defined on  https://vocdoni.io/docs/#/architecture/components/process?id=process-metadata-json
- * @param walletOrSigner
+ * Fetch the raw parameters for the given processId using the given gateway
+ * @param processId
  * @param gateway
- * @returns The process ID
  */
-export async function createVotingProcess(processMetadata: ProcessMetadata,
-    walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
-    if (!processMetadata) return Promise.reject(new Error("Invalid process metadata"))
-    else if (!walletOrSigner || !(walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer))
-        return Promise.reject(new Error("Invalid Wallet or Signer"))
-    else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool))
-        return Promise.reject(new Error("Invalid Gateway object"))
+export function getProcessParameters(processId: string, gateway: IGateway | IGatewayPool): Promise<ProcessContractParameters> {
+    if (!processId) throw new Error("Invalid processId")
+    else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
-    // throw if not valid
-    processMetadata = checkValidProcessMetadata(processMetadata)
-    const merkleRoot = processMetadata.census.merkleRoot
-    const merkleTree = new ContentHashedURI(processMetadata.census.merkleTree)
-
-    if (walletOrSigner instanceof Wallet && !walletOrSigner.provider) {
-        walletOrSigner = walletOrSigner.connect(gateway.getProvider())
-    }
-
-    try {
-        const processInstance = gateway.getVotingProcessInstance(walletOrSigner)
-
-        const address = await walletOrSigner.getAddress()
-
-        // CHECK THAT THE ENTITY EXISTS
-        const entityMeta = await getEntityMetadataByAddress(address, gateway)
-        if (!entityMeta) return Promise.reject(new Error("The entity is not yet registered on the blockchain"))
-        else if (getEntityId(address) != processMetadata.details.entityId)
-            return Promise.reject(new Error("The EntityId on the metadata does not match the given wallet's address"))
-
-        // UPLOAD THE METADATA
-        const strJsonMeta = JSON.stringify(processMetadata)
-        const processMetaOrigin = await addFile(strJsonMeta, `merkle-root-${merkleRoot}.json`, walletOrSigner, gateway)
-        if (!processMetaOrigin) return Promise.reject(new Error("The process metadata could not be uploaded"))
-
-        // REGISTER THE NEW PROCESS
-        const chainId = await gateway.getChainId()
-        let options: IMethodOverrides
-        let tx: ContractTransaction
-        switch (chainId) {
-            case XDAI_CHAIN_ID:
-                options = { gasPrice: XDAI_GAS_PRICE }
-                tx = await processInstance.create(processMetadata.type, processMetaOrigin, merkleRoot, merkleTree.toContentUriString(),
-                    processMetadata.startBlock, processMetadata.numberOfBlocks, options)
-                break
-            case SOKOL_CHAIN_ID:
-                const addr = await walletOrSigner.getAddress()
-                const nonce = await walletOrSigner.provider.getTransactionCount(addr)
-                options = {
-                    gasPrice: SOKOL_GAS_PRICE,
-                    nonce,
-                }
-                tx = await processInstance.create(processMetadata.type, processMetaOrigin, merkleRoot, merkleTree.toContentUriString(),
-                    processMetadata.startBlock, processMetadata.numberOfBlocks, options)
-                break
-            default:
-                tx = await processInstance.create(processMetadata.type, processMetaOrigin, merkleRoot, merkleTree.toContentUriString(),
-                    processMetadata.startBlock, processMetadata.numberOfBlocks)
-        }
-
-        if (!tx) throw new Error("Could not start the blockchain transaction")
-        await tx.wait()
-
-        const count = await processInstance.getEntityProcessCount(address)
-        if (!count || count.isZero()) return Promise.reject(new Error("The process could not be created"))
-        const processId = await processInstance.getProcessId(address, count.toNumber() - 1)
-
-        // UPDATE THE ENTITY
-        if (!entityMeta.votingProcesses) entityMeta.votingProcesses = { active: [], ended: [] }
-        entityMeta.votingProcesses.active = [processId].concat(entityMeta.votingProcesses.active || [])
-
-        await updateEntity(address, entityMeta, walletOrSigner, gateway)
-
-        return processId
-    }
-    catch (err) {
-        console.error(err)
-        throw err
-    }
+    return gateway.getProcessInstance()
+        .then(processInstance => processInstance.get(processId))
+        .then(params => ProcessContractParameters.fromContract(params))
+        .catch(error => {
+            const message = (error.message) ? "Could not fetch the process data: " + error.message : "Could not fetch the process data"
+            throw new Error(message)
+        })
 }
 
 /**
@@ -112,105 +49,20 @@ export async function createVotingProcess(processMetadata: ProcessMetadata,
  * @param processId
  * @param gateway
  */
-export async function getVoteMetadata(processId: string, gateway: IGateway | IGatewayPool): Promise<ProcessMetadata> {
+export async function getProcessMetadata(processId: string, gateway: IGateway | IGatewayPool): Promise<ProcessMetadata> {
     if (!processId) throw new Error("Invalid processId")
     else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
-    const processInstance = await gateway.getVotingProcessInstance()
-
     try {
-        const processInfo = await processInstance.get(processId)
-        if (!processInfo.metadata) throw new Error("The given voting process has no metadata")
+        const processParams = await getProcessParameters(processId, gateway)
+        if (!processParams.metadata) throw new Error("The given voting process has no metadata")
 
-        const jsonBuffer = await fetchFileString(processInfo.metadata, gateway)
+        const jsonBuffer = await fetchFileString(processParams.metadata, gateway)
 
         return JSON.parse(jsonBuffer.toString())
     } catch (error) {
         const message = (error.message) ? "Could not fetch the process data: " + error.message : "Could not fetch the process data"
         throw new Error(message)
-    }
-}
-
-/**
- * Fetch the JSON metadata for a set of process ID's using the given gateway
- * @param processIds
- * @param gateway
- */
-export function getVotesMetadata(processIds: string[], gateway: IGateway | IGatewayPool): Promise<ProcessMetadata[]> {
-    if (!Array.isArray(processIds)) return Promise.reject(new Error("Invalid processId"))
-    else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
-
-    return Promise.all(processIds.map((id) => getVoteMetadata(id, gateway)))
-}
-
-/**
- * Send a transaction to mark a voting process as canceled or ended.
- * @param processId
- * @param walletOrSigner
- * @param web3Gateway
- */
-export async function cancelProcess(processId: string,
-    walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<void> {
-    if (!processId) throw new Error("Invalid process ID")
-    else if (!walletOrSigner) throw new Error("Invalid Wallet or Signer")
-    else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) throw new Error("Invalid Gateway object")
-
-    if (walletOrSigner instanceof Wallet && !walletOrSigner.provider) {
-        walletOrSigner = walletOrSigner.connect(gateway.getProvider())
-    }
-
-    try {
-        const processInstance = await gateway.getVotingProcessInstance(walletOrSigner)
-
-        const chainId = await gateway.getChainId()
-        let options: IMethodOverrides
-        let tx: ContractTransaction
-        switch (chainId) {
-            case XDAI_CHAIN_ID:
-                options = { gasPrice: XDAI_GAS_PRICE }
-                tx = await processInstance.cancel(processId, options)
-                break
-            case SOKOL_CHAIN_ID:
-                const addr = await walletOrSigner.getAddress()
-                const nonce = await walletOrSigner.provider.getTransactionCount(addr)
-                options = {
-                    gasPrice: SOKOL_GAS_PRICE,
-                    nonce,
-                }
-                tx = await processInstance.cancel(processId, options)
-                break
-            default:
-                tx = await processInstance.cancel(processId)
-
-        }
-
-        if (!tx) throw new Error("Could not start the blockchain transaction")
-        await tx.wait()
-    }
-    catch (err) {
-        console.error(err)
-        throw err
-    }
-}
-
-/**
- * Checks wether the given process is canceled or not.
- * @param processId
- * @param web3Gateway
- */
-export async function isCanceled(processId: string, gateway: IGateway | IGatewayPool): Promise<boolean> {
-    if (!processId) throw new Error("Invalid process ID")
-    else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) throw new Error("Invalid Gateway object")
-
-    try {
-        const processInstance = await gateway.getVotingProcessInstance()
-
-        const processInfo = await processInstance.get(processId)
-        if (!processInfo) throw new Error("Could not check the process status")
-        return !!processInfo.canceled
-    }
-    catch (err) {
-        throw err
     }
 }
 
@@ -461,50 +313,200 @@ export function getProcessKeys(processId: string, gateway: IGateway | IGatewayPo
         })
 }
 
-/**
- * Submit the vote envelope to a Gateway
- * @param voteEnvelope
- * @param gateway
- */
-export async function submitEnvelope(voteEnvelope: SnarkVoteEnvelope | PollVoteEnvelope, gateway: IGateway | GatewayPool): Promise<void> {
-    if (!voteEnvelope) return Promise.reject(new Error("Invalid parameters"))
-    else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
-
-    return gateway.sendMessage({ method: "submitEnvelope", payload: voteEnvelope })
-        .catch((error) => {
-            const message = (error.message) ? "Could not submit the vote envelope: " + error.message : "Could not submit the vote envelope"
-            throw new Error(message)
-        })
-}
+///////////////////////////////////////////////////////////////////////////////
+// CONTRACT SETTERS
+///////////////////////////////////////////////////////////////////////////////
 
 /**
- * Get status of an envelope
- * @param processId
- * @param nullifier
+ * Use the given JSON metadata to create a new voting process from the Entity ID associated to the given wallet account.
+ * The Census Merkle Root and Merkle Tree will be published to the blockchain, and the Metadata will be stored on IPFS
+ * @param processMetadata JSON object containing the schema defined on  https://vocdoni.io/docs/#/architecture/components/process?id=process-metadata-json
+ * @param walletOrSigner
  * @param gateway
+ * @returns The process ID
  */
-export function getEnvelopeStatus(processId: string, nullifier: string, gateway: IGateway | IGatewayPool): Promise<{ registered: boolean, date?: Date, block?: number }> {
-    if (!processId || !nullifier) return Promise.reject(new Error("Invalid parameters"))
-    else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+export async function newProcess(processMetadata: ProcessMetadata,
+    walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
+    if (!processMetadata) return Promise.reject(new Error("Invalid process metadata"))
+    else if (!walletOrSigner || !(walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer))
+        return Promise.reject(new Error("Invalid Wallet or Signer"))
+    else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool))
+        return Promise.reject(new Error("Invalid Gateway object"))
 
-    return gateway.sendMessage({ method: "getEnvelopeStatus", processId, nullifier })
-        .then((response) => {
-            if (response.registered === true) {
-                if (typeof response.blockTimestamp != "number") throw new Error("Invalid response received from the gateway")
-                return {
-                    registered: response.registered,
-                    date: new Date(response.blockTimestamp * 1000),
-                    block: response.height
+    // throw if not valid
+    processMetadata = checkValidProcessMetadata(processMetadata)
+    const merkleRoot = processMetadata.census.merkleRoot
+    const merkleTree = new ContentHashedURI(processMetadata.census.merkleTree)
+
+    // if (walletOrSigner instanceof Wallet && !walletOrSigner.provider) {
+    //     walletOrSigner = walletOrSigner.connect(gateway.getProvider())
+    // }
+
+    try {
+        const processInstance = gateway.getProcessInstance(walletOrSigner)
+
+        const address = await walletOrSigner.getAddress()
+
+        // CHECK THAT THE ENTITY EXISTS
+        const entityMeta = await getEntityMetadataByAddress(address, gateway)
+        if (!entityMeta) return Promise.reject(new Error("The entity is not yet registered on the blockchain"))
+        else if (getEntityId(address) != processMetadata.details.entityId)
+            return Promise.reject(new Error("The EntityId on the metadata does not match the given wallet's address"))
+
+        // UPLOAD THE METADATA
+        const strJsonMeta = JSON.stringify(processMetadata)
+        const processMetaOrigin = await addFile(strJsonMeta, `merkle-root-${merkleRoot}.json`, walletOrSigner, gateway)
+        if (!processMetaOrigin) return Promise.reject(new Error("The process metadata could not be uploaded"))
+
+        // REGISTER THE NEW PROCESS
+        const chainId = await gateway.getChainId()
+        let options: IMethodOverrides
+        let tx: ContractTransaction
+        switch (chainId) {
+            case XDAI_CHAIN_ID:
+                options = { gasPrice: XDAI_GAS_PRICE }
+                tx = await processInstance.newProcess(processMetadata.type, processMetaOrigin, merkleRoot, merkleTree.toContentUriString(),
+                    processMetadata.startBlock, processMetadata.blockCount, options)
+                break
+            case SOKOL_CHAIN_ID:
+                const addr = await walletOrSigner.getAddress()
+                const nonce = await walletOrSigner.provider.getTransactionCount(addr)
+                options = {
+                    gasPrice: SOKOL_GAS_PRICE,
+                    nonce,
                 }
-            }
+                tx = await processInstance.newProcess(processMetadata.type, processMetaOrigin, merkleRoot, merkleTree.toContentUriString(),
+                    processMetadata.startBlock, processMetadata.blockCount, options)
+                break
+            default:
+                tx = await processInstance.newProcess(processMetadata.type, processMetaOrigin, merkleRoot, merkleTree.toContentUriString(),
+                    processMetadata.startBlock, processMetadata.blockCount)
+        }
 
-            return { registered: false }
-        })
-        .catch((error) => {
-            const message = (error.message) ? "The envelope status could not be retrieved: " + error.message : "The envelope status could not be retrieved"
-            throw new Error(message)
-        })
+        if (!tx) throw new Error("Could not start the blockchain transaction")
+        await tx.wait()
+
+        const count = await processInstance.getEntityProcessCount(address)
+        if (!count || count.isZero()) return Promise.reject(new Error("The process could not be created"))
+        const processId = await processInstance.getProcessId(address, count.toNumber() - 1, namespace)
+
+        // UPDATE THE ENTITY
+        if (!entityMeta.votingProcesses) entityMeta.votingProcesses = { active: [], ended: [] }
+        entityMeta.votingProcesses.active = [processId].concat(entityMeta.votingProcesses.active || [])
+
+        await updateEntity(address, entityMeta, walletOrSigner, gateway)
+
+        return processId
+    }
+    catch (err) {
+        console.error(err)
+        throw err
+    }
 }
+
+/**
+ * Send a transaction to update the status of a process. NOTE: `INTERRUPTIBLE` needs to be enabled or the process has to be PAUSED, after creation.
+ * @param processId
+ * @param newStatus
+ * @param walletOrSigner
+ * @param web3Gateway
+ */
+export async function setStatus(processId: string, newStatus: IProcessStatus, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<void> {
+    if (!processId) throw new Error("Invalid process ID")
+    else if (!walletOrSigner) throw new Error("Invalid Wallet or Signer")
+    else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) throw new Error("Invalid Gateway object")
+
+    try {
+        const processInstance = await gateway.getProcessInstance(walletOrSigner)
+
+        const tx = await processInstance.setStatus(processId, newStatus)
+        if (!tx) throw new Error("Could not start the blockchain transaction")
+        await tx.wait()
+    }
+    catch (err) {
+        console.error(err)
+        throw err
+    }
+}
+
+/**
+ * Send a transaction to increment the questionIndex of a process. NOTE: `SERIAL` needs to be enabled.
+ * @param processId
+ * @param newStatus
+ * @param walletOrSigner
+ * @param web3Gateway
+ */
+export async function incrementQuestionIndex(processId: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<void> {
+    if (!processId) throw new Error("Invalid process ID")
+    else if (!walletOrSigner) throw new Error("Invalid Wallet or Signer")
+    else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) throw new Error("Invalid Gateway object")
+
+    try {
+        const processInstance = await gateway.getProcessInstance(walletOrSigner)
+
+        const tx = await processInstance.incrementQuestionIndex(processId)
+        if (!tx) throw new Error("Could not start the blockchain transaction")
+        await tx.wait()
+    }
+    catch (err) {
+        console.error(err)
+        throw err
+    }
+}
+
+/**
+ * Send a transaction to update the census details of a process. NOTE: `DYNAMIC_CENSUS` needs to be enabled.
+ * @param processId
+ * @param newStatus
+ * @param walletOrSigner
+ * @param web3Gateway
+ */
+export async function setCensus(processId: string, censusMerkleRoot: string, censusMerkleTree: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<void> {
+    if (!processId) throw new Error("Invalid process ID")
+    else if (!walletOrSigner) throw new Error("Invalid Wallet or Signer")
+    else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) throw new Error("Invalid Gateway object")
+
+    try {
+        const processInstance = await gateway.getProcessInstance(walletOrSigner)
+
+        const tx = await processInstance.setCensus(processId, censusMerkleRoot, censusMerkleTree)
+        if (!tx) throw new Error("Could not start the blockchain transaction")
+        await tx.wait()
+    }
+    catch (err) {
+        console.error(err)
+        throw err
+    }
+}
+
+/**
+ * Send a transaction to update the census details of a process. NOTE: the wallet needs to be authorized as an oracle on the namespace of the process.
+ * @param processId
+ * @param newStatus
+ * @param walletOrSigner
+ * @param web3Gateway
+ */
+export async function setResults(processId: string, results: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<void> {
+    if (!processId) throw new Error("Invalid process ID")
+    else if (!walletOrSigner) throw new Error("Invalid Wallet or Signer")
+    else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) throw new Error("Invalid Gateway object")
+
+    try {
+        const processInstance = await gateway.getProcessInstance(walletOrSigner)
+
+        const tx = await processInstance.setResults(processId, results)
+        if (!tx) throw new Error("Could not start the blockchain transaction")
+        await tx.wait()
+    }
+    catch (err) {
+        console.error(err)
+        throw err
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// VOCHAIN GETTERS
+///////////////////////////////////////////////////////////////////////////////
 
 /**
  * Fetches the vote envelope for a given processId
@@ -604,7 +606,7 @@ export function getEnvelopeList(processId: string,
  * @param gateway
  * @returns Results, vote process  type, vote process state
  */
-export function getRawResults(processId: string, gateway: IGateway | IGatewayPool): Promise<{ results: number[][], type: ProcessType, state: VochainProcessState }> {
+export function getRawResults(processId: string, gateway: IGateway | IGatewayPool): Promise<{ results: number[][], status: ProcessStatus }> {
     if (!gateway || !processId)
         return Promise.reject(new Error("No process ID provided"))
     else if (!((gateway instanceof Gateway || gateway instanceof GatewayPool)))
@@ -614,9 +616,8 @@ export function getRawResults(processId: string, gateway: IGateway | IGatewayPoo
         .then((response) => {
             if (!Array.isArray(response.results)) throw new Error("The gateway response is not valid")
             const results = (Array.isArray(response.results) && response.results.length) ? response.results : []
-            const type = response.type || ""
-            const state = response.state || ""
-            return { results, type, state }
+            const status = response.state || ""
+            return { results, status }
         })
         .catch((error) => {
             const message = (error.message) ? "Could not fetch the process results: " + error.message : "Could not fetch the process results"
@@ -625,7 +626,7 @@ export function getRawResults(processId: string, gateway: IGateway | IGatewayPoo
 }
 
 /**
- * Fetches the results for a given processId.
+ * Fetches the results for a given processId and arranges them with the titles and their respective options.
  * @param processId
  * @param gateway
  * @returns Results, vote process  type, vote process state
@@ -636,41 +637,45 @@ export async function getResultsDigest(processId: string, gateway: IGateway | IG
     else if (!((gateway instanceof Gateway || gateway instanceof GatewayPool)))
         throw new Error("Invalid Gateway object")
 
-    const pid = processId.startsWith("0x") ? processId : "0x" + processId
+    processId = processId.startsWith("0x") ? processId : "0x" + processId
     try {
-        const voteMetadata = await getVoteMetadata(pid, gateway)
+        const processState = await getProcessParameters(processId, gateway)
+        if (processState.status.isCanceled) return { questions: [] }
 
         // Encrypted?
         let procKeys: IProcessKeys, retries: number
         const currentBlock = await getBlockHeight(gateway)
-        switch (voteMetadata.type) {
-            case "encrypted-poll":
-                if (currentBlock < voteMetadata.startBlock) return { questions: [] }
-                else if ((currentBlock < (voteMetadata.startBlock + voteMetadata.numberOfBlocks)) && !(await isCanceled(processId, gateway))) return { questions: [] }
+        if (processState.envelopeType.hasEncryptedVotes) {
+            if (currentBlock < processState.startBlock) return { questions: [] } // not started
+            else if (processState.mode.isInterruptible) {
+                if (!processState.status.hasResults && !processState.status.isEnded &&
+                    (currentBlock < (processState.startBlock + processState.blockCount))) return { questions: [] } // not ended
+            } else {
+                if (!processState.status.hasResults &&
+                    (currentBlock < (processState.startBlock + processState.blockCount))) return { questions: [] } // not ended
+            }
 
-                retries = 3
-                do {
-                    procKeys = await getProcessKeys(processId, gateway)
-                    if (procKeys && procKeys.encryptionPrivKeys && procKeys.encryptionPrivKeys.length) break
+            retries = 3
+            do {
+                procKeys = await getProcessKeys(processId, gateway)
+                if (procKeys && procKeys.encryptionPrivKeys && procKeys.encryptionPrivKeys.length) break
 
-                    await waitVochainBlocks(2, gateway)
-                    retries--
-                } while (retries >= 0)
-                if (!procKeys || !procKeys.encryptionPrivKeys || !procKeys.encryptionPrivKeys.length) return { questions: [] }
-
-                break
-            default:
+                await waitVochainBlocks(2, gateway)
+                retries--
+            } while (retries >= 0)
+            if (!procKeys || !procKeys.encryptionPrivKeys || !procKeys.encryptionPrivKeys.length) return { questions: [] }
         }
 
-        const { results, type, state } = await getRawResults(processId, gateway)
+        const { results, status } = await getRawResults(processId, gateway)
+        const metadata = await getProcessMetadata(processId, gateway)
 
         const resultsDigest: ProcessResults = { questions: [] }
-        const zippedQuestions = voteMetadata.details.questions.map((e, i) => ({ meta: e, result: results[i] }))
+        const zippedQuestions = metadata.details.questions.map((e, i) => ({ meta: e, result: results[i] }))
         resultsDigest.questions = zippedQuestions.map((zippedEntry, idx): ProcessResultItem => {
             const zippedOptions = zippedEntry.meta.voteOptions.map((e, i) => ({ title: e.title, value: zippedEntry.result[i] }))
             return {
                 question: zippedEntry.meta.question,
-                type: voteMetadata.details.questions[idx].type,
+                type: metadata.details.questions[idx].type,
                 voteResults: zippedOptions.map((option) => ({
                     title: option.title,
                     votes: option.value || 0,
@@ -684,14 +689,71 @@ export async function getResultsDigest(processId: string, gateway: IGateway | IG
     }
 }
 
-// COMPUTATION
+///////////////////////////////////////////////////////////////////////////////
+// VOCHAIN METHODS
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Submit the vote envelope to a Gateway
+ * @param voteEnvelope
+ * @param gateway
+ */
+export async function submitEnvelope(voteEnvelope: IAnonymousVoteEnvelope | ISignedVoteEnvelope, gateway: IGateway | GatewayPool): Promise<void> {
+    if (!voteEnvelope) return Promise.reject(new Error("Invalid parameters"))
+    else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+
+    return gateway.sendMessage({ method: "submitEnvelope", payload: voteEnvelope })
+        .catch((error) => {
+            const message = (error.message) ? "Could not submit the vote envelope: " + error.message : "Could not submit the vote envelope"
+            throw new Error(message)
+        })
+}
+
+/**
+ * Get status of an envelope
+ * @param processId
+ * @param nullifier
+ * @param gateway
+ */
+export function getEnvelopeStatus(processId: string, nullifier: string, gateway: IGateway | IGatewayPool): Promise<{ registered: boolean, date?: Date, block?: number }> {
+    if (!processId || !nullifier) return Promise.reject(new Error("Invalid parameters"))
+    else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+
+    return gateway.sendMessage({ method: "getEnvelopeStatus", processId, nullifier })
+        .then((response) => {
+            if (response.registered === true) {
+                if (typeof response.blockTimestamp != "number") throw new Error("Invalid response received from the gateway")
+                return {
+                    registered: response.registered,
+                    date: new Date(response.blockTimestamp * 1000),
+                    block: response.height
+                }
+            }
+
+            return { registered: false }
+        })
+        .catch((error) => {
+            const message = (error.message) ? "The envelope status could not be retrieved: " + error.message : "The envelope status could not be retrieved"
+            throw new Error(message)
+        })
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// HELPERS
+///////////////////////////////////////////////////////////////////////////////
 
 // TODO: SEE https://vocdoni.io/docs/#/architecture/components/process?id=vote-envelope
 
-export function packageSnarkEnvelope(params: {
+/**
+ * Packages the given vote array into a JSON payload that can be sent to Vocdoni Gateways.
+ * The voter's signature will be included on the vote, so the voter's anonymity may be public.
+ * If `encryptionPublicKey` is defined, it will be used to encrypt the vote package.
+ * @param params
+ */
+export function packageAnonymousEnvelope(params: {
     votes: number[], merkleProof: string, processId: string, privateKey: string,
     processKeys?: IProcessKeys
-}): SnarkVoteEnvelope {
+}): IAnonymousVoteEnvelope {
     if (!params) throw new Error("Invalid parameters");
     if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
     else if (typeof params.merkleProof != "string" || !params.merkleProof.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid Merkle Proof")
@@ -704,19 +766,21 @@ export function packageSnarkEnvelope(params: {
         }
     }
 
-    // TODO: use packageSnarkVote()
+    // TODO: use packageVoteContent()
+
     throw new Error("TODO: unimplemented")
 }
 
 /**
  * Packages the given vote array into a JSON payload that can be sent to Vocdoni Gateways.
+ * The voter's signature will be included on the vote, so the voter's anonymity may be public.
  * If `encryptionPublicKey` is defined, it will be used to encrypt the vote package.
  * @param params
  */
-export async function packagePollEnvelope(params: {
+export async function packageSignedEnvelope(params: {
     votes: number[], merkleProof: string, processId: string, walletOrSigner: Wallet | Signer,
     processKeys?: IProcessKeys
-}): Promise<PollVoteEnvelope> {
+}): Promise<ISignedVoteEnvelope> {
     if (!params) throw new Error("Invalid parameters");
     else if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
     else if (typeof params.merkleProof != "string" || !params.merkleProof.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid Merkle Proof")
@@ -732,14 +796,14 @@ export async function packagePollEnvelope(params: {
     try {
         const nonce = utils.keccak256('0x' + Date.now().toString(16)).substr(2)
 
-        const { votePackage, keyIndexes } = packagePollVote(params.votes, params.processKeys)
+        const { votePackage, keyIndexes } = packageVoteContent(params.votes, params.processKeys)
 
-        const pkg: PollVoteEnvelope = {
+        const pkg: ISignedVoteEnvelope = {
             processId: params.processId,
             proof: params.merkleProof,
             nonce,
             votePackage
-            // signature:  Must be unset because the body must be singed without the  signature
+            // signature:  Must be unset because the body must be singed without the signature field
         }
         if (keyIndexes) pkg.encryptionKeyIndexes = keyIndexes
 
@@ -751,37 +815,13 @@ export async function packagePollEnvelope(params: {
     }
 }
 
-export function packageSnarkVote(votes: number[], processKeys?: IProcessKeys): { votePackage: string, keyIndexes?: number[] } {
-    // if (!Array.isArray(votes)) throw new Error("Invalid votes")
-    // else if (processKeys) {
-    //     if (!Array.isArray(processKeys.encryptionPubKeys) || !processKeys.encryptionPubKeys.every(
-    //         item => item && typeof item.idx == "number" && typeof item.key == "string" && item.key.match(/^(0x)?[0-9a-zA-Z]+$/))) {
-    //         throw new Error("Some encryption public keys are not valid")
-    //     }
-    // }
-    // const nonce = utils.keccak256('0x' + Date.now().toString(16)).substr(2)
-
-    // const payload: SnarkVotePackage = {
-    //     type: "snark-vote",
-    //     nonce,
-    //     votes
-    // }
-
-    // // TODO: ENCRYPT WITH processKeys.encryptionPubKeys
-    // const strPayload = JSON.stringify(payload)
-
-    // if (encryptionPubKeys) return Asymmetric.encryptString(strPayload, processKeys.encryptionPubKeys)
-    // else return Buffer.from(strPayload).toString("base64")
-    throw new Error("Unimplemented")
-}
-
 /**
  * Packages the given votes into a base64 string. If encryptionPubKeys is defined, the base64 payload
- * will be encrypted for it.
+ * will be encrypted with it.
  * @param votes An array of numbers with the choices
  * @param encryptionPubKeys An ed25519 public key (https://ed25519.cr.yp.to/)
  */
-export function packagePollVote(votes: number[], processKeys?: IProcessKeys): { votePackage: string, keyIndexes?: number[] } {
+export function packageVoteContent(votes: number[], processKeys?: IProcessKeys): { votePackage: string, keyIndexes?: number[] } {
     if (!Array.isArray(votes)) throw new Error("Invalid votes")
     else if (processKeys) {
         if (!Array.isArray(processKeys.encryptionPubKeys) || !processKeys.encryptionPubKeys.every(
@@ -794,8 +834,7 @@ export function packagePollVote(votes: number[], processKeys?: IProcessKeys): { 
     const nonceSeed = utils.arrayify('0x' + parseInt(Math.random().toString().substr(2)).toString(16) + parseInt(Math.random().toString().substr(2)).toString(16) + Date.now().toString(16))
     const nonce = utils.keccak256(nonceSeed).substr(2, 16)
 
-    const payload: PollVotePackage = {
-        type: "poll-vote",
+    const payload: IVotePackage = {
         nonce,
         votes
     }
@@ -826,10 +865,10 @@ export function packagePollVote(votes: number[], processKeys?: IProcessKeys): { 
     }
 }
 
-/** Computes the nullifier of the user's vote within a poll voting process.
+/** Computes the nullifier of the user's vote within a process where `envelopeType.ANONYMOUS` is disabled.
 * Returns a hex string with kecak256(bytes(address) + bytes(processId))
 */
-export function getPollNullifier(address: string, processId: string): string {
+export function getSignedVoteNullifier(address: string, processId: string): string {
     address = address.replace(/^0x/, "")
     processId = processId.replace(/^0x/, "")
 
@@ -842,8 +881,7 @@ export function getPollNullifier(address: string, processId: string): string {
 
 // TYPES
 
-// SNARK
-export type SnarkVoteEnvelope = {
+export type IAnonymousVoteEnvelope = {
     processId: string,
     proof: string,  // ZK Proof
     nonce: string,  // Unique number per vote attempt, so that replay attacks can't reuse this payload
@@ -851,14 +889,8 @@ export type SnarkVoteEnvelope = {
     encryptionKeyIndexes?: number[],   // The index of the keys used to encrypt the votePackage (only for encrypted processes)
     votePackage: string  // base64(jsonString) is encrypted
 }
-export type SnarkVotePackage = {
-    type: "snark-vote",
-    nonce: string, // random number to prevent guessing the encrypted payload before the key is revealed
-    votes: number[]  // Directly mapped to the `questions` field of the metadata
-}
 
-// POLL
-export type PollVoteEnvelope = {
+export type ISignedVoteEnvelope = {
     processId: string,
     proof: string,  // Merkle Proof
     nonce: string,  // Unique number per vote attempt, so that replay attacks can't reuse this payload
@@ -866,8 +898,8 @@ export type PollVoteEnvelope = {
     votePackage: string,  // base64(json(votePackage))
     signature?: string //  Signature including all the rest of the envelope (processId, proof, nonce, votePackage)
 }
-export type PollVotePackage = {
-    type: "poll-vote",
+
+export type IVotePackage = {
     nonce: string, // (optional) random number to prevent guessing the encrypted payload before the key is revealed
     votes: number[]  // Directly mapped to the `questions` field of the metadata
 }

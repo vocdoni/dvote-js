@@ -1,12 +1,14 @@
-import { ProcessMetadataTemplate, ProcessMetadata, ProcessType } from "../../src/models/voting-process"
+import { ProcessMetadataTemplate, ProcessMetadata } from "../../src/models/process"
 import { URI } from "../../src/models/common"
 import {
-    DEFAULT_PROCESS_TYPE,
+    DEFAULT_PROCESS_MODE,
+    DEFAULT_ENVELOPE_TYPE,
     DEFAULT_MERKLE_ROOT,
     DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI,
-    DEFAULT_NUMBER_OF_BLOCKS,
+    DEFAULT_BLOCK_COUNT,
     DEFAULT_START_BLOCK
-} from "./voting-process"
+} from "./process"
+import { ProcessMode, ProcessEnvelopeType } from "dvote-solidity"
 
 //BUILDER
 export default class ProcessMetadataBuilder {
@@ -20,8 +22,9 @@ export default class ProcessMetadataBuilder {
     }
 
     build() {
-        this.metadata.type = DEFAULT_PROCESS_TYPE
-        this.metadata.numberOfBlocks = DEFAULT_NUMBER_OF_BLOCKS
+        this.metadata.mode = DEFAULT_PROCESS_MODE
+        this.metadata.envelopeType = DEFAULT_ENVELOPE_TYPE
+        this.metadata.blockCount = DEFAULT_BLOCK_COUNT
         this.metadata.startBlock = DEFAULT_START_BLOCK
         this.metadata.census.merkleRoot = DEFAULT_MERKLE_ROOT
         this.metadata.census.merkleTree = DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI
@@ -41,10 +44,7 @@ export default class ProcessMetadataBuilder {
                 }
                 question.voteOptions.map(
                     (option, index) => {
-                        option.title = {
-                            default: "Yes " +
-                                String(index)
-                        }
+                        option.title = { default: "Yes " + String(index) }
                     }
                 )
             }
@@ -57,23 +57,15 @@ export default class ProcessMetadataBuilder {
         return this
     }
 
-    withTypeSnarkVote() {
-        this.metadata.type = "snark-vote" as ProcessType
+    withMode(mode: number) {
+        new ProcessMode(mode) // fail is invalid
+        this.metadata.mode = mode
         return this
     }
 
-    withTypePollVote() {
-        this.metadata.type = "poll-vote" as ProcessType
-        return this
-    }
-
-    withTypeEncryptedPollVote() {
-        this.metadata.type = "encrypted-poll" as ProcessType
-        return this
-    }
-
-    withTypePetitionSign() {
-        this.metadata.type = "petition-sign" as ProcessType
+    withEnvelopetype(envelopeType: number) {
+        new ProcessEnvelopeType(envelopeType) // fail is invalid
+        this.metadata.envelopeType = envelopeType
         return this
     }
 
