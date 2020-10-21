@@ -2,7 +2,7 @@ import { Gateway, IDvoteRequestParameters } from "./gateway"
 import { dvoteApis, DVoteSupportedApi, WsGatewayMethod } from "../models/gateway"
 import { discoverGateways, IGatewayDiscoveryParameters } from "./gateway-discovery"
 import { Wallet, Signer, providers } from "ethers"
-import { IProcessContract, IEntityResolverContract, INamespaceContract } from "./contracts"
+import { IProcessContract, IEnsPublicResolverContract, INamespaceContract } from "./contracts"
 
 const SEQUENTIAL_METHODS = ['addClaimBulk', 'publishCensus'] //generateProof and vote?
 const ERROR_SKIP_METHODS = ['getRoot']
@@ -11,7 +11,7 @@ const GATEWAY_UPDATE_ERRORS = [
     "read ECONNRESET",
     "censusId not valid or not found"
 ]
-const MAX_POOL_REFRESH = 10
+const MAX_POOL_REFRESH_COUNT = 10
 
 export type IGatewayPool = InstanceType<typeof GatewayPool>
 
@@ -51,7 +51,7 @@ export class GatewayPool {
 
     public refresh(): Promise<boolean> {
         this.refreshPoolCount += 1
-        if (this.refreshPoolCount > MAX_POOL_REFRESH) return Promise.reject(new Error("No gateway currently available"))
+        if (this.refreshPoolCount > MAX_POOL_REFRESH_COUNT) return Promise.reject(new Error("No gateway currently available"))
         console.log("Refreshing Gateway Pool")
         return discoverGateways(this.params)
             .then((bestNodes: Gateway[]) => {
@@ -165,7 +165,7 @@ export class GatewayPool {
         return this.getProvider().getNetwork().then(network => network.chainId)
     }
 
-    public getEntityResolverInstance(walletOrSigner?: Wallet | Signer): IEntityResolverContract {
+    public getEntityResolverInstance(walletOrSigner?: Wallet | Signer): IEnsPublicResolverContract {
         return this.activeGateway().getEntityResolverInstance(walletOrSigner)
     }
 

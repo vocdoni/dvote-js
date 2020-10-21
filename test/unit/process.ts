@@ -35,7 +35,7 @@ import ProcessBuilder, {
 } from "../builders/process"
 import ProcessMetadataBuilder from "../builders/process-metadata"
 import NamespaceBuilder from "../builders/namespace"
-import { ContractReceipt } from "ethers/contract"
+import { ContractReceipt } from "ethers"
 
 let accounts: TestAccount[]
 let baseAccount: TestAccount

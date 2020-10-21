@@ -20,11 +20,11 @@
     "postinstall": "rm -Rf node_modules/ganache-core/node_modules/web3-providers-ws/node_modules/websocket/.git || true"
   },
   "dependencies": {
-    "axios": "^0.19.2",
-    "buffer": "^5.2.1",
+    "axios": "^0.20.0",
+    "buffer": "^5.6.0",
     "circomlib": "^0.1.2",
     "dvote-solidity": "^0.11.0",
-    "ethers": "^4.0.47",
+    "ethers": "^5.0.18",
     "iso-language-codes": "^1.0.6",
     "isomorphic-ws": "^4.0.1",
     "js-sha3": "^0.8.0",
@@ -32,7 +32,7 @@
     "tweetnacl-sealedbox-js": "^1.2.0",
     "universal-parse-url": "^1.0.2",
     "ws": "^7.1.0",
-    "yup": "^0.29.0"
+    "yup": "^0.29.3"
   },
   "devDependencies": {
     "@types/chai": "^4.1.7",

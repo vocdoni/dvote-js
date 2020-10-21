@@ -5,7 +5,7 @@
 import * as WebSocket from "isomorphic-ws"
 import { parseURL } from 'universal-parse-url'
 import { Buffer } from 'buffer'
-import { Contract, ContractFactory, providers, utils, Wallet, Signer, BigNumber } from "ethers"
+import { Contract, ContractFactory, providers, utils, Wallet, Signer, ContractInterface } from "ethers"
 import { providerFromUri } from "../util/providers"
 import GatewayInfo from "../wrappers/gateway-info"
 import { DVoteSupportedApi, WsGatewayMethod, fileApiMethods, voteApiMethods, censusApiMethods, dvoteGatewayApiMethods, resultsApiMethods } from "../models/gateway"
@@ -746,7 +746,7 @@ export class Web3Gateway {
      * If a signer is given, its current connection will be used.
      * If a wallet is given, the Gateway URI will be used unless the wallet is already connected
      */
-    async deploy<CustomContractMethods>(abi: string | (string | utils.ParamType)[] | utils.Interface, bytecode: string,
+    async deploy<CustomContractMethods>(abi: ContractInterface, bytecode: string,
         signParams: { signer?: Signer, wallet?: Wallet } = {}, deployArguments?: any[]): Promise<(Contract & CustomContractMethods)> {
         var contractFactory: ContractFactory
 
@@ -773,7 +773,7 @@ export class Web3Gateway {
      * @param address Contract instance address
      * @return A contract instance attached to the given address
      */
-    attach<CustomContractMethods>(address: string, abi: string | (string | utils.ParamType)[] | utils.Interface): (Contract & CustomContractMethods) {
+    attach<CustomContractMethods>(address: string, abi: ContractInterface): (Contract & CustomContractMethods) {
         if (typeof address != "string") throw new Error("Invalid contract address")
         else if (!abi) throw new Error("Invalid contract ABI")
 

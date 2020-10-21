@@ -12,9 +12,8 @@ import DevServices, { getAccounts, TestAccount } from "../helpers/all-services"
 import { NamespaceContractMethods } from "dvote-solidity"
 
 // import { deployNamespaceContract, getNamespaceInstance } from "../../src/net/contracts"
-import { BigNumber } from "ethers/utils"
+import { BigNumber, ContractReceipt } from "ethers"
 import NamespaceBuilder, { DEFAULT_NAMESPACE } from "../builders/namespace"
-import { ContractReceipt } from "ethers/contract"
 
 let accounts: TestAccount[]
 let baseAccount: TestAccount

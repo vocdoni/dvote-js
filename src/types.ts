@@ -27,7 +27,7 @@ export {
     IGateway
 } from "./net/gateway"
 export {
-    IEntityResolverContract,
+    IEnsPublicResolverContract,
     IProcessContract
 } from "./net/contracts"
 

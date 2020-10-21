@@ -26,6 +26,7 @@
     - Renaming `ProcessResultItem.questions.options` to `ProcessResultItem.questions.choices`
     - Renaming `setEntityMetadata` into `setMetadata`
     - Renaming `sendMessage` to `sendRequest` for consistency
+    - Renaming `IEntityResolverContract` to `IEnsPublicResolverContract` for consistency
 - Borrowing builders to test the contract method integration
 - Revamped tests
 - Adding WebSocket mocks and disposable Ethereum servers for testing
