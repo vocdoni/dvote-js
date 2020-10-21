@@ -3,18 +3,23 @@ import { Wallet, providers } from "ethers"
 import { Web3Gateway } from "../../src/net/gateway"
 import * as ganache from "ganache-core"
 
+const defaultMnemonic = "myth like bonus scare over problem client lizard pioneer submit female collect"
+
+/**
+ * Starts an in-memory disposable Ethereum blockchain and funds 10 accounts with test ether.
+ */
 export class DevWeb3Service {
     port: number
     mnemonic: string
     rpcServer: any
     accounts: TestAccount[]
 
-    constructor(port: number = 8600, mnemonic: string = "myth like bonus scare over problem client lizard pioneer submit female collect") {
-        this.port = port
-        this.mnemonic = mnemonic
+    constructor(params: { port?: number, mnemonic?: string } = {}) {
+        this.port = params.port || 8600
+        this.mnemonic = params.mnemonic || defaultMnemonic
 
         const wallets = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(idx => {
-            return Wallet.fromMnemonic(mnemonic, `m/44'/60'/0'/0/${idx}`).connect(this.provider)
+            return Wallet.fromMnemonic(this.mnemonic, `m/44'/60'/0'/0/${idx}`).connect(this.provider)
         })
 
         this.accounts = wallets.map(wallet => ({
@@ -25,11 +30,15 @@ export class DevWeb3Service {
         }))
     }
 
-    get url() { return `http://localhost:${this.port}` }
+    get uri() { return `http://localhost:${this.port}` }
 
     get provider() {
-        const gw = new Web3Gateway(this.url)
+        const gw = new Web3Gateway(this.uri)
         return gw.getProvider() as providers.Web3Provider
+    }
+
+    get gatewayClient() {
+        return new Web3Gateway(this.uri)
     }
 
     start(): Promise<any> {

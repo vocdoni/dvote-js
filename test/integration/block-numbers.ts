@@ -13,7 +13,6 @@ const dvotePort = 8500
 const w3Port = 8600
 const gatewayInfo = new GatewayInfo(`ws://localhost:${dvotePort}`, ["vote"], `http://localhost:${w3Port}/web3`, "")
 
-// const defaultDummyResponse = { id: "dummy", response: { request: "dummy", timestamp: 123, ok: true }, signature: "123" }
 const defaultConnectResponse = { id: "dummy", response: { request: "dummy", timestamp: 123, ok: true, apiList: ["file", "vote", "census", "results"], health: 100 }, signature: "123" }
 
 addCompletionHooks()
