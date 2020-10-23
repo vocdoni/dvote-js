@@ -5,7 +5,7 @@ async function example() {
     await services.start()
 
     // DVote client
-    const dvoteGw = services.ws.gatewayClient
+    const dvoteGw = services.ws.client
     await dvoteGw.connect()
     console.log("DVote connected:", await dvoteGw.isConnected())
 
@@ -21,7 +21,7 @@ async function example() {
     const namespaceAddr = "0x1234" // optional
     const processAddr = "0x1234" // optional
 
-    const web3Gw = services.web3.getGatewayClient(entityResolverAddr, namespaceAddr, processAddr)
+    const web3Gw = services.web3.getClient(entityResolverAddr, namespaceAddr, processAddr)
     const myInstance = await web3Gw.attach("0x0", [])
     const tx = await myInstance.myMethod()
     await tx.wait()

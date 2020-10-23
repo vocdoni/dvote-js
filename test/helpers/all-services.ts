@@ -4,7 +4,7 @@ import GatewayInfo from "../../src/wrappers/gateway-info"
 import { Gateway, Web3Gateway } from "../../src/net/gateway"
 
 export { WSResponse, WSResponseBody, WebSocketMockedInteraction } from "./web-socket-service"
-export { getAccounts, TestAccount } from "./web3-service"
+export { TestAccount } from "./web3-service"
 
 export default class DevServices {
     readonly ws: DevWebSocketServer
@@ -26,10 +26,10 @@ export default class DevServices {
     }
 
     // GETTERS
-    get dvoteGateway() { return this.ws.gatewayClient }
+    get dvoteGateway() { return this.ws.client }
 
     getWeb3Gateway(entityResolverAddress: string = "", namespaceAddress: string = "", processAddress: string = ""): Web3Gateway {
-        return this.web3.getGatewayClient(entityResolverAddress, namespaceAddress, processAddress)
+        return this.web3.getClient(entityResolverAddress, namespaceAddress, processAddress)
     }
 
     get gatewayInfo() {
@@ -38,17 +38,22 @@ export default class DevServices {
 
     /** Returns a Gateway client for the WS and Web3 local services */
     get gateway() {
-        const dvoteGw = this.ws.gatewayClient
-        const web3Gw = this.web3.getGatewayClient()
+        const dvoteGw = this.ws.client
+        const web3Gw = this.web3.getClient()
 
         return new Gateway(dvoteGw, web3Gw)
     }
 
     /** Returns a Gateway client for the WS and Web3 local services. The Web3 gateway uses the given addresses as the resolved ones for the contracts */
     getGateway(entityResolverAddress: string = "", namespaceAddress: string = "", processAddress: string = ""): Gateway {
-        const dvoteGw = this.ws.gatewayClient
-        const web3Gw = this.web3.getGatewayClient(entityResolverAddress, namespaceAddress, processAddress)
+        const dvoteGw = this.ws.client
+        const web3Gw = this.web3.getClient(entityResolverAddress, namespaceAddress, processAddress)
 
         return new Gateway(dvoteGw, web3Gw)
+    }
+
+    /** Returns accounts with funds on the in-memory ganacle blockchain */
+    get accounts() {
+        return this.web3.accounts
     }
 }

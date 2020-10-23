@@ -3,7 +3,7 @@ import { Wallet } from "ethers"
 import { signJsonBody } from "../../src/util/json-sign"
 import { DVoteGateway } from "../../src/net/gateway"
 import GatewayInfo from "../../src/wrappers/gateway-info"
-import { getAccounts } from "./web3-service"
+import { getWallets } from "./web3-service"
 
 export type WSResponse = {
     id: string,
@@ -48,9 +48,9 @@ export class DevWebSocketServer {
         }))
 
         // Choose a pseudorandom wallet from the end of the ones available [5..9]
-        const accounts = getAccounts().slice(5)
-        const idx = Number(Math.random().toString().substr(2)) % accounts.length
-        this.wallet = accounts[idx].wallet
+        const wallets = getWallets().slice(5)
+        const idx = Number(Math.random().toString().substr(2)) % wallets.length
+        this.wallet = wallets[idx]
     }
 
     public start(): Promise<void> {
@@ -118,7 +118,7 @@ export class DevWebSocketServer {
     get uri() { return `ws://localhost:${this.port}` }
     get privateKey() { return this.wallet["signingKey"].privateKey }
     get publicKey() { return this.wallet["signingKey"].compressedPublicKey }
-    get gatewayClient() {
+    get client() {
         return new DVoteGateway({ uri: this.uri, supportedApis: ["file", "census", "vote", "results"], publicKey: this.publicKey })
     }
     get gatewayInfo() {

@@ -23,9 +23,9 @@ describe("Process", () => {
     after(() => server.stop())
 
     beforeEach(async () => {
-        const entityInstance = await new EntityResolverBuilder().build()
-        const namespaceInstance = await new NamespaceBuilder().build()
-        const processInstance = await new ProcessBuilder().build(0)
+        const entityInstance = await new EntityResolverBuilder(server.accounts).build()
+        const namespaceInstance = await new NamespaceBuilder(server.accounts).build()
+        const processInstance = await new ProcessBuilder(server.accounts).build(0)
         gateway = server.getGateway(entityInstance.address, namespaceInstance.address, processInstance.address)
 
         entityAccount = server.web3.accounts[1].wallet

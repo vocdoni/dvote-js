@@ -329,7 +329,7 @@ Be aware that from this point, if you use `Date.now()` on the Javascript side, v
 
 ### Testing accounts
 
-Use `test/utils > getAccounts()` to retrieve a list of 10 funded accounts with the following data schema:
+Use `test/web3-service > DevWeb3Service > accounts` to retrieve a list of 10 funded accounts with the following data schema:
 
 ```javascript
 {

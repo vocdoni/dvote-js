@@ -3,7 +3,7 @@ import { deployEnsPublicResolverContract } from "../../src/net/contracts"
 // import { TextRecordKeys } from "../../src/models/entity"
 import { EnsPublicResolverContractMethods } from "dvote-solidity"
 import { Contract } from "ethers"
-import { getAccounts, TestAccount } from "../helpers/all-services"
+import { TestAccount } from "../helpers/all-services"
 
 // DEFAULT VALUES
 export const DEFAULT_NAME = "Entity Name"
@@ -15,8 +15,8 @@ export default class EntityResolverBuilder {
 
     name: string = DEFAULT_NAME
 
-    constructor() {
-        this.accounts = getAccounts()
+    constructor(devAccounts: TestAccount[]) {
+        this.accounts = devAccounts
         this.entityAccount = this.accounts[1]
     }
 

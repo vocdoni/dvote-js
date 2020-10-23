@@ -2,12 +2,12 @@
 
 import { ProcessContractMethods, ProcessEnvelopeType, ProcessMode, IProcessEnvelopeType, IProcessMode, NamespaceContractMethods, ProcessContractParameters } from "dvote-solidity"
 import { Contract, ContractFactory } from "ethers"
-import { getAccounts, TestAccount } from "../helpers/all-services"
+import { TestAccount } from "../helpers/all-services"
 import NamespaceBuilder from "./namespace"
 import { assert } from "console"
 
-const { abi: processAbi, bytecode: processByteCode } = require("dvote-solidity/build/process.json")
-const { abi: namespaceAbi } = require("dvote-solidity/build/namespace.json")
+import { abi as processAbi, bytecode as processByteCode } from "dvote-solidity/build/processes.json"
+import { abi as namespaceAbi } from "dvote-solidity/build/namespaces.json"
 
 // DEFAULT VALUES
 export const DEFAULT_PREDECESSOR_INSTANCE_ADDRESS = "0x0000000000000000000000000000000000000000"
@@ -55,8 +55,8 @@ export default class ProcessBuilder {
     oracleAddress: string
     paramsSignature: string = DEFAULT_PARAMS_SIGNATURE
 
-    constructor() {
-        this.accounts = getAccounts()
+    constructor(devAccounts: TestAccount[]) {
+        this.accounts = devAccounts
         this.entityAccount = this.accounts[1]
     }
 
@@ -68,13 +68,13 @@ export default class ProcessBuilder {
         let namespaceAddress = this.namespaceAddress
         if (!namespaceAddress) { // deploy a new one
             if (this.oracleAddress) {
-                const namespaceInstance = await new NamespaceBuilder().withNamespace(this.namespace).withOracles([this.oracleAddress]).build()
+                const namespaceInstance = await new NamespaceBuilder(this.accounts).withNamespace(this.namespace).withOracles([this.oracleAddress]).build()
                 namespaceAddress = namespaceInstance.address
 
                 assert(await namespaceInstance.isOracle(this.namespace, this.oracleAddress), "Not an oracle on the new namespace contract")
             }
             else {
-                const namespaceInstance = await new NamespaceBuilder().build()
+                const namespaceInstance = await new NamespaceBuilder(this.accounts).build()
                 namespaceAddress = namespaceInstance.address
             }
         }

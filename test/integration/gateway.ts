@@ -1,18 +1,18 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
-import { getAccounts, TestAccount } from "../helpers/all-services"
 import { DVoteGateway, Web3Gateway, IDVoteGateway, Gateway, IGateway } from "../../src/net/gateway"
 import { addFile, fetchFileBytes } from "../../src/api/file"
+import DevServices, { TestAccount } from "../helpers/all-services"
 import { DevWebSocketServer, WebSocketMockedInteraction, WSResponse, WSResponseBody } from "../helpers/web-socket-service"
+import { DevWeb3Service, getWallets } from "../helpers/web3-service"
 import { Buffer } from "buffer"
 import GatewayInfo from "../../src/wrappers/gateway-info"
-import { DevWeb3Service } from "../helpers/web3-service"
 
-let accounts: TestAccount[]
+// let accounts: TestAccount[]
 let baseAccount: TestAccount
-let entityAccount: TestAccount
-let randomAccount: TestAccount
+// let entityAccount: TestAccount
+// let randomAccount: TestAccount
 let port: number
 
 const defaultDummyResponse = { ok: true }
@@ -291,20 +291,13 @@ describe("DVote gateway client", () => {
 })
 
 describe("Web3 gateway client", () => {
-    beforeEach(async () => {
-        accounts = getAccounts()
-        baseAccount = accounts[0]
-        entityAccount = accounts[1]
-        randomAccount = accounts[2]
-    })
-
     describe("Web3 provider", () => {
         it("Should provide a Web3 JSON RPC provider to interact with the blockchain", async () => {
             // Web3 node
             const web3Server = new DevWeb3Service()
             await web3Server.start()
 
-            const addr = web3Server.accounts[0].address
+            const addr = getWallets()[0].address
 
             const gw = new Web3Gateway(web3Server.uri)
             const gwProvider = gw.getProvider()

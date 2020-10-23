@@ -8,7 +8,7 @@ import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { Contract, Wallet } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
-import { getAccounts, TestAccount } from "../helpers/all-services"
+import DevServices, { TestAccount } from "../helpers/all-services"
 import { ProcessContractMethods, ProcessContractParameters, ProcessStatus } from "dvote-solidity"
 import { Buffer } from "buffer/"
 
@@ -37,6 +37,7 @@ import ProcessMetadataBuilder from "../builders/process-metadata"
 import NamespaceBuilder from "../builders/namespace"
 import { ContractReceipt } from "ethers"
 
+let server: DevServices
 let accounts: TestAccount[]
 let baseAccount: TestAccount
 let entityAccount: TestAccount
@@ -51,23 +52,25 @@ const nullAddress = "0x0000000000000000000000000000000000000000"
 
 addCompletionHooks()
 
-describe("Voting Process", () => {
+describe("Governance Process", () => {
     beforeEach(async () => {
-        accounts = getAccounts()
+        accounts = server.accounts
         baseAccount = accounts[0]
         entityAccount = accounts[1]
         randomAccount = accounts[2]
         randomAccount1 = accounts[3]
         randomAccount2 = accounts[4]
 
-        contractInstance = await new ProcessBuilder().build()
+        contractInstance = await new ProcessBuilder(accounts).build()
         processId = await contractInstance.getProcessId(entityAccount.address, 0, DEFAULT_NAMESPACE)
     })
+
+    // TODO: Move to integration/processes.ts
 
     describe("Smart Contract", () => {
 
         it("Should deploy the smart contract", async () => {
-            const namespaceInstance = await new NamespaceBuilder().build()
+            const namespaceInstance = await new NamespaceBuilder(accounts).build()
 
             contractInstance = await deployProcessContract({ provider: entityAccount.provider, wallet: entityAccount.wallet }, [nullAddress, namespaceInstance.address])
 
@@ -80,7 +83,7 @@ describe("Voting Process", () => {
             expect(contractInstance.address).to.be.ok
             const newProcessId = await contractInstance.getNextProcessId(entityAccount.address, DEFAULT_NAMESPACE)
 
-            const namespaceInstance = await new NamespaceBuilder().build()
+            const namespaceInstance = await new NamespaceBuilder(accounts).build()
             await ProcessBuilder.createDefaultProcess(contractInstance)
 
             // attach from a new object
@@ -131,7 +134,7 @@ describe("Voting Process", () => {
 
         it("Should work for any creator account", async () => {
             processId = await contractInstance.getNextProcessId(randomAccount.address, DEFAULT_NAMESPACE)
-            const builder = new ProcessBuilder()
+            const builder = new ProcessBuilder(accounts)
 
             contractInstance = await builder.withEntityAccount(randomAccount).build()
             let params = ProcessContractParameters.fromContract(await contractInstance.get(processId))
@@ -147,7 +150,7 @@ describe("Voting Process", () => {
 
         it("Should allow to publish the results", async () => {
             // created by the entity
-            contractInstance = await new ProcessBuilder()
+            contractInstance = await new ProcessBuilder(accounts)
                 .withEntityAccount(entityAccount)
                 .build()
 

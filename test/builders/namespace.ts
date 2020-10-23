@@ -2,9 +2,9 @@
 
 import { NamespaceContractMethods } from "dvote-solidity"
 import { Contract, ContractFactory } from "ethers"
-import { getAccounts, TestAccount } from "../helpers/all-services"
+import { TestAccount } from "../helpers/all-services"
 
-const { abi: namespaceAbi, bytecode: namespaceByteCode } = require("dvote-solidity/build/namespace.json")
+import { abi as namespaceAbi, bytecode as namespaceByteCode } from "dvote-solidity/build/namespaces.json"
 
 export const DEFAULT_NAMESPACE = 1
 export const DEFAULT_CHAIN_ID = "namespace-1"
@@ -23,8 +23,8 @@ export default class NamespaceBuilder {
     validators: string[] = DEFAULT_VALIDATORS
     oracles: string[] = DEFAULT_ORACLES
 
-    constructor() {
-        this.accounts = getAccounts()
+    constructor(devAccounts: TestAccount[]) {
+        this.accounts = devAccounts
         this.entityAccount = this.accounts[1]
     }
 

@@ -15,19 +15,9 @@ export type TestAccount = {
 const defaultPort = 8600
 const defaultMnemonic = "myth like bonus scare over problem client lizard pioneer submit female collect"
 
-const wallets = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(idx => Wallet.fromMnemonic(this.mnemonic, `m/44'/60'/0'/0/${idx}`).connect(this.provider))
+const wallets = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(idx => Wallet.fromMnemonic(defaultMnemonic, `m/44'/60'/0'/0/${idx}`))
 
-const accounts: TestAccount[] = wallets.map(wallet => ({
-    privateKey: wallet.privateKey,
-    address: wallet.address,
-    provider: wallet.provider as providers.BaseProvider,
-    wallet
-}))
-
-/** Get a list of accounts with test ether available */
-export function getAccounts() {
-    return accounts
-}
+export function getWallets() { return wallets }
 
 /**
  * Starts an in-memory disposable Ethereum blockchain and funds 10 accounts with test ether.
@@ -36,20 +26,26 @@ export class DevWeb3Service {
     port: number
     rpcServer: any
     accounts: TestAccount[]
+    provider: providers.Web3Provider
 
-    constructor(params: { port?: number } = {}) {
+    constructor(params: { port?: number, mnemonic?: string } = {}) {
         this.port = params.port || defaultPort
-        this.accounts = accounts
+        this.accounts = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(idx => {
+            const wallet = Wallet.fromMnemonic(params.mnemonic || defaultMnemonic, `m/44'/60'/0'/0/${idx}`).connect(this.provider)
+            return {
+                privateKey: wallet.privateKey,
+                address: wallet.address,
+                provider: wallet.provider as providers.BaseProvider,
+                wallet
+            }
+        })
+        this.provider = new Web3Gateway(this.uri).getProvider() as providers.Web3Provider
     }
 
     get uri() { return `http://localhost:${this.port}` }
 
-    get provider() {
-        return new Web3Gateway(this.uri).getProvider() as providers.Web3Provider
-    }
-
     /** Returns a gateway client that will skip the network checks and will use the given contract addresses as the official ones */
-    getGatewayClient(entityResolverAddress: string = "", namespaceAddress: string = "", processAddress: string = ""): Web3Gateway {
+    getClient(entityResolverAddress: string = "", namespaceAddress: string = "", processAddress: string = ""): Web3Gateway {
         const gw = new Web3Gateway(this.uri)
 
         // Bypass health checks

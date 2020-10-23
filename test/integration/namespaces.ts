@@ -8,13 +8,14 @@ import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { Contract, Wallet } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
-import DevServices, { getAccounts, TestAccount } from "../helpers/all-services"
+import DevServices, { TestAccount } from "../helpers/all-services"
 import { NamespaceContractMethods } from "dvote-solidity"
 
 // import { deployNamespaceContract, getNamespaceInstance } from "../../src/net/contracts"
 import { BigNumber, ContractReceipt } from "ethers"
 import NamespaceBuilder, { DEFAULT_NAMESPACE } from "../builders/namespace"
 
+let server: DevServices
 let accounts: TestAccount[]
 let baseAccount: TestAccount
 let entityAccount: TestAccount
@@ -22,22 +23,28 @@ let randomAccount: TestAccount
 let randomAccount1: TestAccount
 let randomAccount2: TestAccount
 let contractInstance: NamespaceContractMethods & Contract
-let tx: ContractReceipt
+// let tx: ContractReceipt
 
 const nullAddress = "0x0000000000000000000000000000000000000000"
 
 addCompletionHooks()
 
 describe("Namespaces", () => {
+    before(() => {
+        server = new DevServices()
+        return server.start()
+    })
+    after(() => server.stop())
+
     beforeEach(async () => {
-        accounts = getAccounts()
+        accounts = server.accounts
         baseAccount = accounts[0]
         entityAccount = accounts[1]
         randomAccount = accounts[2]
         randomAccount1 = accounts[3]
         randomAccount2 = accounts[4]
 
-        contractInstance = await new NamespaceBuilder().build()
+        contractInstance = await new NamespaceBuilder(accounts).build()
     })
 
     it("Should deploy the contract")
@@ -136,7 +143,7 @@ describe("Namespaces", () => {
             const publicKey1 = "0x123456"
             const publicKey2 = "0x234567"
 
-            contractInstance = await new NamespaceBuilder().build()
+            contractInstance = await new NamespaceBuilder(accounts).build()
 
             // add some
             await contractInstance.addValidator(DEFAULT_NAMESPACE, publicKey1)
@@ -162,7 +169,7 @@ describe("Namespaces", () => {
         it("Should notify about Validators removed", async () => {
             const publicKey1 = "0x123456"
 
-            contractInstance = await new NamespaceBuilder().build()
+            contractInstance = await new NamespaceBuilder(accounts).build()
 
             await contractInstance.addValidator(DEFAULT_NAMESPACE, publicKey1)
 
@@ -219,7 +226,7 @@ describe("Namespaces", () => {
             const publicKey1 = "0x123456"
             const publicKey2 = "0x234567"
 
-            contractInstance = await new NamespaceBuilder().build()
+            contractInstance = await new NamespaceBuilder(accounts).build()
 
             // add some
             await contractInstance.addOracle(DEFAULT_NAMESPACE, publicKey1)
@@ -245,7 +252,7 @@ describe("Namespaces", () => {
         it("Should notify about oracles removed on a Namespace", async () => {
             const publicKey1 = "0x123456"
 
-            contractInstance = await new NamespaceBuilder().build()
+            contractInstance = await new NamespaceBuilder(accounts).build()
 
             await contractInstance.addOracle(DEFAULT_NAMESPACE, publicKey1)
 
