@@ -97,18 +97,18 @@ describe("Boot nodes", () => {
     }).timeout(20000)
 
     it("fetchDefaultBootNode (default) should provide a bootnode JSON structure", async () => {
-        let bootnodes = await fetchDefaultBootNode("goerli")
+        let bootnodes = await fetchDefaultBootNode("sokol")
 
         for (let networkId in bootnodes) {
             expect(typeof networkId).to.equal("string")
         }
 
-        expect(Array.isArray(bootnodes["goerli"].dvote)).to.be.true
-        expect(typeof bootnodes["goerli"].dvote[0].uri).to.equal("string")
-        expect(typeof bootnodes["goerli"].dvote[0].pubKey).to.equal("string")
-        expect(Array.isArray(bootnodes["goerli"].dvote[0].apis)).to.be.true
+        expect(Array.isArray(bootnodes["sokol"].dvote)).to.be.true
+        expect(typeof bootnodes["sokol"].dvote[0].uri).to.equal("string")
+        expect(typeof bootnodes["sokol"].dvote[0].pubKey).to.equal("string")
+        expect(Array.isArray(bootnodes["sokol"].dvote[0].apis)).to.be.true
 
-        expect(typeof bootnodes["goerli"].web3[0].uri).to.equal("string")
+        expect(typeof bootnodes["sokol"].web3[0].uri).to.equal("string")
 
         // XDAI Stage
         const options = {testing:true}
