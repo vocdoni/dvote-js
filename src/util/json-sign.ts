@@ -1,5 +1,4 @@
 import { Wallet, Signer, utils } from "ethers"
-
 /**
  * Sign a JSON payload using the given Ethers wallet or signer. 
  * Ensures that the object keys are alphabetically sorted.
@@ -13,6 +12,18 @@ export function signJsonBody(request: any, walletOrSigner: Wallet | Signer): Pro
     const msg = JSON.stringify(sortedRequest)
     const msgBytes = utils.toUtf8Bytes(msg)
     return walletOrSigner.signMessage(msgBytes)
+}
+
+/**
+ * Sign a JSON payload using the given Ethers wallet or signer. 
+ * Ensures that the object keys are alphabetically sorted.
+ * @param request 
+ * @param walletOrSigner 
+ */
+export function signBytes(request: Uint8Array, walletOrSigner: Wallet | Signer): Promise<string> {
+    if (!walletOrSigner) throw new Error("Invalid wallet/signer")
+
+    return walletOrSigner.signMessage(request)
 }
 
 /**
@@ -38,6 +49,25 @@ export function isSignatureValid(signature: string, publicKey: string, responseB
     return actualAddress && expectedAddress && (actualAddress == expectedAddress)
 }
 
+/**
+ * Checks whether the given public key signed the given JSON with its fields
+ * sorted alphabetically
+ * @param signature Hex encoded signature (created with the Ethereum prefix)
+ * @param publicKey
+ * @param responseBody Uint8Array of the inner response JSON object
+ */
+export function isByteSignatureValid(signature: string, publicKey: string, responseBody: Uint8Array): boolean {
+    if (!publicKey) return true
+    else if (!signature) return false
+
+    const gwPublicKey = publicKey.startsWith("0x") ? publicKey : "0x" + publicKey
+    const expectedAddress = utils.computeAddress(gwPublicKey)
+
+    if (!signature.startsWith("0x")) signature = "0x" + signature
+    const actualAddress = utils.verifyMessage(responseBody, signature)
+
+    return actualAddress && expectedAddress && (actualAddress == expectedAddress)
+}
 /**
  * Returns the public key that signed the given JSON data, with its fields sorted alphabetically
  * 

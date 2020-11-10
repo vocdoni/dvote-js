@@ -1,10 +1,11 @@
 import "mocha" // using @types/mocha
-import { expect } from "chai"
+import { expect, } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
 import { Wallet } from "ethers"
+import { TextEncoder, TextDecoder } from "util"
 
-import { sortObjectFields, signJsonBody, isSignatureValid, recoverSignerPublicKey } from "../../src/util/json-sign"
-
+import { sortObjectFields, signJsonBody, signBytes, isSignatureValid, isByteSignatureValid, recoverSignerPublicKey } from "../../src/util/json-sign"
+import { extractUint8ArrayJSONValue } from "../../src/util/uint8array"
 addCompletionHooks()
 
 describe("JSON signing", () => {
@@ -49,7 +50,7 @@ describe("JSON signing", () => {
         expect(signature1).to.equal("0xc99cf591678a1eb545d9c77cf6b8d3873552624c3631e77c82cc160f8c9593354f369a4e57e8438e596073bbe89c8f4474ba45bae2ca7f6c257a0a879d10d4281b")
         expect(signature2).to.equal("0xc99cf591678a1eb545d9c77cf6b8d3873552624c3631e77c82cc160f8c9593354f369a4e57e8438e596073bbe89c8f4474ba45bae2ca7f6c257a0a879d10d4281b")
     })
-    it("Should produce and recognize valid signatures, regardless of the order of the fields", async () => {
+    it("Should produce and recognize valid signatures, regardless of the order of the fields (isSignatureValid)", async () => {
         let wallet = new Wallet("8d7d56a9efa4158d232edbeaae601021eb3477ad77b5f3c720601fd74e8e04bb")
 
         const jsonBody1 = { "method": "getVisibility", "timestamp": 1582196988554 }
@@ -60,6 +61,40 @@ describe("JSON signing", () => {
 
         expect(isSignatureValid(signature1, wallet["signingKey"].publicKey, jsonBody1)).to.be.true
         expect(isSignatureValid(signature2, wallet["signingKey"].publicKey, jsonBody2)).to.be.true
+    })
+    it("Should produce and recognize valid signatures with UTF-8 data (isByteSignatureValid)", async () => {
+        const wallet = new Wallet("8d7d56a9efa4158d232edbeaae601021eb3477ad77b5f3c720601fd74e8e04bb")
+        const publicKey = wallet["signingKey"].publicKey
+
+        const jsonBody1 = '{ "a": "àèìòù", "b": "áéíóú" }'
+        const jsonBody2 = '{ "b": "test&", "a": "&test" }'
+        const jsonBody3 = '{ "b": "😃🌟🌹⚖️🚀", "a": "&test" }'
+
+        const bytesBody1 = new TextEncoder().encode(jsonBody1)
+        const bytesBody2 = new TextEncoder().encode(jsonBody2)
+        const bytesBody3 = new TextEncoder().encode(jsonBody3)
+
+        const signature1 = await signBytes(bytesBody1, wallet)
+        const signature2 = await signBytes(bytesBody2, wallet)
+        const signature3 = await signBytes(bytesBody3, wallet)
+
+        expect(isByteSignatureValid(signature1, publicKey, bytesBody1)).to.be.true
+        expect(isByteSignatureValid(signature2, publicKey, bytesBody2)).to.be.true
+        expect(isByteSignatureValid(signature3, publicKey, bytesBody3)).to.be.true
+    })
+    it("Should produce and recognize valid signatures, regardless of the order of the fields (isByteSignatureValid)", async () => {
+        let wallet = new Wallet("8d7d56a9efa4158d232edbeaae601021eb3477ad77b5f3c720601fd74e8e04bb")
+
+        const jsonBody1 = '{ "method": "getVisibility", "timestamp": 1582196988554 }'
+        const bytesBody1 = new TextEncoder().encode(jsonBody1)
+        const jsonBody2 = '{ "timestamp": 1582196988554, "method": "getVisibility" }'
+        const bytesBody2 = new TextEncoder().encode(jsonBody2)
+
+        const signature1 = await signBytes(bytesBody1, wallet)
+        const signature2 = await signBytes(bytesBody2, wallet)
+
+        expect(isByteSignatureValid(signature1, wallet["signingKey"].publicKey, bytesBody1)).to.be.true
+        expect(isByteSignatureValid(signature2, wallet["signingKey"].publicKey, bytesBody2)).to.be.true
     })
     it("Should recover the public key from a JSON and a signature", async () => {
         let wallet = new Wallet("8d7d56a9efa4158d232edbeaae601021eb3477ad77b5f3c720601fd74e8e04bb")
@@ -92,5 +127,12 @@ describe("JSON signing", () => {
         expect(recoveredPubKey1).to.equal(recoveredPubKey2)
         expect(recoveredPubKey1).to.equal(wallet["signingKey"].publicKey)
         expect(recoveredPubKey1).to.equal("0x04cb3cabb521d84fc998b5649d6b59e27a3e27633d31cc0ca6083a00d68833d5caeaeb67fbce49e44f089a28f46a4d815abd51bc5fc122065518ea4adb199ba780")
+    })
+    it("Should extract correctly  the bytes of the value of a JSON field", async () => {
+        const innerBody = '{ "a":"àèìòù", "b": "áéíóú" }'
+        const jsonBody = '{ "response":'+innerBody+'}'
+        const bytesBody = new TextEncoder().encode(jsonBody)
+        const extractedValue = new TextDecoder("utf-8").decode(extractUint8ArrayJSONValue(bytesBody, "response"))
+        expect(extractedValue).to.equal(innerBody)
     })
 })

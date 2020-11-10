@@ -10,7 +10,7 @@ import { providerFromUri } from "../util/providers"
 import GatewayInfo from "../wrappers/gateway-info"
 import { DVoteSupportedApi, WsGatewayMethod, fileApiMethods, voteApiMethods, censusApiMethods, dvoteGatewayApiMethods, resultsApiMethods } from "../models/gateway"
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
-import { signJsonBody, isSignatureValid, sortObjectFields } from "../util/json-sign"
+import { signJsonBody, isSignatureValid, sortObjectFields, isByteSignatureValid } from "../util/json-sign"
 import { getEntityResolverInstance, getVotingProcessInstance, IVotingProcessContract, IEntityResolverContract } from "../net/contracts"
 import axios from "axios"
 import { NetworkID, fetchDefaultBootNode, getNetworkGatewaysFromBootNodeData, fetchFromBootNode } from "./gateway-bootnodes"
@@ -20,6 +20,8 @@ import {
     VotingProcess as VotingProcessContractDefinition
 } from "dvote-solidity"
 import { entityResolverEnsDomain, votingProcessEnsDomain } from "../constants"
+import { extractUint8ArrayJSONValue } from "../util/uint8array"
+import { readBlobText, readBlobArrayBuffer } from "../util/blob"
 
 const { JsonRpcProvider, Web3Provider, IpcProvider, InfuraProvider, FallbackProvider, EtherscanProvider } = providers
 
@@ -68,6 +70,7 @@ type GatewayResponse = {
         timestamp?: number,
     },
     signature?: string,
+    responseBytes?: Uint8Array,
 }
 
 /**
@@ -361,14 +364,18 @@ export class DVoteGateway {
                     this.gotWebSocketMessage(msg.data)
                 }
                 else if (msg.data instanceof Buffer || msg.data instanceof Uint8Array) {
-                    this.gotWebSocketMessage(msg.data.toString())
+                    let responseBytes = extractUint8ArrayJSONValue(msg.data, "response")
+                    this.gotWebSocketMessage(msg.data.toString(), responseBytes)
                 }
                 else if (typeof Blob != "undefined" && msg.data instanceof Blob) {
-                    const reader = new FileReader()
-                    reader.onload = () => {
-                        this.gotWebSocketMessage(reader.result as string)
-                    }
-                    reader.readAsText(msg.data) // JSON
+                    readBlobText(msg.data)
+                        .then( async (textData) => {
+                            let arrayBufferData = await readBlobArrayBuffer(msg.data as any)
+                            return [textData as string, arrayBufferData as ArrayBuffer ]
+                        }).then( ([textData,arrayBufferData]:[string,ArrayBuffer]) => {
+                            let responseBytes = extractUint8ArrayJSONValue(new Uint8Array(arrayBufferData),"response")
+                            this.gotWebSocketMessage(textData, responseBytes)
+                        })
                 }
                 else {
                     console.error("Unsupported response", typeof msg.data, msg.data)
@@ -489,7 +496,11 @@ export class DVoteGateway {
             // if (typeof timestamp != "number" || timestamp < from || timestamp > until) {
             //     return Promise.reject(new Error("The response does not provide a valid timestamp"))
             // }
-            if (!isSignatureValid(msg.signature, this.publicKey, msg.response)) {
+            if (msg.responseBytes) {
+                if (!isByteSignatureValid(msg.signature, this.publicKey, msg.responseBytes)) {
+                    return Promise.reject(new Error("The signature of the response does not match the expected one"))
+                } 
+            } else if (!isSignatureValid(msg.signature, this.publicKey, msg.response)) {
                 return Promise.reject(new Error("The signature of the response does not match the expected one"))
             }
         }
@@ -602,7 +613,7 @@ export class DVoteGateway {
      * Handle incoming WS messages and link them to their original request
      * @param strResponse JSON response contents
      */
-    private gotWebSocketMessage(strResponse: string) {
+    private gotWebSocketMessage(strResponse: string, responseBytes?: Uint8Array) {
         let response
         try {
             response = JSON.parse(strResponse)
@@ -625,6 +636,9 @@ export class DVoteGateway {
         this.requestList = this.requestList.filter(r => r.id != response.id)
 
         // The request payload is handled in `sendMessage`
+        if (responseBytes && responseBytes.length>0) {
+            response['responseBytes'] = responseBytes
+        }
         request.resolve(response)
         delete request.resolve
     }
