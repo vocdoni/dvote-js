@@ -107,10 +107,10 @@ export class Gateway {
      * @param networkId Either "mainnet" or "goerli" (test)
      * @param requiredApis A list of the required APIs
      */
-    static randomFromDefault(networkId: NetworkID, requiredApis: DVoteSupportedApi[] = [], options:{testing: boolean} = {testing: false}): Promise<Gateway> {
+    static randomFromDefault(networkId: NetworkID, requiredApis: DVoteSupportedApi[] = [], options: { testing: boolean } = { testing: false }): Promise<Gateway> {
         return fetchDefaultBootNode(networkId)
             .then(async bootNodeData => {
-                const gateways = getNetworkGatewaysFromBootNodeData(bootNodeData,networkId, options)
+                const gateways = getNetworkGatewaysFromBootNodeData(bootNodeData, networkId, options)
                 let web3: Web3Gateway
                 for (let i = 0; i < gateways.web3.length; i++) {
                     let w3 = gateways.web3[i]
@@ -142,10 +142,10 @@ export class Gateway {
      * @param bootnodesContentUri The uri from which contains the available gateways
      * @param requiredApis A list of the required APIs
      */
-    static randomfromUri(networkId: NetworkID, bootnodesContentUri: string | ContentURI, requiredApis: DVoteSupportedApi[] = [], options:{testing: boolean} = {testing: false}): Promise<Gateway> {
+    static randomfromUri(networkId: NetworkID, bootnodesContentUri: string | ContentURI, requiredApis: DVoteSupportedApi[] = [], options: { testing: boolean } = { testing: false }): Promise<Gateway> {
         return fetchFromBootNode(bootnodesContentUri)
             .then(async bootNodeData => {
-                const gateways = getNetworkGatewaysFromBootNodeData(bootNodeData,networkId, options)
+                const gateways = getNetworkGatewaysFromBootNodeData(bootNodeData, networkId, options)
                 let web3: Web3Gateway
                 for (let i = 0; i < gateways.web3.length; i++) {
                     let w3 = gateways.web3[i]
@@ -172,11 +172,11 @@ export class Gateway {
      * Returns a new *connected* Gateway that is instantiated based on the given parameters
      * @param gatewayOrParams Either a gatewayInfo object or an object with the defined parameters
      */
-    static fromInfo(gatewayOrParams: GatewayInfo | { dvoteUri: string, supportedApis: DVoteSupportedApi[], web3Uri: string, publicKey?: string}, options:{testing: boolean} = {testing: false}): Promise<Gateway> {
+    static fromInfo(gatewayOrParams: GatewayInfo | { dvoteUri: string, supportedApis: DVoteSupportedApi[], web3Uri: string, publicKey?: string }, options: { testing: boolean } = { testing: false }): Promise<Gateway> {
         let dvoteGateway, web3Gateway
         if (gatewayOrParams instanceof GatewayInfo) {
             dvoteGateway = new DVoteGateway(gatewayOrParams)
-            web3Gateway = new Web3Gateway(gatewayOrParams,null,options)
+            web3Gateway = new Web3Gateway(gatewayOrParams, null, options)
         } else if (gatewayOrParams instanceof Object) {
             if (!(typeof gatewayOrParams.dvoteUri === "string") ||
                 !(Array.isArray(gatewayOrParams.supportedApis)) ||
@@ -187,7 +187,7 @@ export class Gateway {
                 supportedApis: gatewayOrParams.supportedApis,
                 publicKey: gatewayOrParams.publicKey
             })
-            web3Gateway = new Web3Gateway(gatewayOrParams.web3Uri,null,options)
+            web3Gateway = new Web3Gateway(gatewayOrParams.web3Uri, null, options)
         }
         const gateway = new Gateway(dvoteGateway, web3Gateway)
         return gateway.connect()
@@ -369,11 +369,11 @@ export class DVoteGateway {
                 }
                 else if (typeof Blob != "undefined" && msg.data instanceof Blob) {
                     readBlobText(msg.data)
-                        .then( async (textData) => {
-                            let arrayBufferData = await readBlobArrayBuffer(msg.data as any)
-                            return [textData as string, arrayBufferData as ArrayBuffer ]
-                        }).then( ([textData,arrayBufferData]:[string,ArrayBuffer]) => {
-                            let responseBytes = extractUint8ArrayJSONValue(new Uint8Array(arrayBufferData),"response")
+                        .then(textData => {
+                            return readBlobArrayBuffer(msg.data as any)
+                                .then((arrayBufferData) => [textData, arrayBufferData])
+                        }).then(([textData, arrayBufferData]: [string, ArrayBuffer]) => {
+                            let responseBytes = extractUint8ArrayJSONValue(new Uint8Array(arrayBufferData), "response")
                             this.gotWebSocketMessage(textData, responseBytes)
                         })
                 }
@@ -499,7 +499,7 @@ export class DVoteGateway {
             if (msg.responseBytes) {
                 if (!isByteSignatureValid(msg.signature, this.publicKey, msg.responseBytes)) {
                     return Promise.reject(new Error("The signature of the response does not match the expected one"))
-                } 
+                }
             } else if (!isSignatureValid(msg.signature, this.publicKey, msg.response)) {
                 return Promise.reject(new Error("The signature of the response does not match the expected one"))
             }
@@ -636,7 +636,7 @@ export class DVoteGateway {
         this.requestList = this.requestList.filter(r => r.id != response.id)
 
         // The request payload is handled in `sendMessage`
-        if (responseBytes && responseBytes.length>0) {
+        if (responseBytes && responseBytes.length > 0) {
             response['responseBytes'] = responseBytes
         }
         request.resolve(response)
@@ -653,7 +653,7 @@ export class Web3Gateway {
     public votingContractAddress: string
 
     /** Returns a JSON RPC provider that can be used for Ethereum communication */
-    public static providerFromUri(uri: string, networkId?: NetworkID, options:{testing: boolean} = {testing: false}) {
+    public static providerFromUri(uri: string, networkId?: NetworkID, options: { testing: boolean } = { testing: false }) {
         return providerFromUri(uri, networkId, options)
     }
 
@@ -661,7 +661,7 @@ export class Web3Gateway {
      * Returns a wrapped Ethereum Web3 client.
      * @param gatewayOrProvider Can be a string with the host's URI or an Ethers Provider
      */
-    constructor(gatewayOrProvider: string | GatewayInfo | providers.BaseProvider, networkId?: NetworkID , options:{testing: boolean} = {testing: false} ) {
+    constructor(gatewayOrProvider: string | GatewayInfo | providers.BaseProvider, networkId?: NetworkID, options: { testing: boolean } = { testing: false }) {
         if (!gatewayOrProvider) throw new Error("Invalid Gateway or provider")
         else if (typeof gatewayOrProvider == "string") {
             if (!gatewayOrProvider) throw new Error("Invalid Gateway URI")
@@ -731,8 +731,8 @@ export class Web3Gateway {
         return new Promise((resolve, reject) => {
             setTimeout(() => reject(new Error("The Web3 Gateway is too slow")), timeout)
 
-            return this.getPeers().then( peersNumber => {
-                if (peersNumber>0) return reject(new Error("The Web3 gateway has no peers"))
+            return this.getPeers().then(peersNumber => {
+                if (peersNumber > 0) return reject(new Error("The Web3 gateway has no peers"))
                 return this.isSyncing().then(syncing => {
                     if (syncing) return reject(new Error("The Web3 gateway is syncing"))
 
@@ -750,7 +750,7 @@ export class Web3Gateway {
                                     resolve()
                                 })
                         })
-                    })
+                })
             }).catch(err => {
                 console.error(err)
                 reject(new Error("The Web3 Gateway seems to be down"))
@@ -779,16 +779,14 @@ export class Web3Gateway {
 
     public getPeers(): Promise<number> {
         if (!this.provider) return Promise.resolve(0)
-        else if (this.provider instanceof JsonRpcProvider || this.provider instanceof Web3Provider || this.provider instanceof IpcProvider || this.provider instanceof InfuraProvider) {
-            return this.provider.send("net_peerCount", []).then(result => {
-                if (result) {
-                    return utils.bigNumberify(result).toNumber()
-                } else {
-                    return 0
-                }
-            })
+        else if (!(this.provider instanceof JsonRpcProvider) && !(this.provider instanceof Web3Provider) &&
+            !(this.provider instanceof IpcProvider) && !(this.provider instanceof InfuraProvider)) {
+            return Promise.resolve(0)
         }
 
-        return Promise.resolve(0)
+        return this.provider.send("net_peerCount", []).then(result => {
+            if (!result) return 0
+            return utils.bigNumberify(result).toNumber()
+        })
     }
 }
