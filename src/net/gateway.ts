@@ -731,22 +731,25 @@ export class Web3Gateway {
         return new Promise((resolve, reject) => {
             setTimeout(() => reject(new Error("The Web3 Gateway is too slow")), timeout)
 
-            return this.isSyncing().then(syncing => {
-                if (syncing) return reject(new Error("The Web3 gateway is syncing"))
+            return this.getPeers().then( peersNumber => {
+                if (peersNumber>0) return reject(new Error("The Web3 gateway has no peers"))
+                return this.isSyncing().then(syncing => {
+                    if (syncing) return reject(new Error("The Web3 gateway is syncing"))
 
-                return this.provider.resolveName(entityResolverEnsDomain)
-                    .then(entityResolverAddress => {
-                        if (!entityResolverAddress) return reject(new Error("The Web3 Gateway seems to be down"))
+                    return this.provider.resolveName(entityResolverEnsDomain)
+                        .then(entityResolverAddress => {
+                            if (!entityResolverAddress) return reject(new Error("The Web3 Gateway seems to be down"))
 
-                        this.entityResolverAddress = entityResolverAddress
+                            this.entityResolverAddress = entityResolverAddress
 
-                        return this.provider.resolveName(votingProcessEnsDomain)
-                            .then(votingContractAddress => {
-                                if (!votingContractAddress) return reject(new Error("The Web3 Gateway seems to be down"))
+                            return this.provider.resolveName(votingProcessEnsDomain)
+                                .then(votingContractAddress => {
+                                    if (!votingContractAddress) return reject(new Error("The Web3 Gateway seems to be down"))
 
-                                this.votingContractAddress = votingContractAddress
-                                resolve()
-                            })
+                                    this.votingContractAddress = votingContractAddress
+                                    resolve()
+                                })
+                        })
                     })
             }).catch(err => {
                 console.error(err)
@@ -772,5 +775,20 @@ export class Web3Gateway {
         // else if (this.provider instanceof FallbackProvider || this.provider instanceof EtherscanProvider) {}
 
         return Promise.resolve(false)
+    }
+
+    public getPeers(): Promise<number> {
+        if (!this.provider) return Promise.resolve(0)
+        else if (this.provider instanceof JsonRpcProvider || this.provider instanceof Web3Provider || this.provider instanceof IpcProvider || this.provider instanceof InfuraProvider) {
+            return this.provider.send("net_peerCount", []).then(result => {
+                if (result) {
+                    return utils.bigNumberify(result).toNumber()
+                } else {
+                    return 0
+                }
+            })
+        }
+
+        return Promise.resolve(0)
     }
 }
