@@ -88,7 +88,6 @@ export function getGatewaysFromBootNodeData(bootnodeData: GatewayBootNodes, opti
  * @returns An object with a list of IDVoteGateway(s) and IWeb3Gateway(s)
  */
 export function getNetworkGatewaysFromBootNodeData(bootnodeData: GatewayBootNodes, networkId: string, options:{testing: boolean} = {testing: false}): {  dvote: IDVoteGateway[], web3: IWeb3Gateway[] }  {
-    console.log('network gateways')
     return {
             dvote: (bootnodeData[networkId].dvote || []).map(item => {
                 return new DVoteGateway({ uri: item.uri, supportedApis: item.apis, publicKey: item.pubKey })

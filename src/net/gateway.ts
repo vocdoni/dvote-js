@@ -786,7 +786,9 @@ export class Web3Gateway {
             setTimeout(() => reject(new Error("The Web3 Gateway is too slow")), timeout)
 
             return this.getPeers().then(peersNumber => {
-                if (peersNumber > 0) return reject(new Error("The Web3 gateway has no peers"))
+                // -1 probably does not support API
+                // >0 has at least one peer
+                if (peersNumber == 0) return reject(new Error("The Web3 gateway has no peers"))
                 return this.isSyncing().then(syncing => {
                     if (syncing) return reject(new Error("The Web3 gateway is syncing"))
 
@@ -839,7 +841,7 @@ export class Web3Gateway {
         }
 
         return this.provider.send("net_peerCount", []).then(result => {
-            if (!result) return 0
+            if (!result) return -1
             return utils.bigNumberify(result).toNumber()
         })
     }
