@@ -64,14 +64,14 @@ export async function createVotingProcess(processMetadata: ProcessMetadata,
         // REGISTER THE NEW PROCESS
         const chainId = await gateway.getChainId()
         let options: IMethodOverrides
-        let tx : ContractTransaction
+        let tx: ContractTransaction
         switch (chainId) {
-            case XDAI_CHAIN_ID : 
+            case XDAI_CHAIN_ID:
                 options = { gasPrice: XDAI_GAS_PRICE }
                 tx = await processInstance.create(processMetadata.type, processMetaOrigin, merkleRoot, merkleTree.toContentUriString(),
-                processMetadata.startBlock, processMetadata.numberOfBlocks, options)
+                    processMetadata.startBlock, processMetadata.numberOfBlocks, options)
                 break
-            case SOKOL_CHAIN_ID :
+            case SOKOL_CHAIN_ID:
                 const addr = await walletOrSigner.getAddress()
                 const nonce = await walletOrSigner.provider.getTransactionCount(addr)
                 options = {
@@ -79,11 +79,11 @@ export async function createVotingProcess(processMetadata: ProcessMetadata,
                     nonce,
                 }
                 tx = await processInstance.create(processMetadata.type, processMetaOrigin, merkleRoot, merkleTree.toContentUriString(),
-                processMetadata.startBlock, processMetadata.numberOfBlocks, options)
+                    processMetadata.startBlock, processMetadata.numberOfBlocks, options)
                 break
-            default :
+            default:
                 tx = await processInstance.create(processMetadata.type, processMetaOrigin, merkleRoot, merkleTree.toContentUriString(),
-                processMetadata.startBlock, processMetadata.numberOfBlocks)
+                    processMetadata.startBlock, processMetadata.numberOfBlocks)
         }
 
         if (!tx) throw new Error("Could not start the blockchain transaction")
@@ -164,22 +164,22 @@ export async function cancelProcess(processId: string,
 
         const chainId = await gateway.getChainId()
         let options: IMethodOverrides
-        let tx : ContractTransaction
+        let tx: ContractTransaction
         switch (chainId) {
-            case XDAI_CHAIN_ID : 
+            case XDAI_CHAIN_ID:
                 options = { gasPrice: XDAI_GAS_PRICE }
                 tx = await processInstance.cancel(processId, options)
                 break
-            case SOKOL_CHAIN_ID :
+            case SOKOL_CHAIN_ID:
                 const addr = await walletOrSigner.getAddress()
                 const nonce = await walletOrSigner.provider.getTransactionCount(addr)
                 options = {
                     gasPrice: SOKOL_GAS_PRICE,
                     nonce,
                 }
-                tx = await  processInstance.cancel(processId, options)
+                tx = await processInstance.cancel(processId, options)
                 break
-            default :
+            default:
                 tx = await processInstance.cancel(processId)
 
         }
@@ -277,54 +277,49 @@ export function estimateBlockAtDateTime(dateTime: Date, gateway: IGateway | IGat
 
         if (dateDiff >= 1000 * 60 * 60 * 24) {
             if (status.blockTimes[4] > 0) averageBlockTime = status.blockTimes[4]
+            else if (status.blockTimes[3] > 0) averageBlockTime = status.blockTimes[3]
+            else if (status.blockTimes[2] > 0) averageBlockTime = status.blockTimes[2]
+            else if (status.blockTimes[1] > 0) averageBlockTime = status.blockTimes[1]
+            else if (status.blockTimes[0] > 0) averageBlockTime = status.blockTimes[0]
         }
         else if (dateDiff >= 1000 * 60 * 60 * 6) {
             // 1000 * 60 * 60 * 6 <= dateDiff < 1000 * 60 * 60 * 24
-            const pivot = (dateDiff - 1000 * 60 * 60 * 6) / (1000 * 60 * 60)
-            weightB = pivot / (24 - 6) // 0..1
-            weightA = 1 - weightB
-
             if (status.blockTimes[4] > 0 && status.blockTimes[3] > 0) {
+                const pivot = (dateDiff - 1000 * 60 * 60 * 6) / (1000 * 60 * 60)
+                weightB = pivot / (24 - 6) // 0..1
+                weightA = 1 - weightB
+
                 averageBlockTime = weightA * status.blockTimes[3] + weightB * status.blockTimes[4]
             }
-            else if (status.blockTimes[4] > 0) {
-                averageBlockTime = weightA * VOCHAIN_BLOCK_TIME * 1000 + weightB * status.blockTimes[4]
-            }
-            else if (status.blockTimes[3] > 0) {
-                averageBlockTime = weightA * status.blockTimes[3] + weightB * VOCHAIN_BLOCK_TIME * 1000
-            }
+            else if (status.blockTimes[3] > 0) averageBlockTime = status.blockTimes[3]
+            else if (status.blockTimes[2] > 0) averageBlockTime = status.blockTimes[2]
+            else if (status.blockTimes[1] > 0) averageBlockTime = status.blockTimes[1]
+            else if (status.blockTimes[0] > 0) averageBlockTime = status.blockTimes[0]
         }
         else if (dateDiff >= 1000 * 60 * 60) {
             // 1000 * 60 * 60 <= dateDiff < 1000 * 60 * 60 * 6
-            const pivot = (dateDiff - 1000 * 60 * 60) / (1000 * 60 * 60)
-            weightB = pivot / (6 - 1) // 0..1
-            weightA = 1 - weightB
-
             if (status.blockTimes[3] > 0 && status.blockTimes[2] > 0) {
+                const pivot = (dateDiff - 1000 * 60 * 60) / (1000 * 60 * 60)
+                weightB = pivot / (6 - 1) // 0..1
+                weightA = 1 - weightB
+
                 averageBlockTime = weightA * status.blockTimes[2] + weightB * status.blockTimes[3]
             }
-            else if (status.blockTimes[3] > 0) {
-                averageBlockTime = weightA * VOCHAIN_BLOCK_TIME * 1000 + weightB * status.blockTimes[3]
-            }
-            else if (status.blockTimes[2] > 0) {
-                averageBlockTime = weightA * status.blockTimes[2] + weightB * VOCHAIN_BLOCK_TIME * 1000
-            }
+            else if (status.blockTimes[2] > 0) averageBlockTime = status.blockTimes[2]
+            else if (status.blockTimes[1] > 0) averageBlockTime = status.blockTimes[1]
+            else if (status.blockTimes[0] > 0) averageBlockTime = status.blockTimes[0]
         }
         else if (dateDiff >= 1000 * 60 * 10) {
             // 1000 * 60 * 10 <= dateDiff < 1000 * 60 * 60
-            const pivot = (dateDiff - 1000 * 60 * 10) / (1000 * 60)
-            weightB = pivot / (60 - 10) // 0..1
-            weightA = 1 - weightB
-
             if (status.blockTimes[2] > 0 && status.blockTimes[1] > 0) {
+                const pivot = (dateDiff - 1000 * 60 * 10) / (1000 * 60)
+                weightB = pivot / (60 - 10) // 0..1
+                weightA = 1 - weightB
+
                 averageBlockTime = weightA * status.blockTimes[1] + weightB * status.blockTimes[2]
             }
-            else if (status.blockTimes[2] > 0) {
-                averageBlockTime = weightA * VOCHAIN_BLOCK_TIME * 1000 + weightB * status.blockTimes[2]
-            }
-            else if (status.blockTimes[1] > 0) {
-                averageBlockTime = weightA * status.blockTimes[1] + weightB * VOCHAIN_BLOCK_TIME * 1000
-            }
+            else if (status.blockTimes[1] > 0) averageBlockTime = status.blockTimes[1]
+            else if (status.blockTimes[0] > 0) averageBlockTime = status.blockTimes[0]
         }
         else if (dateDiff >= 1000 * 60) {
             // 1000 * 60 <= dateDiff < 1000 * 60 * 6
@@ -335,12 +330,7 @@ export function estimateBlockAtDateTime(dateTime: Date, gateway: IGateway | IGat
             if (status.blockTimes[1] > 0 && status.blockTimes[0] > 0) {
                 averageBlockTime = weightA * status.blockTimes[0] + weightB * status.blockTimes[1]
             }
-            else if (status.blockTimes[1] > 0) {
-                averageBlockTime = weightA * VOCHAIN_BLOCK_TIME * 1000 + weightB * status.blockTimes[1]
-            }
-            else if (status.blockTimes[0] > 0) {
-                averageBlockTime = weightA * status.blockTimes[0] + weightB * VOCHAIN_BLOCK_TIME * 1000
-            }
+            else if (status.blockTimes[0] > 0) averageBlockTime = status.blockTimes[0]
         }
         else {
             if (status.blockTimes[0] > 0) averageBlockTime = status.blockTimes[0]
@@ -348,15 +338,15 @@ export function estimateBlockAtDateTime(dateTime: Date, gateway: IGateway | IGat
 
         const estimatedBlockDiff = dateDiff / averageBlockTime
         const estimatedBlock = dateTime.getTime() < status.blockTimestamp ?
-            status.blockNumber - estimatedBlockDiff :
-            status.blockNumber + estimatedBlockDiff
+            status.blockNumber - Math.ceil(estimatedBlockDiff) :
+            status.blockNumber + Math.floor(estimatedBlockDiff)
 
         if (estimatedBlock < 0) return 0
-        return Math.floor(estimatedBlock)
+        return estimatedBlock
     })
 }
 
-const blocksPerM = 6 // x 10s
+const blocksPerM = 60 / VOCHAIN_BLOCK_TIME
 const blocksPer10m = 10 * blocksPerM
 const blocksPerH = blocksPerM * 60
 const blocksPer6h = 6 * blocksPerH
@@ -379,6 +369,10 @@ export function estimateDateAtBlock(blockNumber: number, gateway: IGateway | IGa
         // status.blockTime => [1m, 10m, 1h, 6h, 24h]
         if (blockDiff > blocksPerDay) {
             if (status.blockTimes[4] > 0) averageBlockTime = status.blockTimes[4]
+            else if (status.blockTimes[3] > 0) averageBlockTime = status.blockTimes[3]
+            else if (status.blockTimes[2] > 0) averageBlockTime = status.blockTimes[2]
+            else if (status.blockTimes[1] > 0) averageBlockTime = status.blockTimes[1]
+            else if (status.blockTimes[0] > 0) averageBlockTime = status.blockTimes[0]
         }
         else if (blockDiff > blocksPer6h) {
             // blocksPer6h <= blockDiff < blocksPerDay
@@ -389,12 +383,10 @@ export function estimateDateAtBlock(blockNumber: number, gateway: IGateway | IGa
             if (status.blockTimes[4] > 0 && status.blockTimes[3] > 0) {
                 averageBlockTime = weightA * status.blockTimes[3] + weightB * status.blockTimes[4]
             }
-            else if (status.blockTimes[4] > 0) {
-                averageBlockTime = weightA * VOCHAIN_BLOCK_TIME * 1000 + weightB * status.blockTimes[4]
-            }
-            else if (status.blockTimes[3] > 0) {
-                averageBlockTime = weightA * status.blockTimes[3] + weightB * VOCHAIN_BLOCK_TIME * 1000
-            }
+            else if (status.blockTimes[3] > 0) averageBlockTime = status.blockTimes[3]
+            else if (status.blockTimes[2] > 0) averageBlockTime = status.blockTimes[2]
+            else if (status.blockTimes[1] > 0) averageBlockTime = status.blockTimes[1]
+            else if (status.blockTimes[0] > 0) averageBlockTime = status.blockTimes[0]
         }
         else if (blockDiff > blocksPerH) {
             // blocksPerH <= blockDiff < blocksPer6h
@@ -405,12 +397,9 @@ export function estimateDateAtBlock(blockNumber: number, gateway: IGateway | IGa
             if (status.blockTimes[3] > 0 && status.blockTimes[2] > 0) {
                 averageBlockTime = weightA * status.blockTimes[2] + weightB * status.blockTimes[3]
             }
-            else if (status.blockTimes[3] > 0) {
-                averageBlockTime = weightA * VOCHAIN_BLOCK_TIME * 1000 + weightB * status.blockTimes[3]
-            }
-            else if (status.blockTimes[2] > 0) {
-                averageBlockTime = weightA * status.blockTimes[2] + weightB * VOCHAIN_BLOCK_TIME * 1000
-            }
+            else if (status.blockTimes[2] > 0) averageBlockTime = status.blockTimes[2]
+            else if (status.blockTimes[1] > 0) averageBlockTime = status.blockTimes[1]
+            else if (status.blockTimes[0] > 0) averageBlockTime = status.blockTimes[0]
         }
         else if (blockDiff > blocksPer10m) {
             // blocksPer10m <= blockDiff < blocksPerH
@@ -421,12 +410,8 @@ export function estimateDateAtBlock(blockNumber: number, gateway: IGateway | IGa
             if (status.blockTimes[2] > 0 && status.blockTimes[1] > 0) {
                 averageBlockTime = weightA * status.blockTimes[1] + weightB * status.blockTimes[2]
             }
-            else if (status.blockTimes[2] > 0) {
-                averageBlockTime = weightA * VOCHAIN_BLOCK_TIME * 1000 + weightB * status.blockTimes[2]
-            }
-            else if (status.blockTimes[1] > 0) {
-                averageBlockTime = weightA * status.blockTimes[1] + weightB * VOCHAIN_BLOCK_TIME * 1000
-            }
+            else if (status.blockTimes[1] > 0) averageBlockTime = status.blockTimes[1]
+            else if (status.blockTimes[0] > 0) averageBlockTime = status.blockTimes[0]
         }
         else if (blockDiff > blocksPerM) {
             // blocksPerM <= blockDiff < blocksPer10m
@@ -437,12 +422,7 @@ export function estimateDateAtBlock(blockNumber: number, gateway: IGateway | IGa
             if (status.blockTimes[1] > 0 && status.blockTimes[0] > 0) {
                 averageBlockTime = weightA * status.blockTimes[0] + weightB * status.blockTimes[1]
             }
-            else if (status.blockTimes[1] > 0) {
-                averageBlockTime = weightA * VOCHAIN_BLOCK_TIME * 1000 + weightB * status.blockTimes[1]
-            }
-            else if (status.blockTimes[0] > 0) {
-                averageBlockTime = weightA * status.blockTimes[0] + weightB * VOCHAIN_BLOCK_TIME * 1000
-            }
+            else if (status.blockTimes[0] > 0) averageBlockTime = status.blockTimes[0]
         }
         else {
             if (status.blockTimes[0] > 0) averageBlockTime = status.blockTimes[0]

@@ -1,11 +1,9 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
-import { getAccounts, TestAccount } from "../testing-eth-utils"
 import { DVoteGateway, IDVoteGateway, Gateway, IGateway, Web3Gateway } from "../../src/net/gateway"
 import { getBlockHeight, getBlockStatus, estimateBlockAtDateTime, estimateDateAtBlock } from "../../src/api/vote"
 import { GatewayMock, InteractionMock, GatewayResponse } from "../mocks/gateway"
-import { Buffer } from "buffer"
 import GatewayInfo from "../../src/wrappers/gateway-info"
 import { VOCHAIN_BLOCK_TIME } from "../../src/constants"
 const ganacheRpcServer = require("ganache-core").server
@@ -436,11 +434,11 @@ describe("DVote Block Status", () => {
             }
         })
 
-        const stdBlockTime = 10000
+        const stdBlockTime = VOCHAIN_BLOCK_TIME * 1000
         const slowBlockTime = 20000
 
         // 1m, 10m, 1h, 6h and 24h
-        const blocksPerM = 6 // x 10s
+        const blocksPerM = 60 / VOCHAIN_BLOCK_TIME
         const blocksPer10m = 10 * blocksPerM
         const blocksPerH = blocksPerM * 60
         const blocksPer6h = 6 * blocksPerH
@@ -461,105 +459,104 @@ describe("DVote Block Status", () => {
             let dateOffset: number
             let avgBlockTime: number
 
-            // Block #1000 mined 0 seconds ago. All standard.
+            // Block #20000 mined 0 seconds ago. All standard.
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [stdBlockTime, stdBlockTime, stdBlockTime, stdBlockTime, stdBlockTime], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(), gw)).to.eq(baseBlock)
-            dateOffset = 10000 * blocksPerDay * 2
+            dateOffset = VOCHAIN_BLOCK_TIME * 1000 * blocksPerDay * 2
             avgBlockTime = stdBlockTime
-            expectedBlock = baseBlock - dateOffset / avgBlockTime - 1
+            expectedBlock = Math.round(baseBlock - dateOffset / avgBlockTime - 1)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [stdBlockTime, stdBlockTime, stdBlockTime, stdBlockTime, stdBlockTime], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now - dateOffset - pad), gw)).to.eq(expectedBlock)
-            expectedBlock = baseBlock + dateOffset / avgBlockTime
+            expectedBlock = Math.floor(baseBlock + dateOffset / avgBlockTime)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [stdBlockTime, stdBlockTime, stdBlockTime, stdBlockTime, stdBlockTime], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now + dateOffset), gw)).to.eq(expectedBlock)
 
             // Daily is slow
-            dateOffset = 10000 * blocksPerDay * 2
+            dateOffset = VOCHAIN_BLOCK_TIME * 1000 * blocksPerDay * 2
             avgBlockTime = slowBlockTime
-            expectedBlock = baseBlock - dateOffset / avgBlockTime - 1
+            expectedBlock = Math.round(baseBlock - dateOffset / avgBlockTime - 1)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [stdBlockTime, stdBlockTime, stdBlockTime, stdBlockTime, slowBlockTime], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now - dateOffset - pad), gw)).to.eq(expectedBlock)
-            expectedBlock = baseBlock + dateOffset / avgBlockTime
+            expectedBlock = Math.floor(baseBlock + dateOffset / avgBlockTime)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [stdBlockTime, stdBlockTime, stdBlockTime, stdBlockTime, slowBlockTime], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now + dateOffset), gw)).to.eq(expectedBlock)
-            dateOffset = 10000 * (blocksPerDay + blocksPer6h) / 2
+            dateOffset = VOCHAIN_BLOCK_TIME * 1000 * (blocksPerDay + blocksPer6h) / 2
             avgBlockTime = ((slowBlockTime + stdBlockTime) / 2)
-            expectedBlock = baseBlock - dateOffset / avgBlockTime - 1
+            expectedBlock = Math.round(baseBlock - dateOffset / avgBlockTime - 1)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [stdBlockTime, stdBlockTime, stdBlockTime, stdBlockTime, slowBlockTime], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now - dateOffset - pad), gw)).to.eq(expectedBlock)
-            expectedBlock = baseBlock + dateOffset / avgBlockTime
+            expectedBlock = Math.floor(baseBlock + dateOffset / avgBlockTime)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [stdBlockTime, stdBlockTime, stdBlockTime, stdBlockTime, slowBlockTime], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now + dateOffset), gw)).to.eq(expectedBlock)
 
             // 6h is also slow
-            dateOffset = 10000 * blocksPer6h
+            dateOffset = VOCHAIN_BLOCK_TIME * 1000 * blocksPer6h
             avgBlockTime = slowBlockTime
-            expectedBlock = baseBlock - dateOffset / avgBlockTime - 1
+            expectedBlock = Math.round(baseBlock - dateOffset / avgBlockTime - 1)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [stdBlockTime, stdBlockTime, stdBlockTime, slowBlockTime, slowBlockTime], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now - dateOffset - pad), gw)).to.eq(expectedBlock)
-            expectedBlock = baseBlock + dateOffset / avgBlockTime
+            expectedBlock = Math.floor(baseBlock + dateOffset / avgBlockTime)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [stdBlockTime, stdBlockTime, stdBlockTime, slowBlockTime, slowBlockTime], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now + dateOffset), gw)).to.eq(expectedBlock)
-            dateOffset = 10000 * (blocksPer6h + blocksPerH) / 2
+            dateOffset = VOCHAIN_BLOCK_TIME * 1000 * (blocksPer6h + blocksPerH) / 2
             avgBlockTime = ((slowBlockTime + stdBlockTime) / 2)
-            expectedBlock = baseBlock - dateOffset / avgBlockTime - 1
+            expectedBlock = Math.round(baseBlock - dateOffset / avgBlockTime - 1)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [stdBlockTime, stdBlockTime, stdBlockTime, slowBlockTime, slowBlockTime], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now - dateOffset - pad), gw)).to.eq(expectedBlock)
-            expectedBlock = baseBlock + dateOffset / avgBlockTime
+            expectedBlock = Math.floor(baseBlock + dateOffset / avgBlockTime)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [stdBlockTime, stdBlockTime, stdBlockTime, slowBlockTime, slowBlockTime], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now + dateOffset), gw)).to.eq(expectedBlock)
 
             // h is also slow
-            dateOffset = 10000 * blocksPerH
+            dateOffset = VOCHAIN_BLOCK_TIME * 1000 * blocksPerH
             avgBlockTime = slowBlockTime
-            expectedBlock = baseBlock - dateOffset / avgBlockTime - 1
+            expectedBlock = Math.round(baseBlock - dateOffset / avgBlockTime - 1)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [stdBlockTime, stdBlockTime, slowBlockTime, slowBlockTime, slowBlockTime], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now - dateOffset - pad), gw)).to.eq(expectedBlock)
-            expectedBlock = baseBlock + dateOffset / avgBlockTime
+            expectedBlock = Math.floor(baseBlock + dateOffset / avgBlockTime)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [stdBlockTime, stdBlockTime, slowBlockTime, slowBlockTime, slowBlockTime], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now + dateOffset), gw)).to.eq(expectedBlock)
-            dateOffset = 10000 * (blocksPerH + blocksPer10m) / 2
+            dateOffset = VOCHAIN_BLOCK_TIME * 1000 * (blocksPerH + blocksPer10m) / 2
             avgBlockTime = (slowBlockTime + stdBlockTime) / 2
-            expectedBlock = baseBlock - dateOffset / avgBlockTime - 1
+            expectedBlock = Math.round(baseBlock - dateOffset / avgBlockTime - 1)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [stdBlockTime, stdBlockTime, slowBlockTime, slowBlockTime, slowBlockTime], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now - dateOffset - pad), gw)).to.eq(expectedBlock)
-            expectedBlock = baseBlock + dateOffset / avgBlockTime
+            expectedBlock = Math.floor(baseBlock + dateOffset / avgBlockTime)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [stdBlockTime, stdBlockTime, slowBlockTime, slowBlockTime, slowBlockTime], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now + dateOffset), gw)).to.eq(expectedBlock)
-
             // 10m is also slow
-            dateOffset = 10000 * blocksPer10m
+            dateOffset = VOCHAIN_BLOCK_TIME * 1000 * blocksPer10m
             avgBlockTime = slowBlockTime
-            expectedBlock = baseBlock - dateOffset / avgBlockTime - 1
+            expectedBlock = Math.round(baseBlock - dateOffset / avgBlockTime - 1)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [stdBlockTime, slowBlockTime, slowBlockTime, slowBlockTime, slowBlockTime], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now - dateOffset - pad), gw)).to.eq(expectedBlock)
-            expectedBlock = baseBlock + dateOffset / avgBlockTime
+            expectedBlock = Math.floor(baseBlock + dateOffset / avgBlockTime)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [stdBlockTime, slowBlockTime, slowBlockTime, slowBlockTime, slowBlockTime], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now + dateOffset), gw)).to.eq(expectedBlock)
-            dateOffset = 10000 * (blocksPer10m + blocksPerM) / 2
+            dateOffset = VOCHAIN_BLOCK_TIME * 1000 * (blocksPer10m + blocksPerM) / 2
             avgBlockTime = ((slowBlockTime + stdBlockTime) / 2)
-            expectedBlock = baseBlock - dateOffset / avgBlockTime - 1
+            expectedBlock = Math.floor(baseBlock - dateOffset / avgBlockTime)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [stdBlockTime, slowBlockTime, slowBlockTime, slowBlockTime, slowBlockTime], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now - dateOffset - pad), gw)).to.eq(expectedBlock)
-            expectedBlock = baseBlock + dateOffset / avgBlockTime
+            expectedBlock = Math.floor(baseBlock + dateOffset / avgBlockTime)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [stdBlockTime, slowBlockTime, slowBlockTime, slowBlockTime, slowBlockTime], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now + dateOffset), gw)).to.eq(expectedBlock)
@@ -568,13 +565,13 @@ describe("DVote Block Status", () => {
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [slowBlockTime, slowBlockTime, slowBlockTime, slowBlockTime, slowBlockTime], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(), gw)).to.eq(baseBlock)
-            dateOffset = 10000 * blocksPerM * 2
+            dateOffset = VOCHAIN_BLOCK_TIME * 1000 * blocksPerM * 2
             avgBlockTime = slowBlockTime
-            expectedBlock = baseBlock - dateOffset / avgBlockTime - 1
+            expectedBlock = Math.round(baseBlock - dateOffset / avgBlockTime - 1)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [slowBlockTime, slowBlockTime, slowBlockTime, slowBlockTime, slowBlockTime], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now - dateOffset - pad), gw)).to.eq(expectedBlock)
-            expectedBlock = baseBlock + dateOffset / avgBlockTime
+            expectedBlock = Math.floor(baseBlock + dateOffset / avgBlockTime)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [slowBlockTime, slowBlockTime, slowBlockTime, slowBlockTime, slowBlockTime], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now + dateOffset), gw)).to.eq(expectedBlock)
@@ -603,101 +600,98 @@ describe("DVote Block Status", () => {
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [slowBlockTime, slowBlockTime, slowBlockTime, slowBlockTime, slowBlockTime], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(), gw)).to.eq(baseBlock)
-            dateOffset = 10000 * blocksPerDay * 2
+            dateOffset = VOCHAIN_BLOCK_TIME * 1000 * blocksPerDay * 2
             avgBlockTime = slowBlockTime
-            expectedBlock = baseBlock - dateOffset / avgBlockTime - 1
+            expectedBlock = Math.round(baseBlock - dateOffset / avgBlockTime - 1)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [slowBlockTime, slowBlockTime, slowBlockTime, slowBlockTime, slowBlockTime], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now - dateOffset - pad), gw)).to.eq(expectedBlock)
-            expectedBlock = baseBlock + dateOffset / avgBlockTime
+            expectedBlock = Math.round(baseBlock + dateOffset / avgBlockTime)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [slowBlockTime, slowBlockTime, slowBlockTime, slowBlockTime, slowBlockTime], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now + dateOffset), gw)).to.eq(expectedBlock)
 
             // Daily is unset
-            dateOffset = 10000 * blocksPerDay * 2
-            avgBlockTime = VOCHAIN_BLOCK_TIME * 1000
-            expectedBlock = baseBlock - dateOffset / avgBlockTime - 1
+            dateOffset = VOCHAIN_BLOCK_TIME * 1000 * blocksPerDay * 2
+            avgBlockTime = slowBlockTime
+            expectedBlock = Math.round(baseBlock - dateOffset / avgBlockTime - 1)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [slowBlockTime, slowBlockTime, slowBlockTime, slowBlockTime, zero], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now - dateOffset - pad), gw)).to.eq(expectedBlock)
-            expectedBlock = baseBlock + dateOffset / avgBlockTime
+            expectedBlock = Math.round(baseBlock + dateOffset / avgBlockTime)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [slowBlockTime, slowBlockTime, slowBlockTime, slowBlockTime, zero], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now + dateOffset), gw)).to.eq(expectedBlock)
             dateOffset = 10000 * (blocksPerDay + blocksPer6h) / 2
-            avgBlockTime = ((VOCHAIN_BLOCK_TIME * 1000 + slowBlockTime) / 2)
-            expectedBlock = baseBlock - dateOffset / avgBlockTime - 1
+            avgBlockTime = slowBlockTime
+            expectedBlock = Math.round(baseBlock - dateOffset / avgBlockTime - 1)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [slowBlockTime, slowBlockTime, slowBlockTime, slowBlockTime, zero], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now - dateOffset - pad), gw)).to.eq(expectedBlock)
-            expectedBlock = baseBlock + dateOffset / avgBlockTime
+            expectedBlock = Math.round(baseBlock + dateOffset / avgBlockTime)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [slowBlockTime, slowBlockTime, slowBlockTime, slowBlockTime, zero], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now + dateOffset), gw)).to.eq(expectedBlock)
 
             // 6h is also unset
-            dateOffset = 10000 * blocksPer6h
-            avgBlockTime = VOCHAIN_BLOCK_TIME * 1000
-            expectedBlock = baseBlock - dateOffset / avgBlockTime - 1
+            dateOffset = VOCHAIN_BLOCK_TIME * 1000 * blocksPer6h
+            expectedBlock = Math.round(baseBlock - dateOffset / avgBlockTime - 1)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [slowBlockTime, slowBlockTime, slowBlockTime, zero, zero], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now - dateOffset - pad), gw)).to.eq(expectedBlock)
-            expectedBlock = baseBlock + dateOffset / avgBlockTime
+            expectedBlock = Math.round(baseBlock + dateOffset / avgBlockTime)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [slowBlockTime, slowBlockTime, slowBlockTime, zero, zero], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now + dateOffset), gw)).to.eq(expectedBlock)
-            dateOffset = 10000 * (blocksPer6h + blocksPerH) / 2
-            avgBlockTime = ((VOCHAIN_BLOCK_TIME * 1000 + slowBlockTime) / 2)
-            expectedBlock = baseBlock - dateOffset / avgBlockTime - 1
+            dateOffset = VOCHAIN_BLOCK_TIME * 1000 * (blocksPer6h + blocksPerH) / 2
+            avgBlockTime = slowBlockTime
+            expectedBlock = Math.round(baseBlock - dateOffset / avgBlockTime - 1)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [slowBlockTime, slowBlockTime, slowBlockTime, zero, zero], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now - dateOffset - pad), gw)).to.eq(expectedBlock)
-            expectedBlock = baseBlock + dateOffset / avgBlockTime
+            expectedBlock = Math.round(baseBlock + dateOffset / avgBlockTime)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [slowBlockTime, slowBlockTime, slowBlockTime, zero, zero], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now + dateOffset), gw)).to.eq(expectedBlock)
 
             // h is also unset
-            dateOffset = 10000 * blocksPerH
-            avgBlockTime = VOCHAIN_BLOCK_TIME * 1000
-            expectedBlock = baseBlock - dateOffset / avgBlockTime - 1
+            dateOffset = VOCHAIN_BLOCK_TIME * 1000 * blocksPerH
+            expectedBlock = Math.round(baseBlock - dateOffset / avgBlockTime - 1)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [slowBlockTime, slowBlockTime, zero, zero, zero], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now - dateOffset - pad), gw)).to.eq(expectedBlock)
-            expectedBlock = baseBlock + dateOffset / avgBlockTime
+            expectedBlock = Math.round(baseBlock + dateOffset / avgBlockTime)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [slowBlockTime, slowBlockTime, zero, zero, zero], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now + dateOffset), gw)).to.eq(expectedBlock)
-            dateOffset = 10000 * (blocksPerH + blocksPer10m) / 2
-            avgBlockTime = ((VOCHAIN_BLOCK_TIME * 1000 + slowBlockTime) / 2)
-            expectedBlock = baseBlock - dateOffset / avgBlockTime - 1
+            dateOffset = VOCHAIN_BLOCK_TIME * 1000 * (blocksPerH + blocksPer10m) / 2
+            avgBlockTime = slowBlockTime
+            expectedBlock = Math.round(baseBlock - dateOffset / avgBlockTime - 1)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [slowBlockTime, slowBlockTime, zero, zero, zero], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now - dateOffset - pad), gw)).to.eq(expectedBlock)
-            expectedBlock = baseBlock + dateOffset / avgBlockTime
+            expectedBlock = Math.round(baseBlock + dateOffset / avgBlockTime)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [slowBlockTime, slowBlockTime, zero, zero, zero], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now + dateOffset), gw)).to.eq(expectedBlock)
 
             // 10m is also unset
-            dateOffset = 10000 * blocksPer10m
-            avgBlockTime = VOCHAIN_BLOCK_TIME * 1000
-            expectedBlock = baseBlock - dateOffset / avgBlockTime - 1
+            dateOffset = VOCHAIN_BLOCK_TIME * 1000 * blocksPer10m
+            expectedBlock = Math.round(baseBlock - dateOffset / avgBlockTime - 1)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [slowBlockTime, zero, zero, zero, zero], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now - dateOffset - pad), gw)).to.eq(expectedBlock)
-            expectedBlock = baseBlock + dateOffset / avgBlockTime
+            expectedBlock = Math.round(baseBlock + dateOffset / avgBlockTime)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [slowBlockTime, zero, zero, zero, zero], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now + dateOffset), gw)).to.eq(expectedBlock)
-            dateOffset = 10000 * (blocksPer10m + blocksPerM) / 2
-            avgBlockTime = ((VOCHAIN_BLOCK_TIME * 1000 + slowBlockTime) / 2)
-            expectedBlock = baseBlock - dateOffset / avgBlockTime - 1
+            dateOffset = VOCHAIN_BLOCK_TIME * 1000 * (blocksPer10m + blocksPerM) / 2
+            avgBlockTime = slowBlockTime
+            expectedBlock = Math.round(baseBlock - dateOffset / avgBlockTime - 1)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [slowBlockTime, zero, zero, zero, zero], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now - dateOffset - pad), gw)).to.eq(expectedBlock)
-            expectedBlock = baseBlock + dateOffset / avgBlockTime
+            expectedBlock = Math.floor(baseBlock + dateOffset / avgBlockTime)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [slowBlockTime, zero, zero, zero, zero], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now + dateOffset), gw)).to.eq(expectedBlock)
@@ -706,13 +700,13 @@ describe("DVote Block Status", () => {
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [zero, zero, zero, zero, zero], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(), gw)).to.eq(baseBlock)
-            dateOffset = 10000 * blocksPerM * 2
+            dateOffset = VOCHAIN_BLOCK_TIME * 1000 * blocksPerM * 2
             avgBlockTime = VOCHAIN_BLOCK_TIME * 1000
-            expectedBlock = baseBlock - dateOffset / avgBlockTime - 1
+            expectedBlock = Math.round(baseBlock - dateOffset / avgBlockTime - 1)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [zero, zero, zero, zero, zero], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now - dateOffset - pad), gw)).to.eq(expectedBlock)
-            expectedBlock = baseBlock + dateOffset / avgBlockTime
+            expectedBlock = Math.round(baseBlock + dateOffset / avgBlockTime)
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [zero, zero, zero, zero, zero], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now + dateOffset), gw)).to.eq(expectedBlock)
@@ -731,7 +725,6 @@ describe("DVote Block Status", () => {
             w3.isUp = () => Promise.resolve()
             const gw = new Gateway(new DVoteGateway(gatewayInfo), w3)
             await gw.connect()
-
 
             // Block #1000 mined 0 seconds ago. Standard block times.
             now = Date.now()
@@ -767,37 +760,39 @@ describe("DVote Block Status", () => {
             now = Date.now()
             gatewayServer.addResponse({ id: "dummy", response: { blockTime: [zero, zero, zero, zero, zero], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now + VOCHAIN_BLOCK_TIME * 1000 * 15), gw)).to.eq(baseBlock + 15)
-            // Block #1000 mined 5 seconds ago. Standard block times.
+
+            // Block #1000 mined 6 seconds ago. Standard block times.
             now = Date.now()
-            gatewayServer.addResponse({ id: "dummy", response: { blockTime: [zero, zero, zero, zero, zero], blockTimestamp: Math.floor(now / 1000) - 5, height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
+            gatewayServer.addResponse({ id: "dummy", response: { blockTime: [zero, zero, zero, zero, zero], blockTimestamp: Math.floor(now / 1000) - 6, height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(), gw)).to.eq(baseBlock)
             now = Date.now()
-            gatewayServer.addResponse({ id: "dummy", response: { blockTime: [zero, zero, zero, zero, zero], blockTimestamp: Math.floor(now / 1000) - 5, height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
+            gatewayServer.addResponse({ id: "dummy", response: { blockTime: [zero, zero, zero, zero, zero], blockTimestamp: Math.floor(now / 1000) - 6, height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now - VOCHAIN_BLOCK_TIME * 1000 * 0.4), gw)).to.eq(baseBlock)
             now = Date.now()
-            gatewayServer.addResponse({ id: "dummy", response: { blockTime: [zero, zero, zero, zero, zero], blockTimestamp: Math.floor(now / 1000) - 5, height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
+            gatewayServer.addResponse({ id: "dummy", response: { blockTime: [zero, zero, zero, zero, zero], blockTimestamp: Math.floor(now / 1000) - 6, height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now - VOCHAIN_BLOCK_TIME * 1000 * 0.5 - pad), gw)).to.eq(baseBlock - 1)
             now = Date.now()
-            gatewayServer.addResponse({ id: "dummy", response: { blockTime: [zero, zero, zero, zero, zero], blockTimestamp: Math.floor(now / 1000) - 5, height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
+            gatewayServer.addResponse({ id: "dummy", response: { blockTime: [zero, zero, zero, zero, zero], blockTimestamp: Math.floor(now / 1000) - 6, height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now + VOCHAIN_BLOCK_TIME * 1000 * 0.4), gw)).to.eq(baseBlock)
             now = Date.now()
-            gatewayServer.addResponse({ id: "dummy", response: { blockTime: [zero, zero, zero, zero, zero], blockTimestamp: Math.floor(now / 1000) - 5, height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
+            gatewayServer.addResponse({ id: "dummy", response: { blockTime: [zero, zero, zero, zero, zero], blockTimestamp: Math.floor(now / 1000) - 6, height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now + VOCHAIN_BLOCK_TIME * 1000 * 0.5 + 50), gw)).to.eq(baseBlock + 1)
-            // Block #1000 mined 9 seconds ago. Standard block times.
+
+            // Block #1000 mined 11 seconds ago. Standard block times.
             now = Date.now()
-            gatewayServer.addResponse({ id: "dummy", response: { blockTime: [zero, zero, zero, zero, zero], blockTimestamp: Math.floor(now / 1000) - 9, height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
+            gatewayServer.addResponse({ id: "dummy", response: { blockTime: [zero, zero, zero, zero, zero], blockTimestamp: Math.floor(now / 1000) - 11, height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(), gw)).to.eq(baseBlock)
             now = Date.now()
-            gatewayServer.addResponse({ id: "dummy", response: { blockTime: [zero, zero, zero, zero, zero], blockTimestamp: Math.floor(now / 1000) - 9, height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
+            gatewayServer.addResponse({ id: "dummy", response: { blockTime: [zero, zero, zero, zero, zero], blockTimestamp: Math.floor(now / 1000) - 11, height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now - VOCHAIN_BLOCK_TIME * 1000 * 0.9), gw)).to.eq(baseBlock)
             now = Date.now()
-            gatewayServer.addResponse({ id: "dummy", response: { blockTime: [zero, zero, zero, zero, zero], blockTimestamp: Math.floor(now / 1000) - 9, height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
-            expect(await estimateBlockAtDateTime(new Date(now - VOCHAIN_BLOCK_TIME * 1000 * 0.9 - pad), gw)).to.eq(baseBlock - 1)
+            gatewayServer.addResponse({ id: "dummy", response: { blockTime: [zero, zero, zero, zero, zero], blockTimestamp: Math.floor(now / 1000) - 11, height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
+            expect(await estimateBlockAtDateTime(new Date(now - VOCHAIN_BLOCK_TIME * 1000 * 0.9 - pad - pad), gw)).to.eq(baseBlock - 1)
             now = Date.now()
-            gatewayServer.addResponse({ id: "dummy", response: { blockTime: [zero, zero, zero, zero, zero], blockTimestamp: Math.floor(now / 1000) - 9, height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
+            gatewayServer.addResponse({ id: "dummy", response: { blockTime: [zero, zero, zero, zero, zero], blockTimestamp: Math.floor(now / 1000) - 11, height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now + VOCHAIN_BLOCK_TIME * 1000 + pad), gw)).to.eq(baseBlock + 2)
             now = Date.now()
-            gatewayServer.addResponse({ id: "dummy", response: { blockTime: [zero, zero, zero, zero, zero], blockTimestamp: Math.floor(now / 1000) - 9, height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
+            gatewayServer.addResponse({ id: "dummy", response: { blockTime: [zero, zero, zero, zero, zero], blockTimestamp: Math.floor(now / 1000) - 11, height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 }, signature: "123" })
             expect(await estimateBlockAtDateTime(new Date(now + VOCHAIN_BLOCK_TIME * 1000 * 0.1 + pad), gw)).to.eq(baseBlock + 1)
 
             gw.disconnect()
@@ -822,7 +817,7 @@ describe("DVote Block Status", () => {
         const slowBlockTime = 20000
 
         // 1m, 10m, 1h, 6h and 24h
-        const blocksPerM = 6 // x 10s
+        const blocksPerM = 60 / VOCHAIN_BLOCK_TIME
         const blocksPer10m = 10 * blocksPerM
         const blocksPerH = blocksPerM * 60
         const blocksPer6h = 6 * blocksPerH
