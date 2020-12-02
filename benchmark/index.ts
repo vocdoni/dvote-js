@@ -11,7 +11,7 @@ import { EntityMetadataTemplate } from "../src/models/entity"
 import { setMetadata, getEntityMetadata } from "../src/api/entity"
 import { digestHexClaim, addCensus, addClaimBulk, publishCensus, dumpPlain, generateProof } from "../src/api/census"
 import { ProcessMetadata, ProcessMetadataTemplate } from "../src/models/process"
-import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus } from "dvote-solidity"
+import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "dvote-solidity"
 import { getProcessMetadata, getProcessParameters, getBlockHeight, newProcess, getProcessList, getProcessKeys, packageSignedEnvelope, submitEnvelope, getSignedVoteNullifier, getEnvelopeStatus, getEnvelopeHeight, setStatus, getResultsDigest } from "../src/api/voting"
 import { signJsonBody } from "../src/util/json-sign"
 import { waitUntilVochainBlock, waitEthBlocks } from "../src/util/waiters"
@@ -486,6 +486,7 @@ async function launchNewVote(merkleRoot, merkleTreeUri) {
     const processParamsPre = {
         mode: ProcessMode.make({ autoStart: true, interruptible: true }), // helper
         envelopeType: ProcessEnvelopeType.ENCRYPTED_VOTES | ProcessEnvelopeType.SERIAL, // bit mask
+        censusOrigin: ProcessCensusOrigin.OFF_CHAIN,
         metadata: ProcessMetadataTemplate,
         censusMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000",
         censusMerkleTree: "ipfs://1234123412341234",

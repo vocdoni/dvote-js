@@ -25,6 +25,7 @@ import { WsGatewayMethod } from "../src/models/gateway"
 import { IGatewayDiscoveryParameters } from "../src/net/gateway-discovery"
 import { ProcessEnvelopeType, ProcessMode, ProcessStatus } from "../src"
 import ContentHashedURI from "../src/wrappers/content-hashed-uri"
+import { ProcessCensusOrigin } from "dvote-solidity"
 
 const { Buffer } = require("buffer/")
 
@@ -358,7 +359,8 @@ async function createProcessRaw() {
     // The contract expects a tuple, using a wrapper for convenience
     const params = ProcessContractParameters.fromParams({
         mode: ProcessMode.make({ autoStart: true, interruptible: true }), // helper
-        envelopeType: ProcessEnvelopeType.ENCRYPTED_VOTES | ProcessEnvelopeType.SERIAL, // bit mask
+        envelopeType: ProcessEnvelopeType.ENCRYPTED_VOTES | ProcessEnvelopeType.SERIAL | ProcessEnvelopeType.UNIQUE_VALUES, // bit mask
+        censusOrigin: ProcessCensusOrigin.OFF_CHAIN,
         metadata: metaCuri.toString(),
         censusMerkleRoot: "0x0",
         censusMerkleTree: censusCuri.toString(),
@@ -368,7 +370,6 @@ async function createProcessRaw() {
         maxCount: 1,
         maxValue: 3,
         maxTotalCost: 0,
-        uniqueValues: false,
         costExponent: 10000,
         maxVoteOverwrites: 1,
         namespace: 0,
@@ -428,6 +429,7 @@ async function createProcessFull() {
     const params = {
         mode: ProcessMode.make({ autoStart: true }),
         envelopeType: ProcessEnvelopeType.make({ encryptedVotes: true }),
+        censusOrigin: ProcessCensusOrigin.OFF_CHAIN,
         metadata: processMetadata,
         startBlock: 100,
         blockCount: 1000,
@@ -466,6 +468,7 @@ async function setProcessStatus() {
     const processParams = {
         mode: ProcessMode.make({ autoStart: true, interruptible: true }), // helper
         envelopeType: ProcessEnvelopeType.ENCRYPTED_VOTES | ProcessEnvelopeType.SERIAL, // bit mask
+        censusOrigin: ProcessCensusOrigin.OFF_CHAIN,
         metadata: processMetadata,
         censusMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000",
         censusMerkleTree: "ipfs://1234123412341234",
@@ -531,6 +534,7 @@ async function cloneVotingProcess() {
     const params = {
         mode: currentParameters.mode,
         envelopeType: currentParameters.envelopeType,
+        censusOrigin: currentParameters.censusOrigin,
         metadata: currentMetadata,
         startBlock,
         blockCount,
@@ -541,7 +545,6 @@ async function cloneVotingProcess() {
         costExponent: currentParameters.costExponent,
         namespace: currentParameters.namespace,
         paramsSignature: "0x1234...",
-        uniqueValues: currentParameters.uniqueValues,
         maxValue: currentParameters.maxCount,
         maxTotalCost: currentParameters.maxTotalCost,
         maxVoteOverwrites: currentParameters.maxVoteOverwrites

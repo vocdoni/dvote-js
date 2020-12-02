@@ -1,6 +1,6 @@
 import { ipfsGatewayListUri } from "../constants"
 import axios from "axios"
-import { Buffer } from 'buffer'
+import { Buffer } from 'buffer/'
 
 /**
  * Attempt to fetch a file from the list of well-known IPFS gateways

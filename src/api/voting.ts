@@ -497,7 +497,7 @@ export async function setCensus(processId: string, censusMerkleRoot: string, cen
  * @param walletOrSigner
  * @param web3Gateway
  */
-export async function setResults(processId: string, results: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<void> {
+export async function setResults(processId: string, results: number[][], envelopeCount: number, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<void> {
     if (!processId) throw new Error("Invalid process ID")
     else if (!walletOrSigner) throw new Error("Invalid Wallet or Signer")
     else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) throw new Error("Invalid Gateway object")
@@ -505,7 +505,7 @@ export async function setResults(processId: string, results: string, walletOrSig
     try {
         const processInstance = await gateway.getProcessInstance(walletOrSigner)
 
-        const tx = await processInstance.setResults(processId, results)
+        const tx = await processInstance.setResults(processId, results, envelopeCount)
         if (!tx) throw new Error("Could not start the blockchain transaction")
         await tx.wait()
     }

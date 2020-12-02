@@ -3,7 +3,7 @@ import ContentHashedURI from "../wrappers/content-hashed-uri"
 import { Gateway, IGateway, DVoteGateway, IDVoteGateway, IDvoteRequestParameters } from "../net/gateway"
 import { IGatewayPool, GatewayPool } from "../net/gateway-pool"
 import { fetchIpfsHash } from "../net/ipfs"
-import { Buffer } from 'buffer'
+import { Buffer } from 'buffer/'
 import axios from "axios"
 import { Wallet, Signer } from "ethers"
 

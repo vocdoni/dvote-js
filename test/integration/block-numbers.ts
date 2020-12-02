@@ -4,7 +4,6 @@ import { addCompletionHooks } from "../mocha-hooks"
 import { DVoteGateway, IDVoteGateway, Gateway, IGateway, Web3Gateway } from "../../src/net/gateway"
 import { getBlockHeight, getBlockStatus, estimateBlockAtDateTime, estimateDateAtBlock } from "../../src/api/voting"
 import { DevWebSocketServer, WebSocketMockedInteraction, WSResponse } from "../helpers/web-socket-service"
-import { Buffer } from "buffer"
 import GatewayInfo from "../../src/wrappers/gateway-info"
 import { VOCHAIN_BLOCK_TIME } from "../../src/constants"
 const ganacheRpcServer = require("ganache-core").server

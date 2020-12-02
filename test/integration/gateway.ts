@@ -6,7 +6,7 @@ import { addFile, fetchFileBytes } from "../../src/api/file"
 import DevServices, { TestAccount } from "../helpers/all-services"
 import { DevWebSocketServer, WebSocketMockedInteraction, WSResponse, WSResponseBody } from "../helpers/web-socket-service"
 import { DevWeb3Service, getWallets } from "../helpers/web3-service"
-import { Buffer } from "buffer"
+import { Buffer } from "buffer/"
 import GatewayInfo from "../../src/wrappers/gateway-info"
 
 // let accounts: TestAccount[]

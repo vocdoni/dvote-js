@@ -1,6 +1,6 @@
 import ContentURI from "./content-uri"
 import { sha3_256 } from 'js-sha3'
-import { Buffer } from 'buffer'
+import { Buffer } from 'buffer/'
 
 export default class ContentHashedURI extends ContentURI {
     protected _hash: string

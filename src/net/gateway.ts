@@ -4,7 +4,7 @@
 
 import * as WebSocket from "isomorphic-ws"
 import { parseURL } from 'universal-parse-url'
-import { Buffer } from 'buffer'
+import { Buffer } from 'buffer/'
 import { Contract, ContractFactory, providers, utils, Wallet, Signer, ContractInterface } from "ethers"
 import { providerFromUri } from "../util/providers"
 import GatewayInfo from "../wrappers/gateway-info"

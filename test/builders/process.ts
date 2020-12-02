@@ -1,6 +1,6 @@
 // NOTE: This code is borrowed from dvote-solidity
 
-import { ProcessContractMethods, ProcessEnvelopeType, ProcessMode, IProcessEnvelopeType, IProcessMode, NamespaceContractMethods, ProcessContractParameters } from "dvote-solidity"
+import { ProcessContractMethods, ProcessEnvelopeType, ProcessMode, IProcessEnvelopeType, IProcessMode, NamespaceContractMethods, ProcessContractParameters, IProcessCensusOrigin, ProcessCensusOrigin } from "dvote-solidity"
 import { Contract, ContractFactory } from "ethers"
 import { TestAccount } from "../helpers/all-services"
 import NamespaceBuilder from "./namespace"
@@ -15,6 +15,7 @@ export const DEFAULT_NAMESPACE = 0
 export const DEFAULT_CHAIN_ID = "vochain"
 export const DEFAULT_PROCESS_MODE = ProcessMode.make()
 export const DEFAULT_ENVELOPE_TYPE = ProcessEnvelopeType.make()
+export const DEFAULT_CENSUS_ORIGIN = ProcessCensusOrigin.OFF_CHAIN
 export const DEFAULT_METADATA_CONTENT_HASHED_URI = "ipfs://1234,https://server/uri!0987654321"
 export const DEFAULT_MERKLE_ROOT = "0x123456789"
 export const DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI = "ipfs://1234,https://server/uri!1234567812345678"
@@ -24,7 +25,6 @@ export const DEFAULT_QUESTION_COUNT = 5
 export const DEFAULT_MAX_VOTE_OVERWRITES = 0
 export const DEFAULT_MAX_COUNT = 4
 export const DEFAULT_MAX_VALUE = 5
-export const DEFAULT_UNIQUE_VALUES = false
 export const DEFAULT_MAX_TOTAL_COST = 0
 export const DEFAULT_COST_EXPONENT = 10000
 export const DEFAULT_PARAMS_SIGNATURE = "0x1111111111111111111111111111111111111111111111111111111111111111"
@@ -43,11 +43,11 @@ export default class ProcessBuilder {
     blockCount: number = DEFAULT_BLOCK_COUNT
     mode: IProcessMode = DEFAULT_PROCESS_MODE
     envelopeType: IProcessEnvelopeType = DEFAULT_ENVELOPE_TYPE
+    censusOrigin: IProcessCensusOrigin = DEFAULT_CENSUS_ORIGIN
     questionCount: number = DEFAULT_QUESTION_COUNT
     maxVoteOverwrites: number = DEFAULT_MAX_VOTE_OVERWRITES
     maxCount: number = DEFAULT_MAX_COUNT
     maxValue: number = DEFAULT_MAX_VALUE
-    uniqueValues: boolean = DEFAULT_UNIQUE_VALUES
     maxTotalCost: number = DEFAULT_MAX_TOTAL_COST
     costExponent: number = DEFAULT_COST_EXPONENT
     namespace: number = DEFAULT_NAMESPACE
@@ -98,6 +98,7 @@ export default class ProcessBuilder {
             const params = ProcessContractParameters.fromParams({
                 mode: this.mode,
                 envelopeType: this.envelopeType,
+                censusOrigin: this.censusOrigin,
                 metadata: this.metadata,
                 censusMerkleRoot: this.merkleRoot,
                 censusMerkleTree: this.merkleTree,
@@ -107,7 +108,6 @@ export default class ProcessBuilder {
                 maxCount: this.maxCount,
                 maxValue: this.maxValue,
                 maxVoteOverwrites: this.maxVoteOverwrites,
-                uniqueValues: this.uniqueValues,
                 maxTotalCost: this.maxTotalCost,
                 costExponent: this.costExponent,
                 namespace: this.namespace,
@@ -150,6 +150,10 @@ export default class ProcessBuilder {
         this.envelopeType = envelopeType
         return this
     }
+    withProcessCensusOrigin(censusOrigin: IProcessCensusOrigin) {
+        this.censusOrigin = censusOrigin
+        return this
+    }
     withStartBlock(startBlock: number) {
         this.startBlock = startBlock
         return this
@@ -172,10 +176,6 @@ export default class ProcessBuilder {
     }
     withMaxValue(maxValue: number) {
         this.maxValue = maxValue
-        return this
-    }
-    withUniqueValues(uniqueValues: boolean) {
-        this.uniqueValues = uniqueValues
         return this
     }
     withMaxTotalCost(maxTotalCost: number) {
@@ -209,6 +209,7 @@ export default class ProcessBuilder {
         const params = ProcessContractParameters.fromParams({
             mode: DEFAULT_PROCESS_MODE,
             envelopeType: DEFAULT_ENVELOPE_TYPE,
+            censusOrigin: DEFAULT_CENSUS_ORIGIN,
             metadata: DEFAULT_METADATA_CONTENT_HASHED_URI,
             censusMerkleRoot: DEFAULT_MERKLE_ROOT,
             censusMerkleTree: DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI,
@@ -218,7 +219,6 @@ export default class ProcessBuilder {
             maxCount: DEFAULT_MAX_COUNT,
             maxValue: DEFAULT_MAX_VALUE,
             maxVoteOverwrites: DEFAULT_MAX_VOTE_OVERWRITES,
-            uniqueValues: DEFAULT_UNIQUE_VALUES,
             maxTotalCost: DEFAULT_MAX_TOTAL_COST,
             costExponent: DEFAULT_COST_EXPONENT,
             namespace: DEFAULT_NAMESPACE,

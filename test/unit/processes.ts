@@ -19,6 +19,7 @@ import { checkValidProcessMetadata } from "../../src/models/process"
 import ProcessBuilder, {
     DEFAULT_PROCESS_MODE,
     DEFAULT_ENVELOPE_TYPE,
+    DEFAULT_CENSUS_ORIGIN,
     DEFAULT_METADATA_CONTENT_HASHED_URI,
     DEFAULT_MERKLE_ROOT,
     DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI,
@@ -29,7 +30,6 @@ import ProcessBuilder, {
     DEFAULT_MAX_VALUE,
     DEFAULT_MAX_TOTAL_COST,
     DEFAULT_COST_EXPONENT,
-    DEFAULT_UNIQUE_VALUES,
     DEFAULT_MAX_VOTE_OVERWRITES,
     DEFAULT_PARAMS_SIGNATURE
 } from "../builders/process"
@@ -94,6 +94,7 @@ describe("Governance Process", () => {
             const data = ProcessContractParameters.fromContract(await newInstance.get(newProcessId))
             expect(data.mode.value).to.equal(DEFAULT_PROCESS_MODE)
             expect(data.envelopeType.value).to.equal(DEFAULT_PROCESS_MODE)
+            expect(data.censusOrigin).to.eq(DEFAULT_CENSUS_ORIGIN)
             expect(data.metadata.toLowerCase()).to.equal(DEFAULT_METADATA_CONTENT_HASHED_URI)
             expect(data.censusMerkleRoot).to.equal(DEFAULT_MERKLE_ROOT)
             expect(data.censusMerkleTree).to.equal(DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI)
@@ -103,7 +104,6 @@ describe("Governance Process", () => {
             expect(data.maxValue).to.eq(DEFAULT_MAX_VALUE)
             expect(data.maxTotalCost).to.eq(DEFAULT_MAX_TOTAL_COST)
             expect(data.costExponent).to.eq(DEFAULT_COST_EXPONENT)
-            expect(data.uniqueValues).to.eq(DEFAULT_UNIQUE_VALUES)
             expect(data.maxVoteOverwrites).to.eq(DEFAULT_MAX_VOTE_OVERWRITES)
             expect(data.namespace).to.eq(DEFAULT_NAMESPACE)
             expect(data.paramsSignature).to.eq(DEFAULT_PARAMS_SIGNATURE)
@@ -157,13 +157,13 @@ describe("Governance Process", () => {
             const result1 = await contractInstance.getResults(processId)
             expect(result1).to.equal("")
 
-            const tx1 = await contractInstance.setResults(processId, "1234-5678")
+            const tx1 = await contractInstance.setResults(processId, [[1,5,4], [4,1,5]], 10)
             expect(tx1).to.be.ok
             expect(tx1.to).to.equal(contractInstance.address)
             await tx1.wait()
 
             const result2 = await contractInstance.getResults(processId)
-            expect(result2).to.equal("1234-5678")
+            expect(result2).to.equal([[1,5,4], [4,1,5]])
         })
 
         it("should change the state to RESULTS")

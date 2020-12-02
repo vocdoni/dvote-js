@@ -1,5 +1,4 @@
 import { ProcessMetadata } from "../process"
-import { ProcessMode, ProcessEnvelopeType } from "dvote-solidity"
 
 export const ProcessMetadataTemplate: ProcessMetadata = {
     version: "1.1",
