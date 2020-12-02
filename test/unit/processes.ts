@@ -53,6 +53,12 @@ const nullAddress = "0x0000000000000000000000000000000000000000"
 addCompletionHooks()
 
 describe("Governance Process", () => {
+    before(() => {
+        server = new DevServices()
+        return server.start()
+    })
+    after(() => server.stop())
+
     beforeEach(async () => {
         accounts = server.accounts
         baseAccount = accounts[0]

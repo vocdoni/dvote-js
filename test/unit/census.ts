@@ -113,7 +113,7 @@ describe("Census", () => {
 
         it("Should fail on invalid hex strings", () => {
             let wallet = Wallet.fromMnemonic("soul frequent purity regret noble husband weapon scheme cement lamp put regular envelope physical entire", "m/44'/60'/0'/0/0")
-            let pubKey = wallet["signingKey"].publicKey
+            let pubKey = wallet["_signingKey"]().publicKey
 
             expect(() => {
                 digestHexClaim(pubKey)

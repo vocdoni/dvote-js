@@ -198,9 +198,9 @@ function createWallets(amount) {
         accounts.push({
             idx: i,
             mnemonic: wallet.mnemonic,
-            privateKey: wallet["signingKey"].privateKey,
-            publicKey: wallet["signingKey"].publicKey,
-            publicKeyHash: digestHexClaim(wallet["signingKey"].publicKey)
+            privateKey: wallet["_signingKey"]().privateKey,
+            publicKey: wallet["_signingKey"]().publicKey,
+            publicKeyHash: digestHexClaim(wallet["_signingKey"]().publicKey)
             // address: wallet.address
         })
     }
@@ -430,7 +430,7 @@ async function generatePublicCensusFromAccounts(accounts) {
 
     const censusIdSuffix = require("crypto").createHash('sha256').update("" + Date.now()).digest().toString("hex")
     const publicKeyDigests = accounts.map(account => account.publicKeyHash)
-    const managerPublicKeys = [entityWallet["signingKey"].publicKey]
+    const managerPublicKeys = [entityWallet["_signingKey"]().publicKey]
 
     if (config.stopOnError) {
         assert(censusIdSuffix.length == 64)

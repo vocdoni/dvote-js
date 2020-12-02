@@ -44,7 +44,7 @@ describe("Standalone Ethereum wallets", () => {
 
         const wallet = walletFromSeededPassphrase(passphrase, hexSeed)
         expect(wallet.privateKey).to.eq("0x58c6192cbffe39d20f6dbaa2957a6d6a4116489a2bb66caab5c4a0bfa83d887b")
-        expect(wallet["signingKey"].publicKey).to.eq("0x04de6d532b6979899729f9e98869888ea7fdbc446f9f3ea732d23c7bcd10c784d041887d48ebc392c4ff51882ae569ca1553f6ab6538664bced6cca6855acbbade")
+        expect(wallet["_signingKey"]().publicKey).to.eq("0x04de6d532b6979899729f9e98869888ea7fdbc446f9f3ea732d23c7bcd10c784d041887d48ebc392c4ff51882ae569ca1553f6ab6538664bced6cca6855acbbade")
         expect(await wallet.getAddress()).to.eq("0xf76564CBF51B1F050c84fC01400088ACD2704F2e")
 
         const msg = utils.toUtf8Bytes("Hello")
@@ -136,6 +136,6 @@ describe("Standalone Ethereum wallets", () => {
 
         const signature = await signJsonBody(jsonBody, wallet)
 
-        expect(isValidSignature(signature, wallet["signingKey"].publicKey, jsonBody)).to.be.true
+        expect(isValidSignature(signature, wallet["_signingKey"]().publicKey, jsonBody)).to.be.true
     })
 })

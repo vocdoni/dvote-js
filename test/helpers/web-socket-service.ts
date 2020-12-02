@@ -116,8 +116,8 @@ export class DevWebSocketServer {
 
     // GETTERS
     get uri() { return `ws://localhost:${this.port}` }
-    get privateKey() { return this.wallet["signingKey"].privateKey }
-    get publicKey() { return this.wallet["signingKey"].compressedPublicKey }
+    get privateKey() { return this.wallet["_signingKey"]().privateKey }
+    get publicKey() { return this.wallet["_signingKey"]().compressedPublicKey }
     get client() {
         return new DVoteGateway({ uri: this.uri, supportedApis: ["file", "census", "vote", "results"], publicKey: this.publicKey })
     }

@@ -294,7 +294,7 @@ async function censusMethods() {
     await gw.connect()
 
     const censusName = "My census name " + Math.random().toString().substr(2)
-    const adminPublicKeys = [await wallet["signingKey"].publicKey]
+    const adminPublicKeys = [await wallet["_signingKey"]().publicKey]
     const publicKeyClaims = [
         "0412d6dc30db7d2a32dddd0ba080d244cc26fcddcc29beb3fcb369564b468b9927445ab996fecbdd6603f6accbc4b3f773a9fe59b66f6e8ef6d9ecf70d8cee5a73",
         "043980b22e9432aa2884772570c47a6f78a39bcc08b428161a503eeb91f66b1901ece9b82d2624ed5b44fa02922c28080c717f474eca16c54aecd74aba3eb76953",
@@ -602,7 +602,7 @@ async function useVoteApi() {
     console.log("- Date at block 500:", await estimateDateAtBlock(500, pool))
     console.log("- Block in 200 seconds:", await estimateBlockAtDateTime(new Date(Date.now() + VOCHAIN_BLOCK_TIME * 20), pool))
 
-    const publicKeyHash = digestHexClaim(wallet["signingKey"].publicKey)
+    const publicKeyHash = digestHexClaim(wallet["_signingKey"]().publicKey)
     const merkleProof = await generateProof(censusMerkleRoot, publicKeyHash, true, pool)
     const votes = [1, 2, 1]
 
@@ -661,7 +661,7 @@ async function submitVoteBatch() {
             const wallet = Wallet.fromMnemonic(mnemonic, PATH)
             // const myEntityAddress = await wallet.getAddress()
 
-            const publicKeyHash = digestHexClaim(wallet["signingKey"].publicKey)
+            const publicKeyHash = digestHexClaim(wallet["_signingKey"]().publicKey)
             const merkleProof = await generateProof(censusMerkleRoot, publicKeyHash, true, pool)
             const votes = [1]
             const voteEnvelope = await packageSignedEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet })
@@ -690,7 +690,7 @@ async function checkSignature() {
     //const signature = await signJsonBody(body, wallet)
 
     const expectedAddress = await wallet.getAddress()
-    const expectedPublicKey = wallet["signingKey"].publicKey
+    const expectedPublicKey = wallet["_signingKey"]().publicKey
 
     let body = { "actionKey": "register", "dateOfBirth": "1975-01-25T12:00:00.000Z", "email": "john@me.com", "entityId": "0xf6515536038e12212adc96395021ad1f1f089a239f0ba4c139d364ededd00c54", "firstName": "John", "lastName": "Mayer", "method": "register", "phone": "5555555", "timestamp": 1582821257721 }
     let givenSignature = "0x3086bf3de0d22d2d51f274d4618ea963b60b1e590f5ef0b1a2df17447746d4503f595e87330fb9cc9387c321acc9e476baedfd0681d864f68f4f1bc84548725c1b"
