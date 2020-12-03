@@ -2,17 +2,16 @@
 // This component is meant to be a simple communication wrapper.
 // It provides a wrapper to use a Vocdoni Gateway, as well as a wrapper a Web3 one
 
-import * as WebSocket from "isomorphic-ws"
 import { parseURL } from 'universal-parse-url'
 import { Buffer } from 'buffer/'
-import { Contract, ContractFactory, providers, utils, Wallet, Signer, ContractInterface } from "ethers"
+import { Contract, ContractFactory, providers, utils, Wallet, Signer, ContractInterface, BigNumber } from "ethers"
 import { providerFromUri } from "../util/providers"
 import GatewayInfo from "../wrappers/gateway-info"
 import { DVoteSupportedApi, WsGatewayMethod, fileApiMethods, voteApiMethods, censusApiMethods, dvoteGatewayApiMethods, resultsApiMethods } from "../models/gateway"
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
 import { signJsonBody, isValidSignature, sortObjectFields, isByteSignatureValid } from "../util/json-sign"
-import { getEntityResolverInstance, getProcessInstance, IProcessContract, IEnsPublicResolverContract, INamespaceContract } from "../net/contracts"
-import axios, { AxiosInstance } from "axios"
+import { IProcessContract, IEnsPublicResolverContract, INamespaceContract } from "../net/contracts"
+import axios, { AxiosInstance, AxiosResponse } from "axios"
 import { NetworkID, fetchDefaultBootNode, getNetworkGatewaysFromBootNodeData, fetchFromBootNode } from "./gateway-bootnodes"
 import ContentURI from "../wrappers/content-uri"
 import { extractUint8ArrayJSONValue } from "../util/uint8array"
@@ -23,6 +22,7 @@ import {
     Namespace as NamespaceContractDefinition
 } from "dvote-solidity"
 import { entityResolverEnsDomain, processEnsDomain, entityResolverEnsDomainDev, processEnsDomainDev } from "../constants"
+import { promiseWithTimeout } from '../util/timeout'
 
 const { JsonRpcProvider, Web3Provider, IpcProvider, InfuraProvider, FallbackProvider, EtherscanProvider } = providers
 
@@ -47,14 +47,6 @@ export interface IDvoteRequestParameters {
     [k: string]: any
 }
 
-/** Data structure of the request list */
-type WsRequest = {
-    id: string                           // used to track requests and responses
-    resolve: (response: GatewayResponse) => void
-    reject: (error: Error) => void,
-    timeout: any
-}
-
 /** What is actually sent by sendRequest() to the Gateway */
 type MessageRequestContent = {
     id: string,
@@ -71,7 +63,7 @@ type GatewayResponse = {
         timestamp?: number,
     },
     signature?: string,
-    responseBytes?: Uint8Array,
+    // responseBytes?: Uint8Array,
 }
 
 /**
@@ -213,7 +205,6 @@ export class Gateway {
                         // console.timeEnd("connect dvote")
                         if (!dvoteConnected) return false
                         return true
-
                     })
             })
     }
@@ -247,7 +238,7 @@ export class Gateway {
         return this.dvote.disconnect()
     }
 
-    public getDVoteUri(): Promise<string> {
+    public getDVoteUri(): string {
         return this.dvote.getUri()
     }
 
@@ -308,17 +299,12 @@ export class Gateway {
  * intended to interact within voting processes
  */
 export class DVoteGateway {
-    protected uri: string = ""
-
     protected supportedApis: DVoteSupportedApi[] = []
     protected pubKey: string = ""
 
     public health: number = 0
 
-    private webSocket: WebSocket = null
-    private http: AxiosInstance = null
-    private connectionPromise: Promise<void> = null   // let sendMessage wait of the socket is still not open
-    private requestList: WsRequest[] = []  // keep track of the active requests
+    private client: AxiosInstance = null
 
     /**
      * Returns a new DVote Gateway web socket client
@@ -326,155 +312,32 @@ export class DVoteGateway {
      */
     constructor(gatewayOrParams: GatewayInfo | { uri: string, supportedApis: DVoteSupportedApi[], publicKey?: string }) {
         if (gatewayOrParams instanceof GatewayInfo) {
-            this.uri = gatewayOrParams.dvote
+            this.client = axios.create({ baseURL: gatewayOrParams.dvote, method: "post" })
             this.supportedApis = gatewayOrParams.supportedApis
             this.pubKey = gatewayOrParams.publicKey
         } else {
             const { uri, supportedApis, publicKey } = gatewayOrParams
             if (!uri) throw new Error("Invalid gateway URI")
 
-            this.uri = uri
+            this.client = axios.create({ baseURL: uri, method: "post" })
             this.supportedApis = supportedApis
             this.pubKey = publicKey || ""
         }
     }
 
-    /**
-     * Connect to the URI defined in the constructor. If a URI is given, discard the previour one and connect to the new one.
-     * @param gatewayOrParams (optional) If set, connect to the given coordinates
-     * @returns Promise that resolves when the socket is open
-     */
-    public connect(): Promise<void> {
-        // Close any previous web socket that might be open
-        this.disconnect()
-
-        const url = parseURL(this.uri)
-        switch (url.protocol) {
-            case "http:":
-            case "https:":
-                // Keep a promise so that calls to sendMessage coming before the socket is open
-                // wait until the promise is resolved
-                this.connectionPromise = new Promise((resolve, reject) => {
-                    try {
-                        // Set up the connection
-                        const buildResponse = msg => {
-                            // Detect behavior on Browser/NodeJS
-                            if (!msg) throw new Error("Invalid response message")
-
-                            if (typeof msg == "string") {
-                                this.gotWebSocketMessage(msg)
-                            }
-                            else if (msg instanceof Buffer || msg instanceof Uint8Array) {
-                                let responseBytes = extractUint8ArrayJSONValue(msg, "response")
-                                this.gotWebSocketMessage(msg.toString(), responseBytes)
-                            }
-                            else if (typeof Blob != "undefined" && msg instanceof Blob) {
-                                readBlobText(msg)
-                                    .then(textData => {
-                                        return readBlobArrayBuffer(msg as any)
-                                            .then((arrayBufferData) => [textData, arrayBufferData])
-                                    }).then(([textData, arrayBufferData]: [string, ArrayBuffer]) => {
-                                        let responseBytes = extractUint8ArrayJSONValue(new Uint8Array(arrayBufferData), "response")
-                                        this.gotWebSocketMessage(textData, responseBytes)
-                                    })
-                            }
-                            else {
-                                console.error("Unsupported response", typeof msg, msg)
-                            }
-                        }
-                        const httpCon = axios.create({
-                            baseURL: this.uri,
-                            method: "post",
-                            transformResponse: buildResponse,
-                        })
-                        this.http = httpCon
-                        this.connectionPromise = null
-                        resolve()
-                    } catch (error) {
-                        reject(error)
-                    }
-                })
-                break
-            case "ws:":
-            case "wss:":
-                // wait until the promise is resolved
-                this.connectionPromise = new Promise((resolve, reject) => {
-                    // Set up the web socket
-                    const ws = new WebSocket(this.uri)
-                    ws.onopen = () => {
-                        // the socket is ready
-                        this.webSocket = ws
-
-                        this.connectionPromise = null
-                        resolve()
-                    }
-                    ws.onmessage = msg => {
-                        // Detect behavior on Browser/NodeJS
-                        if (!msg || !msg.data) throw new Error("Invalid response message")
-
-                        if (typeof msg.data == "string") {
-                            this.gotWebSocketMessage(msg.data)
-                        }
-                        else if (msg.data instanceof Buffer || msg.data instanceof Uint8Array) {
-                            let responseBytes = extractUint8ArrayJSONValue(msg.data, "response")
-                            this.gotWebSocketMessage(msg.data.toString(), responseBytes)
-                        }
-                        else if (typeof Blob != "undefined" && msg.data instanceof Blob) {
-                            readBlobText(msg.data)
-                                .then(textData => {
-                                    return readBlobArrayBuffer(msg.data as any)
-                                        .then((arrayBufferData) => [textData, arrayBufferData])
-                                }).then(([textData, arrayBufferData]: [string, ArrayBuffer]) => {
-                                    let responseBytes = extractUint8ArrayJSONValue(new Uint8Array(arrayBufferData), "response")
-                                    this.gotWebSocketMessage(textData, responseBytes)
-                                })
-                        }
-                        else {
-                            console.error("Unsupported response", typeof msg.data, msg.data)
-                        }
-                    }
-                    ws.onerror = (err) => reject(err)
-                    ws.onclose = () => reject(new Error("Connection closed"))
-                })
-                break
-            default:
-                throw new Error("Unsupported gateway protocol: " + url.protocol)
-        }
-
-        // if the caller of this function awaits this promise,
-        // an eventual call in sendRequest will not need to
-        return this.connectionPromise
-    }
-
-    /** Close the current connection */
+    /** Dispose the current HTTP client */
     public disconnect() {
-        if (!this.webSocket && !this.http) return
-        if (this.webSocket && typeof this.webSocket.terminate == "function") this.webSocket.terminate()
-        if (this.webSocket && typeof this.webSocket.close == "function") this.webSocket.close()
-        this.webSocket = null
-        this.http = null
-        // this.uri = null  // Why???
+        if (!this.client) return
+        this.client = null
     }
 
-    /**
-     * Check whether the client is effectively connected to a Gateway
-     */
-    public async isConnected(): Promise<boolean> {
-        if (this.connectionPromise) await this.connectionPromise
-        else if (this.http) return true
-        else return this.webSocket != null &&
-            this.webSocket.readyState === this.webSocket.OPEN &&
-            this.uri != null
+    /** Check whether the client is connected to a Gateway */
+    public hasClient(): boolean {
+        return this.client && !!this.client.getUri()
     }
 
-    /**
-     * Get the current URI of the Gateway
-     */
-    public async getUri(): Promise<string> {
-        if (this.connectionPromise) await this.connectionPromise
-
-        return this.uri
-    }
+    /** Get the current URI of the Gateway */
+    public getUri() { return this.client && this.client.getUri() || null }
 
     public getSupportedApis() { return this.supportedApis }
 
@@ -484,17 +347,11 @@ export class DVoteGateway {
      * Send a WS message to a Vocdoni Gateway and add an entry to track its response
      * @param requestBody Parameters of the request to send. The timestamp (in seconds) will be added to the object.
      * @param wallet (optional) The wallet to use for signing (default: null)
-     * @param timeout (optional) Timeout in seconds to wait before failing (default: 50)
      */
-    public async sendRequest(requestBody: IDvoteRequestParameters, wallet: Wallet | Signer = null, timeout: number = 50): Promise<any> {
-        if (typeof requestBody != "object") return Promise.reject(new Error("The payload should be a javascript object"))
+    public async sendRequest(requestBody: IDvoteRequestParameters, wallet: Wallet | Signer = null): Promise<any> {
+        if (!this.hasClient()) throw new Error("Not initialized")
+        else if (typeof requestBody != "object") return Promise.reject(new Error("The payload should be a javascript object"))
         else if (typeof wallet != "object") return Promise.reject(new Error("The wallet is required"))
-
-        if (!(await this.isConnected())) {
-            await this.connect()
-        }
-
-        if (!this.http && !this.webSocket) return Promise.reject(new Error("The gateway connection is not yet available"))
 
         // Check API method availability
         if ((fileApiMethods.indexOf(requestBody.method as any) >= 0 && this.supportedApis.indexOf("file") < 0) ||
@@ -507,36 +364,64 @@ export class DVoteGateway {
         if (typeof requestBody.timestamp == "undefined") {
             requestBody.timestamp = Math.floor(Date.now() / 1000)
         }
-        let rand, requestId
-        do {
-            rand = Math.random().toString(16).split('.')[1]
-            requestId = utils.keccak256('0x' + rand).substr(2, 10)
-        } while (this.requestList.some(r => r.id === rand))
-        const content: MessageRequestContent = {
+        const rand = Math.random().toString(16).split('.')[1]
+        const requestId = utils.keccak256('0x' + rand).substr(2, 10)
+
+        const request: MessageRequestContent = {
             id: requestId,
             request: requestBody,
             signature: ""
         }
         if (wallet) {
-            content.signature = await signJsonBody(requestBody, wallet)
+            request.signature = await signJsonBody(requestBody, wallet)
         }
 
-        const reqPromise = new Promise((resolve, reject) => {
-            this.requestList.push({
-                id: requestId,
-                resolve,
-                reject,
-                timeout: setTimeout(() => {
-                    reject(new Error("Request timed out"))
-                    // remove from the list
-                    this.requestList = this.requestList.filter(r => r.id != requestId)
-                }, timeout * 1000)
-            })
-            if (this.http) this.http.post('', JSON.stringify(sortObjectFields(content)))
-            else this.webSocket.send(JSON.stringify(sortObjectFields(content)))
-        })
+        const response = await this.client.post('', JSON.stringify(sortObjectFields(request)))
 
-        const msg = (await reqPromise) as GatewayResponse
+        let msg: GatewayResponse
+        let msgBytes: Uint8Array
+
+        // Detect behavior on Browser/NodeJS
+        if (!response.data) throw new Error("Invalid response message")
+        else if (typeof response.data == "string") {
+            try { msg = JSON.parse(response.data) }
+            catch (err) {
+                console.error("GW response parsing error:", err)
+                throw err
+            }
+            // this.handleGatewayResponse(response.data)
+        }
+        else if (response.data instanceof Buffer || response.data instanceof Uint8Array) {
+            try { msg = JSON.parse(response.data.toString()) }
+            catch (err) {
+                console.error("GW response parsing error:", err)
+                throw err
+            }
+            msgBytes = extractUint8ArrayJSONValue(response.data, "response")
+            // this.handleGatewayResponse(response.data.toString(), responseBytes)
+        }
+        else if (typeof Blob != "undefined" && response.data instanceof Blob) {
+            const responseData = await readBlobText(response.data)
+            const arrayBufferData = await readBlobArrayBuffer(response.data)
+            try { msg = JSON.parse(responseData) }
+            catch (err) {
+                console.error("GW response parsing error:", err)
+                throw err
+            }
+            msgBytes = extractUint8ArrayJSONValue(new Uint8Array(arrayBufferData), "response")
+
+            // readBlobText(response.data)
+            //     .then(textData => {
+            //         return readBlobArrayBuffer(response.data)
+            //             .then((arrayBufferData) => [textData, arrayBufferData])
+            //     }).then(([textData, arrayBufferData]: [string, ArrayBuffer]) => {
+            //         let responseBytes = extractUint8ArrayJSONValue(new Uint8Array(arrayBufferData), "response")
+            //         this.handleGatewayResponse(textData, responseBytes)
+            //     })
+        }
+        else {
+            throw new Error("Unsupported response: [" + typeof response.data + "] - " + response.data)
+        }
 
         if (!msg.response) return Promise.reject(new Error("Invalid response message"))
 
@@ -554,8 +439,8 @@ export class DVoteGateway {
             // if (typeof timestamp != "number" || timestamp < from || timestamp > until) {
             //     return Promise.reject(new Error("The response does not provide a valid timestamp"))
             // }
-            if (msg.responseBytes) {
-                if (!isByteSignatureValid(msg.signature, this.publicKey, msg.responseBytes)) {
+            if (msgBytes) {
+                if (!isByteSignatureValid(msg.signature, this.publicKey, msgBytes)) {
                     return Promise.reject(new Error("The signature of the response does not match the expected one"))
                 }
             } else if (!isValidSignature(msg.signature, this.publicKey, msg.response)) {
@@ -576,7 +461,7 @@ export class DVoteGateway {
      * If there is no connection open, the method returns null.
      */
     public async getGatewayInfo(timeout?: number): Promise<{ api: DVoteSupportedApi[], health: number }> {
-        if (!this.isConnected()) return null
+        if (!this.hasClient()) return null
 
         try {
             let result
@@ -607,99 +492,38 @@ export class DVoteGateway {
      * @returns the necessary parameters to create a GatewayInfo object
      */
     public isUp(timeout: number = GATEWAY_SELECTION_TIMEOUT): Promise<void> {
-        const uri = parseURL(this.uri)
+        if (!this.client) return Promise.reject(new Error("The client is not initialized"))
+        const uri = parseURL(this.client.getUri())
 
         if (uri.host.length === 0) {
             return Promise.reject(new Error("Invalid Gateway URL"))
         }
-        return new Promise((resolve, reject) => {
-            // Check ping and then status
-            setTimeout(() => reject(new Error("The Dvote Gateway is too slow")), timeout)
-
-            this.checkPing()
+        return promiseWithTimeout(() => {
+            return this.checkPing()
                 .then((isUp) => {
-                    if (isUp !== true) return reject(new Error("No ping reply"))
-
-                    return this.connect()
-                        .then(() => this.getGatewayInfo(timeout))
-                        .then((response) => {
-                            if (response && Array.isArray(response.api)) return resolve()
-                            return reject(new Error("Invalid DVote Gateway response"))
-                        })
-                }).catch((err) => {
-                    console.error(err);
-                    reject(new Error("The DVote Gateway seems to be down"))
+                    if (isUp !== true) throw new Error("No ping reply")
+                    return this.getGatewayInfo(timeout)
                 })
-        })
+                .then((response) => {
+                    if (!response || !Array.isArray(response.api)) throw new Error("Invalid DVote Gateway response")
+                })
+        }, timeout, "The DVote Gateway seems to be down")
     }
 
     /**
      * Checks the ping response of the gateway
      * @returns A boolean representing wheter the gateway responded correctly or not
      */
-    public async checkPing(): Promise<boolean> {
-        const uri = parseURL(this.uri)
-        let pingUrl: string = `https://${uri.host}/ping`
+    public checkPing(): Promise<boolean> {
+        if (!this.client) return Promise.reject(new Error("The client is not initialized"))
+        const uri = parseURL(this.client.getUri())
+        const pingUrl = `https://${uri.host}/ping`
 
-        try {
-            let response = await axios.get(pingUrl).catch(err => {
-                return null
-            })
-            if (response != null &&
-                response.status === 200 &&
-                response.data === "pong") {
-                return true;
-            }
-
-            // HTTP fallback
-            pingUrl = `http://${uri.host}/ping`
-
-            response = await axios.get(pingUrl).catch(err => {
-                return null
-            })
-            return (response != null &&
-                response.status === 200 &&
-                response.data === "pong")
-        } catch (err) {
-            return false
-        }
-    }
-
-    // PRIVATE METHODS
-
-    /**
-     * Handle incoming WS messages and link them to their original request
-     * @param strResponse JSON response contents
-     */
-    private gotWebSocketMessage(strResponse: string, responseBytes?: Uint8Array) {
-        let response
-        try {
-            response = JSON.parse(strResponse)
-        }
-        catch (err) {
-            console.error("JSON parsing error:", err)
-            throw err
-        }
-
-        if (!response || !response.id) return console.error("Invalid Gateway response:", response)
-
-        const request = this.requestList.find(r => r.id == response.id)
-        if (!request) return // it may have timed out
-
-        clearTimeout(request.timeout)
-        delete request.reject
-        delete request.timeout
-
-        // remove from the list
-        this.requestList = this.requestList.filter(r => r.id != response.id)
-
-        // The request payload is handled in `sendMessage`
-        if (responseBytes && responseBytes.length > 0) {
-            response['responseBytes'] = responseBytes
-        }
-        // The request payload is handled in `sendRequest`
-        request.resolve(response)
-        delete request.resolve
+        return promiseWithTimeout(() => axios.get(pingUrl), 2000)
+            .catch(err => null)
+            .then((response?: AxiosResponse<any>) => (
+                response != null && response.status === 200 && response.data === "pong"
+            ))
     }
 }
 
@@ -837,7 +661,7 @@ export class Web3Gateway {
 
         return this.provider.send("net_peerCount", []).then(result => {
             if (!result) return -1
-            return utils.bigNumberify(result).toNumber()
+            return BigNumber.from(result).toNumber()
         })
     }
 
