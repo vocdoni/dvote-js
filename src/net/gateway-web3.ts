@@ -88,6 +88,11 @@ export class Web3Gateway {
         this.tokenStorageProofContractAddress = addr4
     }
 
+    /** Sets the polling flag to false */
+    public disconnect() {
+        this._provider.polling = false
+    }
+
     /**
      * Deploy the contract using the given signer or wallet.
      * If a signer is given, its current connection will be used.

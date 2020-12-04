@@ -123,6 +123,11 @@ export class Gateway {
         return this.dvote.init(requiredApis)
     }
 
+    /** Sets the web3 polling flag to false */
+    public disconnect() {
+        this.web3.disconnect()
+    }
+
     public get isReady(): boolean {
         return this.web3.isReady && this.dvote.isReady
     }

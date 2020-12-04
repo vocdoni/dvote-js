@@ -30,7 +30,7 @@ addCompletionHooks()
 
 describe("Namespaces", () => {
     before(() => {
-        server = new DevServices({ port: 9010 }, { port: 9011 })
+        server = new DevServices({ port: 9020 }, { port: 9021 })
         return server.start()
     })
     after(() => server.stop())

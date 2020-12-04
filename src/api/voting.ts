@@ -4,13 +4,22 @@ import { FileApi } from "./file"
 import { EntityApi } from "./entity"
 import { ProcessMetadata, checkValidProcessMetadata, DigestedProcessResults, DigestedProcessResultItem, INewProcessParams } from "../models/process"
 import { VOCHAIN_BLOCK_TIME, XDAI_GAS_PRICE, XDAI_CHAIN_ID, SOKOL_CHAIN_ID, SOKOL_GAS_PRICE } from "../constants"
-import { JsonSignature } from "../util/data-signing"
+import { JsonSignature, BytesSignature } from "../util/data-signing"
 import { Buffer } from "buffer/"  // Previously using "arraybuffer-to-string"
 import { Asymmetric } from "../util/encryption"
 import { GatewayPool, IGatewayPool } from "../net/gateway-pool"
 import { VochainWaiter } from "../util/waiters"
 import { Random } from "../util/random"
 import { IMethodOverrides, ProcessStatus, ProcessContractParameters, IProcessCreateParams, IProcessStatus } from "../net/contracts"
+import {
+    VoteEnvelope,
+    Proof,
+    ProofGraviton,
+    // ProofIden3,
+    // ProofEthereumStorage,
+    // ProofEthereumAccount
+} from "../../lib/protobuf/build/js/common/vote_pb.js"
+import { DVoteGatewayResponseBody } from "net/gateway-dvote"
 
 // TYPES
 
@@ -730,14 +739,14 @@ export class VotingApi {
 
     /**
      * Submit the vote envelope to a Gateway
-     * @param voteEnvelope
+     * @param payload Base64 encoded contents of the (protobuf) Vote Envelope
      * @param gateway
      */
-    static async submitEnvelope(voteEnvelope: IAnonymousVoteEnvelope | ISignedVoteEnvelope, gateway: IGateway | GatewayPool) {
-        if (!voteEnvelope) return Promise.reject(new Error("Invalid parameters"))
+    async submitEnvelope(base64VoteEnvelope: string, hexSignature: string = "", gateway: IGateway | GatewayPool): Promise<DVoteGatewayResponseBody> {
+        if (!base64VoteEnvelope) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
-        return gateway.sendRequest({ method: "submitEnvelope", payload: voteEnvelope })
+        return gateway.sendRequest({ method: "submitEnvelope", payload: base64VoteEnvelope, signature: hexSignature || "" })
             .catch((error) => {
                 const message = (error.message) ? "Could not submit the vote envelope: " + error.message : "Could not submit the vote envelope"
                 throw new Error(message)
@@ -788,7 +797,7 @@ export class VotingApi {
     static packageAnonymousEnvelope(params: {
         votes: number[], merkleProof: string, processId: string, privateKey: string,
         processKeys?: IProcessKeys
-    }): IAnonymousVoteEnvelope {
+    }): Uint8Array {
         if (!params) throw new Error("Invalid parameters");
         if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
         else if (typeof params.merkleProof != "string" || !params.merkleProof.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid Merkle Proof")
@@ -801,13 +810,15 @@ export class VotingApi {
             }
         }
 
+        // TODO: Use Graviton Proof
+
         // TODO: use packageVoteContent()
 
         throw new Error("TODO: unimplemented")
     }
 
     /**
-     * Packages the given vote array into a JSON payload that can be sent to Vocdoni Gateways.
+     * Packages the given vote array into a protobuf message that can be sent to Vocdoni Gateways.
      * The voter's signature will be included on the vote, so the voter's anonymity may be public.
      * If `encryptionPublicKey` is defined, it will be used to encrypt the vote package.
      * @param params
@@ -815,7 +826,7 @@ export class VotingApi {
     static async packageSignedEnvelope(params: {
         votes: number[], merkleProof: string, processId: string, walletOrSigner: Wallet | Signer,
         processKeys?: IProcessKeys
-    }): Promise<ISignedVoteEnvelope> {
+    }): Promise<{ envelope: Uint8Array, signature: string }> {
         if (!params) throw new Error("Invalid parameters");
         else if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
         else if (typeof params.merkleProof != "string" || !params.merkleProof.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid Merkle Proof")
@@ -829,22 +840,27 @@ export class VotingApi {
         }
 
         try {
-            const nonce = utils.keccak256('0x' + Date.now().toString(16)).substr(2)
+            const nonce = Random.getHex().substr(2)
+
+            const gProof = new ProofGraviton()
+            gProof.setSiblings(new Uint8Array(Buffer.from(params.merkleProof.replace("0x", ""), "hex")))
+
+            const proof = new Proof()
+            proof.setGraviton(gProof)
+
+            const envelope = new VoteEnvelope()
+            envelope.setProof(proof)
+            envelope.setProcessid(new Uint8Array(Buffer.from(params.processId.replace("0x", ""), "hex")))
+            envelope.setNonce(new Uint8Array(Buffer.from(nonce, "hex")))
 
             const { votePackage, keyIndexes } = VotingApi.packageVoteContent(params.votes, params.processKeys)
+            envelope.setVotepackage(new Uint8Array(votePackage))
+            if (keyIndexes) envelope.setEncryptionkeyindexesList(keyIndexes)
 
-            const pkg: ISignedVoteEnvelope = {
-                processId: params.processId,
-                proof: params.merkleProof,
-                nonce,
-                votePackage
-                // signature:  Must be unset because the body must be singed without the signature field
-            }
-            if (keyIndexes) pkg.encryptionKeyIndexes = keyIndexes
+            const bytes = new Uint8Array(envelope.serializeBinary())
+            const signature = await BytesSignature.sign(bytes, params.walletOrSigner)
 
-            pkg.signature = await JsonSignature.sign(pkg, params.walletOrSigner)
-
-            return pkg
+            return { envelope: bytes, signature }
         } catch (error) {
             throw new Error("Poll vote Envelope could not be generated")
         }
@@ -856,7 +872,7 @@ export class VotingApi {
      * @param votes An array of numbers with the choices
      * @param encryptionPubKeys An ed25519 public key (https://ed25519.cr.yp.to/)
      */
-    static packageVoteContent(votes: number[], processKeys?: IProcessKeys): { votePackage: string, keyIndexes?: number[] } {
+    static packageVoteContent(votes: number[], processKeys?: IProcessKeys): { votePackage: Buffer, keyIndexes?: number[] } {
         if (!Array.isArray(votes)) throw new Error("Invalid votes")
         else if (votes.some(vote => typeof vote != "number")) throw new Error("Votes needs to be an array of numbers")
         else if (processKeys) {
@@ -887,22 +903,22 @@ export class VotingApi {
                 publicKeysIdx.push(entry.idx)
             })
 
-            let buff: Buffer
+            let votePackage: Buffer
             for (let i = 0; i < publicKeys.length; i++) {
-                if (i > 0) buff = Asymmetric.encryptRaw(buff, publicKeys[i]) // reencrypt buff
-                else buff = Asymmetric.encryptRaw(Buffer.from(strPayload), publicKeys[i]) // encrypt the first
+                if (i > 0) votePackage = Asymmetric.encryptRaw(votePackage, publicKeys[i]) // reencrypt votePackage
+                else votePackage = Asymmetric.encryptRaw(Buffer.from(strPayload), publicKeys[i]) // encrypt the first
             }
-            const result = buff.toString("base64")
-            return { votePackage: result, keyIndexes: publicKeysIdx }
+            return { votePackage, keyIndexes: publicKeysIdx }
         }
         else {
-            return { votePackage: Buffer.from(strPayload).toString("base64") }
+            return { votePackage: Buffer.from(strPayload) }
         }
     }
 
-    /** Computes the nullifier of the user's vote within a process where `envelopeType.ANONYMOUS` is disabled.
-    * Returns a hex string with kecak256(bytes(address) + bytes(processId))
-    */
+    /**
+     * Computes the nullifier of the user's vote within a process where `envelopeType.ANONYMOUS` is disabled.
+     * Returns a hex string with kecak256(bytes(address) + bytes(processId))
+     */
     static getSignedVoteNullifier(address: string, processId: string): string {
         address = address.replace(/^0x/, "")
         processId = processId.replace(/^0x/, "")

@@ -26,6 +26,7 @@
     "circomlib": "^0.1.2",
     "dvote-solidity": "^0.12.1",
     "ethers": "^5.0.23",
+    "google-protobuf": "^3.14.0",
     "iso-language-codes": "^1.0.6",
     "js-sha3": "^0.8.0",
     "tweetnacl": "^1.0.3",
@@ -37,6 +38,7 @@
   "devDependencies": {
     "@types/chai": "^4.1.7",
     "@types/express": "^4.17.9",
+    "@types/google-protobuf": "^3.7.4",
     "@types/mocha": "^5.2.6",
     "@types/sinon": "^5.0.7",
     "@types/ws": "^6.0.1",

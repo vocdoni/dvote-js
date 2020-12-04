@@ -51,6 +51,11 @@ export class GatewayPool {
         return this.activeGateway.init()
     }
 
+    /** Sets the web3 polling flag to false */
+    public disconnect() {
+        this.activeGateway.disconnect()
+    }
+
     /** Launches a new discovery process and selects the healthiest gateway pair */
     public refresh(): Promise<void> {
         return GatewayDiscovery.run(this.params)

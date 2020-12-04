@@ -35,6 +35,15 @@ import ProcessBuilder, {
 import ProcessMetadataBuilder from "../builders/process-metadata"
 import NamespaceBuilder from "../builders/namespace"
 import { Web3Gateway } from "../../src/net/gateway-web3"
+import {
+    VoteEnvelope,
+    Proof,
+    ProofGraviton,
+    // ProofIden3,
+    // ProofEthereumStorage,
+    // ProofEthereumAccount
+} from "../../lib/protobuf/build/js/common/vote_pb.js"
+import { BytesSignature } from "../../src/util/data-signing"
 
 let accounts: TestAccount[]
 let baseAccount: TestAccount
@@ -46,7 +55,7 @@ let processId: string
 let contractInstance: ProcessContractMethods & Contract
 // let tx: ContractReceipt
 
-const server = new DevWeb3Service()
+const server = new DevWeb3Service({ port: 9123 })
 const nullAddress = "0x0000000000000000000000000000000000000000"
 
 addCompletionHooks()
@@ -98,7 +107,7 @@ describe("Governance Process", () => {
             expect(data.costExponent).to.eq(DEFAULT_COST_EXPONENT)
             expect(data.maxVoteOverwrites).to.eq(DEFAULT_MAX_VOTE_OVERWRITES)
             expect(data.namespace).to.eq(DEFAULT_NAMESPACE)
-            // expect(data.paramsSignature).to.eq(null)  // Not retrieved by contract.get(...)
+            expect(data.paramsSignature).to.eq(null)  // Not retrieved by contract.get(...)
         })
 
         it("Should compute process ID's in the same way as the on-chain version", async () => {
@@ -208,28 +217,28 @@ describe("Governance Process", () => {
             let processId = "0x8b35e10045faa886bd2e18636cd3cb72e80203a04e568c47205bf0313a0f60d1"
             let siblings = "0x0003000000000000000000000000000000000000000000000000000000000006f0d72fbd8b3a637488107b0d8055410180ec017a4d76dbb97bee1c3086a25e25b1a6134dbd323c420d6fc2ac3aaf8fff5f9ac5bc0be5949be64b7cfd1bcc5f1f"
 
-            const envelope1 = await VotingApi.packageSignedEnvelope({ votes: [1, 2, 3], merkleProof: siblings, processId, walletOrSigner: wallet })
-            expect(envelope1.processId).to.eq(processId)
-            expect(envelope1.proof).to.eq(siblings)
-            const pkg1: IVotePackage = JSON.parse(Buffer.from(envelope1.votePackage, "base64").toString())
+            const { envelope: e1, signature: signature1 } = await VotingApi.packageSignedEnvelope({ votes: [1, 2, 3], merkleProof: siblings, processId, walletOrSigner: wallet })
+            const envelope1 = VoteEnvelope.deserializeBinary(e1)
+            expect(Buffer.from(envelope1.getProcessid()).toString("hex")).to.eq(processId.slice(2))
+            expect(Buffer.from(envelope1.getProof().getGraviton().getSiblings()).toString("hex")).to.eq(siblings.slice(2))
+            const pkg1: IVotePackage = JSON.parse(Buffer.from(envelope1.getVotepackage()).toString())
             expect(pkg1.votes.length).to.eq(3)
             expect(pkg1.votes).to.deep.equal([1, 2, 3])
+            expect(BytesSignature.isValid(signature1, wallet._signingKey().publicKey, e1)).to.eq(true)
 
             processId = "0x36c886bd2e18605bf03a0428be100313a0f6e568c470d135d3cb72e802045faa"
             siblings = "0x0003000000100000000002000000000300000000000400000000000050000006f0d72fbd8b3a637488107b0d8055410180ec017a4d76dbb97bee1c3086a25e25b1a6134dbd323c420d6fc2ac3aaf8fff5f9ac5bc0be5949be64b7cfd1bcc5f1f"
 
-            const envelope2 = await VotingApi.packageSignedEnvelope({ votes: [5, 6, 7], merkleProof: siblings, processId, walletOrSigner: wallet })
-            expect(envelope2.processId).to.eq(processId)
-            expect(envelope2.proof).to.eq(siblings)
-            const pkg2: IVotePackage = JSON.parse(Buffer.from(envelope2.votePackage, "base64").toString())
+            const { envelope: e2, signature: signature2 } = await VotingApi.packageSignedEnvelope({ votes: [5, 6, 7], merkleProof: siblings, processId, walletOrSigner: wallet })
+            const envelope2 = VoteEnvelope.deserializeBinary(e2)
+            expect(Buffer.from(envelope2.getProcessid()).toString("hex")).to.eq(processId.slice(2))
+            expect(Buffer.from(envelope2.getProof().getGraviton().getSiblings()).toString("hex")).to.eq(siblings.slice(2))
+            const pkg2: IVotePackage = JSON.parse(Buffer.from(envelope2.getVotepackage()).toString())
             expect(pkg2.votes.length).to.eq(3)
             expect(pkg2.votes).to.deep.equal([5, 6, 7])
-
-            // Strings are not allowed
-            expect(async () => {
-                await VotingApi.packageSignedEnvelope({ votes: ["1", "2", "3"], merkleProof: siblings, processId, walletOrSigner: wallet } as any)
-            }).to.throw
+            expect(BytesSignature.isValid(signature2, wallet._signingKey().publicKey, e2)).to.eq(true)
         })
+
         it("Should bundle an encrypted Vote Package into a valid Vote Envelope", async () => {
             const wallet = Wallet.fromMnemonic("seven family better journey display approve crack burden run pattern filter topple")
 
@@ -257,17 +266,21 @@ describe("Governance Process", () => {
             // one key
             for (let item of processes) {
                 const processKeys = { encryptionPubKeys: [{ idx: 1, key: votePublicKey }] }
-                const envelope = await VotingApi.packageSignedEnvelope({ votes: item.votes, merkleProof: item.siblings, processId: item.processId, walletOrSigner: wallet, processKeys })
-                expect(envelope.processId).to.eq(item.processId)
-                expect(envelope.proof).to.eq(item.siblings)
-                expect(envelope.encryptionKeyIndexes).to.be.deep.equal([1])
-                expect(envelope.votePackage).to.be.a("string")
-                expect(Buffer.from(envelope.votePackage, "base64").length).to.be.greaterThan(0)
+                const { envelope: envelopeBytes, signature } = await VotingApi.packageSignedEnvelope({ votes: item.votes, merkleProof: item.siblings, processId: item.processId, walletOrSigner: wallet, processKeys })
+                const envelope = VoteEnvelope.deserializeBinary(envelopeBytes)
 
-                const pkg: IVotePackage = JSON.parse(Asymmetric.decryptString(envelope.votePackage, votePrivateKey))
+                expect(Buffer.from(envelope.getProcessid()).toString("hex")).to.eq(item.processId.slice(2))
+                expect(Buffer.from(envelope.getProof().getGraviton().getSiblings()).toString("hex")).to.eq(item.siblings.slice(2))
+
+                expect(envelope.getEncryptionkeyindexesList()).to.be.deep.equal([1])
+                const pkgBytes = Buffer.from(envelope.getVotepackage())
+                expect(pkgBytes.length).to.be.greaterThan(0)
+
+                const pkg: IVotePackage = JSON.parse(Asymmetric.decryptRaw(pkgBytes, votePrivateKey).toString())
                 expect(pkg.votes).to.deep.equal(item.votes)
             }
         })
+
         it("Should bundle a Vote Package encrypted with N keys in the right order", async () => {
             const wallet = Wallet.fromMnemonic("seven family better journey display approve crack burden run pattern filter topple")
 
@@ -312,18 +325,21 @@ describe("Governance Process", () => {
             for (let item of processes) {
                 const processKeys = { encryptionPubKeys: encryptionKeys.map((kp, idx) => ({ idx, key: kp.publicKey })) }
 
-                const envelope = await VotingApi.packageSignedEnvelope({
+                const { envelope: envelopeBytes, signature } = await VotingApi.packageSignedEnvelope({
                     votes: item.votes,
                     merkleProof: item.siblings,
                     processId: item.processId,
                     walletOrSigner: wallet,
                     processKeys
                 })
-                expect(envelope.processId).to.eq(item.processId)
-                expect(envelope.proof).to.eq(item.siblings)
-                expect(envelope.encryptionKeyIndexes).to.be.deep.equal([0, 1, 2, 3])
-                expect(envelope.votePackage).to.be.a("string")
-                expect(Buffer.from(envelope.votePackage, "base64").length).to.be.greaterThan(0)
+                const envelope = VoteEnvelope.deserializeBinary(envelopeBytes)
+
+                expect(Buffer.from(envelope.getProcessid()).toString("hex")).to.eq(item.processId.slice(2))
+                expect(Buffer.from(envelope.getProof().getGraviton().getSiblings()).toString("hex")).to.eq(item.siblings.slice(2))
+
+                expect(envelope.getEncryptionkeyindexesList()).to.be.deep.equal([0, 1, 2, 3])
+                const pkgBytes = Buffer.from(envelope.getVotepackage())
+                expect(pkgBytes.length).to.be.greaterThan(0)
 
                 let decryptedBuff: Buffer
                 // decrypt in reverse order
@@ -332,8 +348,9 @@ describe("Governance Process", () => {
                         expect(decryptedBuff).to.be.ok
                         decryptedBuff = Asymmetric.decryptRaw(decryptedBuff, encryptionKeys[i].privateKey)
                     }
-                    else decryptedBuff = Asymmetric.decryptRaw(Buffer.from(envelope.votePackage, "base64"), encryptionKeys[i].privateKey)
+                    else decryptedBuff = Asymmetric.decryptRaw(pkgBytes, encryptionKeys[i].privateKey)
                 }
+
                 const pkg: IVotePackage = JSON.parse(decryptedBuff.toString())
                 expect(pkg.votes).to.deep.equal(item.votes)
             }
