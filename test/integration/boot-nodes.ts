@@ -28,12 +28,9 @@ describe("Boot nodes", () => {
             expect(bootnodes[networkId].dvote[0] instanceof DVoteGateway).to.be.true
             expect(bootnodes[networkId].web3[0] instanceof Web3Gateway).to.be.true
 
-            expect(typeof bootnodes[networkId].dvote[0].connect).to.equal("function")
-            expect(typeof bootnodes[networkId].dvote[0].disconnect).to.equal("function")
-            expect(typeof bootnodes[networkId].dvote[0].getUri).to.equal("function")
-            expect(typeof await bootnodes[networkId].dvote[0].getUri()).to.equal("string")
+            expect(typeof bootnodes[networkId].dvote[0].uri).to.equal("string")
             expect(typeof bootnodes[networkId].dvote[0].sendRequest).to.equal("function")
-            expect(typeof bootnodes[networkId].dvote[0].isConnected).to.equal("function")
+            expect(typeof bootnodes[networkId].dvote[0].isReady).to.equal("function")
             expect(typeof bootnodes[networkId].dvote[0].publicKey).to.equal("string")
 
             expect(typeof bootnodes[networkId].web3[0].attach).to.equal("function")
@@ -43,7 +40,7 @@ describe("Boot nodes", () => {
         // XDAI
 
         bootnodeData = await fetchFromBootNode(PRODUCTION_BOOTNODES_URL)
-        bootnodes = await getGatewaysFromBootNodeData(bootnodeData)
+        bootnodes = getGatewaysFromBootNodeData(bootnodeData)
 
         for (let networkId in bootnodes) {
             expect(typeof networkId).to.equal("string")
@@ -56,12 +53,9 @@ describe("Boot nodes", () => {
         expect(bootnodes[NETWORK_ID].dvote[0] instanceof DVoteGateway).to.be.true
         expect(bootnodes[NETWORK_ID].web3[0] instanceof Web3Gateway).to.be.true
 
-        expect(typeof bootnodes[NETWORK_ID].dvote[0].connect).to.equal("function")
-        expect(typeof bootnodes[NETWORK_ID].dvote[0].disconnect).to.equal("function")
-        expect(typeof bootnodes[NETWORK_ID].dvote[0].getUri).to.equal("function")
-        expect(typeof await bootnodes[NETWORK_ID].dvote[0].getUri()).to.equal("string")
+        expect(typeof bootnodes[NETWORK_ID].dvote[0].uri).to.equal("string")
         expect(typeof bootnodes[NETWORK_ID].dvote[0].sendRequest).to.equal("function")
-        expect(typeof bootnodes[NETWORK_ID].dvote[0].isConnected).to.equal("function")
+        expect(typeof bootnodes[NETWORK_ID].dvote[0].isReady).to.equal("function")
         expect(typeof bootnodes[NETWORK_ID].dvote[0].publicKey).to.equal("string")
 
         expect(typeof bootnodes[NETWORK_ID].web3[0].attach).to.equal("function")
@@ -84,12 +78,9 @@ describe("Boot nodes", () => {
         expect(bootnodes[NETWORK_ID].dvote[0] instanceof DVoteGateway).to.be.true
         expect(bootnodes[NETWORK_ID].web3[0] instanceof Web3Gateway).to.be.true
 
-        expect(typeof bootnodes[NETWORK_ID].dvote[0].connect).to.equal("function")
-        expect(typeof bootnodes[NETWORK_ID].dvote[0].disconnect).to.equal("function")
-        expect(typeof bootnodes[NETWORK_ID].dvote[0].getUri).to.equal("function")
-        expect(typeof await bootnodes[NETWORK_ID].dvote[0].getUri()).to.equal("string")
+        expect(typeof bootnodes[NETWORK_ID].dvote[0].uri).to.equal("string")
         expect(typeof bootnodes[NETWORK_ID].dvote[0].sendRequest).to.equal("function")
-        expect(typeof bootnodes[NETWORK_ID].dvote[0].isConnected).to.equal("function")
+        expect(typeof bootnodes[NETWORK_ID].dvote[0].isReady).to.equal("function")
         expect(typeof bootnodes[NETWORK_ID].dvote[0].publicKey).to.equal("string")
 
         expect(typeof bootnodes[NETWORK_ID].web3[0].attach).to.equal("function")

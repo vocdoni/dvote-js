@@ -7,10 +7,10 @@ import { Buffer } from 'buffer/'
 import { Contract, ContractFactory, providers, utils, Wallet, Signer, ContractInterface, BigNumber } from "ethers"
 import { providerFromUri } from "../util/providers"
 import GatewayInfo from "../wrappers/gateway-info"
-import { DVoteSupportedApi, WsGatewayMethod, fileApiMethods, voteApiMethods, censusApiMethods, dvoteGatewayApiMethods, resultsApiMethods } from "../models/gateway"
+import { DVoteSupportedApi, DVoteGatewayMethod, fileApiMethods, voteApiMethods, censusApiMethods, dvoteGatewayApiMethods, resultsApiMethods, dvoteApis } from "../models/gateway"
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
 import { signJsonBody, isValidSignature, sortObjectFields, isByteSignatureValid } from "../util/json-sign"
-import { IProcessContract, IEnsPublicResolverContract, INamespaceContract } from "../net/contracts"
+import { IProcessContract, IEnsPublicResolverContract, INamespaceContract, ITokenStorageProofContract } from "../net/contracts"
 import axios, { AxiosInstance, AxiosResponse } from "axios"
 import { NetworkID, fetchDefaultBootNode, getNetworkGatewaysFromBootNodeData, fetchFromBootNode } from "./gateway-bootnodes"
 import ContentURI from "../wrappers/content-uri"
@@ -19,10 +19,11 @@ import { readBlobText, readBlobArrayBuffer } from "../util/blob"
 import {
     EnsPublicResolver as EntityContractDefinition,
     Process as ProcessContractDefinition,
-    Namespace as NamespaceContractDefinition
+    Namespace as NamespaceContractDefinition,
+    TokenStorageProof as TokenStorageProofContractDefinition
 } from "dvote-solidity"
 import { entityResolverEnsDomain, processEnsDomain, entityResolverEnsDomainDev, processEnsDomainDev } from "../constants"
-import { promiseWithTimeout } from '../util/timeout'
+import { promiseFuncWithTimeout, promiseWithTimeout } from '../util/timeout'
 
 const { JsonRpcProvider, Web3Provider, IpcProvider, InfuraProvider, FallbackProvider, EtherscanProvider } = providers
 
@@ -41,7 +42,7 @@ export type IGateway = InstanceType<typeof Gateway>
 /** Parameters sent by the function caller */
 export interface IDvoteRequestParameters {
     // Common
-    method: WsGatewayMethod,
+    method: DVoteGatewayMethod,
     timestamp?: number,
 
     [k: string]: any
@@ -61,6 +62,9 @@ type GatewayResponse = {
         request: string,
         message?: string,
         timestamp?: number,
+
+        // the rest of fields
+        [k: string]: any
     },
     signature?: string,
     // responseBytes?: Uint8Array,
@@ -74,7 +78,7 @@ export class Gateway {
     protected web3: Web3Gateway = null
     public get health() { return this.dvote.health }
     public get publicKey() { return this.dvote.publicKey }
-    public getSupportedApis() { return this.dvote.getSupportedApis() }
+    public get supportedApis() { return this.dvote.supportedApis }
 
     /**
      * Returns a new Gateway
@@ -115,7 +119,7 @@ export class Gateway {
                 let connected = false
                 do {
                     gw = new Gateway(gateways.dvote.pop(), web3)
-                    connected = await gw.connect(requiredApis).catch(() => { gw.disconnect(); return false })
+                    connected = await gw.init(requiredApis).catch(() => (false))
                 } while (!connected && gateways.dvote.length)
 
                 if (connected) return gw
@@ -150,7 +154,7 @@ export class Gateway {
                 let connected = false
                 do {
                     gw = new Gateway(gateways.dvote.pop(), web3)
-                    connected = await gw.connect(requiredApis).catch(() => { gw.disconnect(); return false })
+                    connected = await gw.init(requiredApis).catch(() => (false))
                 } while (!connected && gateways.dvote.length)
 
                 if (connected) return gw
@@ -180,7 +184,7 @@ export class Gateway {
             web3Gateway = new Web3Gateway(gatewayOrParams.web3Uri, null, options)
         }
         const gateway = new Gateway(dvoteGateway, web3Gateway)
-        return gateway.connect()
+        return gateway.init()
             .then(connected => {
                 if (connected) return gateway
                 throw new Error("Could not connect to the chosen gateway")
@@ -193,40 +197,34 @@ export class Gateway {
      * Tries to connect both web3 and dvote gateways and returns true only if succeeds at both.
      * @param requiredApis Possible required Dvote APIs
      */
-    public connect(requiredApis: DVoteSupportedApi[] = []): Promise<boolean> {
-        // console.time("connect web3")
-        return this.connectWeb3()
-            .then(web3connected => {
-                // console.timeEnd("connect web3")
-                // console.time("connect dvote")
-                if (!web3connected) return false
-                return this.connectDvote(requiredApis)
-                    .then(dvoteConnected => {
-                        // console.timeEnd("connect dvote")
-                        if (!dvoteConnected) return false
-                        return true
-                    })
+    public init(requiredApis: DVoteSupportedApi[] = []): Promise<boolean> {
+        return this.isWeb3Up()
+            .then(web3Up => {
+                if (!web3Up) return false
+                return this.isDVoteUp(requiredApis)
+            })
+            .then(dvoteConnected => {
+                if (!dvoteConnected) return false
+                return true
             })
     }
-    public isConnected(): Promise<boolean> {
+
+    public isReady(): boolean {
         // If web3 is connected
-        if (this.web3.entityResolverContractAddress && this.web3.processContractAddress)
-            // Check dvote connection
-            return this.dvote.isConnected()
-        else
-            return Promise.resolve(false)
+        if (!this.web3.isReady) return false
+
+        // Check dvote connection
+        return this.dvote.isReady()
     }
 
     // DVOTE
 
-    async connectDvote(requiredApis: DVoteSupportedApi[] = []): Promise<boolean> {
-        if (await this.dvote.isConnected()) return Promise.resolve(true)
-        return this.dvote.connect()
-            .then(() => this.dvote.getGatewayInfo())
-            .then(info => {
-                if (!info || !info.api) return false
+    async isDVoteUp(requiredApis: DVoteSupportedApi[] = []): Promise<boolean> {
+        return this.dvote.isUp()
+            .then(() => {
+                if (!this.dvote.supportedApis) return false
                 else if (!requiredApis.length) return true
-                else if (requiredApis.length && requiredApis.every(api => info.api.includes(api)))
+                else if (requiredApis.length && requiredApis.every(api => this.dvote.supportedApis.includes(api)))
                     return true
                 return false
             }).catch(error => {
@@ -234,34 +232,32 @@ export class Gateway {
             })
     }
 
-    public disconnect() {
-        return this.dvote.disconnect()
+    public get dvoteUri() { return this.dvote.uri }
+
+    public get chainId(): Promise<number> {
+        return this.provider.getNetwork().then(network => network.chainId)
     }
 
-    public getDVoteUri(): string {
-        return this.dvote.getUri()
-    }
-
-    public getChainId(): Promise<number> {
-        return this.getProvider().getNetwork().then(network => network.chainId)
-    }
-
-    public sendRequest(requestBody: IDvoteRequestParameters, wallet: Wallet | Signer = null, timeout: number = 50): Promise<any> {
+    public sendRequest(requestBody: IDvoteRequestParameters, wallet: Wallet | Signer = null, timeout: number = 15 * 1000): Promise<any> {
         return this.dvote.sendRequest(requestBody, wallet, timeout)
     }
 
-    public getGatewayInfo(timeout: number = 5): Promise<{ api: DVoteSupportedApi[], health: number }> {
+    public getGatewayInfo(timeout: number = 5): Promise<{ apiList: DVoteSupportedApi[], health: number }> {
         return this.dvote.getGatewayInfo(timeout)
     }
 
+    public supportsMethod(method: DVoteGatewayMethod): boolean {
+        return this.dvote.supportsMethod(method)
+    }
+
     // WEB3
-    public connectWeb3(): Promise<boolean> {
+    public isWeb3Up(): Promise<boolean> {
         return this.web3.isUp()
             .then(() => true)
             .catch(() => false)
     }
 
-    public getProvider(): providers.BaseProvider { return this.web3.getProvider() }
+    public get provider(): providers.BaseProvider { return this.web3.getProvider() }
 
     public deploy<CustomContractMethods>(abi: string | (string | utils.ParamType)[] | utils.Interface, bytecode: string,
         signParams: { signer?: Signer, wallet?: Wallet } = {}, deployArguments: any[] = []): Promise<(Contract & CustomContractMethods)> {
@@ -269,28 +265,44 @@ export class Gateway {
         return this.web3.deploy<CustomContractMethods>(abi, bytecode, signParams, deployArguments)
     }
 
-    public getEnsPublicResolverInstance(walletOrSigner?: Wallet | Signer): IEnsPublicResolverContract {
-        if (!this.web3.entityResolverContractAddress) throw new Error("The gateway is not yet connected")
+    public async getEnsPublicResolverInstance(walletOrSigner?: Wallet | Signer): Promise<IEnsPublicResolverContract> {
+        if (!this.web3.isReady) await this.web3.init()
+
+        const address = this.web3.entityResolverContractAddress
 
         if (walletOrSigner && (walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer))
-            return this.web3.attach<IEnsPublicResolverContract>(this.web3.entityResolverContractAddress, EntityContractDefinition.abi as any).connect(walletOrSigner) as (IEnsPublicResolverContract)
-        return this.web3.attach<IEnsPublicResolverContract>(this.web3.entityResolverContractAddress, EntityContractDefinition.abi as any)
+            return this.web3.attach<IEnsPublicResolverContract>(address, EntityContractDefinition.abi as any).connect(walletOrSigner) as (IEnsPublicResolverContract)
+        return this.web3.attach<IEnsPublicResolverContract>(address, EntityContractDefinition.abi as any)
     }
 
-    public getProcessInstance(walletOrSigner?: Wallet | Signer): IProcessContract {
-        if (!this.web3.processContractAddress) throw new Error("The gateway is not yet connected")
+    public async getProcessInstance(walletOrSigner?: Wallet | Signer): Promise<IProcessContract> {
+        if (!this.web3.isReady) await this.web3.init()
+
+        const address = this.web3.processContractAddress
 
         if (walletOrSigner && (walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer))
-            return this.web3.attach<IProcessContract>(this.web3.processContractAddress, ProcessContractDefinition.abi as any).connect(walletOrSigner) as (IProcessContract)
-        return this.web3.attach<IProcessContract>(this.web3.processContractAddress, ProcessContractDefinition.abi as any)
+            return this.web3.attach<IProcessContract>(address, ProcessContractDefinition.abi as any).connect(walletOrSigner) as (IProcessContract)
+        return this.web3.attach<IProcessContract>(address, ProcessContractDefinition.abi as any)
     }
 
     public async getNamespaceInstance(walletOrSigner?: Wallet | Signer): Promise<INamespaceContract> {
-        const address = await this.web3.getNamespaceContractAddress()
+        if (!this.web3.isReady) await this.web3.init()
+
+        const address = this.web3.namespaceContractAddress
 
         if (walletOrSigner && (walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer))
             return this.web3.attach<INamespaceContract>(address, NamespaceContractDefinition.abi as any).connect(walletOrSigner) as (INamespaceContract)
         return this.web3.attach<INamespaceContract>(address, NamespaceContractDefinition.abi as any)
+    }
+
+    public async getTokenStorageProofInstance(walletOrSigner?: Wallet | Signer): Promise<ITokenStorageProofContract> {
+        if (!this.web3.isReady) await this.web3.init()
+
+        const address = this.web3.tokenStorageProofContractAddress
+
+        if (walletOrSigner && (walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer))
+            return this.web3.attach<ITokenStorageProofContract>(address, TokenStorageProofContractDefinition.abi as any).connect(walletOrSigner) as (ITokenStorageProofContract)
+        return this.web3.attach<ITokenStorageProofContract>(address, TokenStorageProofContractDefinition.abi as any)
     }
 }
 
@@ -299,11 +311,9 @@ export class Gateway {
  * intended to interact within voting processes
  */
 export class DVoteGateway {
-    protected supportedApis: DVoteSupportedApi[] = []
-    protected pubKey: string = ""
-
-    public health: number = 0
-
+    private _supportedApis: DVoteSupportedApi[] = []
+    private _pubKey: string = ""
+    private _health: number = 0
     private client: AxiosInstance = null
 
     /**
@@ -313,52 +323,45 @@ export class DVoteGateway {
     constructor(gatewayOrParams: GatewayInfo | { uri: string, supportedApis: DVoteSupportedApi[], publicKey?: string }) {
         if (gatewayOrParams instanceof GatewayInfo) {
             this.client = axios.create({ baseURL: gatewayOrParams.dvote, method: "post" })
-            this.supportedApis = gatewayOrParams.supportedApis
-            this.pubKey = gatewayOrParams.publicKey
+            this._supportedApis = gatewayOrParams.supportedApis
+            this._pubKey = gatewayOrParams.publicKey
         } else {
             const { uri, supportedApis, publicKey } = gatewayOrParams
             if (!uri) throw new Error("Invalid gateway URI")
 
             this.client = axios.create({ baseURL: uri, method: "post" })
-            this.supportedApis = supportedApis
-            this.pubKey = publicKey || ""
+            this._supportedApis = supportedApis
+            this._pubKey = publicKey || ""
         }
     }
 
-    /** Dispose the current HTTP client */
-    public disconnect() {
-        if (!this.client) return
-        this.client = null
-    }
-
     /** Check whether the client is connected to a Gateway */
-    public hasClient(): boolean {
+    public isReady(): boolean {
         return this.client && !!this.client.getUri()
     }
 
     /** Get the current URI of the Gateway */
-    public getUri() { return this.client && this.client.getUri() || null }
-
-    public getSupportedApis() { return this.supportedApis }
-
-    public get publicKey() { return this.pubKey }
+    public get uri() { return this.client && this.client.getUri() || null }
+    public get supportedApis() { return this._supportedApis }
+    public get publicKey() { return this._pubKey }
+    public get health() { return this._health }
 
     /**
      * Send a WS message to a Vocdoni Gateway and add an entry to track its response
      * @param requestBody Parameters of the request to send. The timestamp (in seconds) will be added to the object.
      * @param wallet (optional) The wallet to use for signing (default: null)
      */
-    public async sendRequest(requestBody: IDvoteRequestParameters, wallet: Wallet | Signer = null): Promise<any> {
-        if (!this.hasClient()) throw new Error("Not initialized")
-        else if (typeof requestBody != "object") return Promise.reject(new Error("The payload should be a javascript object"))
-        else if (typeof wallet != "object") return Promise.reject(new Error("The wallet is required"))
+    public async sendRequest(requestBody: IDvoteRequestParameters, wallet: Wallet | Signer = null) {
+        if (!this.isReady()) throw new Error("Not initialized")
+        else if (typeof requestBody != "object") throw new Error("The payload should be a javascript object")
+        else if (typeof wallet != "object") throw new Error("The wallet is required")
 
         // Check API method availability
         if ((fileApiMethods.indexOf(requestBody.method as any) >= 0 && this.supportedApis.indexOf("file") < 0) ||
             (voteApiMethods.indexOf(requestBody.method as any) >= 0 && this.supportedApis.indexOf("vote") < 0) ||
             (censusApiMethods.indexOf(requestBody.method as any) >= 0 && this.supportedApis.indexOf("census") < 0) ||
             (resultsApiMethods.indexOf(requestBody.method as any) >= 0 && this.supportedApis.indexOf("results") < 0)
-        ) return Promise.reject(new Error("The method is not available in the Gateway's supported API's"))
+        ) throw new Error("The method is not available in the Gateway's supported API's")
 
         // Append the current timestamp to the body
         if (typeof requestBody.timestamp == "undefined") {
@@ -402,12 +405,12 @@ export class DVoteGateway {
         }
         else if (typeof Blob != "undefined" && response.data instanceof Blob) {
             const responseData = await readBlobText(response.data)
-            const arrayBufferData = await readBlobArrayBuffer(response.data)
             try { msg = JSON.parse(responseData) }
             catch (err) {
                 console.error("GW response parsing error:", err)
                 throw err
             }
+            const arrayBufferData = await readBlobArrayBuffer(response.data)
             msgBytes = extractUint8ArrayJSONValue(new Uint8Array(arrayBufferData), "response")
 
             // readBlobText(response.data)
@@ -423,11 +426,11 @@ export class DVoteGateway {
             throw new Error("Unsupported response: [" + typeof response.data + "] - " + response.data)
         }
 
-        if (!msg.response) return Promise.reject(new Error("Invalid response message"))
+        if (!msg.response) throw new Error("Invalid response message")
 
         const incomingReqId = msg.response.request || null
         if (incomingReqId !== requestId) {
-            return Promise.reject(new Error("The signed request ID does not match the expected one"))
+            throw new Error("The signed request ID does not match the expected one")
         }
 
         // Check the signature of the response
@@ -437,50 +440,58 @@ export class DVoteGateway {
             // const from = Math.floor(Date.now() / 1000) - SIGNATURE_TIMESTAMP_TOLERANCE
             // const until = Math.floor(Date.now() / 1000) + SIGNATURE_TIMESTAMP_TOLERANCE
             // if (typeof timestamp != "number" || timestamp < from || timestamp > until) {
-            //     return Promise.reject(new Error("The response does not provide a valid timestamp"))
+            //     throw new Error("The response does not provide a valid timestamp")
             // }
             if (msgBytes) {
                 if (!isByteSignatureValid(msg.signature, this.publicKey, msgBytes)) {
-                    return Promise.reject(new Error("The signature of the response does not match the expected one"))
+                    throw new Error("The signature of the response does not match the expected one")
                 }
             } else if (!isValidSignature(msg.signature, this.publicKey, msg.response)) {
-                return Promise.reject(new Error("The signature of the response does not match the expected one"))
+                throw new Error("The signature of the response does not match the expected one")
             }
         }
 
         if (!msg.response.ok) {
-            if (msg.response.message) return Promise.reject(new Error(msg.response.message))
-            else return Promise.reject(new Error("There was an error while handling the request at the gateway"))
+            if (msg.response.message) throw new Error(msg.response.message)
+            else throw new Error("There was an error while handling the request at the gateway")
         }
 
         return msg.response
+    }
+
+    /** Retrieves the status of the gateway and updates the internal status */
+    public updateGatewayStatus(timeout?: number): Promise<any> {
+        return this.getGatewayInfo(timeout)
+            .then((result) => {
+                if (!result) throw new Error("Could not update")
+                else if (!Array.isArray(result.apiList)) throw new Error("apiList is not an array")
+                else if (typeof result.health !== "number") throw new Error("invalid health")
+                this._health = result.health
+                this._supportedApis = result.apiList
+            })
     }
 
     /**
      * Retrieves the status of the given gateway and returns an object indicating the services it provides.
      * If there is no connection open, the method returns null.
      */
-    public async getGatewayInfo(timeout?: number): Promise<{ api: DVoteSupportedApi[], health: number }> {
-        if (!this.hasClient()) return null
+    public async getGatewayInfo(timeout?: number): Promise<{ apiList: DVoteSupportedApi[], health: number }> {
+        if (!this.isReady()) return null
 
         try {
-            let result
-            if (timeout)
-                result = await this.sendRequest({ method: "getGatewayInfo" }, null, timeout)
-            else
-                result = await this.sendRequest({ method: "getGatewayInfo" })
-
+            const result = await promiseWithTimeout(
+                this.sendRequest({ method: "getGatewayInfo" }, null),
+                timeout || 1000
+            )
             if (!result.ok) throw new Error("Not OK")
             else if (!Array.isArray(result.apiList)) throw new Error("apiList is not an array")
             else if (typeof result.health !== "number") throw new Error("invalid gateway reply")
-            this.health = result.health
-            this.supportedApis = result.apiList
-            return {
-                api: result.apiList,
-                health: result.health
-            }
+
+            return { apiList: result.apiList, health: result.health }
         }
         catch (error) {
+            if (error && error.message == "Time out") throw error
+
             let message = "The status of the gateway could not be retrieved"
             message = (error.message) ? message + ": " + error.message : message
             throw new Error(message)
@@ -488,8 +499,7 @@ export class DVoteGateway {
     }
 
     /**
-     * Checks the health of the current Gateway by calling isUp
-     * @returns the necessary parameters to create a GatewayInfo object
+     * Checks the health of the current Gateway. Resolves the promise when successful and rejects it otherwise.
      */
     public isUp(timeout: number = GATEWAY_SELECTION_TIMEOUT): Promise<void> {
         if (!this.client) return Promise.reject(new Error("The client is not initialized"))
@@ -498,16 +508,14 @@ export class DVoteGateway {
         if (uri.host.length === 0) {
             return Promise.reject(new Error("Invalid Gateway URL"))
         }
-        return promiseWithTimeout(() => {
-            return this.checkPing()
+        return promiseWithTimeout(
+            this.checkPing()
                 .then((isUp) => {
                     if (isUp !== true) throw new Error("No ping reply")
-                    return this.getGatewayInfo(timeout)
-                })
-                .then((response) => {
-                    if (!response || !Array.isArray(response.api)) throw new Error("Invalid DVote Gateway response")
-                })
-        }, timeout, "The DVote Gateway seems to be down")
+                    return this.updateGatewayStatus(timeout)
+                }),
+            timeout || 2 * 1000,
+            "The DVote Gateway seems to be down")
     }
 
     /**
@@ -519,11 +527,29 @@ export class DVoteGateway {
         const uri = parseURL(this.client.getUri())
         const pingUrl = `https://${uri.host}/ping`
 
-        return promiseWithTimeout(() => axios.get(pingUrl), 2000)
+        return promiseWithTimeout(axios.get(pingUrl), 2000)
             .catch(err => null)
             .then((response?: AxiosResponse<any>) => (
                 response != null && response.status === 200 && response.data === "pong"
             ))
+    }
+
+    /**
+     * Determines whether the current DVote Gateway supports the API set that includes the given method.
+     * NOTE: `updateStatus()` must have been called on the GW instnace previously.
+     */
+    public supportsMethod(method: DVoteGatewayMethod): boolean {
+        if (dvoteApis.file.includes(method))
+            return this.supportedApis.includes("file");
+        else if (dvoteApis.census.includes(method))
+            return this.supportedApis.includes("census");
+        else if (dvoteApis.vote.includes(method))
+            return this.supportedApis.includes("vote");
+        else if (dvoteApis.results.includes(method))
+            return this.supportedApis.includes("results");
+        else if (dvoteApis.info.includes(method))
+            return this.supportedApis.includes("info");
+        return false;
     }
 }
 
@@ -535,6 +561,7 @@ export class Web3Gateway {
     public entityResolverContractAddress: string
     public namespaceContractAddress: string
     public processContractAddress: string
+    public tokenStorageProofContractAddress: string
 
     /** Returns a JSON RPC provider that can be used for Ethereum communication */
     public static providerFromUri(uri: string, networkId?: NetworkID, options: { testing: boolean } = { testing: false }) {
@@ -563,6 +590,33 @@ export class Web3Gateway {
             this.provider = gatewayOrProvider
         }
         else throw new Error("A gateway URI or a provider is required")
+    }
+
+    /** Initialize the contract addresses */
+    public async init() {
+        const [addr1, addr2] = await Promise.all([
+            this.provider.resolveName(entityResolverEnsDomain),
+            this.provider.resolveName(processEnsDomain)
+        ])
+        if (!addr1) throw new Error("The resolver address could not be fetched")
+        else if (!addr2) throw new Error("The process contract address bould not be fetched")
+
+        this.entityResolverContractAddress = addr1
+        this.processContractAddress = addr2
+
+        // Get namespace and storage proof addresses from the process contract
+        const processInstance = this.attach<IProcessContract>(this.processContractAddress, ProcessContractDefinition.abi)
+
+        const [addr3, addr4] = await Promise.all([
+            processInstance.namespaceAddress(),
+            processInstance.tokenStorageProof()
+        ])
+
+        if (!addr3) throw new Error("The process contract didn't return a namespace address")
+        else if (!addr4) throw new Error("The process contract didn't return a storage proof address")
+
+        this.namespaceContractAddress = addr3
+        this.tokenStorageProofContractAddress = addr4
     }
 
     /**
@@ -609,12 +663,17 @@ export class Web3Gateway {
         return this.provider
     }
 
-    public isUp(timeout: number = GATEWAY_SELECTION_TIMEOUT): Promise<void> {
-        // if (this.entityResolverContractAddress && this.processContractAddress) return Promise.resolve()
+    /** Returns true if the provider and contract details are properly set */
+    public get isReady() {
+        return this.provider &&
+            this.entityResolverContractAddress &&
+            this.processContractAddress &&
+            this.namespaceContractAddress &&
+            this.tokenStorageProofContractAddress
+    }
 
-        return new Promise((resolve, reject) => {
-            setTimeout(() => reject(new Error("The Web3 Gateway is too slow")), timeout)
-
+    public isUp(timeout: number = GATEWAY_SELECTION_TIMEOUT): Promise<any> {
+        return promiseFuncWithTimeout(() => {
             return this.getPeers()
                 .then(peersNumber => {
                     if (peersNumber <= 0) throw new Error("The Web3 gateway has no peers")
@@ -622,22 +681,20 @@ export class Web3Gateway {
                 })
                 .then(syncing => {
                     if (syncing) throw new Error("The Web3 gateway is syncing")
+                    else if (this.isReady) return // done
 
                     // Fetch and set the contract addresses
-                    return Promise.all([
-                        this.fetchEntityResolverContractAddress(),
-                        this.fetchProcessContractAddress().then(() => this.getNamespaceContractAddress()),
-                    ])
+                    return this.init()
                 })
-                .then(() => resolve())
+                .then(() => null)
                 .catch(err => {
-                    console.error(err)
+                    // console.error(err)
                     if (err.message == "The Web3 gateway is syncing")
-                        reject(new Error(err.message))
+                        throw new Error(err.message)
                     else
-                        reject(new Error("The Web3 Gateway seems to be down"))
+                        throw new Error("The Web3 Gateway seems to be down")
                 })
-        })
+        }, timeout, "The Web3 Gateway is too slow")
     }
 
     /** Determines whether the current Web3 provider is syncing blocks or not. Several types of prviders may always return false. */
@@ -663,42 +720,5 @@ export class Web3Gateway {
             if (!result) return -1
             return BigNumber.from(result).toNumber()
         })
-    }
-
-    /** Fetches the address of the entity resolver contract and returns it */
-    public async fetchEntityResolverContractAddress(): Promise<string> {
-        // Used by `isUp` => we fetch it always in order to check that connectivity is up
-        this.entityResolverContractAddress = await this.provider.resolveName(entityResolverEnsDomain)
-
-        if (!this.entityResolverContractAddress) throw new Error("The entity resolver name is not available")
-
-        return this.entityResolverContractAddress
-    }
-
-    /** Fetches the address of the process contract and returns it */
-    public async fetchProcessContractAddress(): Promise<string> {
-        // Used by `isUp` => we fetch it always in order to check that connectivity is up
-        this.processContractAddress = await this.provider.resolveName(processEnsDomain)
-
-        if (!this.processContractAddress) throw new Error("The process domain name is not available")
-
-        return this.processContractAddress
-    }
-
-    /** Returns the address of the namespace contract and fetches it if not present */
-    public async getNamespaceContractAddress(): Promise<string> {
-        if (!this.processContractAddress) {
-            await this.fetchProcessContractAddress()
-        }
-
-        if (!this.namespaceContractAddress) {
-            // Get it from the process contract
-            const processInstance = this.attach<IProcessContract>(this.processContractAddress, ProcessContractDefinition.abi)
-            this.namespaceContractAddress = await processInstance.namespaceAddress()
-
-            if (!this.namespaceContractAddress) throw new Error("The process contract didn't return a namespace address")
-        }
-
-        return this.namespaceContractAddress
     }
 }

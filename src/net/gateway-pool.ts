@@ -1,8 +1,8 @@
 import { Gateway, IDvoteRequestParameters } from "./gateway"
-import { dvoteApis, DVoteSupportedApi, WsGatewayMethod } from "../models/gateway"
+// import { dvoteApis, DVoteSupportedApi } from "../models/gateway"
 import { discoverGateways, IGatewayDiscoveryParameters } from "./gateway-discovery"
 import { Wallet, Signer, providers } from "ethers"
-import { IProcessContract, IEnsPublicResolverContract, INamespaceContract } from "./contracts"
+import { IProcessContract, IEnsPublicResolverContract, INamespaceContract, ITokenStorageProofContract } from "./contracts"
 
 const SEQUENTIAL_METHODS = ['addClaimBulk', 'publishCensus'] //generateProof and vote?
 const ERROR_SKIP_METHODS = ['getRoot']
@@ -11,7 +11,7 @@ const GATEWAY_UPDATE_ERRORS = [
     "read ECONNRESET",
     "censusId not valid or not found"
 ]
-const MAX_POOL_REFRESH_COUNT = 10
+// const MAX_POOL_REFRESH_COUNT = 10
 
 export type IGatewayPool = InstanceType<typeof GatewayPool>
 
@@ -24,117 +24,77 @@ export class GatewayPool {
     private pool: Gateway[] = []
     private params: IGatewayDiscoveryParameters = null
     private errorCount: number = 0
-    private refreshPoolCount: number = 0
-    public supportedApis() { return this.activeGateway().getSupportedApis() }
+    public get supportedApis() { return this.activeGateway.supportedApis }
 
     constructor(newPool: Gateway[], p: IGatewayDiscoveryParameters) {
         this.pool = newPool
         this.params = p
-        // set active
-        // gw1.subscribe(() => this.shiftGateway())
     }
 
     // factory
     static discover(params: IGatewayDiscoveryParameters): Promise<GatewayPool> {
-        let pool: GatewayPool
         return discoverGateways(params)
             .then((bestNodes: Gateway[]) => {
-                pool = new GatewayPool(bestNodes, params)
-
-                return pool.connect()
-            }).then(() => {
-                return pool
+                return new GatewayPool(bestNodes, params)
             }).catch(error => {
                 throw new Error(error)
             })
     }
 
-    public refresh(): Promise<boolean> {
-        this.refreshPoolCount += 1
-        if (this.refreshPoolCount > MAX_POOL_REFRESH_COUNT) return Promise.reject(new Error("No gateway currently available"))
+    public refresh(): Promise<void> {
         console.log("Refreshing Gateway Pool")
+
         return discoverGateways(this.params)
             .then((bestNodes: Gateway[]) => {
                 this.pool = bestNodes
-                return this.connect()
-            }).then(() => {
                 this.errorCount = 0
-                return true
             }).catch(error => {
                 throw new Error(error)
             })
     }
 
     /**
-     * Disconnects the currently active gateway and connects using the next one
+     * Skips the currently active gateway and connects using the next one
      */
-    public shiftGateway(): Promise<boolean> {
-        this.disconnect()
-        console.log("Disconected from Gateway: ", this.pool[0].publicKey)
-
+    public shift(): Promise<void> {
         if (this.errorCount > this.pool.length) {
             return this.refresh()
         }
 
         this.pool.push(this.pool.shift())
-        return this.connect()
-            .then(() => {
-                console.log("Changed to gateway: ", this.pool[0].publicKey)
-                return true
-            }).catch(err => {
-                this.errorCount += 1
-                return this.shiftGateway()
-            })  // setTimeout(1s)
     }
 
-    activeGateway(): Gateway {
+    public get activeGateway(): Gateway {
         if (!this.pool || !this.pool.length) throw new Error("The pool has no gateways")
         return this.pool[0]
     }
 
-    public connect(): Promise<boolean> {
-        return this.activeGateway().isConnected()
-            .then(connected => {
-                if (connected) return true
-                return this.activeGateway().connect()
-            }).catch(error => {
-                return this.shiftGateway()
-            })
-    }
-
-    public disconnect() {
-        this.activeGateway().disconnect()
-    }
-
-    public isConnected(): Promise<boolean> {
-        return this.activeGateway().isConnected()
+    public isReady(): boolean {
+        return this.activeGateway.isReady()
     }
 
     // DVOTE
 
-    public getDVoteUri(): Promise<string> {
-        return this.activeGateway().getDVoteUri()
+    public get dvoteUri(): string {
+        return this.activeGateway.dvoteUri
     }
 
     public sendRequest(requestBody: IDvoteRequestParameters, wallet: Wallet | Signer = null, timeout: number = 50): Promise<any> {
-        if (!isMethodSupported(this.supportedApis(), requestBody.method)) {
+        if (!this.activeGateway.supportsMethod(requestBody.method)) {
             this.errorCount += 1
-            return this.shiftGateway()
+            return this.shift()
                 .then(() => {
                     // Retry with the new one
                     return this.sendRequest(requestBody, wallet, timeout)
                 })   // next gw
         }
 
-        return this.activeGateway().sendRequest(requestBody, wallet, timeout) // => capture time out exceptions
+        return this.activeGateway.sendRequest(requestBody, wallet, timeout) // => capture time out exceptions
             .then(response => {
                 this.errorCount = 0
-                this.refreshPoolCount = 0
                 return response
             })
             .catch((err: Error) => {
-                // console.error("requestError", err)
-
                 if (ERROR_SKIP_METHODS.includes(requestBody.method)) {
                     throw err
                 }
@@ -147,7 +107,7 @@ export class GatewayPool {
 
                 if (result.length) {
                     this.errorCount += 1
-                    return this.shiftGateway()
+                    return this.shift()
                         .then(() => {
                             // Retry with the new one
                             return this.sendRequest(requestBody, wallet, timeout)
@@ -159,28 +119,25 @@ export class GatewayPool {
 
     // WEB3
 
-    public getProvider(): providers.BaseProvider { return this.activeGateway().getProvider() }
+    public getProvider(): providers.BaseProvider { return this.activeGateway.provider }
 
     public getChainId(): Promise<number> {
         return this.getProvider().getNetwork().then(network => network.chainId)
     }
 
-    public getEnsPublicResolverInstance(walletOrSigner?: Wallet | Signer): IEnsPublicResolverContract {
-        return this.activeGateway().getEnsPublicResolverInstance(walletOrSigner)
+    public getEnsPublicResolverInstance(walletOrSigner?: Wallet | Signer): Promise<IEnsPublicResolverContract> {
+        return this.activeGateway.getEnsPublicResolverInstance(walletOrSigner)
     }
 
-    public getProcessInstance(walletOrSigner?: Wallet | Signer): IProcessContract {
-        return this.activeGateway().getProcessInstance(walletOrSigner)
+    public getProcessInstance(walletOrSigner?: Wallet | Signer): Promise<IProcessContract> {
+        return this.activeGateway.getProcessInstance(walletOrSigner)
     }
 
     public getNamespaceInstance(walletOrSigner?: Wallet | Signer): Promise<INamespaceContract> {
-        return this.activeGateway().getNamespaceInstance(walletOrSigner)
+        return this.activeGateway.getNamespaceInstance(walletOrSigner)
     }
-}
 
-function isMethodSupported(supportedApis: DVoteSupportedApi[], method: WsGatewayMethod): boolean {
-    for (let api of supportedApis) {
-        if (dvoteApis[api].includes(method)) return true
+    public getTokenStorageProofInstance(walletOrSigner?: Wallet | Signer): Promise<ITokenStorageProofContract> {
+        return this.activeGateway.getTokenStorageProofInstance(walletOrSigner)
     }
-    return false
 }
