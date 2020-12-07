@@ -53,7 +53,7 @@ export async function setMetadata(address: string, metadata: EntityMetadata, wal
     const strJsonMeta = JSON.stringify(metadata)
 
     if (walletOrSigner instanceof Wallet && !walletOrSigner.provider) {
-        walletOrSigner = walletOrSigner.connect(gateway.getProvider())
+        walletOrSigner = walletOrSigner.connect(gateway.provider)
     }
 
     const ipfsUri = await addFile(strJsonMeta, "entity-metadata.json", walletOrSigner, gateway)
@@ -62,7 +62,7 @@ export async function setMetadata(address: string, metadata: EntityMetadata, wal
     const resolverInstance = await gateway.getEnsPublicResolverInstance(walletOrSigner)
 
     const entityAddrHash = ensHashAddress(address)
-    const chainId = await gateway.getChainId()
+    const chainId = await gateway.chainId
     let options: IMethodOverrides
     let tx: ContractTransaction
     switch (chainId) {

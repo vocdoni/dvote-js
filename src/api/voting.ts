@@ -356,7 +356,7 @@ export async function newProcess(processParameters: Omit<Omit<IProcessCreatePara
     const metadata = checkValidProcessMetadata(processParameters.metadata)
 
     try {
-        const processInstance = gateway.getProcessInstance(walletOrSigner)
+        const processInstance = await gateway.getProcessInstance(walletOrSigner)
 
         const address = await walletOrSigner.getAddress()
 
@@ -373,7 +373,7 @@ export async function newProcess(processParameters: Omit<Omit<IProcessCreatePara
         contractParameters.metadata = processMetaOrigin
 
         // REGISTER THE NEW PROCESS
-        const chainId = await gateway.getChainId()
+        const chainId = await gateway.chainId
         let options: IMethodOverrides
         let tx: ContractTransaction
         switch (chainId) {

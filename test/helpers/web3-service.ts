@@ -39,13 +39,13 @@ export class DevWeb3Service {
                 wallet
             }
         })
-        this.provider = new Web3Gateway(this.uri).getProvider() as providers.Web3Provider
+        this.provider = new Web3Gateway(this.uri).provider as providers.Web3Provider
     }
 
     get uri() { return `http://localhost:${this.port}` }
 
     /** Returns a gateway client that will skip the network checks and will use the given contract addresses as the official ones */
-    getClient(entityResolverAddress: string = "", namespaceAddress: string = "", processAddress: string = ""): Web3Gateway {
+    async getClient(entityResolverAddress: string = "", namespaceAddress: string = "", processAddress: string = ""): Promise<Web3Gateway> {
         const gw = new Web3Gateway(this.uri)
 
         // Bypass health checks

@@ -34,11 +34,10 @@ describe("DVote gateway client", () => {
             }).to.throw
 
             const gw2 = new DVoteGateway(gatewayInfo)
-            await gw2.connect()
+            await gw2.init()
 
-            expect(await gw2.getUri()).to.equal(gatewayInfo.dvote)
+            expect(gw2.uri).to.equal(gatewayInfo.dvote)
 
-            gw2.disconnect()
             await wsServer.stop()
         })
 
@@ -50,11 +49,10 @@ describe("DVote gateway client", () => {
 
             const gatewayInfo1 = new GatewayInfo(gatewayUri1, ["file", "vote", "census"], "https://server/path", "")
             let gwClient = new DVoteGateway(gatewayInfo1)
-            expect(await gwClient.getUri()).to.equal(gatewayInfo1.dvote)
-            await gwClient.connect()
+            expect(gwClient.uri).to.equal(gatewayInfo1.dvote)
+            await gwClient.init()
             await gwClient.sendRequest({ method: "addClaim", processId: "1234", nullifier: "2345" })
 
-            await gwClient.disconnect()
             await wsServer1.stop()
 
             const port2 = 9000
@@ -65,11 +63,10 @@ describe("DVote gateway client", () => {
             expect(wsServer2.interactionCount).to.equal(0)
 
             gwClient = new DVoteGateway(gatewayInfo2)
-            await gwClient.connect()
-            expect(await gwClient.getUri()).to.equal(gatewayInfo2.dvote)
+            await gwClient.init()
+            expect(gwClient.uri).to.equal(gatewayInfo2.dvote)
             await gwClient.sendRequest({ method: "addClaim", processId: "5678", nullifier: "6789" })
 
-            await gwClient.disconnect()
             await wsServer2.stop()
 
             expect(wsServer1.interactionCount).to.equal(2)
@@ -91,7 +88,7 @@ describe("DVote gateway client", () => {
             })
             const gatewayInfo = wsServer.gatewayInfo
             const gwClient = new DVoteGateway(gatewayInfo)
-            await gwClient.connect()
+            await gwClient.init()
 
             const response1 = await gwClient.sendRequest({ method: "addCensus", processId: "1234", nullifier: "2345" })
             const response2 = await gwClient.sendRequest({ method: "addClaim", processId: "3456", nullifier: "4567" })
@@ -126,7 +123,7 @@ describe("DVote gateway client", () => {
             const wsServer = new DevWebSocketServer()
             const gatewayInfo = wsServer.gatewayInfo
             const gwClient = new DVoteGateway(gatewayInfo)
-            await gwClient.connect()
+            await gwClient.init()
 
             wsServer.addResponse({ ok: false, message: "ERROR 1" })
             wsServer.addResponse({ ok: false, message: "ERROR 2" })
@@ -200,7 +197,7 @@ describe("DVote gateway client", () => {
             // Client
             const gatewayInfo = wsServer.gatewayInfo
             const gw = new DVoteGateway(gatewayInfo)
-            await gw.connect()
+            await gw.init()
 
             wsServer.addResponse({ ok: true, uri: "ipfs://1234" })
 
@@ -216,7 +213,6 @@ describe("DVote gateway client", () => {
             expect(result1.length).to.be.ok
             expect(result1).to.equal("ipfs://1234")
 
-            gw.disconnect()
             await wsServer.stop()
         })
 
@@ -234,7 +230,7 @@ describe("DVote gateway client", () => {
             // Client
             const gatewayInfo = wsServer.gatewayInfo
             const gw = new DVoteGateway(gatewayInfo)
-            await gw.connect()
+            await gw.init()
 
             const result1 = await addFile(buffData, "my-file.txt", baseAccount.wallet, gw)
             expect(result1).to.equal("ipfs://2345")
@@ -249,7 +245,6 @@ describe("DVote gateway client", () => {
             expect(wsServer.interactionList[1].requested.request.uri).to.equal(result1)
             expect(wsServer.interactionList[1].requested.id).to.match(/^[0-9a-fA-F]{10}$/)
 
-            gw.disconnect()
             await wsServer.stop()
         })
 
@@ -270,7 +265,7 @@ describe("DVote gateway client", () => {
             try {
                 const gatewayInfo = wsServer.gatewayInfo
                 gw = new DVoteGateway(gatewayInfo)
-                await gw.connect()
+                await gw.init()
 
                 await new Promise(resolve => setTimeout(resolve, 10))
                 await addFile(buffData, "my-file.txt", baseAccount.wallet, gw)
@@ -279,7 +274,6 @@ describe("DVote gateway client", () => {
             catch (err) {
                 expect(err.message).to.equal("The data could not be uploaded: Invalid wallet")
             }
-            gw.disconnect()
 
             expect(wsServer.interactionCount).to.equal(1)
 
@@ -300,8 +294,7 @@ describe("Web3 gateway client", () => {
             const addr = getWallets()[0].address
 
             const gw = new Web3Gateway(web3Server.uri)
-            const gwProvider = gw.getProvider()
-            const balance = await gwProvider.getBalance(addr)
+            const balance = await gw.provider.getBalance(addr)
 
             expect(balance.toHexString()).to.match(/^0x[0-9a-fA-F]{10,}$/)
 

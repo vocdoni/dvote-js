@@ -39,16 +39,16 @@ export async function waitUntilVochainBlock(block: number, gateway: IGateway | I
 export async function waitEthBlocks(blocks: number, gateway: IGateway | IGatewayPool, params?: { verbose: boolean }) {
     if (typeof blocks != "number") throw new Error("Invalid parameters")
 
-    const gw: Gateway = gateway instanceof Gateway ? gateway : gateway.activeGateway()
+    const gw: Gateway = gateway instanceof Gateway ? gateway : gateway.activeGateway
 
-    const targetBlock = blocks + await gw.getProvider().getBlockNumber()
+    const targetBlock = blocks + await gw.provider.getBlockNumber()
 
     if (params && params.verbose) console.log("Waiting for eth block", targetBlock)
 
     await new Promise((resolve, reject) => {
         let lastBlock: number
         const interval = setInterval(() => {
-            gw.getProvider().getBlockNumber().then(currentBlock => {
+            gw.provider.getBlockNumber().then(currentBlock => {
                 if (currentBlock != lastBlock) {
                     if (params && params.verbose) console.log("Now at eth block", currentBlock)
                     lastBlock = currentBlock
@@ -64,8 +64,8 @@ export async function waitEthBlocks(blocks: number, gateway: IGateway | IGateway
 
 /** Waits until the given block number is reached on the Ethereum blockchain */
 export async function waitUntilEthBlock(block: number, gateway: IGateway | IGatewayPool, params?: { verbose: boolean }) {
-    const gw: Gateway = gateway instanceof Gateway ? gateway : gateway.activeGateway()
-    const currentBlock = await gw.getProvider().getBlockNumber()
+    const gw: Gateway = gateway instanceof Gateway ? gateway : gateway.activeGateway
+    const currentBlock = await gw.provider.getBlockNumber()
 
     if (currentBlock >= block) return
     return waitEthBlocks(block - currentBlock, gateway, params)

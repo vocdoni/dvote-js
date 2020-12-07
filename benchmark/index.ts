@@ -119,8 +119,6 @@ async function main() {
     console.timeEnd("Voting 📩")
 
     await checkVoteResults()
-
-    disconnect()
 }
 
 async function connectGateways(): Promise<GatewayPool> {
@@ -134,13 +132,11 @@ async function connectGateways(): Promise<GatewayPool> {
     }
     const pool = await GatewayPool.discover(options)
 
-    if (!(await pool.isConnected())) throw new Error("Could not connect to the network")
-    console.log("Connected to", await pool.getDVoteUri())
-    console.log("Connected to", pool.getProvider()["connection"].url)
+    console.log("Connected to", await pool.dvoteUri)
+    console.log("Connected to", pool.provider["connection"].url)
 
     // WEB3 CLIENT
-    entityWallet = Wallet.fromMnemonic(config.mnemonic, config.ethPath)
-        .connect(pool.getProvider())
+    entityWallet = Wallet.fromMnemonic(config.mnemonic, config.ethPath).connect(pool.provider)
 
     entityAddr = ensHashAddress(await entityWallet.getAddress())
     console.log("Entity Address", await entityWallet.getAddress())
@@ -677,10 +673,6 @@ async function checkVoteResults() {
     }
 
     assert.equal(totalVotes, config.numAccounts)
-}
-
-async function disconnect() {
-    pool.disconnect()
 }
 
 /////////////////////////////////////////////////////////////////////////////

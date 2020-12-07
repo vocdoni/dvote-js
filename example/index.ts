@@ -764,7 +764,7 @@ async function gatewayHealthCheck() {
         for (let gw of gws[networkId].web3) {
             console.log("Checking Web3 GW...")
 
-            const instance = await getEnsPublicResolverInstance({ provider: gw.getProvider(), wallet })
+            const instance = await getEnsPublicResolverInstance({ provider: gw.provider, wallet })
             const tx = await instance.setText(entityEnsNode, "dummy", "1234")
             await tx.wait()
         }
@@ -809,31 +809,20 @@ async function ensResolver() {
 async function testGatewayInitialization() {
     // const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
     const ETH_NETWORK_ID = NETWORK_ID
-    let pool, gateway
+    let pool: GatewayPool, gateway: Gateway
     let options: IGatewayDiscoveryParameters = {
         networkId: ETH_NETWORK_ID,
         bootnodesContentUri: BOOTNODES_URL_RO,
         numberOfGateways: 2,
         timeout: 5 * 1000,
     }
-    // Pool No race
-    console.log("==============================")
-    console.time("Pool No race")
-    pool = await GatewayPool.discover(options)
-    console.timeEnd("Pool No race")
-    if (!(await pool.isConnected())) throw new Error("Could not connect to the network")
-    console.log("Connected to", await pool.getDVoteUri())
-    console.log("Connected to", pool.getProvider().connection.url)
 
-    // Pool Race
     console.log("==============================")
-    console.time("Pool Race")
+    console.time("Pool")
     pool = await GatewayPool.discover(options)
-    console.timeEnd("Pool Race")
-
-    if (!(await pool.isConnected())) throw new Error("Could not connect to the network")
-    console.log("Connected to", await pool.getDVoteUri())
-    console.log("Connected to", pool.getProvider().connection.url)
+    await pool.init()
+    console.log("Connected to", await pool.dvoteUri)
+    console.log("Connected to", pool.web3Uri)
 
     // Default Gateway
     console.log("==============================")
@@ -841,9 +830,9 @@ async function testGatewayInitialization() {
     gateway = await Gateway.randomFromDefault(ETH_NETWORK_ID)
     console.timeEnd("Random Gateway from default Bootnode")
 
-    if (!(await gateway.isConnected())) throw new Error("Could not connect to the network")
-    console.log("Connected to", await gateway.getDVoteUri())
-    console.log("Connected to", gateway.getProvider().connection.url)
+    await gateway.init()
+    console.log("Connected to", gateway.dvoteUri)
+    console.log("Connected to", gateway.provider["connection"].url)
 
     // Gateway from URI
     console.log("==============================")
@@ -851,9 +840,9 @@ async function testGatewayInitialization() {
     gateway = await Gateway.randomfromUri(ETH_NETWORK_ID, BOOTNODES_URL_RO)
     console.timeEnd("Random Gateway from URI")
 
-    if (!(await gateway.isConnected())) throw new Error("Could not connect to the network")
-    console.log("Connected to", await gateway.getDVoteUri())
-    console.log("Connected to", gateway.getProvider().connection.url)
+    await gateway.init()
+    console.log("Connected to", gateway.dvoteUri)
+    console.log("Connected to", gateway.provider["connection"].url)
 
     // Gateway from info
     console.log("==============================")
@@ -862,9 +851,9 @@ async function testGatewayInitialization() {
     gateway = await Gateway.fromInfo(gwInfo)
     console.timeEnd("Gateway from gatewayInfo")
 
-    if (!(await gateway.isConnected())) throw new Error("Could not connect to the network")
-    console.log("Connected to", await gateway.getDVoteUri())
-    console.log("Connected to", gateway.getProvider().connection.url)
+    await gateway.init()
+    console.log("Connected to", gateway.dvoteUri)
+    console.log("Connected to", gateway.provider["connection"].url)
 
     return
 }

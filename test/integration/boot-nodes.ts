@@ -35,7 +35,7 @@ describe("Boot nodes", () => {
 
             expect(typeof bootnodes[networkId].web3[0].attach).to.equal("function")
             expect(typeof bootnodes[networkId].web3[0].deploy).to.equal("function")
-            expect(typeof bootnodes[networkId].web3[0].getProvider).to.equal("function")
+            expect(typeof bootnodes[networkId].web3[0].provider).to.equal("object")
         }
         // XDAI
 
@@ -60,7 +60,7 @@ describe("Boot nodes", () => {
 
         expect(typeof bootnodes[NETWORK_ID].web3[0].attach).to.equal("function")
         expect(typeof bootnodes[NETWORK_ID].web3[0].deploy).to.equal("function")
-        expect(typeof bootnodes[NETWORK_ID].web3[0].getProvider).to.equal("function")
+        expect(typeof bootnodes[NETWORK_ID].web3[0].provider).to.equal("object")
 
         // XDAI Stage
 
@@ -85,7 +85,7 @@ describe("Boot nodes", () => {
 
         expect(typeof bootnodes[NETWORK_ID].web3[0].attach).to.equal("function")
         expect(typeof bootnodes[NETWORK_ID].web3[0].deploy).to.equal("function")
-        expect(typeof bootnodes[NETWORK_ID].web3[0].getProvider).to.equal("function")
+        expect(typeof bootnodes[NETWORK_ID].web3[0].provider).to.equal("object")
     }).timeout(20000)
 
     it("getDefaultGateways (default) should provide a bootnode JSON structure", async () => {

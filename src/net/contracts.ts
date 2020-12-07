@@ -46,7 +46,7 @@ export async function deployEnsPublicResolverContract(params: DeployContractPara
         return instance.connect(signer) as IEnsPublicResolverContract
     }
     else { // if we reach this point, then wallet myst have been set
-        if (!wallet.provider) wallet = wallet.connect(gw.getProvider())
+        if (!wallet.provider) wallet = wallet.connect(gw.provider)
         return instance.connect(wallet) as IEnsPublicResolverContract
     }
 }
@@ -71,7 +71,7 @@ export async function deployNamespaceContract(params: DeployContractParams = {})
         return instance.connect(signer) as INamespaceContract
     }
     else { // if we reach this point, then wallet myst have been set
-        if (!wallet.provider) wallet = wallet.connect(gw.getProvider())
+        if (!wallet.provider) wallet = wallet.connect(gw.provider)
         return instance.connect(wallet) as INamespaceContract
     }
 }
@@ -100,7 +100,7 @@ export async function deployProcessContract(params: DeployContractParams = {}, d
         return instance.connect(signer) as IProcessContract
     }
     else { // if we reach this point, then wallet myst have been set
-        if (!wallet.provider) wallet = wallet.connect(gw.getProvider())
+        if (!wallet.provider) wallet = wallet.connect(gw.provider)
         return instance.connect(wallet) as IProcessContract
     }
 }
@@ -124,7 +124,7 @@ export async function getEnsPublicResolverInstance(params: AttachToContractParam
     let { gateway, provider, signer, wallet } = params
 
     const gw = new Web3Gateway(gateway || provider)
-    const gwProvider = gw.getProvider()
+    const gwProvider = gw.provider
 
     if (typeof address != "string") {
         address = await provider.resolveName(entityResolverEnsDomain)
@@ -156,7 +156,7 @@ export async function getNamespaceInstance(params: AttachToContractParams = {}, 
     let { gateway, provider, signer, wallet } = params
 
     const gw = new Web3Gateway(gateway || provider)
-    const gwProvider = gw.getProvider()
+    const gwProvider = gw.provider
 
     if (wallet) {
         if (!wallet.provider) wallet = wallet.connect(gwProvider)
@@ -183,7 +183,7 @@ export async function getProcessInstance(params: AttachToContractParams = {}, ad
     let { gateway, provider, signer, wallet } = params
 
     const gw = new Web3Gateway(gateway || provider)
-    const gwProvider = gw.getProvider()
+    const gwProvider = gw.provider
 
     if (typeof address != "string") {
         address = await provider.resolveName(processEnsDomain)

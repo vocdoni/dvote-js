@@ -105,8 +105,9 @@ const MNEMONIC = "..."
 
 // Use a random GW from Vocdoni at "goerli" network
 const gw = await Gateway.randomFromDefault("goerli")
+await gw.init()
 
-const provider = gw.getProvider()
+const provider = gw.provider
 const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
 // Attach to the Entity Resolver contract

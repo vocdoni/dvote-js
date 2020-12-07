@@ -31,12 +31,16 @@ export class GatewayPool {
         this.params = p
     }
 
-    // factory
+    /** Searches for healthy gateways and initialized them for immediate usage */
     static discover(params: IGatewayDiscoveryParameters): Promise<GatewayPool> {
         return discoverGateways(params)
             .then((bestNodes: Gateway[]) => {
-                return new GatewayPool(bestNodes, params)
-            }).catch(error => {
+                const pool = new GatewayPool(bestNodes, params)
+
+                return pool.init()
+                    .then(() => pool)
+            })
+            .catch(error => {
                 throw new Error(error)
             })
     }
@@ -126,8 +130,9 @@ export class GatewayPool {
     // WEB3
 
     public get provider(): providers.BaseProvider { return this.activeGateway.provider }
+    public get web3Uri(): string { return this.provider["connection"].uri }
 
-    public getChainId(): Promise<number> {
+    public get chainId(): Promise<number> {
         return this.provider.getNetwork().then(network => network.chainId)
     }
 

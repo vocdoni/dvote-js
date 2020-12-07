@@ -266,7 +266,7 @@ export class Gateway {
             .catch(() => false)
     }
 
-    public get provider(): providers.BaseProvider { return this.web3.getProvider() }
+    public get provider(): providers.BaseProvider { return this.web3.provider }
 
     public deploy<CustomContractMethods>(abi: string | (string | utils.ParamType)[] | utils.Interface, bytecode: string,
         signParams: { signer?: Signer, wallet?: Wallet } = {}, deployArguments: any[] = []): Promise<(Contract & CustomContractMethods)> {
@@ -571,7 +571,7 @@ export class DVoteGateway {
  * A Web3 wrapped client with utility methods to deploy and attach to Ethereum contracts.
  */
 export class Web3Gateway {
-    private provider: providers.BaseProvider
+    private _provider: providers.BaseProvider
     public entityResolverContractAddress: string
     public namespaceContractAddress: string
     public processContractAddress: string
@@ -593,15 +593,15 @@ export class Web3Gateway {
 
             const url = parseURL(gatewayOrProvider)
             if (url.protocol != "http:" && url.protocol != "https:") throw new Error("Unsupported gateway protocol: " + url.protocol)
-            this.provider = Web3Gateway.providerFromUri(gatewayOrProvider, networkId, options)
+            this._provider = Web3Gateway.providerFromUri(gatewayOrProvider, networkId, options)
         }
         else if (gatewayOrProvider instanceof GatewayInfo) {
             const url = parseURL(gatewayOrProvider.web3)
             if (url.protocol != "http:" && url.protocol != "https:") throw new Error("Unsupported gateway protocol: " + url.protocol)
-            this.provider = Web3Gateway.providerFromUri(gatewayOrProvider.web3, networkId, options)
+            this._provider = Web3Gateway.providerFromUri(gatewayOrProvider.web3, networkId, options)
         }
         else if (gatewayOrProvider instanceof providers.BaseProvider) { // use as a provider
-            this.provider = gatewayOrProvider
+            this._provider = gatewayOrProvider
         }
         else throw new Error("A gateway URI or a provider is required")
     }
@@ -609,8 +609,8 @@ export class Web3Gateway {
     /** Initialize the contract addresses */
     public async init() {
         const [addr1, addr2] = await Promise.all([
-            this.provider.resolveName(entityResolverEnsDomain),
-            this.provider.resolveName(processEnsDomain)
+            this._provider.resolveName(entityResolverEnsDomain),
+            this._provider.resolveName(processEnsDomain)
         ])
         if (!addr1) throw new Error("The resolver address could not be fetched")
         else if (!addr2) throw new Error("The process contract address bould not be fetched")
@@ -652,7 +652,7 @@ export class Web3Gateway {
         }
         else { // wallet
             if (!wallet.provider) {
-                wallet = new Wallet(wallet.privateKey, this.provider)
+                wallet = new Wallet(wallet.privateKey, this._provider)
             }
 
             contractFactory = new ContractFactory(abi, bytecode, wallet)
@@ -669,17 +669,17 @@ export class Web3Gateway {
         if (typeof address != "string") throw new Error("Invalid contract address")
         else if (!abi) throw new Error("Invalid contract ABI")
 
-        return new Contract(address, abi, this.provider) as (Contract & CustomContractMethods)
+        return new Contract(address, abi, this._provider) as (Contract & CustomContractMethods)
     }
 
     /** Returns a JSON RPC provider associated to the initial Gateway URI */
-    public getProvider() {
-        return this.provider
+    public get provider() {
+        return this._provider
     }
 
     /** Returns true if the provider and contract details are properly set */
     public get isReady() {
-        return this.provider &&
+        return this._provider &&
             this.entityResolverContractAddress &&
             this.processContractAddress &&
             this.namespaceContractAddress &&
@@ -713,24 +713,24 @@ export class Web3Gateway {
 
     /** Determines whether the current Web3 provider is syncing blocks or not. Several types of prviders may always return false. */
     public isSyncing(): Promise<boolean> {
-        if (!this.provider) return Promise.resolve(false)
-        else if (this.provider instanceof JsonRpcProvider || this.provider instanceof Web3Provider || this.provider instanceof IpcProvider || this.provider instanceof InfuraProvider) {
-            return this.provider.send("eth_syncing", []).then(result => !!result)
+        if (!this._provider) return Promise.resolve(false)
+        else if (this._provider instanceof JsonRpcProvider || this._provider instanceof Web3Provider || this._provider instanceof IpcProvider || this._provider instanceof InfuraProvider) {
+            return this._provider.send("eth_syncing", []).then(result => !!result)
         }
-        // else if (this.provider instanceof FallbackProvider || this.provider instanceof EtherscanProvider) {}
+        // else if (this._provider instanceof FallbackProvider || this._provider instanceof EtherscanProvider) {}
 
         return Promise.resolve(false)
     }
 
     /** Request the amount of peers the Gateway is currently connected to */
     public getPeers(): Promise<number> {
-        if (!this.provider) return Promise.resolve(0)
-        else if (!(this.provider instanceof JsonRpcProvider) && !(this.provider instanceof Web3Provider) &&
-            !(this.provider instanceof IpcProvider) && !(this.provider instanceof InfuraProvider)) {
+        if (!this._provider) return Promise.resolve(0)
+        else if (!(this._provider instanceof JsonRpcProvider) && !(this._provider instanceof Web3Provider) &&
+            !(this._provider instanceof IpcProvider) && !(this._provider instanceof InfuraProvider)) {
             return Promise.resolve(0)
         }
 
-        return this.provider.send("net_peerCount", []).then(result => {
+        return this._provider.send("net_peerCount", []).then(result => {
             if (!result) return -1
             return BigNumber.from(result).toNumber()
         })
