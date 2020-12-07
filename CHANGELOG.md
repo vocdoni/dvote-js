@@ -33,3 +33,14 @@
 - Revamped tests
 - Adding WebSocket mocks and disposable Ethereum servers for testing
 - Census methods now have wallet and gateway parameters swapped, for consistency with the rest of API methods
+- Gateway client refactor
+    - Using HTTP-only gateway clients
+    - Cleaner Gateway Pool methods
+    - Discovery
+        - Rename `fetchFromBootNode` into `getGatewaysFromBootnode`
+        - Rename `fetchDefaultBootNode` into `getDefaultGateways`
+        - Rename `getNetworkGatewaysFromBootNodeData` into `digestBootnodeNetworkData`
+        - Rename `getGatewaysFromBootNodeData` into `digestBootnodeData`
+    - Bootnode
+        - Rename `GatewayBootNodes` into `JsonBootnodeData` (type)
+        - Rename `getDefaultBootnodeContentUri` into `getDefaultBootnodeUri`

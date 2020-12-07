@@ -27,4 +27,4 @@ export const SOKOL_ENS_REGISTRY_ADDRESS = "0x43541c49308bF2956d3893836F5AF866fd7
 // export const SIGNATURE_TIMESTAMP_TOLERANCE = 60 * 8 // +/- 8 minutes
 export const VOCHAIN_BLOCK_TIME = 12 // seconds
 export const CENSUS_MAX_BULK_SIZE = 400 // # of claims per addClaimBulk request
-export const GATEWAY_SELECTION_TIMEOUT = 10000  // milliseconds
+export const GATEWAY_SELECTION_TIMEOUT = 4000  // milliseconds

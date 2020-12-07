@@ -10,8 +10,8 @@ export {
     FileApiMethod,
     VoteApiMethod,
     CensusApiMethod,
-    WsGatewayMethod,
-    GatewayBootNodes
+    DVoteGatewayMethod,
+    JsonBootnodeData
 } from "./models/gateway"
 export {
     JsonFeed,

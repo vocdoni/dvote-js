@@ -3,9 +3,9 @@ import { expect } from "chai"
 
 import { DVoteGateway, Web3Gateway } from "../../src/net/gateway"
 import {
-    getGatewaysFromBootNodeData,
-    fetchFromBootNode,
-    fetchDefaultBootNode,
+    digestBootnodeData,
+    getGatewaysFromBootnode,
+    getDefaultGateways,
     NetworkID
 } from "../../src/net/gateway-bootnodes"
 
@@ -15,9 +15,9 @@ const PRODUCTION_BOOTNODES_URL = "https://bootnodes.vocdoni.net/gateways.json"
 
 describe("Boot nodes", () => {
 
-    it("fetchFromBootNode with getGatewaysFromBootNodeData should provide a gateway list", async () => {
-        let bootnodeData = await fetchFromBootNode(DEV_BOOTNODES_URL)
-        let bootnodes = await getGatewaysFromBootNodeData(bootnodeData)
+    it("getGatewaysFromBootnode with digestBootnodeData should provide a gateway list", async () => {
+        let bootnodeData = await getGatewaysFromBootnode(DEV_BOOTNODES_URL)
+        let bootnodes = await digestBootnodeData(bootnodeData)
 
         for (let networkId in bootnodes) {
             expect(typeof networkId).to.equal("string")
@@ -39,8 +39,8 @@ describe("Boot nodes", () => {
         }
         // XDAI
 
-        bootnodeData = await fetchFromBootNode(PRODUCTION_BOOTNODES_URL)
-        bootnodes = getGatewaysFromBootNodeData(bootnodeData)
+        bootnodeData = await getGatewaysFromBootnode(PRODUCTION_BOOTNODES_URL)
+        bootnodes = digestBootnodeData(bootnodeData)
 
         for (let networkId in bootnodes) {
             expect(typeof networkId).to.equal("string")
@@ -64,9 +64,9 @@ describe("Boot nodes", () => {
 
         // XDAI Stage
 
-        bootnodeData = await fetchFromBootNode(STAGE_BOOTNODES_URL)
+        bootnodeData = await getGatewaysFromBootnode(STAGE_BOOTNODES_URL)
         const options = { testing: true }
-        bootnodes = await getGatewaysFromBootNodeData(bootnodeData, options)
+        bootnodes = await digestBootnodeData(bootnodeData, options)
 
         for (let networkId in bootnodes) {
             expect(typeof networkId).to.equal("string")
@@ -88,9 +88,9 @@ describe("Boot nodes", () => {
         expect(typeof bootnodes[NETWORK_ID].web3[0].getProvider).to.equal("function")
     }).timeout(20000)
 
-    it("fetchDefaultBootNode (default) should provide a bootnode JSON structure", async () => {
+    it("getDefaultGateways (default) should provide a bootnode JSON structure", async () => {
         let NETWORK_ID: NetworkID = "xdai"
-        let bootnodes = await fetchDefaultBootNode(NETWORK_ID)
+        let bootnodes = await getDefaultGateways(NETWORK_ID)
 
         for (let networkId in bootnodes) {
             expect(typeof networkId).to.equal("string")
@@ -105,7 +105,7 @@ describe("Boot nodes", () => {
 
         // XDAI Stage
         const options = { testing: true }
-        bootnodes = await fetchDefaultBootNode(NETWORK_ID, options)
+        bootnodes = await getDefaultGateways(NETWORK_ID, options)
         for (let networkId in bootnodes) {
             expect(typeof networkId).to.equal("string")
         }
@@ -118,7 +118,7 @@ describe("Boot nodes", () => {
         expect(typeof bootnodes[NETWORK_ID].web3[0].uri).to.equal("string")
 
         // XDAI
-        bootnodes = await fetchDefaultBootNode(NETWORK_ID)
+        bootnodes = await getDefaultGateways(NETWORK_ID)
         for (let networkId in bootnodes) {
             expect(typeof networkId).to.equal("string")
         }
@@ -132,7 +132,7 @@ describe("Boot nodes", () => {
 
         // SOKOL
         NETWORK_ID = "sokol"
-        bootnodes = await fetchDefaultBootNode(NETWORK_ID)
+        bootnodes = await getDefaultGateways(NETWORK_ID)
         for (let networkId in bootnodes) {
             expect(typeof networkId).to.equal("string")
         }
@@ -145,9 +145,9 @@ describe("Boot nodes", () => {
         expect(typeof bootnodes[NETWORK_ID].web3[0].uri).to.equal("string")
     }).timeout(20000)
 
-    it("fetchFromBootNode should provide a bootnode JSON structure", async () => {
+    it("getGatewaysFromBootnode should provide a bootnode JSON structure", async () => {
         const NETWORK_ID = "xdai"
-        let bootnodes = await fetchFromBootNode(DEV_BOOTNODES_URL)
+        let bootnodes = await getGatewaysFromBootnode(DEV_BOOTNODES_URL)
 
         for (let networkId in bootnodes) {
             expect(typeof networkId).to.equal("string")
@@ -161,7 +161,7 @@ describe("Boot nodes", () => {
         }
 
         // XDAI
-        bootnodes = await fetchFromBootNode(PRODUCTION_BOOTNODES_URL)
+        bootnodes = await getGatewaysFromBootnode(PRODUCTION_BOOTNODES_URL)
 
         for (let networkId in bootnodes) {
             expect(typeof networkId).to.equal("string")
@@ -175,7 +175,7 @@ describe("Boot nodes", () => {
         expect(typeof bootnodes[NETWORK_ID].web3[0].uri).to.equal("string")
 
         // XDAI Stage
-        bootnodes = await fetchFromBootNode(STAGE_BOOTNODES_URL)
+        bootnodes = await getGatewaysFromBootnode(STAGE_BOOTNODES_URL)
 
         for (let networkId in bootnodes) {
             expect(typeof networkId).to.equal("string")

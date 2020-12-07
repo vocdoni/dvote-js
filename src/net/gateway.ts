@@ -12,7 +12,7 @@ import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
 import { signJsonBody, isValidSignature, sortObjectFields, isByteSignatureValid } from "../util/json-sign"
 import { IProcessContract, IEnsPublicResolverContract, INamespaceContract, ITokenStorageProofContract } from "../net/contracts"
 import axios, { AxiosInstance, AxiosResponse } from "axios"
-import { NetworkID, fetchDefaultBootNode, getNetworkGatewaysFromBootNodeData, fetchFromBootNode } from "./gateway-bootnodes"
+import { NetworkID, getDefaultGateways, digestBootnodeNetworkData, getGatewaysFromBootnode } from "./gateway-bootnodes"
 import ContentURI from "../wrappers/content-uri"
 import { extractUint8ArrayJSONValue } from "../util/uint8array"
 import { readBlobText, readBlobArrayBuffer } from "../util/blob"
@@ -102,9 +102,9 @@ export class Gateway {
      * @param requiredApis A list of the required APIs
      */
     static randomFromDefault(networkId: NetworkID, requiredApis: DVoteSupportedApi[] = [], options: { testing: boolean } = { testing: false }): Promise<Gateway> {
-        return fetchDefaultBootNode(networkId)
+        return getDefaultGateways(networkId)
             .then(async bootNodeData => {
-                const gateways = getNetworkGatewaysFromBootNodeData(bootNodeData, networkId, options)
+                const gateways = digestBootnodeNetworkData(bootNodeData, networkId, options)
                 let web3: Web3Gateway
                 for (let i = 0; i < gateways.web3.length; i++) {
                     let w3 = gateways.web3[i]
@@ -137,9 +137,9 @@ export class Gateway {
      * @param requiredApis A list of the required APIs
      */
     static randomfromUri(networkId: NetworkID, bootnodesContentUri: string | ContentURI, requiredApis: DVoteSupportedApi[] = [], options: { testing: boolean } = { testing: false }): Promise<Gateway> {
-        return fetchFromBootNode(bootnodesContentUri)
+        return getGatewaysFromBootnode(bootnodesContentUri)
             .then(async bootNodeData => {
-                const gateways = getNetworkGatewaysFromBootNodeData(bootNodeData, networkId, options)
+                const gateways = digestBootnodeNetworkData(bootNodeData, networkId, options)
                 let web3: Web3Gateway
                 for (let i = 0; i < gateways.web3.length; i++) {
                     let w3 = gateways.web3[i]
@@ -194,19 +194,22 @@ export class Gateway {
     }
 
     /**
-     * Tries to connect both web3 and dvote gateways and returns true only if succeeds at both.
-     * @param requiredApis Possible required Dvote APIs
+     * Initializes and checks the connection of the DVote and Web3 nodes. Returns true if both are OK.
+     * @param requiredApis Expected DVote APIs
      */
     public init(requiredApis: DVoteSupportedApi[] = []): Promise<boolean> {
-        return this.isWeb3Up()
-            .then(web3Up => {
-                if (!web3Up) return false
-                return this.isDVoteUp(requiredApis)
-            })
-            .then(dvoteConnected => {
-                if (!dvoteConnected) return false
+        return Promise.all([
+            this.web3.init(),
+            this.dvote.init()
+        ]).then(() => {
+            if (!this.dvote.supportedApis) return false
+            else if (!requiredApis.length) return true
+            else if (requiredApis.length && requiredApis.every(api => this.dvote.supportedApis.includes(api)))
                 return true
-            })
+            return false
+        }).catch(error => {
+            throw new Error(error)
+        })
     }
 
     public isReady(): boolean {
@@ -238,11 +241,17 @@ export class Gateway {
         return this.provider.getNetwork().then(network => network.chainId)
     }
 
-    public sendRequest(requestBody: IDvoteRequestParameters, wallet: Wallet | Signer = null, timeout: number = 15 * 1000): Promise<any> {
-        return this.dvote.sendRequest(requestBody, wallet, timeout)
+    /**
+     * Send a message to a Vocdoni Gateway and return the response
+     * @param requestBody Parameters of the request to send. The timestamp (in seconds) will be added to the object.
+     * @param wallet (optional) The wallet to use for signing (default: null)
+     * @param params (optional) Optional parameters. Timeout in milliseconds.
+     */
+    public sendRequest(requestBody: IDvoteRequestParameters, wallet: Wallet | Signer = null, params?: { timeout: number }): Promise<any> {
+        return this.dvote.sendRequest(requestBody, wallet, params)
     }
 
-    public getGatewayInfo(timeout: number = 5): Promise<{ apiList: DVoteSupportedApi[], health: number }> {
+    public getGatewayInfo(timeout: number = 2 * 1000): Promise<{ apiList: DVoteSupportedApi[], health: number }> {
         return this.dvote.getGatewayInfo(timeout)
     }
 
@@ -335,9 +344,14 @@ export class DVoteGateway {
         }
     }
 
+    /** Checks the gateway status and updates the currently available API's. Same as calling `isUp()` */
+    public init(): Promise<any> {
+        return this.isUp().then(() => { })
+    }
+
     /** Check whether the client is connected to a Gateway */
     public isReady(): boolean {
-        return this.client && !!this.client.getUri()
+        return this.client && !!this.client.getUri() && this.supportedApis && this.supportedApis.length > 0
     }
 
     /** Get the current URI of the Gateway */
@@ -347,21 +361,19 @@ export class DVoteGateway {
     public get health() { return this._health }
 
     /**
-     * Send a WS message to a Vocdoni Gateway and add an entry to track its response
+     * Send a message to a Vocdoni Gateway and return the response
      * @param requestBody Parameters of the request to send. The timestamp (in seconds) will be added to the object.
      * @param wallet (optional) The wallet to use for signing (default: null)
+     * @param params (optional) Optional parameters. Timeout in milliseconds.
      */
-    public async sendRequest(requestBody: IDvoteRequestParameters, wallet: Wallet | Signer = null) {
+    public async sendRequest(requestBody: IDvoteRequestParameters, wallet: Wallet | Signer = null, params: { timeout?: number } = { timeout: 15 * 1000 }) {
         if (!this.isReady()) throw new Error("Not initialized")
         else if (typeof requestBody != "object") throw new Error("The payload should be a javascript object")
         else if (typeof wallet != "object") throw new Error("The wallet is required")
 
         // Check API method availability
-        if ((fileApiMethods.indexOf(requestBody.method as any) >= 0 && this.supportedApis.indexOf("file") < 0) ||
-            (voteApiMethods.indexOf(requestBody.method as any) >= 0 && this.supportedApis.indexOf("vote") < 0) ||
-            (censusApiMethods.indexOf(requestBody.method as any) >= 0 && this.supportedApis.indexOf("census") < 0) ||
-            (resultsApiMethods.indexOf(requestBody.method as any) >= 0 && this.supportedApis.indexOf("results") < 0)
-        ) throw new Error("The method is not available in the Gateway's supported API's")
+        if (!dvoteGatewayApiMethods.includes(requestBody.method)) throw new Error("The method is not valid")
+        else if (!this.supportsMethod(requestBody.method)) throw new Error("The method is not available in the Gateway's supported API's")
 
         // Append the current timestamp to the body
         if (typeof requestBody.timestamp == "undefined") {
@@ -379,7 +391,10 @@ export class DVoteGateway {
             request.signature = await signJsonBody(requestBody, wallet)
         }
 
-        const response = await this.client.post('', JSON.stringify(sortObjectFields(request)))
+        const response = await promiseWithTimeout(
+            this.client.post('', JSON.stringify(sortObjectFields(request))),
+            params.timeout
+        )
 
         let msg: GatewayResponse
         let msgBytes: Uint8Array
@@ -459,6 +474,26 @@ export class DVoteGateway {
         return msg.response
     }
 
+    /**
+     * Checks the health of the current Gateway. Resolves the promise when successful and rejects it otherwise.
+     */
+    public isUp(timeout: number = GATEWAY_SELECTION_TIMEOUT): Promise<void> {
+        if (!this.client) return Promise.reject(new Error("The client is not initialized"))
+        const uri = parseURL(this.client.getUri())
+
+        if (uri.host.length === 0) {
+            return Promise.reject(new Error("Invalid Gateway URL"))
+        }
+        return promiseWithTimeout(
+            this.checkPing()
+                .then((isUp) => {
+                    if (isUp !== true) throw new Error("No ping reply")
+                    return this.updateGatewayStatus(timeout)
+                }),
+            timeout || 2 * 1000,
+            "The DVote Gateway seems to be down")
+    }
+
     /** Retrieves the status of the gateway and updates the internal status */
     public updateGatewayStatus(timeout?: number): Promise<any> {
         return this.getGatewayInfo(timeout)
@@ -483,8 +518,7 @@ export class DVoteGateway {
                 this.sendRequest({ method: "getGatewayInfo" }, null),
                 timeout || 1000
             )
-            if (!result.ok) throw new Error("Not OK")
-            else if (!Array.isArray(result.apiList)) throw new Error("apiList is not an array")
+            if (!Array.isArray(result.apiList)) throw new Error("apiList is not an array")
             else if (typeof result.health !== "number") throw new Error("invalid gateway reply")
 
             return { apiList: result.apiList, health: result.health }
@@ -499,26 +533,6 @@ export class DVoteGateway {
     }
 
     /**
-     * Checks the health of the current Gateway. Resolves the promise when successful and rejects it otherwise.
-     */
-    public isUp(timeout: number = GATEWAY_SELECTION_TIMEOUT): Promise<void> {
-        if (!this.client) return Promise.reject(new Error("The client is not initialized"))
-        const uri = parseURL(this.client.getUri())
-
-        if (uri.host.length === 0) {
-            return Promise.reject(new Error("Invalid Gateway URL"))
-        }
-        return promiseWithTimeout(
-            this.checkPing()
-                .then((isUp) => {
-                    if (isUp !== true) throw new Error("No ping reply")
-                    return this.updateGatewayStatus(timeout)
-                }),
-            timeout || 2 * 1000,
-            "The DVote Gateway seems to be down")
-    }
-
-    /**
      * Checks the ping response of the gateway
      * @returns A boolean representing wheter the gateway responded correctly or not
      */
@@ -527,7 +541,7 @@ export class DVoteGateway {
         const uri = parseURL(this.client.getUri())
         const pingUrl = `https://${uri.host}/ping`
 
-        return promiseWithTimeout(axios.get(pingUrl), 2000)
+        return promiseWithTimeout(axios.get(pingUrl), 2 * 1000)
             .catch(err => null)
             .then((response?: AxiosResponse<any>) => (
                 response != null && response.status === 200 && response.data === "pong"

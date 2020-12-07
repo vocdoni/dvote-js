@@ -21,7 +21,7 @@ export const dvoteApis: { [k in DVoteSupportedApi]: DVoteGatewayMethod[] } = {
     "info": infoApiMethods,
 }
 
-export type GatewayBootNodes = {
+export type JsonBootnodeData = {
     [k: string]: {
         web3: { uri: string }[],
         dvote: { uri: string, apis: DVoteSupportedApi[], pubKey: string }[]

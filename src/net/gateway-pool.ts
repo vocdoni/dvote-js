@@ -7,7 +7,7 @@ import { IProcessContract, IEnsPublicResolverContract, INamespaceContract, IToke
 const SEQUENTIAL_METHODS = ['addClaimBulk', 'publishCensus'] //generateProof and vote?
 const ERROR_SKIP_METHODS = ['getRoot']
 const GATEWAY_UPDATE_ERRORS = [
-    "Request timed out",
+    "Time out",
     "read ECONNRESET",
     "censusId not valid or not found"
 ]
@@ -41,6 +41,12 @@ export class GatewayPool {
             })
     }
 
+    /** Ensures that the current active gateway is available for use */
+    public init(): Promise<any> {
+        return this.activeGateway.init()
+    }
+
+    /** Launches a new discovery process and selects the healthiest gateway pair */
     public refresh(): Promise<void> {
         console.log("Refreshing Gateway Pool")
 
@@ -79,17 +85,17 @@ export class GatewayPool {
         return this.activeGateway.dvoteUri
     }
 
-    public sendRequest(requestBody: IDvoteRequestParameters, wallet: Wallet | Signer = null, timeout: number = 50): Promise<any> {
+    public sendRequest(requestBody: IDvoteRequestParameters, wallet: Wallet | Signer = null, params?: { timeout: number }): Promise<any> {
         if (!this.activeGateway.supportsMethod(requestBody.method)) {
             this.errorCount += 1
             return this.shift()
                 .then(() => {
                     // Retry with the new one
-                    return this.sendRequest(requestBody, wallet, timeout)
+                    return this.sendRequest(requestBody, wallet, params)
                 })   // next gw
         }
 
-        return this.activeGateway.sendRequest(requestBody, wallet, timeout) // => capture time out exceptions
+        return this.activeGateway.sendRequest(requestBody, wallet, params) // => capture time out exceptions
             .then(response => {
                 this.errorCount = 0
                 return response
@@ -110,7 +116,7 @@ export class GatewayPool {
                     return this.shift()
                         .then(() => {
                             // Retry with the new one
-                            return this.sendRequest(requestBody, wallet, timeout)
+                            return this.sendRequest(requestBody, wallet, params)
                         })   // next gw
                 }
                 throw err
@@ -119,10 +125,10 @@ export class GatewayPool {
 
     // WEB3
 
-    public getProvider(): providers.BaseProvider { return this.activeGateway.provider }
+    public get provider(): providers.BaseProvider { return this.activeGateway.provider }
 
     public getChainId(): Promise<number> {
-        return this.getProvider().getNetwork().then(network => network.chainId)
+        return this.provider.getNetwork().then(network => network.chainId)
     }
 
     public getEnsPublicResolverInstance(walletOrSigner?: Wallet | Signer): Promise<IEnsPublicResolverContract> {

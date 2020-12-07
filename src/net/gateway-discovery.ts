@@ -1,11 +1,11 @@
 import ContentURI from "../wrappers/content-uri"
 // import GatewayInfo from "../wrappers/gateway-info"
 import { IDVoteGateway, IWeb3Gateway, Gateway } from "./gateway"
-import { fetchFromBootNode, fetchDefaultBootNode, getNetworkGatewaysFromBootNodeData, NetworkID } from "./gateway-bootnodes"
+import { getGatewaysFromBootnode, getDefaultGateways, digestBootnodeNetworkData, NetworkID } from "./gateway-bootnodes"
 import { parseURL } from 'universal-parse-url'
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
-import { GatewayBootNodes } from "../models/gateway"
-import { promiseFuncWithTimeout, promiseWithTimeout } from "util/timeout"
+import { JsonBootnodeData } from "../models/gateway"
+import { promiseFuncWithTimeout, promiseWithTimeout } from "../util/timeout"
 
 
 const PARALLEL_GATEWAY_TESTS = 5
@@ -44,6 +44,10 @@ export function discoverGateways(params: IGatewayDiscoveryParameters): Promise<G
         })
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// INTERNAL
+///////////////////////////////////////////////////////////////////////////////
+
 /**
  * Implements the logic of the health check on the gateways in the following manner. There are two
  * basic rounds
@@ -55,22 +59,22 @@ export function discoverGateways(params: IGatewayDiscoveryParameters): Promise<G
  * @param bootnodesContentUri (optional) The Content URI from which the list of gateways will be extracted
  * @returns A Gateway Object
  */
-async function getWorkingGateways(p: IGatewayDiscoveryParameters): Promise<{ dvote: IDVoteGateway, web3: IWeb3Gateway }[]> {
+async function getWorkingGateways(params: IGatewayDiscoveryParameters): Promise<{ dvote: IDVoteGateway, web3: IWeb3Gateway }[]> {
     // TODO: Handle duplicates?
-    const networkId = p.networkId
-    const bootnodesContentUri = (p.bootnodesContentUri) ? p.bootnodesContentUri : null
-    const numberOfGateways = (p.numberOfGateways) ? p.numberOfGateways : MIN_ROUND_SUCCESS_COUNT
-    const timeout = (p.timeout) ? p.timeout : GATEWAY_SELECTION_TIMEOUT
-    const test = (p.testing) ? { testing: p.testing } : { testing: false }
+    const networkId = params.networkId
+    const bootnodesContentUri = (params.bootnodesContentUri) ? params.bootnodesContentUri : null
+    const numberOfGateways = (params.numberOfGateways) ? params.numberOfGateways : MIN_ROUND_SUCCESS_COUNT
+    const timeout = (params.timeout) ? params.timeout : GATEWAY_SELECTION_TIMEOUT
+    const test = (params.testing) ? { testing: params.testing } : { testing: false }
 
     const timeoutsToTest = [timeout, 2 * timeout, 4 * timeout, 16 * timeout]
     let totalDvoteNodes: IDVoteGateway[]
 
     try {
         // Extract BootnodeData
-        const bootnodeData: GatewayBootNodes = await promiseFuncWithTimeout(() => {
-            if (bootnodesContentUri) return fetchFromBootNode(bootnodesContentUri)
-            return fetchDefaultBootNode(networkId)
+        const bootnodeData: JsonBootnodeData = await promiseFuncWithTimeout(() => {
+            if (bootnodesContentUri) return getGatewaysFromBootnode(bootnodesContentUri)
+            return getDefaultGateways(networkId)
         }, GATEWAY_SELECTION_TIMEOUT / 2
         ).catch(err => { throw new Error("Could not fetch the bootnode details") })
 
@@ -79,24 +83,23 @@ async function getWorkingGateways(p: IGatewayDiscoveryParameters): Promise<{ dvo
         bootnodeData[networkId].web3 = shuffle(bootnodeData[networkId].web3)
 
         // Instantiate gateways
-        // set test environment
-        const defaultGateways = getNetworkGatewaysFromBootNodeData(bootnodeData, networkId, test)
-        totalDvoteNodes = defaultGateways.dvote
-        const totalWeb3Nodes: IWeb3Gateway[] = defaultGateways.web3
+        const bnGateways = digestBootnodeNetworkData(bootnodeData, networkId, test)
+        totalDvoteNodes = bnGateways.dvote
+        const totalWeb3Nodes: IWeb3Gateway[] = bnGateways.web3
 
         // Create mapping of colocated web3/dvote services
         const gatewayPairs = mapWeb3DvoteGateways(bootnodeData[networkId], totalDvoteNodes, totalWeb3Nodes)
 
         if (!totalDvoteNodes.length)
-            Promise.reject(new Error(`The Dvote gateway list is empty of ${networkId}`))
+            throw new Error(`The Dvote gateway list is empty of ${networkId}`)
 
-        const result = await filterNodes(totalDvoteNodes, totalWeb3Nodes, numberOfGateways, timeoutsToTest)
-        if (!result) throw new Error("Empty response after filterNodes")
+        const healthyNodes = await filterHealthyNodes(totalDvoteNodes, totalWeb3Nodes, numberOfGateways, timeoutsToTest)
+        if (!healthyNodes) throw new Error("Empty response after filterHealthyNodes")
 
         // Arrange, sort and check connectivity
-        const gateways = digestGatewayResults(result.dvote, result.web3, gatewayPairs)
+        const gwNodePairs = arrangePairedNodes(healthyNodes.dvote, healthyNodes.web3, gatewayPairs)
 
-        gateways.sort((a, b) => {
+        gwNodePairs.sort((a, b) => {
             if (!b && !a) return 0
             else if (!b) return 1
             else if (!a) return -1
@@ -109,42 +112,27 @@ async function getWorkingGateways(p: IGatewayDiscoveryParameters): Promise<{ dvo
             return b.dvote.health - a.dvote.health
         })
 
-        let candidate: { dvote: IDVoteGateway, web3: IWeb3Gateway }
-        for (let gw of gateways) {
-            if (await gw.dvote.hasClient()) {
-                candidate = gw
+        let hasInitialCandidate = false
+        for (let gw of gwNodePairs) {
+            if (gw.dvote.isReady()) {
+                hasInitialCandidate = true
                 break
             }
         }
-        if (!candidate) {
-            for (let gw of gateways) {
-                await gw.dvote.isUp().catch(() => { })
-                if (await gw.dvote.hasClient()) {
-                    candidate = gw
-                    break
-                }
-            }
-            if (!candidate) throw new Error("No candidate gateway is up after being selected")
-        }
+        if (!hasInitialCandidate) throw new Error("None of the candidates is ready")
 
-        // Disconnect all unused gateways + keep the candidate up
-        totalDvoteNodes.filter(dvGw => dvGw !== candidate.dvote).forEach(dvGw => dvGw.disconnect())
-
-        return gateways
+        return gwNodePairs
     }
     catch (err) {
         console.error(err)
 
-        // Disconnect the unused gateways
-        if (totalDvoteNodes && totalDvoteNodes.length) totalDvoteNodes.forEach(dvGw => dvGw.disconnect())
-
         if (err.message == "Could not fetch the bootnode details") throw err
-        else if (err.message == "No candidate gateway is connected after being selected") throw err
+        else if (err.message == "None of the candidates is ready") throw err
         throw new Error("No working gateway found")
     }
 }
 
-async function filterNodes(discoveredDvoteNodes: IDVoteGateway[], discoveredWeb3Nodes: IWeb3Gateway[], numberOfGateways: number, timeoutsToTest: number[]): Promise<{ dvote: IDVoteGateway[], web3: IWeb3Gateway[] }> {
+async function filterHealthyNodes(discoveredDvoteNodes: IDVoteGateway[], discoveredWeb3Nodes: IWeb3Gateway[], numberOfGateways: number, timeoutsToTest: number[]): Promise<{ dvote: IDVoteGateway[], web3: IWeb3Gateway[] }> {
     let dvoteGateways: IDVoteGateway[] = []
     let web3Gateways: IWeb3Gateway[] = []
 
@@ -164,7 +152,7 @@ async function filterNodes(discoveredDvoteNodes: IDVoteGateway[], discoveredWeb3
 
         // whileLoop tests the gateways parallely by sets of $PARALLEL_GATEWAY_TESTS
         while (testDvote.length > 0 || testWeb3.length > 0) {
-            const result = await testGateways(testDvote, testWeb3, timeout)
+            const result = await selectActiveNodes(testDvote, testWeb3, timeout)
 
             dvoteGateways = dvoteGateways.concat(result.dvote)
             web3Gateways = web3Gateways.concat(result.web3)
@@ -177,7 +165,7 @@ async function filterNodes(discoveredDvoteNodes: IDVoteGateway[], discoveredWeb3
         // Check to decide if we should proceed to the next timeout
         // If enough gateways collected then return
         if (dvoteGateways.length >= numberOfGateways && web3Gateways.length >= numberOfGateways) {
-            // return digestGatewayResults(dvoteGateways, web3Gateways, gatewayPairs, discoveredDvoteNodes, discoveredWeb3Nodes)
+            // return arrangePairedNodes(dvoteGateways, web3Gateways, gatewayPairs, discoveredDvoteNodes, discoveredWeb3Nodes)
             return { dvote: dvoteGateways, web3: web3Gateways }
         }
     }
@@ -192,7 +180,7 @@ async function filterNodes(discoveredDvoteNodes: IDVoteGateway[], discoveredWeb3
     throw new Error("No working gateways found out of " + discoveredDvoteNodes.length + " and " + discoveredWeb3Nodes.length)
 }
 
-function mapWeb3DvoteGateways(networkBootnodeData: GatewayBootNodes[NetworkID], dvoteGateways: IDVoteGateway[], web3Gateways: IWeb3Gateway[]) {
+function mapWeb3DvoteGateways(networkBootnodeData: JsonBootnodeData[NetworkID], dvoteGateways: IDVoteGateway[], web3Gateways: IWeb3Gateway[]) {
     let pairs: Map<IDVoteGateway, IWeb3Gateway> = new Map()
     for (let gateway of networkBootnodeData.dvote) {
         const dvoteIndex = networkBootnodeData.dvote.indexOf(gateway)
@@ -204,7 +192,7 @@ function mapWeb3DvoteGateways(networkBootnodeData: GatewayBootNodes[NetworkID], 
     return pairs
 }
 
-function digestGatewayResults(dvoteGateways: IDVoteGateway[], web3Gateways: IWeb3Gateway[], gatewayPairs: Map<IDVoteGateway, IWeb3Gateway>): { dvote: IDVoteGateway, web3: IWeb3Gateway }[] {
+function arrangePairedNodes(dvoteGateways: IDVoteGateway[], web3Gateways: IWeb3Gateway[], gatewayPairs: Map<IDVoteGateway, IWeb3Gateway>): { dvote: IDVoteGateway, web3: IWeb3Gateway }[] {
     let gatewayList: { dvote: IDVoteGateway, web3: IWeb3Gateway }[] = []
     for (const gw of dvoteGateways) {
         const web3Paired = gatewayPairs.get(gw)
@@ -228,7 +216,7 @@ function digestGatewayResults(dvoteGateways: IDVoteGateway[], web3Gateways: IWeb
  * @param web3Nodes The set of available Web3Gateways
  * @returns A Gateway Object
  */
-function testGateways(dvoteNodes: IDVoteGateway[], web3Nodes: IWeb3Gateway[], timeout: number = GATEWAY_SELECTION_TIMEOUT): Promise<{ dvote: IDVoteGateway[], web3: IWeb3Gateway[] }> {
+function selectActiveNodes(dvoteNodes: IDVoteGateway[], web3Nodes: IWeb3Gateway[], timeout: number = GATEWAY_SELECTION_TIMEOUT): Promise<{ dvote: IDVoteGateway[], web3: IWeb3Gateway[] }> {
     const result: { dvote: IDVoteGateway[], web3: IWeb3Gateway[] } = {
         dvote: [],
         web3: []
