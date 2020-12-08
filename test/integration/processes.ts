@@ -5,11 +5,11 @@ import { Gateway } from "../../src/net/gateway"
 import EntityResolverBuilder from "../builders/entity-resolver"
 import NamespaceBuilder, { DEFAULT_NAMESPACE } from "../builders/namespace"
 import ProcessBuilder, { DEFAULT_PARAMS_SIGNATURE } from "../builders/process"
-import { ProcessMetadata } from "../../src/models/process"
-import { newProcess } from "../../src/api/voting"
+// import { ProcessMetadata } from "../../src/models/process"
+// import { newProcess } from "../../src/api/voting"
 import { Wallet } from "ethers"
-import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType } from "dvote-solidity"
-import { EntityMetadataTemplate } from "../../src/models/entity"
+// import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType } from "dvote-solidity"
+// import { EntityMetadataTemplate } from "../../src/models/entity"
 
 let server: DevServices
 let gateway: Gateway
@@ -26,7 +26,7 @@ describe("Process", () => {
         const entityInstance = await new EntityResolverBuilder(server.accounts).build()
         const namespaceInstance = await new NamespaceBuilder(server.accounts).build()
         const processInstance = await new ProcessBuilder(server.accounts).build(0)
-        gateway = server.getGateway(entityInstance.address, namespaceInstance.address, processInstance.address)
+        gateway = await server.getGateway(entityInstance.address, namespaceInstance.address, processInstance.address)
 
         entityAccount = server.web3.accounts[1].wallet
     })

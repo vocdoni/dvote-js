@@ -19,22 +19,6 @@ import { waitUntilVochainBlock, waitEthBlocks } from "../src/util/waiters"
 const CONFIG_PATH = "./config.yaml"
 const config = getConfig()
 
-// <<<<<<< HEAD
-// import { NetworkID } from "../src/net/gateway-bootnodes"
-// import { GatewayPool } from "../src/net/gateway-pool"
-// import { getProcessKeys, setStatus, getBlockHeight, newProcess, getProcessList, packageSignedEnvelope, submitEnvelope, getSignedVoteNullifier, getEnvelopeStatus, getEnvelopeHeight, getResultsDigest, getProcessMetadata, ProcessStatus } from "../src/api/vote"
-// import { waitUntilVochainBlock, waitEthBlocks } from "../src/util/waiters"
-// import { ProcessMetadata, ProcessMetadataTemplate } from "../src/models/process"
-// import { getEntityId, getEntityMetadataByAddress, setMetadata } from "../src/api/entity"
-// import { EntityMetadataTemplate } from "../src/models/entity"
-// import { addCensus, addClaimBulk, digestHexClaim, dumpPlain, generateProof, publishCensus } from "../src/api/census"
-// import { signJsonBody } from "../src/util/json-sign"
-
-// // let entityResolver = null, votingProcess = null
-
-// let pool: GatewayPool, entityId: string, entityWallet: Wallet, processId: string, voteMetadata: ProcessMetadata, accounts: Account[]
-// =======
-// >>>>>>> 88be3c1... Example and Benchmark work in progress
 let pool: GatewayPool, entityAddr: string, entityWallet: Wallet, processId: string, processParams: ProcessContractParameters, processMetadata: ProcessMetadata, accounts: Account[]
 
 async function main() {

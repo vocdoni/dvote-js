@@ -3,62 +3,53 @@ import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
 import { DVoteGateway, IDVoteGateway, Gateway, IGateway, Web3Gateway } from "../../src/net/gateway"
 import { getBlockHeight, getBlockStatus, estimateBlockAtDateTime, estimateDateAtBlock } from "../../src/api/voting"
-import { DevWebSocketServer, WebSocketMockedInteraction, WSResponse } from "../helpers/web-socket-service"
-import GatewayInfo from "../../src/wrappers/gateway-info"
+import { DevGatewayService, MockedInteraction, TestResponse } from "../helpers/dvote-service"
+import { DevWeb3Service } from "../helpers/web3-service"
 import { VOCHAIN_BLOCK_TIME } from "../../src/constants"
-const ganacheRpcServer = require("ganache-core").server
 
 const dvotePort = 8500
-const w3Port = 8600
-const gatewayInfo = new GatewayInfo(`ws://localhost:${dvotePort}`, ["vote"], `http://localhost:${w3Port}/web3`, "")
+const web3Port = 8600
+const web3DummyService = new DevWeb3Service({ port: web3Port })
 
-const defaultConnectResponse = { timestamp: 123, ok: true, apiList: ["file", "vote", "census", "results"], health: 100 }
+const defaultConnectResponse = { timestamp: 123, ok: true, apiList: ["file", "vote", "census", "results", "info"], health: 100 }
 
 addCompletionHooks()
 
 describe("DVote Block Status", () => {
-    var rpcServer
+    let gatewayServer: DevGatewayService
     const baseBlock = 1000
     const pad = 1000  // Min resolution of the GW timestamp block
 
-    beforeEach(async () => {
-        if (rpcServer && rpcServer.close) rpcServer.close()
-        rpcServer = ganacheRpcServer()
-        await new Promise(resolve => rpcServer.listen(w3Port, (err, info) => resolve(info)))
+    before(() => {
+        return web3DummyService.start()
     })
-    afterEach(() => {
-        if (rpcServer) {
-            rpcServer.close()
-            rpcServer = null
-        }
+    after(() => {
+        web3DummyService.stop()
     })
+
+    beforeEach(() => {
+        gatewayServer = new DevGatewayService({ port: dvotePort, responses: [defaultConnectResponse] })
+        return gatewayServer.start()
+    })
+    afterEach(() => gatewayServer.stop())
 
     it("Should return the current block number and the timestamp", async () => {
-        const gatewayServer = new DevWebSocketServer({
-            port: dvotePort,
-            responses: [
-                defaultConnectResponse,
-                { blockTime: [0, 0, 0, 0, 0], blockTimestamp: 1556110602, height: 1234, ok: true, timestamp: 1556110672 },
-                { blockTime: [0, 0, 0, 0, 0], blockTimestamp: 1556110612, height: 2345, ok: true, timestamp: 1556110672 },
-                { blockTime: [0, 0, 0, 0, 0], blockTimestamp: 1556110622, height: 3456, ok: true, timestamp: 1556110672 },
-                { blockTime: [10000, 10000, 10000, 10000, 10000], blockTimestamp: 1556110632, height: 4567, ok: true, timestamp: 1556110672 },
-                { blockTime: [10000, 10000, 10000, 10000, 10000], blockTimestamp: 1556110642, height: 10000000, ok: true, timestamp: 1556110672 },
-            ]
-        })
+        gatewayServer.addResponse({ blockTime: [0, 0, 0, 0, 0], blockTimestamp: 1556110602, height: 1234, ok: true, timestamp: 1556110672 })
+        gatewayServer.addResponse({ blockTime: [0, 0, 0, 0, 0], blockTimestamp: 1556110612, height: 2345, ok: true, timestamp: 1556110672 })
+        gatewayServer.addResponse({ blockTime: [0, 0, 0, 0, 0], blockTimestamp: 1556110622, height: 3456, ok: true, timestamp: 1556110672 })
+        gatewayServer.addResponse({ blockTime: [10000, 10000, 10000, 10000, 10000], blockTimestamp: 1556110632, height: 4567, ok: true, timestamp: 1556110672 })
+        gatewayServer.addResponse({ blockTime: [10000, 10000, 10000, 10000, 10000], blockTimestamp: 1556110642, height: 10000000, ok: true, timestamp: 1556110672 })
 
-        const w3 = new Web3Gateway(gatewayInfo)
+        const w3 = new Web3Gateway(web3DummyService.uri)
         w3.isUp = () => Promise.resolve()
-        const gw = new Gateway(new DVoteGateway(gatewayInfo), w3)
-        await gw.connect()
+        const gw = new Gateway(new DVoteGateway(gatewayServer.gatewayInfo), w3)
+        await gw.init()
 
         expect(await getBlockHeight(gw)).to.eq(1234)
         expect(await getBlockHeight(gw)).to.eq(2345)
         expect(await getBlockHeight(gw)).to.eq(3456)
         expect(await getBlockHeight(gw)).to.eq(4567)
         expect(await getBlockHeight(gw)).to.eq(10000000)
-
-        gw.disconnect()
-        await gatewayServer.stop()
     })
 
     it("Should return the current block height, timestamp and average times", async () => {
@@ -66,25 +57,19 @@ describe("DVote Block Status", () => {
         const blockTimestampA = Math.floor(now.getTime() / 1000)
         const baseBlock = 1000
 
-        const gatewayServer = new DevWebSocketServer({
-            port: dvotePort,
-            responses: [
-                defaultConnectResponse,
-                { blockTime: [10000, 10000, 10000, 10000, 10000], blockTimestamp: blockTimestampA, height: baseBlock, ok: true, timestamp: 1556110672 },
-                { blockTime: [10000, 10000, 10000, 10000, 10000], blockTimestamp: blockTimestampA - 5, height: baseBlock, ok: true, timestamp: 1556110672 },
-                { blockTime: [10000, 10000, 10000, 10000, 10000], blockTimestamp: blockTimestampA - 9, height: baseBlock, ok: true, timestamp: 1556110672 },
-                { blockTime: [12000, 12000, 12000, 12000, 12000], blockTimestamp: blockTimestampA - 8, height: baseBlock, ok: true, timestamp: 1556110672 },
-                { blockTime: [12000, 12000, 12000, 12000, 12000], blockTimestamp: blockTimestampA - 11, height: baseBlock, ok: true, timestamp: 1556110672 },
-                { blockTime: [20000, 20000, 20000, 20000, 20000], blockTimestamp: blockTimestampA - 15, height: baseBlock, ok: true, timestamp: 1556110672 },
-                { blockTime: [8000, 8000, 8000, 8000, 8000], blockTimestamp: blockTimestampA - 0, height: baseBlock, ok: true, timestamp: 1556110672 },
-                { blockTime: [8000, 8000, 8000, 8000, 8000], blockTimestamp: blockTimestampA - 3, height: baseBlock, ok: true, timestamp: 1556110672 },
-            ]
-        })
+        gatewayServer.addResponse({ blockTime: [10000, 10000, 10000, 10000, 10000], blockTimestamp: blockTimestampA, height: baseBlock, ok: true, timestamp: 1556110672 })
+        gatewayServer.addResponse({ blockTime: [10000, 10000, 10000, 10000, 10000], blockTimestamp: blockTimestampA - 5, height: baseBlock, ok: true, timestamp: 1556110672 })
+        gatewayServer.addResponse({ blockTime: [10000, 10000, 10000, 10000, 10000], blockTimestamp: blockTimestampA - 9, height: baseBlock, ok: true, timestamp: 1556110672 })
+        gatewayServer.addResponse({ blockTime: [12000, 12000, 12000, 12000, 12000], blockTimestamp: blockTimestampA - 8, height: baseBlock, ok: true, timestamp: 1556110672 })
+        gatewayServer.addResponse({ blockTime: [12000, 12000, 12000, 12000, 12000], blockTimestamp: blockTimestampA - 11, height: baseBlock, ok: true, timestamp: 1556110672 })
+        gatewayServer.addResponse({ blockTime: [20000, 20000, 20000, 20000, 20000], blockTimestamp: blockTimestampA - 15, height: baseBlock, ok: true, timestamp: 1556110672 })
+        gatewayServer.addResponse({ blockTime: [8000, 8000, 8000, 8000, 8000], blockTimestamp: blockTimestampA - 0, height: baseBlock, ok: true, timestamp: 1556110672 })
+        gatewayServer.addResponse({ blockTime: [8000, 8000, 8000, 8000, 8000], blockTimestamp: blockTimestampA - 3, height: baseBlock, ok: true, timestamp: 1556110672 })
 
-        const w3 = new Web3Gateway(gatewayInfo)
+        const w3 = new Web3Gateway(web3DummyService.uri)
         w3.isUp = () => Promise.resolve()
-        const gw = new Gateway(new DVoteGateway(gatewayInfo), w3)
-        await gw.connect()
+        const gw = new Gateway(new DVoteGateway(gatewayServer.gatewayInfo), w3)
+        await gw.init()
 
         expect(await getBlockStatus(gw)).to.deep.eq({ blockTimes: [10000, 10000, 10000, 10000, 10000], blockTimestamp: blockTimestampA * 1000, blockNumber: baseBlock })
         expect(await getBlockStatus(gw)).to.deep.eq({ blockTimes: [10000, 10000, 10000, 10000, 10000], blockTimestamp: (blockTimestampA - 5) * 1000, blockNumber: baseBlock })
@@ -94,24 +79,9 @@ describe("DVote Block Status", () => {
         expect(await getBlockStatus(gw)).to.deep.eq({ blockTimes: [20000, 20000, 20000, 20000, 20000], blockTimestamp: (blockTimestampA - 15) * 1000, blockNumber: baseBlock })
         expect(await getBlockStatus(gw)).to.deep.eq({ blockTimes: [8000, 8000, 8000, 8000, 8000], blockTimestamp: (blockTimestampA - 0) * 1000, blockNumber: baseBlock })
         expect(await getBlockStatus(gw)).to.deep.eq({ blockTimes: [8000, 8000, 8000, 8000, 8000], blockTimestamp: (blockTimestampA - 3) * 1000, blockNumber: baseBlock })
-
-        gw.disconnect()
-        await gatewayServer.stop()
     })
 
     describe("Should estimate blocks for a given date when average times are stable", () => {
-        beforeEach(async () => {
-            if (rpcServer && rpcServer.close) rpcServer.close()
-            rpcServer = ganacheRpcServer()
-            await new Promise(resolve => rpcServer.listen(w3Port, (err, info) => resolve(info)))
-        })
-        afterEach(() => {
-            if (rpcServer) {
-                rpcServer.close()
-                rpcServer = null
-            }
-        })
-
         const stdBlockTime = 10000
         const slowBlockTime = 12000
         const slowerBlockTime = 20000
@@ -119,12 +89,11 @@ describe("DVote Block Status", () => {
 
         it("Should return 0 if the date is before the first block", async () => {
             let now: number
-            const gatewayServer = new DevWebSocketServer({ port: dvotePort, responses: [defaultConnectResponse] })
 
-            const w3 = new Web3Gateway(gatewayInfo)
+            const w3 = new Web3Gateway(web3DummyService.uri)
             w3.isUp = () => Promise.resolve()
-            const gw = new Gateway(new DVoteGateway(gatewayInfo), w3)
-            await gw.connect()
+            const gw = new Gateway(new DVoteGateway(gatewayServer.gatewayInfo), w3)
+            await gw.init()
 
             now = Date.now()
             gatewayServer.addResponse({ blockTime: [stdBlockTime, stdBlockTime, stdBlockTime, stdBlockTime, stdBlockTime], blockTimestamp: Math.floor(now / 1000) - 9, height: baseBlock, ok: true, timestamp: 1556110672 })
@@ -133,20 +102,15 @@ describe("DVote Block Status", () => {
             now = Date.now()
             gatewayServer.addResponse({ blockTime: [stdBlockTime, stdBlockTime, stdBlockTime, stdBlockTime, stdBlockTime], blockTimestamp: Math.floor(now / 1000) - 9, height: baseBlock, ok: true, timestamp: 1556110672 })
             expect(await estimateBlockAtDateTime(new Date(now - 1000 * 60 * 60 * 3), gw)).to.eq(0)
-
-            gw.disconnect()
-            await gatewayServer.stop()
         })
 
         it("On standard block times", async () => {
             let now: number
-            const gatewayServer = new DevWebSocketServer({ port: dvotePort, responses: [defaultConnectResponse] })
 
-            const w3 = new Web3Gateway(gatewayInfo)
+            const w3 = new Web3Gateway(web3DummyService.uri)
             w3.isUp = () => Promise.resolve()
-            const gw = new Gateway(new DVoteGateway(gatewayInfo), w3)
-            await gw.connect()
-
+            const gw = new Gateway(new DVoteGateway(gatewayServer.gatewayInfo), w3)
+            await gw.init()
 
             // Block #1000 mined 0 seconds ago. Standard block times.
             now = Date.now()
@@ -234,20 +198,15 @@ describe("DVote Block Status", () => {
             now = Date.now()
             gatewayServer.addResponse({ blockTime: [stdBlockTime, stdBlockTime, stdBlockTime, stdBlockTime, stdBlockTime], blockTimestamp: Math.floor(now / 1000) - 9, height: baseBlock, ok: true, timestamp: 1556110672 })
             expect(await estimateBlockAtDateTime(new Date(now + stdBlockTime * 0.1 + pad), gw)).to.eq(baseBlock + 1)
-
-
-            gw.disconnect()
-            await gatewayServer.stop()
         })
 
         it("On slow block times", async () => {
             let now: number
-            const gatewayServer = new DevWebSocketServer({ port: dvotePort, responses: [defaultConnectResponse] })
 
-            const w3 = new Web3Gateway(gatewayInfo)
+            const w3 = new Web3Gateway(web3DummyService.uri)
             w3.isUp = () => Promise.resolve()
-            const gw = new Gateway(new DVoteGateway(gatewayInfo), w3)
-            await gw.connect()
+            const gw = new Gateway(new DVoteGateway(gatewayServer.gatewayInfo), w3)
+            await gw.init()
 
             // Block #1000 mined 0 seconds ago. Slower block times.
             now = Date.now()
@@ -317,20 +276,15 @@ describe("DVote Block Status", () => {
             now = Date.now()
             gatewayServer.addResponse({ blockTime: [slowBlockTime, slowBlockTime, slowBlockTime, slowBlockTime, slowBlockTime], blockTimestamp: Math.floor(now / 1000) - 11, height: baseBlock, ok: true, timestamp: 1556110672 },)
             expect(await estimateBlockAtDateTime(new Date(now + slowBlockTime * 50), gw)).to.eq(baseBlock + 50)
-
-            gw.disconnect()
-            await gatewayServer.stop()
         })
 
         it("On very slow block times", async () => {
             let now: number
 
-            const gatewayServer = new DevWebSocketServer({ port: dvotePort, responses: [defaultConnectResponse] })
-
-            const w3 = new Web3Gateway(gatewayInfo)
+            const w3 = new Web3Gateway(web3DummyService.uri)
             w3.isUp = () => Promise.resolve()
-            const gw = new Gateway(new DVoteGateway(gatewayInfo), w3)
-            await gw.connect()
+            const gw = new Gateway(new DVoteGateway(gatewayServer.gatewayInfo), w3)
+            await gw.init()
 
             // Block #1000 mined 15 seconds ago. Very slow block
             now = Date.now()
@@ -354,21 +308,15 @@ describe("DVote Block Status", () => {
             now = Date.now()
             gatewayServer.addResponse({ blockTime: [slowerBlockTime, slowerBlockTime, slowerBlockTime, slowerBlockTime, slowerBlockTime], blockTimestamp: Math.floor(now / 1000) - 15, height: baseBlock, ok: true, timestamp: 1556110672 })
             expect(await estimateBlockAtDateTime(new Date(now + slowerBlockTime * 50 + pad), gw)).to.eq(baseBlock + 50)
-
-            gw.disconnect()
-            await gatewayServer.stop()
         })
 
         it("On shorter block times", async () => {
             let now: number
 
-            const gatewayServer = new DevWebSocketServer({ port: dvotePort, responses: [defaultConnectResponse] })
-
-            const w3 = new Web3Gateway(gatewayInfo)
+            const w3 = new Web3Gateway(web3DummyService.uri)
             w3.isUp = () => Promise.resolve()
-            const gw = new Gateway(new DVoteGateway(gatewayInfo), w3)
-            await gw.connect()
-
+            const gw = new Gateway(new DVoteGateway(gatewayServer.gatewayInfo), w3)
+            await gw.init()
 
             // Block #1000 mined 0 seconds ago. Shorter block times.
             now = Date.now()
@@ -414,25 +362,10 @@ describe("DVote Block Status", () => {
             now = Date.now()
             gatewayServer.addResponse({ blockTime: [shortBlockTime, shortBlockTime, shortBlockTime, shortBlockTime, shortBlockTime], blockTimestamp: Math.floor(now / 1000) - 3, height: baseBlock, ok: true, timestamp: 1556110672 })
             expect(await estimateBlockAtDateTime(new Date(now + shortBlockTime * 50 + pad), gw)).to.eq(baseBlock + 50)
-
-            gw.disconnect()
-            await gatewayServer.stop()
         })
     })
 
     describe("Should estimate blocks for a given date when average times are not stable", () => {
-        beforeEach(async () => {
-            if (rpcServer && rpcServer.close) rpcServer.close()
-            rpcServer = ganacheRpcServer()
-            await new Promise(resolve => rpcServer.listen(w3Port, (err, info) => resolve(info)))
-        })
-        afterEach(() => {
-            if (rpcServer) {
-                rpcServer.close()
-                rpcServer = null
-            }
-        })
-
         const stdBlockTime = VOCHAIN_BLOCK_TIME * 1000
         const slowBlockTime = 20000
 
@@ -447,12 +380,10 @@ describe("DVote Block Status", () => {
             const baseBlock = 20000 // 20x to allow for two days
             let now: number
 
-            const gatewayServer = new DevWebSocketServer({ port: dvotePort, responses: [defaultConnectResponse] })
-
-            const w3 = new Web3Gateway(gatewayInfo)
+            const w3 = new Web3Gateway(web3DummyService.uri)
             w3.isUp = () => Promise.resolve()
-            const gw = new Gateway(new DVoteGateway(gatewayInfo), w3)
-            await gw.connect()
+            const gw = new Gateway(new DVoteGateway(gatewayServer.gatewayInfo), w3)
+            await gw.init()
 
             let expectedBlock: number
             let dateOffset: number
@@ -574,9 +505,6 @@ describe("DVote Block Status", () => {
             now = Date.now()
             gatewayServer.addResponse({ blockTime: [slowBlockTime, slowBlockTime, slowBlockTime, slowBlockTime, slowBlockTime], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, timestamp: 1556110672 })
             expect(await estimateBlockAtDateTime(new Date(now + dateOffset), gw)).to.eq(expectedBlock)
-
-            gw.disconnect()
-            await gatewayServer.stop()
         })
 
         it("When some averages are unset", async () => {
@@ -584,12 +512,10 @@ describe("DVote Block Status", () => {
             const baseBlock = 20000 // 20x to allow for two days
             const zero = 0
 
-            const gatewayServer = new DevWebSocketServer({ port: dvotePort, responses: [defaultConnectResponse,] })
-
-            const w3 = new Web3Gateway(gatewayInfo)
+            const w3 = new Web3Gateway(web3DummyService.uri)
             w3.isUp = () => Promise.resolve()
-            const gw = new Gateway(new DVoteGateway(gatewayInfo), w3)
-            await gw.connect()
+            const gw = new Gateway(new DVoteGateway(gatewayServer.gatewayInfo), w3)
+            await gw.init()
 
             let expectedBlock: number
             let dateOffset: number
@@ -709,21 +635,16 @@ describe("DVote Block Status", () => {
             now = Date.now()
             gatewayServer.addResponse({ blockTime: [zero, zero, zero, zero, zero], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, timestamp: 1556110672 })
             expect(await estimateBlockAtDateTime(new Date(now + dateOffset), gw)).to.eq(expectedBlock)
-
-            gw.disconnect()
-            await gatewayServer.stop()
         })
 
         it("When average times are not available at all", async () => {
             let now: number
             const zero = 0
 
-            const gatewayServer = new DevWebSocketServer({ port: dvotePort, responses: [defaultConnectResponse] })
-
-            const w3 = new Web3Gateway(gatewayInfo)
+            const w3 = new Web3Gateway(web3DummyService.uri)
             w3.isUp = () => Promise.resolve()
-            const gw = new Gateway(new DVoteGateway(gatewayInfo), w3)
-            await gw.connect()
+            const gw = new Gateway(new DVoteGateway(gatewayServer.gatewayInfo), w3)
+            await gw.init()
 
             // Block #1000 mined 0 seconds ago. Standard block times.
             now = Date.now()
@@ -795,25 +716,10 @@ describe("DVote Block Status", () => {
             gatewayServer.addResponse({ blockTime: [zero, zero, zero, zero, zero], blockTimestamp: Math.floor(now / 1000) - 11, height: baseBlock, ok: true, request: "dummy", timestamp: 1556110672 })
 
             expect(await estimateBlockAtDateTime(new Date(now + VOCHAIN_BLOCK_TIME * 1000 * 0.1 + pad), gw)).to.eq(baseBlock + 1)
-
-            gw.disconnect()
-            await gatewayServer.stop()
         })
     })
 
     describe("Should estimate the date for a given block ", () => {
-        beforeEach(async () => {
-            if (rpcServer && rpcServer.close) rpcServer.close()
-            rpcServer = ganacheRpcServer()
-            await new Promise(resolve => rpcServer.listen(w3Port, (err, info) => resolve(info)))
-        })
-        afterEach(() => {
-            if (rpcServer) {
-                rpcServer.close()
-                rpcServer = null
-            }
-        })
-
         const stdBlockTime = 10000
         const slowBlockTime = 20000
 
@@ -827,12 +733,11 @@ describe("DVote Block Status", () => {
 
         it("When average times are stable", async () => {
             let now: number
-            const gatewayServer = new DevWebSocketServer({ port: dvotePort, responses: [defaultConnectResponse] })
 
-            const w3 = new Web3Gateway(gatewayInfo)
+            const w3 = new Web3Gateway(web3DummyService.uri)
             w3.isUp = () => Promise.resolve()
-            const gw = new Gateway(new DVoteGateway(gatewayInfo), w3)
-            await gw.connect()
+            const gw = new Gateway(new DVoteGateway(gatewayServer.gatewayInfo), w3)
+            await gw.init()
 
             // Std block time
             for (let diff = -50; diff <= 50; diff += 3) {
@@ -847,19 +752,15 @@ describe("DVote Block Status", () => {
                 gatewayServer.addResponse({ blockTime: [slowBlockTime, slowBlockTime, slowBlockTime, slowBlockTime, slowBlockTime], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, timestamp: 1556110672 })
                 expect((await estimateDateAtBlock(baseBlock + diff, gw)).getTime()).to.eq(round1000(now) + diff * slowBlockTime)
             }
-
-            gw.disconnect()
-            await gatewayServer.stop()
         })
 
         it("When average times are unstable", async () => {
             let now: number, blockDiff: number
-            const gatewayServer = new DevWebSocketServer({ port: dvotePort, responses: [defaultConnectResponse] })
 
-            const w3 = new Web3Gateway(gatewayInfo)
+            const w3 = new Web3Gateway(web3DummyService.uri)
             w3.isUp = () => Promise.resolve()
-            const gw = new Gateway(new DVoteGateway(gatewayInfo), w3)
-            await gw.connect()
+            const gw = new Gateway(new DVoteGateway(gatewayServer.gatewayInfo), w3)
+            await gw.init()
 
             // Std block time
             now = Date.now()
@@ -881,20 +782,16 @@ describe("DVote Block Status", () => {
             blockDiff = (blocksPer10m + blocksPerM) / 2
             gatewayServer.addResponse({ blockTime: [stdBlockTime, slowBlockTime, slowBlockTime, slowBlockTime, slowBlockTime], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, timestamp: 1556110672 })
             expect((await estimateDateAtBlock(baseBlock + blockDiff, gw)).getTime()).to.eq(round1000(now) + blockDiff * ((stdBlockTime + slowBlockTime) / 2))
-
-            gw.disconnect()
-            await gatewayServer.stop()
         })
 
         it("When average times are not available", async () => {
             let now: number
             const zero = 0
-            const gatewayServer = new DevWebSocketServer({ port: dvotePort, responses: [defaultConnectResponse] })
 
-            const w3 = new Web3Gateway(gatewayInfo)
+            const w3 = new Web3Gateway(web3DummyService.uri)
             w3.isUp = () => Promise.resolve()
-            const gw = new Gateway(new DVoteGateway(gatewayInfo), w3)
-            await gw.connect()
+            const gw = new Gateway(new DVoteGateway(gatewayServer.gatewayInfo), w3)
+            await gw.init()
 
             // Std block time
             for (let diff = -50; diff <= 50; diff += 3) {
@@ -909,9 +806,6 @@ describe("DVote Block Status", () => {
                 gatewayServer.addResponse({ blockTime: [slowBlockTime, slowBlockTime, slowBlockTime, slowBlockTime, slowBlockTime], blockTimestamp: Math.floor(now / 1000), height: baseBlock, ok: true, timestamp: 1556110672 })
                 expect((await estimateDateAtBlock(baseBlock + diff, gw)).getTime()).to.eq(round1000(now) + diff * slowBlockTime)
             }
-
-            gw.disconnect()
-            await gatewayServer.stop()
         })
     })
 })

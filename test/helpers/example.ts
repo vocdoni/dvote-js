@@ -1,4 +1,4 @@
-import DevServices, { WSResponse, WSResponseBody, WebSocketMockedInteraction } from "./all-services"
+import DevServices, { TestResponse, TestResponseBody, MockedInteraction } from "./all-services"
 
 async function example() {
     const services = new DevServices()
@@ -6,8 +6,8 @@ async function example() {
 
     // DVote client
     const dvoteGw = services.ws.client
-    await dvoteGw.connect()
-    console.log("DVote connected:", await dvoteGw.isConnected())
+    await dvoteGw.init()
+    console.log("DVote ready:", dvoteGw.isReady())
 
     // By default, a `getBlockStatus` dummy response is prepared on the GW mock,
     // so that `connect()` will succeed
@@ -21,14 +21,14 @@ async function example() {
     const namespaceAddr = "0x1234" // optional
     const processAddr = "0x1234" // optional
 
-    const web3Gw = services.web3.getClient(entityResolverAddr, namespaceAddr, processAddr)
-    const myInstance = await web3Gw.attach("0x0", [])
+    const web3Gw = await services.web3.getClient(entityResolverAddr, namespaceAddr, processAddr)
+    const myInstance = web3Gw.attach("0x0", [])
     const tx = await myInstance.myMethod()
     await tx.wait()
 
     // Do your logic here
 
-    await services.stop()
+    services.stop()
 }
 
-example()
+// example()

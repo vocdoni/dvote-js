@@ -47,15 +47,13 @@ export class DevWeb3Service {
     /** Returns a gateway client that will skip the network checks and will use the given contract addresses as the official ones */
     async getClient(entityResolverAddress: string = "", namespaceAddress: string = "", processAddress: string = ""): Promise<Web3Gateway> {
         const gw = new Web3Gateway(this.uri)
+        await gw.init()
 
         // Bypass health checks
         gw.isUp = () => Promise.resolve()
         gw.isSyncing = () => Promise.resolve(false)
 
         // Bypass contract address resolution
-        gw.fetchEntityResolverContractAddress = () => Promise.resolve(entityResolverAddress)
-        gw.getNamespaceContractAddress = () => Promise.resolve(namespaceAddress)
-        gw.fetchProcessContractAddress = () => Promise.resolve(processAddress)
         gw.entityResolverContractAddress = entityResolverAddress
         gw.namespaceContractAddress = namespaceAddress
         gw.processContractAddress = processAddress

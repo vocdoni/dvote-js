@@ -24,6 +24,7 @@ import {
 } from "dvote-solidity"
 import { entityResolverEnsDomain, processEnsDomain, entityResolverEnsDomainDev, processEnsDomainDev } from "../constants"
 import { promiseFuncWithTimeout, promiseWithTimeout } from '../util/timeout'
+import { generateRandomHexSeed } from '../util/signers'
 
 const { JsonRpcProvider, Web3Provider, IpcProvider, InfuraProvider, FallbackProvider, EtherscanProvider } = providers
 
@@ -323,6 +324,7 @@ export class DVoteGateway {
     private _supportedApis: DVoteSupportedApi[] = []
     private _pubKey: string = ""
     private _health: number = 0
+    private _uri: string
     private client: AxiosInstance = null
 
     /**
@@ -332,6 +334,7 @@ export class DVoteGateway {
     constructor(gatewayOrParams: GatewayInfo | { uri: string, supportedApis: DVoteSupportedApi[], publicKey?: string }) {
         if (gatewayOrParams instanceof GatewayInfo) {
             this.client = axios.create({ baseURL: gatewayOrParams.dvote, method: "post" })
+            this._uri = gatewayOrParams.dvote
             this._supportedApis = gatewayOrParams.supportedApis
             this._pubKey = gatewayOrParams.publicKey
         } else {
@@ -339,6 +342,7 @@ export class DVoteGateway {
             if (!uri) throw new Error("Invalid gateway URI")
 
             this.client = axios.create({ baseURL: uri, method: "post" })
+            this._uri = uri
             this._supportedApis = supportedApis
             this._pubKey = publicKey || ""
         }
@@ -351,11 +355,11 @@ export class DVoteGateway {
 
     /** Check whether the client is connected to a Gateway */
     public isReady(): boolean {
-        return this.client && !!this.client.getUri() && this.supportedApis && this.supportedApis.length > 0
+        return this.client && this._uri && this.supportedApis && this.supportedApis.length > 0
     }
 
     /** Get the current URI of the Gateway */
-    public get uri() { return this.client && this.client.getUri() || null }
+    public get uri() { return this._uri || null }
     public get supportedApis() { return this._supportedApis }
     public get publicKey() { return this._pubKey }
     public get health() { return this._health }
@@ -373,14 +377,13 @@ export class DVoteGateway {
 
         // Check API method availability
         if (!dvoteGatewayApiMethods.includes(requestBody.method)) throw new Error("The method is not valid")
-        else if (!this.supportsMethod(requestBody.method)) throw new Error("The method is not available in the Gateway's supported API's")
+        else if (!this.supportsMethod(requestBody.method)) throw new Error(`The method is not available in the Gateway's supported API's (${requestBody.method})`)
 
         // Append the current timestamp to the body
         if (typeof requestBody.timestamp == "undefined") {
             requestBody.timestamp = Math.floor(Date.now() / 1000)
         }
-        const rand = Math.random().toString(16).split('.')[1]
-        const requestId = utils.keccak256('0x' + rand).substr(2, 10)
+        const requestId = generateRandomHexSeed().substr(2, 10)
 
         const request: MessageRequestContent = {
             id: requestId,
@@ -392,7 +395,7 @@ export class DVoteGateway {
         }
 
         const response = await promiseWithTimeout(
-            this.client.post('', JSON.stringify(sortObjectFields(request))),
+            this.client.post('', sortObjectFields(request)),
             params.timeout
         )
 
@@ -437,6 +440,9 @@ export class DVoteGateway {
             //         this.handleGatewayResponse(textData, responseBytes)
             //     })
         }
+        else if (typeof response.data == "object") {
+            msg = response.data
+        }
         else {
             throw new Error("Unsupported response: [" + typeof response.data + "] - " + response.data)
         }
@@ -479,7 +485,7 @@ export class DVoteGateway {
      */
     public isUp(timeout: number = GATEWAY_SELECTION_TIMEOUT): Promise<void> {
         if (!this.client) return Promise.reject(new Error("The client is not initialized"))
-        const uri = parseURL(this.client.getUri())
+        const uri = parseURL(this._uri)
 
         if (uri.host.length === 0) {
             return Promise.reject(new Error("Invalid Gateway URL"))
@@ -525,7 +531,7 @@ export class DVoteGateway {
         }
         catch (error) {
             if (error && error.message == "Time out") throw error
-
+            console.error("FAILED", error)
             let message = "The status of the gateway could not be retrieved"
             message = (error.message) ? message + ": " + error.message : message
             throw new Error(message)
@@ -538,8 +544,8 @@ export class DVoteGateway {
      */
     public checkPing(): Promise<boolean> {
         if (!this.client) return Promise.reject(new Error("The client is not initialized"))
-        const uri = parseURL(this.client.getUri())
-        const pingUrl = `https://${uri.host}/ping`
+        const uri = parseURL(this._uri)
+        const pingUrl = `${uri.protocol}//${uri.host}/ping`
 
         return promiseWithTimeout(axios.get(pingUrl), 2 * 1000)
             .catch(err => null)
@@ -554,15 +560,14 @@ export class DVoteGateway {
      */
     public supportsMethod(method: DVoteGatewayMethod): boolean {
         if (dvoteApis.file.includes(method))
-            return this.supportedApis.includes("file");
+            return this.supportedApis.includes("file")
         else if (dvoteApis.census.includes(method))
-            return this.supportedApis.includes("census");
+            return this.supportedApis.includes("census")
         else if (dvoteApis.vote.includes(method))
-            return this.supportedApis.includes("vote");
+            return this.supportedApis.includes("vote")
         else if (dvoteApis.results.includes(method))
-            return this.supportedApis.includes("results");
-        else if (dvoteApis.info.includes(method))
-            return this.supportedApis.includes("info");
+            return this.supportedApis.includes("results")
+        else if (dvoteApis.info.includes(method)) return true;
         return false;
     }
 }

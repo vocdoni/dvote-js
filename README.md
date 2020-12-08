@@ -47,6 +47,8 @@ const NETWORK_ID = ""
 const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
 gateway = await Gateway.fromInfo({ uri: GATEWAY_DVOTE_URI, supportedApis: ["file"], publicKey: GATEWAY_PUB_KEY })
+await gateway.init()
+
 // alternatively for a pool of gateways
 // const options = {
 //         networkId: "goerli",
@@ -74,8 +76,6 @@ console.log("DATA:", data)
 // Read the contents back as a byte array
 const data = await fetchFileBytes(origin, dvoteGw)
 console.log("DATA:", data)
-
-dvoteGw.disconnect()
 ```
 
 ### Entity
@@ -120,8 +120,6 @@ const jsonMetadata = { ... } // EDIT THIS
 const contentUri = await setMetadata(myEntityAddress, jsonMetadata, wallet, gw)
 
 console.log("IPFS ORIGIN:", contentUri)
-
-gw.disconnect()
 ```
 
 #### Fetch the metadata of an Entity:
@@ -157,12 +155,10 @@ const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 const myEntityAddress = await wallet.getAddress()
 const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, GATEWAY_SUPPORTED_APIS, GATEWAY_WEB3_PROVIDER_URI, GATEWAY_PUBLIC_KEY)
 const gateway = await Gateway.fromInfo(gwInfo)
-
+await gateway.init()
 
 const meta = await getEntityMetadata(myEntityAddress, gateway)
 console.log("JSON METADATA", meta)
-
-dvoteGw.disconnect()
 ```
 
 #### Set ENS text records

@@ -3,8 +3,8 @@ import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
 import { DVoteGateway, Web3Gateway, IDVoteGateway, Gateway, IGateway } from "../../src/net/gateway"
 import { addFile, fetchFileBytes } from "../../src/api/file"
-import DevServices, { TestAccount } from "../helpers/all-services"
-import { DevWebSocketServer, WebSocketMockedInteraction, WSResponse, WSResponseBody } from "../helpers/web-socket-service"
+import DevServices, { TestAccount, TestResponseBody } from "../helpers/all-services"
+import { DevGatewayService } from "../helpers/dvote-service"
 import { DevWeb3Service, getWallets } from "../helpers/web3-service"
 import { Buffer } from "buffer/"
 import GatewayInfo from "../../src/wrappers/gateway-info"
@@ -26,7 +26,7 @@ describe("DVote gateway client", () => {
 
     describe("Lifecycle", () => {
         it("Should create a DVoteGateway instance", async () => {
-            const wsServer = new DevWebSocketServer()
+            const wsServer = new DevGatewayService()
             const gatewayInfo = wsServer.gatewayInfo
 
             expect(() => {
@@ -38,13 +38,13 @@ describe("DVote gateway client", () => {
 
             expect(gw2.uri).to.equal(gatewayInfo.dvote)
 
-            await wsServer.stop()
+            wsServer.stop()
         })
 
         it("Should update the gateway's URI and point to the new location", async () => {
             const port1 = port + 1
-            const gatewayUri1 = `ws://127.0.0.1:${port1}`
-            const wsServer1 = new DevWebSocketServer({ port: port1, responses: [defaultDummyResponse] })
+            const wsServer1 = new DevGatewayService({ port: port1, responses: [defaultDummyResponse] })
+            const gatewayUri1 = wsServer1.uri
             expect(wsServer1.interactionCount).to.equal(0)
 
             const gatewayInfo1 = new GatewayInfo(gatewayUri1, ["file", "vote", "census"], "https://server/path", "")
@@ -53,13 +53,13 @@ describe("DVote gateway client", () => {
             await gwClient.init()
             await gwClient.sendRequest({ method: "addClaim", processId: "1234", nullifier: "2345" })
 
-            await wsServer1.stop()
+            wsServer1.stop()
 
             const port2 = 9000
-            const gatewayUri2 = `ws://127.0.0.1:${port2}`
+            const wsServer2 = new DevGatewayService({ port: port2, responses: [defaultDummyResponse] })
+            const gatewayUri2 = wsServer2.uri
             const gatewayInfo2 = new GatewayInfo(gatewayUri2, ["file", "vote", "census"], "https://server/path", "")
 
-            const wsServer2 = new DevWebSocketServer({ port: port2, responses: [defaultDummyResponse] })
             expect(wsServer2.interactionCount).to.equal(0)
 
             gwClient = new DVoteGateway(gatewayInfo2)
@@ -67,7 +67,7 @@ describe("DVote gateway client", () => {
             expect(gwClient.uri).to.equal(gatewayInfo2.dvote)
             await gwClient.sendRequest({ method: "addClaim", processId: "5678", nullifier: "6789" })
 
-            await wsServer2.stop()
+            wsServer2.stop()
 
             expect(wsServer1.interactionCount).to.equal(2)
             expect(wsServer2.interactionCount).to.equal(2)
@@ -76,7 +76,7 @@ describe("DVote gateway client", () => {
 
     describe("WebSocket requests", () => {
         it("Should send messages and provide responses in the right order", async () => {
-            const wsServer = new DevWebSocketServer({
+            const wsServer = new DevGatewayService({
                 port,
                 responses: [
                     { ok: true, result: "OK 1" },
@@ -116,11 +116,11 @@ describe("DVote gateway client", () => {
             expect(wsServer.interactionList[4].requested.request.method).to.equal("fetchFile")
             expect(wsServer.interactionList[4].requested.request.uri).to.equal("67890")
 
-            await wsServer.stop()
+            wsServer.stop()
         })
         it("Should provide an encrypted channel to communicate with clients")
         it("Should report errors and throw them as an error", async () => {
-            const wsServer = new DevWebSocketServer()
+            const wsServer = new DevGatewayService()
             const gatewayInfo = wsServer.gatewayInfo
             const gwClient = new DVoteGateway(gatewayInfo)
             await gwClient.init()
@@ -182,7 +182,7 @@ describe("DVote gateway client", () => {
             expect(wsServer.interactionList[4].requested.request.method).to.equal("fetchFile")
             expect(wsServer.interactionList[4].requested.request.uri).to.equal("67890")
 
-            await wsServer.stop()
+            wsServer.stop()
         })
     })
 
@@ -192,7 +192,7 @@ describe("DVote gateway client", () => {
             const buffData = Buffer.from(fileContent)
 
             // DVoteGateway (server)
-            const wsServer = new DevWebSocketServer()
+            const wsServer = new DevGatewayService()
 
             // Client
             const gatewayInfo = wsServer.gatewayInfo
@@ -213,7 +213,7 @@ describe("DVote gateway client", () => {
             expect(result1.length).to.be.ok
             expect(result1).to.equal("ipfs://1234")
 
-            await wsServer.stop()
+            wsServer.stop()
         })
 
         it("Should retrieve a pinned file", async () => {
@@ -221,11 +221,11 @@ describe("DVote gateway client", () => {
             const buffData = Buffer.from(fileContent)
 
             // DVoteGateway (server)
-            const responses: WSResponseBody[] = [
+            const responses: TestResponseBody[] = [
                 { ok: true, uri: "ipfs://2345" },
                 { ok: true, request: "234", timestamp: 234, content: buffData.toString("base64") }
             ]
-            const wsServer = new DevWebSocketServer({ port, responses })
+            const wsServer = new DevGatewayService({ port, responses })
 
             // Client
             const gatewayInfo = wsServer.gatewayInfo
@@ -245,7 +245,7 @@ describe("DVote gateway client", () => {
             expect(wsServer.interactionList[1].requested.request.uri).to.equal(result1)
             expect(wsServer.interactionList[1].requested.id).to.match(/^[0-9a-fA-F]{10}$/)
 
-            await wsServer.stop()
+            wsServer.stop()
         })
 
         it("Should request to unpin an old file")
@@ -257,7 +257,7 @@ describe("DVote gateway client", () => {
             const buffData = Buffer.from(fileContent)
 
             // DVoteGateway (server)
-            const wsServer = new DevWebSocketServer()
+            const wsServer = new DevGatewayService()
             wsServer.addResponse({ ok: false, message: "Invalid wallet" })
 
             // Client
@@ -277,7 +277,7 @@ describe("DVote gateway client", () => {
 
             expect(wsServer.interactionCount).to.equal(1)
 
-            await wsServer.stop()
+            wsServer.stop()
         })
 
         it("Should enforce authenticated unpin requests")
@@ -298,7 +298,7 @@ describe("Web3 gateway client", () => {
 
             expect(balance.toHexString()).to.match(/^0x[0-9a-fA-F]{10,}$/)
 
-            await web3Server.stop()
+            web3Server.stop()
         })
     })
 
