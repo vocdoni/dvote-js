@@ -1,6 +1,6 @@
 import { Contract, providers, Wallet, Signer } from "ethers"
 import { Web3Gateway } from "./gateway"
-import { entityResolverEnsDomain, processEnsDomain } from "../constants"
+import { publicResolverEnsDomain, processesEnsDomain, namespacesEnsDomain, storageProofsEnsDomain } from "../constants"
 import {
     EnsPublicResolver as EntityContractDefinition,
     Namespace as NamespaceContractDefinition,
@@ -127,7 +127,7 @@ export async function getEnsPublicResolverInstance(params: AttachToContractParam
     const gwProvider = gw.provider
 
     if (typeof address != "string") {
-        address = await provider.resolveName(entityResolverEnsDomain)
+        address = await provider.resolveName(publicResolverEnsDomain)
         if (!address) throw new Error("The contract address can't be determined")
     }
 
@@ -186,7 +186,7 @@ export async function getProcessInstance(params: AttachToContractParams = {}, ad
     const gwProvider = gw.provider
 
     if (typeof address != "string") {
-        address = await provider.resolveName(processEnsDomain)
+        address = await provider.resolveName(processesEnsDomain)
         if (!address) throw new Error("The contract address can't be determined")
     }
 

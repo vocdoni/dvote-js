@@ -177,7 +177,7 @@ function createWallets(amount) {
         const wallet = Wallet.createRandom()
         accounts.push({
             idx: i,
-            mnemonic: wallet.mnemonic,
+            mnemonic: wallet.mnemonic.phrase,
             privateKey: wallet["_signingKey"]().privateKey,
             publicKey: wallet["_signingKey"]().publicKey,
             publicKeyHash: digestHexClaim(wallet["_signingKey"]().publicKey)

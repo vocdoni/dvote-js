@@ -799,11 +799,15 @@ async function ensResolver() {
     // const provider = new providers.EtherscanProvider()
     const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI)
 
-    const resolverAddr = await provider.resolveName("entity-resolver.vocdoni.eth")
-    const processAddr = await provider.resolveName("voting-process.vocdoni.eth")
+    const resolverAddr = await provider.resolveName("entities.vocdoni.eth")
+    const processesAddr = await provider.resolveName("processes.vocdoni.eth")
+    const namespacesAddr = await provider.resolveName("namespaces.vocdoni.eth")
+    const storageProofsAddr = await provider.resolveName("erc20.proofs.vocdoni.eth")
 
     console.log("Entity Resolver contract address", resolverAddr)
-    console.log("Process contract address", processAddr)
+    console.log("Processes contract address", processesAddr)
+    console.log("Namespaces contract address", namespacesAddr)
+    console.log("Storage proofs contract address", storageProofsAddr)
 }
 
 async function testGatewayInitialization() {

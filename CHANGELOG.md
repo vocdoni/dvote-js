@@ -44,3 +44,7 @@
     - Bootnode
         - Rename `GatewayBootNodes` into `JsonBootnodeData` (type)
         - Rename `getDefaultBootnodeContentUri` into `getDefaultBootnodeUri`
+    - ENS
+        - Rename `entityResolverEnsDomain` to `publicResolverEnsDomain`
+        - Rename `processEnsDomain` to `processesEnsDomain`
+        - Exporting `namespacesEnsDomain` and `storageProofsEnsDomain`

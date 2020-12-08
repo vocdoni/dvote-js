@@ -22,7 +22,7 @@ import {
     Namespace as NamespaceContractDefinition,
     TokenStorageProof as TokenStorageProofContractDefinition
 } from "dvote-solidity"
-import { entityResolverEnsDomain, processEnsDomain, entityResolverEnsDomainDev, processEnsDomainDev } from "../constants"
+import { publicResolverEnsDomain, processesEnsDomain, namespacesEnsDomain, storageProofsEnsDomain } from "../constants"
 import { promiseFuncWithTimeout, promiseWithTimeout } from '../util/timeout'
 import { generateRandomHexSeed } from '../util/signers'
 
@@ -614,8 +614,8 @@ export class Web3Gateway {
     /** Initialize the contract addresses */
     public async init() {
         const [addr1, addr2] = await Promise.all([
-            this._provider.resolveName(entityResolverEnsDomain),
-            this._provider.resolveName(processEnsDomain)
+            this._provider.resolveName(publicResolverEnsDomain),
+            this._provider.resolveName(processesEnsDomain)
         ])
         if (!addr1) throw new Error("The resolver address could not be fetched")
         else if (!addr2) throw new Error("The process contract address bould not be fetched")

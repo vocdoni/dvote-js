@@ -1,22 +1,31 @@
 import { providers } from "ethers"
-import { XDAI_CHAIN_ID, XDAI_ENS_REGISTRY_ADDRESS, SOKOL_CHAIN_ID, SOKOL_ENS_REGISTRY_ADDRESS, XDAI_TEST_ENS_REGISTRY_ADDRESS, XDAI_PROVIDER_URI } from "../constants"
+import {
+    XDAI_CHAIN_ID,
+    XDAI_ENS_REGISTRY_ADDRESS,
+    SOKOL_CHAIN_ID,
+    SOKOL_ENS_REGISTRY_ADDRESS,
+    XDAI_TEST_ENS_REGISTRY_ADDRESS,
+    XDAI_PROVIDER_URI
+} from "../constants"
 import { NetworkID } from "../net/gateway-bootnodes"
 
 /**
  * Returns a JSON RPC provider using the given Gateway URI
  * @param uri
  */
-export function providerFromUri(uri: string, networkId?: NetworkID, options:{testing: boolean} = {testing: false}) {
-    if (networkId == "xdai")
-        if (options.testing) {
-            return new providers.JsonRpcProvider(XDAI_PROVIDER_URI, { chainId: XDAI_CHAIN_ID, name: "xdai", ensAddress: XDAI_TEST_ENS_REGISTRY_ADDRESS })
-        } else {
-            return new providers.JsonRpcProvider(uri, { chainId: XDAI_CHAIN_ID, name: "xdai", ensAddress: XDAI_ENS_REGISTRY_ADDRESS })
-        }
-    else if (networkId == "sokol")
-        return new providers.JsonRpcProvider(uri, { chainId: SOKOL_CHAIN_ID, name: "sokol", ensAddress: SOKOL_ENS_REGISTRY_ADDRESS })
-    else
-        return new providers.JsonRpcProvider(uri)
+export function providerFromUri(uri: string, networkId?: NetworkID, options: { testing: boolean } = { testing: false }) {
+    switch (networkId) {
+        case "xdai":
+            if (options.testing) {
+                return new providers.JsonRpcProvider(XDAI_PROVIDER_URI, { chainId: XDAI_CHAIN_ID, name: "xdai", ensAddress: XDAI_TEST_ENS_REGISTRY_ADDRESS })
+            } else {
+                return new providers.JsonRpcProvider(uri, { chainId: XDAI_CHAIN_ID, name: "xdai", ensAddress: XDAI_ENS_REGISTRY_ADDRESS })
+            }
+        case "sokol":
+            return new providers.JsonRpcProvider(uri, { chainId: SOKOL_CHAIN_ID, name: "sokol", ensAddress: SOKOL_ENS_REGISTRY_ADDRESS })
+        default:
+            return new providers.JsonRpcProvider(uri)
+    }
 }
 
 /**

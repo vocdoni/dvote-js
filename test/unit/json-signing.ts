@@ -65,7 +65,7 @@ describe("JSON signing", () => {
     })
     it("Should produce and recognize valid signatures with UTF-8 data (isByteSignatureValid)", async () => {
         const wallet = new Wallet("8d7d56a9efa4158d232edbeaae601021eb3477ad77b5f3c720601fd74e8e04bb")
-        const publicKey = wallet["signingKey"].publicKey
+        const publicKey = wallet["_signingKey"]().publicKey
 
         const jsonBody1 = '{ "a": "àèìòù", "b": "áéíóú" }'
         const jsonBody2 = '{ "b": "test&", "a": "&test" }'
@@ -94,8 +94,8 @@ describe("JSON signing", () => {
         const signature1 = await signBytes(bytesBody1, wallet)
         const signature2 = await signBytes(bytesBody2, wallet)
 
-        expect(isByteSignatureValid(signature1, wallet["signingKey"].publicKey, bytesBody1)).to.be.true
-        expect(isByteSignatureValid(signature2, wallet["signingKey"].publicKey, bytesBody2)).to.be.true
+        expect(isByteSignatureValid(signature1, wallet["_signingKey"]().publicKey, bytesBody1)).to.be.true
+        expect(isByteSignatureValid(signature2, wallet["_signingKey"]().publicKey, bytesBody2)).to.be.true
     })
     it("Should recover the public key from a JSON and a signature", async () => {
         let wallet = new Wallet("8d7d56a9efa4158d232edbeaae601021eb3477ad77b5f3c720601fd74e8e04bb")

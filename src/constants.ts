@@ -2,10 +2,10 @@ import { utils } from "ethers"
 
 export const ipfsGatewayListUri = "https://ipfs.github.io/public-gateway-checker/gateways.json"
 
-export const entityResolverEnsDomain = "entities.vocdoni.eth"
-export const processEnsDomain = "process.vocdoni.eth"
-export const entityResolverEnsDomainDev = "entities.dev.vocdoni.eth"
-export const processEnsDomainDev = "process.dev.vocdoni.eth"
+export const publicResolverEnsDomain = "entities.vocdoni.eth"
+export const processesEnsDomain = "processes.vocdoni.eth"
+export const namespacesEnsDomain = "namespaces.vocdoni.eth"
+export const storageProofsEnsDomain = "erc20.proofs.vocdoni.eth"
 
 export const vocdoniMainnetEntityId = "0x0"
 export const vocdoniGoerliEntityId = "0x180dd5765d9f7ecef810b565a2e5bd14a3ccd536c442b3de74867df552855e85"
