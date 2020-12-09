@@ -31,7 +31,7 @@
     - Renaming `IEntityResolverContract` to `IEnsPublicResolverContract`
 - Borrowing builders to test the contract method integration
 - Revamped tests
-- Adding WebSocket mocks and disposable Ethereum servers for testing
+- Adding Gateway mocks and disposable Ethereum servers for testing
 - Census methods now have wallet and gateway parameters swapped, for consistency with the rest of API methods
 - Gateway client refactor
     - Using HTTP-only gateway clients
@@ -42,8 +42,12 @@
         - Rename `getNetworkGatewaysFromBootNodeData` into `digestBootnodeNetworkData`
         - Rename `getGatewaysFromBootNodeData` into `digestBootnodeData`
     - Bootnode
+        - Encapsulating all functions into the `GatewayBootnode` class
+            - `getDefaultGateways`, `getDefaultUri`, `getGatewaysFromUri`, `digest`, `digestNetwork`
+            - ~~getDefaultBootnodeUri~~, ~~digestBootnodeData~~, ~~digestBootnodeNetworkData~~, ~~getGatewaysFromBootnode~~
         - Rename `GatewayBootNodes` into `JsonBootnodeData` (type)
         - Rename `getDefaultBootnodeContentUri` into `getDefaultBootnodeUri`
+        - Rename `NetworkId` into `EthNetworkID`
     - ENS
         - Rename `entityResolverEnsDomain` to `publicResolverEnsDomain`
         - Rename `processEnsDomain` to `processesEnsDomain`
@@ -51,6 +55,20 @@
     - Web3
         - Renaming `getProcessInstance` into `getProcessesInstance`
         - Renaming `getNamespaceInstance` into `getNamespacesInstance`
+- Utilities
+    - Encapsulate the provider helper functions into `ProviderUril`
+        - `providerFromUri` and `providerFromBrowserProvider` are now `ProviderUtil.fromUri` and `ProviderUtil.fromInjectedWeb3`
+    - Encapsulate the wallet and signer helper functions into `WalletUtil` and `SignerUtil`
+        - `walletFromSeededPassphrase`, `walletFromMnemonic` and `signerFromBrowserProvider` are now `WalletUtil.fromSeededPassphrase`, `WalletUtil.fromMnemonic` and `SignerUtil.fromInjectedWeb3`
+    - Encapsulate random generators into `Random`
+        - `generateRandomHexSeed` is now `Random.getHex()`
+        - `Random.shuffle` is now available for arrays
+    - Encapsulate signature helpers into `JsonSignature` and `BytesSignature`
+        - `signJsonBody`, `isValidSignature`, `recoverSignerPublicKey` and `sortObjectFields` are now `JsonSignature.sign`, `JsonSignature.isValid`, `JsonSignature.recoverPublicKey` and `JsonSignature.sort`
+        - `signBytes` and `isByteSignatureValid` are now `BytesSignature.sign` and `BytesSignature.isValid`
+    - Encapsulate waiters into `VochainWaiter` and `EthWaiter`
+        - `waitVochainBlocks` and `waitUntilVochainBlock` are now `VochainWaiter.wait` and `VochainWaiter.waitUntil`
+        - `waitEthBlocks` and `waitUntilEthBlock` are now `EthWaiter.wait` and `EthWaiter.waitUntil`
 - Contracts
     - Removing `deployEnsPublicResolverContract`, `deployNamespaceContract`, `deployProcessContract` as the functionality is available on `dvote-solidity`
     - Removing `getEnsPublicResolverInstance`, `getNamespaceInstance`, `getProcessInstance` on `net/contracts` as they duplicate the functionality already present in `Gateway`

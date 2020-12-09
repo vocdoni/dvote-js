@@ -231,7 +231,7 @@ Generating a standalone deterministic wallet from a passphrase and a (non-privat
 const provider = ethers.getDefaultProvider('goerli')
 
 // Created from scratch
-const hexSeed = generateRandomHexSeed()  // could be stored locally
+const hexSeed = Random.getHex()  // could be stored locally
 const passphrase = "A very Difficult 1234 passphrase" // must be private and include upper/lowercase chars and numbers
 
 // Or using an already created seed
@@ -246,7 +246,7 @@ wallet.signMessage(...)
 Accessing the browser wallet or MetaMask:
 
 ```typescript
-const signer = signerFromBrowserProvider()
+const signer = SignerUtil.fromInjectedWeb3()
 signer.sendTransaction(...)
 ```
 

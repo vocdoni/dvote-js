@@ -16,7 +16,17 @@ export {
     NamespaceContractMethods,
     TokenStorageProofContractMethods,
     ProcessContractMethods,
-    ensHashAddress
+    ensHashAddress,
+
+    IMethodOverrides,
+    IProcessCreateParams,
+    IProcessStatus,
+    // Wrappers
+    ProcessMode,
+    ProcessEnvelopeType,
+    ProcessCensusOrigin,
+    ProcessStatus,
+    ProcessContractParameters,
 } from "dvote-solidity"
 
 export interface IEnsPublicResolverContract extends Contract, EnsPublicResolverContractMethods { }

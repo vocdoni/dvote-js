@@ -3,17 +3,18 @@ import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
 import { utils } from "ethers"
 
-import { walletFromSeededPassphrase, generateRandomHexSeed } from "../../src/util/signers"
-import { signJsonBody, isValidSignature } from "../../src/util/json-sign"
+import { WalletUtil } from "../../src/util/signers"
+import { Random } from "../../src/util/random"
+import { JsonSignature, BytesSignature } from "../../src/util/data-signing"
 
 addCompletionHooks()
 
 describe("Standalone Ethereum wallets", () => {
     it("Should generate a new random seed for a standalone wallet", () => {
-        const seed1 = generateRandomHexSeed()
-        const seed2 = generateRandomHexSeed()
-        const seed3 = generateRandomHexSeed()
-        const seed4 = generateRandomHexSeed()
+        const seed1 = Random.getHex()
+        const seed2 = Random.getHex()
+        const seed3 = Random.getHex()
+        const seed4 = Random.getHex()
 
         expect(seed1.length).to.eq(66)
         expect(seed2.length).to.eq(66)
@@ -42,7 +43,7 @@ describe("Standalone Ethereum wallets", () => {
         const passphrase = "Hello Dear world 1234"
         const hexSeed = "0x54a8c0ab653c15bfb48b47fd011ba2b9617af01cb45cab344acd57c924d56798"
 
-        const wallet = walletFromSeededPassphrase(passphrase, hexSeed)
+        const wallet = WalletUtil.fromSeededPassphrase(passphrase, hexSeed)
         expect(wallet.privateKey).to.eq("0x58c6192cbffe39d20f6dbaa2957a6d6a4116489a2bb66caab5c4a0bfa83d887b")
         expect(wallet["_signingKey"]().publicKey).to.eq("0x04de6d532b6979899729f9e98869888ea7fdbc446f9f3ea732d23c7bcd10c784d041887d48ebc392c4ff51882ae569ca1553f6ab6538664bced6cca6855acbbade")
         expect(await wallet.getAddress()).to.eq("0xf76564CBF51B1F050c84fC01400088ACD2704F2e")
@@ -59,10 +60,10 @@ describe("Standalone Ethereum wallets", () => {
         const passphrase4 = "$More @ UTF-8 © chãrs àèìòù"
         const hexSeed = "0x54a8c0ab653c15bfb48b47fd011ba2b9617af01cb45cab344acd57c924d56798"
 
-        const wallet1 = walletFromSeededPassphrase(passphrase1, hexSeed)
-        const wallet2 = walletFromSeededPassphrase(passphrase2, hexSeed)
-        const wallet3 = walletFromSeededPassphrase(passphrase3, hexSeed)
-        const wallet4 = walletFromSeededPassphrase(passphrase4, hexSeed)
+        const wallet1 = WalletUtil.fromSeededPassphrase(passphrase1, hexSeed)
+        const wallet2 = WalletUtil.fromSeededPassphrase(passphrase2, hexSeed)
+        const wallet3 = WalletUtil.fromSeededPassphrase(passphrase3, hexSeed)
+        const wallet4 = WalletUtil.fromSeededPassphrase(passphrase4, hexSeed)
 
         expect(wallet1.privateKey).to.not.eq(wallet2.privateKey)
         expect(wallet1.privateKey).to.not.eq(wallet3.privateKey)
@@ -79,10 +80,10 @@ describe("Standalone Ethereum wallets", () => {
         const hexSeed3 = "0xf51aeecd5cb3cf2b37e005286976d0335c555708ed7bafa1a770a7f2919e96f3"
         const hexSeed4 = "0xaf1410f438190841ad9b39eebc4dfb1d669018ab92a0cb61bba889dd129fad0e"
 
-        const wallet1 = walletFromSeededPassphrase(passphrase, hexSeed1)
-        const wallet2 = walletFromSeededPassphrase(passphrase, hexSeed2)
-        const wallet3 = walletFromSeededPassphrase(passphrase, hexSeed3)
-        const wallet4 = walletFromSeededPassphrase(passphrase, hexSeed4)
+        const wallet1 = WalletUtil.fromSeededPassphrase(passphrase, hexSeed1)
+        const wallet2 = WalletUtil.fromSeededPassphrase(passphrase, hexSeed2)
+        const wallet3 = WalletUtil.fromSeededPassphrase(passphrase, hexSeed3)
+        const wallet4 = WalletUtil.fromSeededPassphrase(passphrase, hexSeed4)
 
         expect(wallet1.privateKey).to.not.eq(wallet2.privateKey)
         expect(wallet1.privateKey).to.not.eq(wallet3.privateKey)
@@ -95,47 +96,47 @@ describe("Standalone Ethereum wallets", () => {
     it("Should error if the password is weak", () => {
         const hexSeed = "0x54a8c0ab653c15bfb48b47fd011ba2b9617af01cb45cab344acd57c924d56798"
 
-        expect(() => walletFromSeededPassphrase("", hexSeed)).to.throw()
-        expect(() => walletFromSeededPassphrase("short", hexSeed)).to.throw()
-        expect(() => walletFromSeededPassphrase("SHORT", hexSeed)).to.throw()
-        expect(() => walletFromSeededPassphrase("1234", hexSeed)).to.throw()
-        expect(() => walletFromSeededPassphrase("abcDEF", hexSeed)).to.throw()
-        expect(() => walletFromSeededPassphrase("123abc", hexSeed)).to.throw()
-        expect(() => walletFromSeededPassphrase("less-8", hexSeed)).to.throw()
-        expect(() => walletFromSeededPassphrase("LESS-8", hexSeed)).to.throw()
-        expect(() => walletFromSeededPassphrase("onlyHasLettersButNoNumbers", hexSeed)).to.throw()
-        expect(() => walletFromSeededPassphrase("only-lowercase-and-1234", hexSeed)).to.throw()
-        expect(() => walletFromSeededPassphrase("aBcD12", hexSeed)).to.throw()
-        expect(() => walletFromSeededPassphrase("aBcD123", hexSeed)).to.throw()
-        expect(() => walletFromSeededPassphrase("@$%&_-!=/()", hexSeed)).to.throw()
+        expect(() => WalletUtil.fromSeededPassphrase("", hexSeed)).to.throw()
+        expect(() => WalletUtil.fromSeededPassphrase("short", hexSeed)).to.throw()
+        expect(() => WalletUtil.fromSeededPassphrase("SHORT", hexSeed)).to.throw()
+        expect(() => WalletUtil.fromSeededPassphrase("1234", hexSeed)).to.throw()
+        expect(() => WalletUtil.fromSeededPassphrase("abcDEF", hexSeed)).to.throw()
+        expect(() => WalletUtil.fromSeededPassphrase("123abc", hexSeed)).to.throw()
+        expect(() => WalletUtil.fromSeededPassphrase("less-8", hexSeed)).to.throw()
+        expect(() => WalletUtil.fromSeededPassphrase("LESS-8", hexSeed)).to.throw()
+        expect(() => WalletUtil.fromSeededPassphrase("onlyHasLettersButNoNumbers", hexSeed)).to.throw()
+        expect(() => WalletUtil.fromSeededPassphrase("only-lowercase-and-1234", hexSeed)).to.throw()
+        expect(() => WalletUtil.fromSeededPassphrase("aBcD12", hexSeed)).to.throw()
+        expect(() => WalletUtil.fromSeededPassphrase("aBcD123", hexSeed)).to.throw()
+        expect(() => WalletUtil.fromSeededPassphrase("@$%&_-!=/()", hexSeed)).to.throw()
 
-        expect(() => walletFromSeededPassphrase("aBcD1234", hexSeed)).to.not.throw()
-        expect(() => walletFromSeededPassphrase("1234ABCabc", hexSeed)).to.not.throw()
-        expect(() => walletFromSeededPassphrase("$symbols-SH@ULD-b3-0K", hexSeed)).to.not.throw()
-        expect(() => walletFromSeededPassphrase("Str0nG-pass", hexSeed)).to.not.throw()
-        expect(() => walletFromSeededPassphrase("1=GoodPass1234", hexSeed)).to.not.throw()
-        expect(() => walletFromSeededPassphrase("N1ceStronG'pass", hexSeed)).to.not.throw()
-        expect(() => walletFromSeededPassphrase("4passD0ntCrakM3", hexSeed)).to.not.throw()
-        expect(() => walletFromSeededPassphrase("0141d6ab9sd7vn1387naPsSyv2v", hexSeed)).to.not.throw()
-        expect(() => walletFromSeededPassphrase("This is a long passphrase with 1 number", hexSeed)).to.not.throw()
+        expect(() => WalletUtil.fromSeededPassphrase("aBcD1234", hexSeed)).to.not.throw()
+        expect(() => WalletUtil.fromSeededPassphrase("1234ABCabc", hexSeed)).to.not.throw()
+        expect(() => WalletUtil.fromSeededPassphrase("$symbols-SH@ULD-b3-0K", hexSeed)).to.not.throw()
+        expect(() => WalletUtil.fromSeededPassphrase("Str0nG-pass", hexSeed)).to.not.throw()
+        expect(() => WalletUtil.fromSeededPassphrase("1=GoodPass1234", hexSeed)).to.not.throw()
+        expect(() => WalletUtil.fromSeededPassphrase("N1ceStronG'pass", hexSeed)).to.not.throw()
+        expect(() => WalletUtil.fromSeededPassphrase("4passD0ntCrakM3", hexSeed)).to.not.throw()
+        expect(() => WalletUtil.fromSeededPassphrase("0141d6ab9sd7vn1387naPsSyv2v", hexSeed)).to.not.throw()
+        expect(() => WalletUtil.fromSeededPassphrase("This is a long passphrase with 1 number", hexSeed)).to.not.throw()
     })
 
     it("Invalid values should error", () => {
         const hexSeed = "0x54a8c0ab653c15bfb48b47fd011ba2b9617af01cb45cab344acd57c924d56798"
 
-        expect(() => walletFromSeededPassphrase(1234 as any, hexSeed)).to.throw()
-        expect(() => walletFromSeededPassphrase("1234ABCabc", "invalid-seed")).to.throw()
-        expect(() => walletFromSeededPassphrase("1234ABCabc", 1234 as any)).to.throw()
+        expect(() => WalletUtil.fromSeededPassphrase(1234 as any, hexSeed)).to.throw()
+        expect(() => WalletUtil.fromSeededPassphrase("1234ABCabc", "invalid-seed")).to.throw()
+        expect(() => WalletUtil.fromSeededPassphrase("1234ABCabc", 1234 as any)).to.throw()
     })
 
     it("Should sign correctly", async () => {
         const hexSeed = "0x54a8c0ab653c15bfb48b47fd011ba2b9617af01cb45cab344acd57c924d56798"
-        const wallet = walletFromSeededPassphrase("N1ceStronG'pass", hexSeed)
+        const wallet = WalletUtil.fromSeededPassphrase("N1ceStronG'pass", hexSeed)
 
         const jsonBody = { "method": "getVisibility", "timestamp": 1582196988554 }
 
-        const signature = await signJsonBody(jsonBody, wallet)
+        const signature = await JsonSignature.sign(jsonBody, wallet)
 
-        expect(isValidSignature(signature, wallet["_signingKey"]().publicKey, jsonBody)).to.be.true
+        expect(JsonSignature.isValid(signature, wallet["_signingKey"]().publicKey, jsonBody)).to.be.true
     })
 })

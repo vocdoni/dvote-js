@@ -5,13 +5,13 @@
 import { parseURL } from 'universal-parse-url'
 import { Buffer } from 'buffer/'
 import { Contract, ContractFactory, providers, utils, Wallet, Signer, ContractInterface, BigNumber } from "ethers"
-import { providerFromUri } from "../util/providers"
+import { ProviderUtil } from "../util/providers"
 import GatewayInfo from "../wrappers/gateway-info"
 import { DVoteSupportedApi, DVoteGatewayMethod, fileApiMethods, voteApiMethods, censusApiMethods, dvoteGatewayApiMethods, resultsApiMethods, dvoteApis } from "../models/gateway"
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
-import { signJsonBody, isValidSignature, sortObjectFields, isByteSignatureValid } from "../util/json-sign"
+import { JsonSignature, BytesSignature } from "../util/data-signing"
 import axios, { AxiosInstance, AxiosResponse } from "axios"
-import { NetworkID, getDefaultGateways, digestBootnodeNetworkData, getGatewaysFromBootnode } from "./gateway-bootnodes"
+import { GatewayBootnode, EthNetworkID } from "./gateway-bootnode"
 import ContentURI from "../wrappers/content-uri"
 import { extractUint8ArrayJSONValue } from "../util/uint8array"
 import { readBlobText, readBlobArrayBuffer } from "../util/blob"
@@ -28,7 +28,7 @@ import {
 } from "./contracts"
 import { publicResolverEnsDomain, processesEnsDomain, namespacesEnsDomain, storageProofsEnsDomain } from "../constants"
 import { promiseFuncWithTimeout, promiseWithTimeout } from '../util/timeout'
-import { generateRandomHexSeed } from '../util/signers'
+import { Random } from '../util/random'
 
 const { JsonRpcProvider, Web3Provider, IpcProvider, InfuraProvider, FallbackProvider, EtherscanProvider } = providers
 
@@ -106,10 +106,10 @@ export class Gateway {
      * @param networkId Either "mainnet" or "goerli" (test)
      * @param requiredApis A list of the required APIs
      */
-    static randomFromDefault(networkId: NetworkID, requiredApis: DVoteSupportedApi[] = [], options: { testing: boolean } = { testing: false }): Promise<Gateway> {
-        return getDefaultGateways(networkId)
+    static randomFromDefault(networkId: EthNetworkID, requiredApis: DVoteSupportedApi[] = [], options: { testing: boolean } = { testing: false }): Promise<Gateway> {
+        return GatewayBootnode.getDefaultGateways(networkId)
             .then(async bootNodeData => {
-                const gateways = digestBootnodeNetworkData(bootNodeData, networkId, options)
+                const gateways = GatewayBootnode.digestNetwork(bootNodeData, networkId, options)
                 let web3: Web3Gateway
                 for (let i = 0; i < gateways.web3.length; i++) {
                     let w3 = gateways.web3[i]
@@ -141,10 +141,10 @@ export class Gateway {
      * @param bootnodesContentUri The uri from which contains the available gateways
      * @param requiredApis A list of the required APIs
      */
-    static randomfromUri(networkId: NetworkID, bootnodesContentUri: string | ContentURI, requiredApis: DVoteSupportedApi[] = [], options: { testing: boolean } = { testing: false }): Promise<Gateway> {
-        return getGatewaysFromBootnode(bootnodesContentUri)
+    static randomfromUri(networkId: EthNetworkID, bootnodesContentUri: string | ContentURI, requiredApis: DVoteSupportedApi[] = [], options: { testing: boolean } = { testing: false }): Promise<Gateway> {
+        return GatewayBootnode.getGatewaysFromUri(bootnodesContentUri)
             .then(async bootNodeData => {
-                const gateways = digestBootnodeNetworkData(bootNodeData, networkId, options)
+                const gateways = GatewayBootnode.digestNetwork(bootNodeData, networkId, options)
                 let web3: Web3Gateway
                 for (let i = 0; i < gateways.web3.length; i++) {
                     let w3 = gateways.web3[i]
@@ -379,7 +379,7 @@ export class DVoteGateway {
         if (typeof requestBody.timestamp == "undefined") {
             requestBody.timestamp = Math.floor(Date.now() / 1000)
         }
-        const requestId = generateRandomHexSeed().substr(2, 10)
+        const requestId = Random.getHex().substr(2, 10)
 
         const request: MessageRequestContent = {
             id: requestId,
@@ -387,11 +387,11 @@ export class DVoteGateway {
             signature: ""
         }
         if (wallet) {
-            request.signature = await signJsonBody(requestBody, wallet)
+            request.signature = await JsonSignature.sign(requestBody, wallet)
         }
 
         const response = await promiseWithTimeout(
-            this.client.post('', sortObjectFields(request)),
+            this.client.post('', JsonSignature.sort(request)),
             params.timeout
         )
 
@@ -460,10 +460,10 @@ export class DVoteGateway {
             //     throw new Error("The response does not provide a valid timestamp")
             // }
             if (msgBytes) {
-                if (!isByteSignatureValid(msg.signature, this.publicKey, msgBytes)) {
+                if (!BytesSignature.isValid(msg.signature, this.publicKey, msgBytes)) {
                     throw new Error("The signature of the response does not match the expected one")
                 }
-            } else if (!isValidSignature(msg.signature, this.publicKey, msg.response)) {
+            } else if (!JsonSignature.isValid(msg.signature, this.publicKey, msg.response)) {
                 throw new Error("The signature of the response does not match the expected one")
             }
         }
@@ -578,28 +578,23 @@ export class Web3Gateway {
     public processesContractAddress: string
     public tokenStorageProofContractAddress: string
 
-    /** Returns a JSON RPC provider that can be used for Ethereum communication */
-    public static providerFromUri(uri: string, networkId?: NetworkID, options: { testing: boolean } = { testing: false }) {
-        return providerFromUri(uri, networkId, options)
-    }
-
     /**
      * Returns a wrapped Ethereum Web3 client.
      * @param gatewayOrProvider Can be a string with the host's URI or an Ethers Provider
      */
-    constructor(gatewayOrProvider: string | GatewayInfo | providers.BaseProvider, networkId?: NetworkID, options: { testing: boolean } = { testing: false }) {
+    constructor(gatewayOrProvider: string | GatewayInfo | providers.BaseProvider, networkId?: EthNetworkID, options: { testing: boolean } = { testing: false }) {
         if (!gatewayOrProvider) throw new Error("Invalid Gateway or provider")
         else if (typeof gatewayOrProvider == "string") {
             if (!gatewayOrProvider) throw new Error("Invalid Gateway URI")
 
             const url = parseURL(gatewayOrProvider)
             if (url.protocol != "http:" && url.protocol != "https:") throw new Error("Unsupported gateway protocol: " + url.protocol)
-            this._provider = Web3Gateway.providerFromUri(gatewayOrProvider, networkId, options)
+            this._provider = ProviderUtil.fromUri(gatewayOrProvider, networkId, options)
         }
         else if (gatewayOrProvider instanceof GatewayInfo) {
             const url = parseURL(gatewayOrProvider.web3)
             if (url.protocol != "http:" && url.protocol != "https:") throw new Error("Unsupported gateway protocol: " + url.protocol)
-            this._provider = Web3Gateway.providerFromUri(gatewayOrProvider.web3, networkId, options)
+            this._provider = ProviderUtil.fromUri(gatewayOrProvider.web3, networkId, options)
         }
         else if (gatewayOrProvider instanceof providers.BaseProvider) { // use as a provider
             this._provider = gatewayOrProvider

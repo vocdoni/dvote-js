@@ -7,19 +7,20 @@ config({ path: __dirname + "/.env" })
 
 import * as fs from "fs"
 import { utils, providers, Wallet } from "ethers"
-import { walletFromSeededPassphrase, generateRandomHexSeed } from "../src/util/signers"
+import { WalletUtil } from "../src/util/signers"
 import { ensHashAddress, getEntityMetadata, setMetadata } from "../src/api/entity"
-import { newProcess, getProcessMetadata, estimateBlockAtDateTime, setResults, getRawResults, getResultsDigest, getBlockHeight, getEnvelopeHeight, estimateDateAtBlock, packageSignedEnvelope, submitEnvelope, getEnvelopeList, getEnvelope, setStatus, getProcessParameters, ProcessContractParameters } from "../src/api/voting"
+import { newProcess, getProcessMetadata, estimateBlockAtDateTime, setResults, getRawResults, getResultsDigest, getBlockHeight, getEnvelopeHeight, estimateDateAtBlock, packageSignedEnvelope, submitEnvelope, getEnvelopeList, getEnvelope, setStatus, getProcessParameters } from "../src/api/voting"
+import { ProcessContractParameters } from "../src/net/contracts"
 import { DVoteGateway, Web3Gateway, Gateway } from "../src/net/gateway"
 import { GatewayPool } from "../src/net/gateway-pool"
 import { addCensus, addClaim, addClaimBulk, getRoot, publishCensus, dump, dumpPlain, getCensusSize, digestHexClaim, generateProof } from "../src/api/census"
-import { getDefaultGateways, digestBootnodeData } from "../src/net/gateway-bootnodes"
+import { GatewayBootnode } from "../src/net/gateway-bootnode"
 import { EntityMetadataTemplate, EntityMetadata, TextRecordKeys } from "../src/models/entity"
 import { ProcessMetadata, ProcessMetadataTemplate } from "../src/models/process"
 import { addFile, fetchFileString } from "../src/api/file"
 import GatewayInfo from "../src/wrappers/gateway-info"
 import { VOCHAIN_BLOCK_TIME } from "../src/constants"
-import { signJsonBody, isValidSignature, recoverSignerPublicKey } from "../src/util/json-sign"
+import { JsonSignature, BytesSignature } from "../src/util/data-signing"
 import { DVoteGatewayMethod } from "../src/models/gateway"
 import { IGatewayDiscoveryParameters } from "../src/net/gateway-discovery"
 import { ProcessEnvelopeType, ProcessMode, ProcessStatus } from "../src"
@@ -172,7 +173,7 @@ async function emptyFeedUpload() {
 async function registerEntity() {
     // const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI)
     // const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
-    const wallet = walletFromSeededPassphrase(WALLET_PASSPHRASE, WALLET_SEED)
+    const wallet = WalletUtil.fromSeededPassphrase(WALLET_PASSPHRASE, WALLET_SEED)
 
     const myEntityAddress = await wallet.getAddress()
     const entityEnsNode = ensHashAddress(myEntityAddress)
@@ -196,7 +197,7 @@ async function registerEntity() {
 async function readEntity() {
     // const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI)
     // const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
-    const wallet = walletFromSeededPassphrase(WALLET_PASSPHRASE, WALLET_SEED)
+    const wallet = WalletUtil.fromSeededPassphrase(WALLET_PASSPHRASE, WALLET_SEED)
 
     const myEntityAddress = await wallet.getAddress()
 
@@ -323,7 +324,7 @@ async function createProcessRaw() {
 
 async function createProcessFull() {
     // const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
-    const wallet = walletFromSeededPassphrase(WALLET_PASSPHRASE, WALLET_SEED)
+    const wallet = WalletUtil.fromSeededPassphrase(WALLET_PASSPHRASE, WALLET_SEED)
     const myEntityAddress = await wallet.getAddress()
 
     const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: "https://bootnodes.vocdoni.net/gateways.dev.json" })
@@ -435,7 +436,7 @@ async function setProcessStatus() {
 }
 
 async function showProcessResults() {
-    const wallet = walletFromSeededPassphrase(WALLET_PASSPHRASE, WALLET_SEED)
+    const wallet = WalletUtil.fromSeededPassphrase(WALLET_PASSPHRASE, WALLET_SEED)
     const myEntityAddress = await wallet.getAddress()
 
     console.log("Entity Addr", myEntityAddress)
@@ -617,7 +618,7 @@ async function checkSignature() {
     // const expectedAddress = "0xe3A0ba4B2Ec804869d9D78857C5c4c6aA493aD00"
     // const body = { "method": "getVisibility", "timestamp": Date.now()}
     //const message = JSON.stringify(body)
-    //const signature = await signJsonBody(body, wallet)
+    //const signature = await JsonSignature.sign(body, wallet)
 
     const expectedAddress = await wallet.getAddress()
     const expectedPublicKey = wallet["_signingKey"]().publicKey
@@ -630,7 +631,7 @@ async function checkSignature() {
 
     const message = JSON.stringify(body)
 
-    const computedSignature = await signJsonBody(body, wallet)
+    const computedSignature = await JsonSignature.sign(body, wallet)
 
     console.log("Issuing signature\n")
     console.log("- ADDR:        ", expectedAddress)
@@ -640,8 +641,8 @@ async function checkSignature() {
     console.log()
 
     // Approach 1
-    const isValid = isValidSignature(givenSignature, expectedPublicKey, body)
-    const actualPubKey = recoverSignerPublicKey(body, givenSignature)
+    const isValid = JsonSignature.isValid(givenSignature, expectedPublicKey, body)
+    const actualPubKey = JsonSignature.recoverPublicKey(body, givenSignature)
 
     console.log("Approach 1")
     console.log("- Expected PUB K:   ", expectedPublicKey)
@@ -700,8 +701,8 @@ async function gatewayHealthCheck() {
     const myEntityAddress = await wallet.getAddress()
     const entityEnsNode = ensHashAddress(myEntityAddress)
 
-    const bootNodeData = await getDefaultGateways(NETWORK_ID)
-    const gws = digestBootnodeData(bootNodeData)
+    const bootNodeData = await GatewayBootnode.getDefaultGateways(NETWORK_ID)
+    const gws = GatewayBootnode.digest(bootNodeData)
 
     const URL = "https://hnrss.org/newest"
     const response = await axios.get(URL)

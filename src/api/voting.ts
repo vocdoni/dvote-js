@@ -2,17 +2,15 @@ import { Wallet, Signer, utils, ContractTransaction } from "ethers"
 import { Gateway, IGateway } from "../net/gateway"
 import { fetchFileString, addFile } from "./file"
 import { ProcessMetadata, checkValidProcessMetadata, ProcessResults, ProcessResultItem, INewProcessParams } from "../models/process"
-// import { HexString } from "../models/common"
 import { setMetadata, getEntityMetadata } from "./entity"
 import { VOCHAIN_BLOCK_TIME, XDAI_GAS_PRICE, XDAI_CHAIN_ID, SOKOL_CHAIN_ID, SOKOL_GAS_PRICE } from "../constants"
-import { signJsonBody } from "../util/json-sign"
+import { JsonSignature } from "../util/data-signing"
 import { Buffer } from "buffer/"  // Previously using "arraybuffer-to-string"
 import { Asymmetric } from "../util/encryption"
 import { GatewayPool, IGatewayPool } from "../net/gateway-pool"
-import { waitVochainBlocks } from "../util/waiters"
-import { IMethodOverrides, ProcessStatus, ProcessContractParameters, IProcessCreateParams, IProcessStatus } from "dvote-solidity"
-
-export { ProcessStatus, ProcessContractParameters, IProcessStatus } from "dvote-solidity"
+import { VochainWaiter } from "../util/waiters"
+import { Random } from "../util/random"
+import { IMethodOverrides, ProcessStatus, ProcessContractParameters, IProcessCreateParams, IProcessStatus } from "../net/contracts"
 
 type IProcessKeys = {
     encryptionPubKeys: { idx: number, key: string }[],
@@ -671,7 +669,7 @@ export async function getResultsDigest(processId: string, gateway: IGateway | IG
                 procKeys = await getProcessKeys(processId, gateway)
                 if (procKeys && procKeys.encryptionPrivKeys && procKeys.encryptionPrivKeys.length) break
 
-                await waitVochainBlocks(2, gateway)
+                await VochainWaiter.wait(2, gateway)
                 retries--
             } while (retries >= 0)
             if (!procKeys || !procKeys.encryptionPrivKeys || !procKeys.encryptionPrivKeys.length) return { questions: [] }
@@ -817,7 +815,7 @@ export async function packageSignedEnvelope(params: {
         }
         if (keyIndexes) pkg.encryptionKeyIndexes = keyIndexes
 
-        pkg.signature = await signJsonBody(pkg, params.walletOrSigner)
+        pkg.signature = await JsonSignature.sign(pkg, params.walletOrSigner)
 
         return pkg
     } catch (error) {
@@ -841,8 +839,7 @@ export function packageVoteContent(votes: number[], processKeys?: IProcessKeys):
     }
 
     // produce a 8 byte nonce
-    const nonceSeed = utils.arrayify('0x' + parseInt(Math.random().toString().substr(2)).toString(16) + parseInt(Math.random().toString().substr(2)).toString(16) + Date.now().toString(16))
-    const nonce = utils.keccak256(nonceSeed).substr(2, 16)
+    const nonce = Random.getHex().substr(2, 16)
 
     const payload: IVotePackage = {
         nonce,

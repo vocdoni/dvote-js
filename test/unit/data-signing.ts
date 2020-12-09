@@ -4,39 +4,39 @@ import { addCompletionHooks } from "../mocha-hooks"
 import { Wallet } from "ethers"
 import { TextEncoder, TextDecoder } from "util"
 
-import { sortObjectFields, signJsonBody, signBytes, isValidSignature, isByteSignatureValid, recoverSignerPublicKey } from "../../src/util/json-sign"
+import { JsonSignature, BytesSignature } from "../../src/util/data-signing"
 import { extractUint8ArrayJSONValue } from "../../src/util/uint8array"
 
 addCompletionHooks()
 
 describe("JSON signing", () => {
     it("Should reorder JSON objects alphabetically", () => {
-        let strA = JSON.stringify(sortObjectFields("abc"))
-        let strB = JSON.stringify(sortObjectFields("abc"))
+        let strA = JSON.stringify(JsonSignature.sort("abc"))
+        let strB = JSON.stringify(JsonSignature.sort("abc"))
         expect(strA).to.equal(strB)
 
-        strA = JSON.stringify(sortObjectFields(123))
-        strB = JSON.stringify(sortObjectFields(123))
+        strA = JSON.stringify(JsonSignature.sort(123))
+        strB = JSON.stringify(JsonSignature.sort(123))
         expect(strA).to.equal(strB)
 
-        strA = JSON.stringify(sortObjectFields({}))
-        strB = JSON.stringify(sortObjectFields({}))
+        strA = JSON.stringify(JsonSignature.sort({}))
+        strB = JSON.stringify(JsonSignature.sort({}))
         expect(strA).to.equal(strB)
 
-        strA = JSON.stringify(sortObjectFields({ a: 1, b: 2 }))
-        strB = JSON.stringify(sortObjectFields({ b: 2, a: 1 }))
+        strA = JSON.stringify(JsonSignature.sort({ a: 1, b: 2 }))
+        strB = JSON.stringify(JsonSignature.sort({ b: 2, a: 1 }))
         expect(strA).to.equal(strB)
 
-        strA = JSON.stringify(sortObjectFields({ a: 1, b: { c: 3, d: 4 } }))
-        strB = JSON.stringify(sortObjectFields({ b: { d: 4, c: 3 }, a: 1 }))
+        strA = JSON.stringify(JsonSignature.sort({ a: 1, b: { c: 3, d: 4 } }))
+        strB = JSON.stringify(JsonSignature.sort({ b: { d: 4, c: 3 }, a: 1 }))
         expect(strA).to.equal(strB)
 
-        strA = JSON.stringify(sortObjectFields({ a: 1, b: [{ a: 10, m: 10, z: 10 }, { b: 11, n: 11, y: 11 }, 4, 5] }))
-        strB = JSON.stringify(sortObjectFields({ b: [{ z: 10, m: 10, a: 10 }, { y: 11, n: 11, b: 11 }, 4, 5], a: 1 }))
+        strA = JSON.stringify(JsonSignature.sort({ a: 1, b: [{ a: 10, m: 10, z: 10 }, { b: 11, n: 11, y: 11 }, 4, 5] }))
+        strB = JSON.stringify(JsonSignature.sort({ b: [{ z: 10, m: 10, a: 10 }, { y: 11, n: 11, b: 11 }, 4, 5], a: 1 }))
         expect(strA).to.equal(strB)
 
-        strA = JSON.stringify(sortObjectFields({ a: 1, b: [5, 4, 3, 2, 1, 0] }))
-        strB = JSON.stringify(sortObjectFields({ b: [5, 4, 3, 2, 1, 0], a: 1 }))
+        strA = JSON.stringify(JsonSignature.sort({ a: 1, b: [5, 4, 3, 2, 1, 0] }))
+        strB = JSON.stringify(JsonSignature.sort({ b: [5, 4, 3, 2, 1, 0], a: 1 }))
         expect(strA).to.equal(strB)
     })
     it("Should sign a JSON payload, regardless of the order of the fields", async () => {
@@ -45,25 +45,25 @@ describe("JSON signing", () => {
         const jsonBody1 = { "method": "getVisibility", "timestamp": 1582196988554 }
         const jsonBody2 = { "timestamp": 1582196988554, "method": "getVisibility" }
 
-        const signature1 = await signJsonBody(jsonBody1, wallet)
-        const signature2 = await signJsonBody(jsonBody2, wallet)
+        const signature1 = await JsonSignature.sign(jsonBody1, wallet)
+        const signature2 = await JsonSignature.sign(jsonBody2, wallet)
 
         expect(signature1).to.equal("0xc99cf591678a1eb545d9c77cf6b8d3873552624c3631e77c82cc160f8c9593354f369a4e57e8438e596073bbe89c8f4474ba45bae2ca7f6c257a0a879d10d4281b")
         expect(signature2).to.equal("0xc99cf591678a1eb545d9c77cf6b8d3873552624c3631e77c82cc160f8c9593354f369a4e57e8438e596073bbe89c8f4474ba45bae2ca7f6c257a0a879d10d4281b")
     })
-    it("Should produce and recognize valid signatures, regardless of the order of the fields (isValidSignature)", async () => {
+    it("Should produce and recognize valid signatures, regardless of the order of the fields (isValid)", async () => {
         let wallet = new Wallet("8d7d56a9efa4158d232edbeaae601021eb3477ad77b5f3c720601fd74e8e04bb")
 
         const jsonBody1 = { "method": "getVisibility", "timestamp": 1582196988554 }
         const jsonBody2 = { "timestamp": 1582196988554, "method": "getVisibility" }
 
-        const signature1 = await signJsonBody(jsonBody1, wallet)
-        const signature2 = await signJsonBody(jsonBody2, wallet)
+        const signature1 = await JsonSignature.sign(jsonBody1, wallet)
+        const signature2 = await JsonSignature.sign(jsonBody2, wallet)
 
-        expect(isValidSignature(signature1, wallet["_signingKey"]().publicKey, jsonBody1)).to.be.true
-        expect(isValidSignature(signature2, wallet["_signingKey"]().publicKey, jsonBody2)).to.be.true
+        expect(JsonSignature.isValid(signature1, wallet["_signingKey"]().publicKey, jsonBody1)).to.be.true
+        expect(JsonSignature.isValid(signature2, wallet["_signingKey"]().publicKey, jsonBody2)).to.be.true
     })
-    it("Should produce and recognize valid signatures with UTF-8 data (isByteSignatureValid)", async () => {
+    it("Should produce and recognize valid signatures with UTF-8 data (BytesSignature.isValid)", async () => {
         const wallet = new Wallet("8d7d56a9efa4158d232edbeaae601021eb3477ad77b5f3c720601fd74e8e04bb")
         const publicKey = wallet["_signingKey"]().publicKey
 
@@ -75,15 +75,15 @@ describe("JSON signing", () => {
         const bytesBody2 = new TextEncoder().encode(jsonBody2)
         const bytesBody3 = new TextEncoder().encode(jsonBody3)
 
-        const signature1 = await signBytes(bytesBody1, wallet)
-        const signature2 = await signBytes(bytesBody2, wallet)
-        const signature3 = await signBytes(bytesBody3, wallet)
+        const signature1 = await BytesSignature.sign(bytesBody1, wallet)
+        const signature2 = await BytesSignature.sign(bytesBody2, wallet)
+        const signature3 = await BytesSignature.sign(bytesBody3, wallet)
 
-        expect(isByteSignatureValid(signature1, publicKey, bytesBody1)).to.be.true
-        expect(isByteSignatureValid(signature2, publicKey, bytesBody2)).to.be.true
-        expect(isByteSignatureValid(signature3, publicKey, bytesBody3)).to.be.true
+        expect(BytesSignature.isValid(signature1, publicKey, bytesBody1)).to.be.true
+        expect(BytesSignature.isValid(signature2, publicKey, bytesBody2)).to.be.true
+        expect(BytesSignature.isValid(signature3, publicKey, bytesBody3)).to.be.true
     })
-    it("Should produce and recognize valid signatures, regardless of the order of the fields (isByteSignatureValid)", async () => {
+    it("Should produce and recognize valid signatures, regardless of the order of the fields (BytesSignature.isValid)", async () => {
         let wallet = new Wallet("8d7d56a9efa4158d232edbeaae601021eb3477ad77b5f3c720601fd74e8e04bb")
 
         const jsonBody1 = '{ "method": "getVisibility", "timestamp": 1582196988554 }'
@@ -91,11 +91,11 @@ describe("JSON signing", () => {
         const jsonBody2 = '{ "timestamp": 1582196988554, "method": "getVisibility" }'
         const bytesBody2 = new TextEncoder().encode(jsonBody2)
 
-        const signature1 = await signBytes(bytesBody1, wallet)
-        const signature2 = await signBytes(bytesBody2, wallet)
+        const signature1 = await BytesSignature.sign(bytesBody1, wallet)
+        const signature2 = await BytesSignature.sign(bytesBody2, wallet)
 
-        expect(isByteSignatureValid(signature1, wallet["_signingKey"]().publicKey, bytesBody1)).to.be.true
-        expect(isByteSignatureValid(signature2, wallet["_signingKey"]().publicKey, bytesBody2)).to.be.true
+        expect(BytesSignature.isValid(signature1, wallet["_signingKey"]().publicKey, bytesBody1)).to.be.true
+        expect(BytesSignature.isValid(signature2, wallet["_signingKey"]().publicKey, bytesBody2)).to.be.true
     })
     it("Should recover the public key from a JSON and a signature", async () => {
         let wallet = new Wallet("8d7d56a9efa4158d232edbeaae601021eb3477ad77b5f3c720601fd74e8e04bb")
@@ -103,11 +103,11 @@ describe("JSON signing", () => {
         const jsonBody1 = { a: 1, b: "hi", c: false, d: [1, 2, 3, 4, 5, 6] }
         const jsonBody2 = { d: [1, 2, 3, 4, 5, 6], c: false, b: "hi", a: 1 }
 
-        const signature1 = await signJsonBody(jsonBody1, wallet)
-        const signature2 = await signJsonBody(jsonBody2, wallet)
+        const signature1 = await JsonSignature.sign(jsonBody1, wallet)
+        const signature2 = await JsonSignature.sign(jsonBody2, wallet)
 
-        const recoveredPubKey1 = recoverSignerPublicKey(jsonBody1, signature1)
-        const recoveredPubKey2 = recoverSignerPublicKey(jsonBody2, signature2)
+        const recoveredPubKey1 = JsonSignature.recoverPublicKey(jsonBody1, signature1)
+        const recoveredPubKey2 = JsonSignature.recoverPublicKey(jsonBody2, signature2)
 
         expect(recoveredPubKey1).to.equal(recoveredPubKey2)
         expect(recoveredPubKey1).to.equal(wallet["_signingKey"]().publicKey)
@@ -119,11 +119,11 @@ describe("JSON signing", () => {
         const jsonBody1 = { a: "àèìòù", b: "áéíóú" }
         const jsonBody2 = { b: "áéíóú", a: "àèìòù" }
 
-        const signature1 = await signJsonBody(jsonBody1, wallet)
-        const signature2 = await signJsonBody(jsonBody2, wallet)
+        const signature1 = await JsonSignature.sign(jsonBody1, wallet)
+        const signature2 = await JsonSignature.sign(jsonBody2, wallet)
 
-        const recoveredPubKey1 = recoverSignerPublicKey(jsonBody1, signature1)
-        const recoveredPubKey2 = recoverSignerPublicKey(jsonBody2, signature2)
+        const recoveredPubKey1 = JsonSignature.recoverPublicKey(jsonBody1, signature1)
+        const recoveredPubKey2 = JsonSignature.recoverPublicKey(jsonBody2, signature2)
 
         expect(recoveredPubKey1).to.equal(recoveredPubKey2)
         expect(recoveredPubKey1).to.equal(wallet["_signingKey"]().publicKey)
@@ -149,13 +149,13 @@ describe("JSON signing", () => {
         const bodyBytes = Uint8Array.from(Buffer.from(bodyHex, 'hex'))
         const signature = "8d2945bd594622e73d0d8b9cf536571f4ffbd3f37c911e1dd1e3b59be9872a8c708adb5a0cbe8d658165bcd6ff05a0f91456f248824b02a121dfc98b6524942200"
         const publicKey = "026d619ede0fe5db4213acec7a989b46f94b00fdfb28f80532e1182037f36e2ef3"
-        expect(isByteSignatureValid(signature, publicKey, bodyBytes)).to.be.true
+        expect(BytesSignature.isValid(signature, publicKey, bodyBytes)).to.be.true
     })
     it("Should create the sanme signature as go-dvote", async () => {
         const wallet = new Wallet("c6446f24d08a34fdefc2501d6177b25e8a1d0f589b7a06f5a0131e9a8d0307e4")
         const jsonBody = '{"a":"1"}'
         const bytesBody = new TextEncoder().encode(jsonBody)
-        let signature = await signBytes(bytesBody, wallet)
+        let signature = await BytesSignature.sign(bytesBody, wallet)
         signature = signature.substring(0, signature.length - 2)
         let expectedSignature = "0x361d97d64186bc85cf41d918c9f4bb4ffa08cd756cfb57ab9fe2508808eabfdd5ab16092e419bb17840db104f07ee5452e0551ba61aa6b458e177bae224ee5ad00"
         expectedSignature = expectedSignature.substring(0, expectedSignature.length - 2)

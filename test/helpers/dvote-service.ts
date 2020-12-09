@@ -3,7 +3,7 @@ import { NextFunction, Request, Response } from "express"
 import { json } from "body-parser"
 import { Server } from "http";
 import { Wallet } from "ethers"
-import { signJsonBody } from "../../src/util/json-sign"
+import { JsonSignature } from "../../src/util/data-signing"
 import { DVoteGateway } from "../../src/net/gateway"
 import GatewayInfo from "../../src/wrappers/gateway-info"
 import { getWallets } from "./web3-service"
@@ -91,7 +91,7 @@ export class DevGatewayService {
                 response,
                 signature: ""
             }
-            responseData.signature = await signJsonBody(responseData.response, this.wallet)
+            responseData.signature = await JsonSignature.sign(responseData.response, this.wallet)
             this.interactionCount++
             res.send(responseData)
         }

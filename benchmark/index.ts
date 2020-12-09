@@ -5,7 +5,7 @@ import * as assert from "assert"
 import { readFileSync, writeFileSync } from "fs"
 import * as YAML from 'yaml'
 import { GatewayPool } from "../src/net/gateway-pool"
-import { NetworkID } from "../src/net/gateway-bootnodes"
+import { EthNetworkID } from "../src/net/gateway-bootnode"
 import { ensHashAddress } from "../src/net/contracts"
 import { EntityMetadataTemplate } from "../src/models/entity"
 import { setMetadata, getEntityMetadata } from "../src/api/entity"
@@ -13,8 +13,9 @@ import { digestHexClaim, addCensus, addClaimBulk, publishCensus, dumpPlain, gene
 import { ProcessMetadata, ProcessMetadataTemplate } from "../src/models/process"
 import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "dvote-solidity"
 import { getProcessMetadata, getProcessParameters, getBlockHeight, newProcess, getProcessList, getProcessKeys, packageSignedEnvelope, submitEnvelope, getSignedVoteNullifier, getEnvelopeStatus, getEnvelopeHeight, setStatus, getResultsDigest } from "../src/api/voting"
-import { signJsonBody } from "../src/util/json-sign"
-import { waitUntilVochainBlock, waitEthBlocks } from "../src/util/waiters"
+import { JsonSignature } from "../src/util/data-signing"
+import { VochainWaiter, EthWaiter } from "../src/util/waiters"
+
 
 const CONFIG_PATH = "./config.yaml"
 const config = getConfig()
@@ -108,7 +109,7 @@ async function main() {
 async function connectGateways(): Promise<GatewayPool> {
     console.log("Connecting to the gateways")
     const options = {
-        networkId: config.ethNetworkId as NetworkID,
+        networkId: config.ethNetworkId as EthNetworkID,
         bootnodesContentUri: config.bootnodesUrlRw,
         numberOfGateways: 2,
         race: false,
@@ -287,7 +288,7 @@ async function submitAccountsToRegistry(accounts) {
             },
             signature: ""
         }
-        body.signature = await signJsonBody(body.request, wallet)
+        body.signature = await JsonSignature.sign(body.request, wallet)
 
         const res = await axios.post(`${config.registryApiPrefix}/api/actions/register`, body)
 
@@ -511,7 +512,7 @@ async function waitUntilStarted() {
     assert(processId)
     assert(processParams)
 
-    await waitUntilVochainBlock(processParams.startBlock, pool, { verbose: true })
+    await VochainWaiter.wait(processParams.startBlock, pool, { verbose: true })
 
     console.log("Checking that the Process ID is on the list")
 
@@ -588,7 +589,7 @@ async function checkVoteResults() {
     if (config.encryptedVote) {
         console.log("Waiting a bit for the votes to be received", processId)
         const nextBlock = 2 + await getBlockHeight(pool)
-        await waitUntilVochainBlock(nextBlock, pool, { verbose: true })
+        await VochainWaiter.waitUntil(nextBlock, pool, { verbose: true })
 
         console.log("Fetching the number of votes for", processId)
         const envelopeHeight = await getEnvelopeHeight(processId, pool)
@@ -601,12 +602,12 @@ async function checkVoteResults() {
             await setStatus(processId, ProcessStatus.ENDED, entityWallet, pool)
 
             console.log("Waiting a bit for the votes to be decrypted", processId)
-            await waitEthBlocks(18, pool, { verbose: true })
+            await EthWaiter.wait(18, pool, { verbose: true })
         }
     }
     console.log("Waiting a bit for the results to be ready", processId)
     const nextBlock = 3 + await getBlockHeight(pool)
-    await waitUntilVochainBlock(nextBlock, pool, { verbose: true })
+    await VochainWaiter.waitUntil(nextBlock, pool, { verbose: true })
 
     console.log("Fetching the vote results for", processId)
     const resultsDigest = await getResultsDigest(processId, pool)

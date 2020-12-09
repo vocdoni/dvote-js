@@ -1,11 +1,12 @@
 import ContentURI from "../wrappers/content-uri"
 // import GatewayInfo from "../wrappers/gateway-info"
 import { IDVoteGateway, IWeb3Gateway, Gateway } from "./gateway"
-import { getGatewaysFromBootnode, getDefaultGateways, digestBootnodeNetworkData, NetworkID } from "./gateway-bootnodes"
+import { EthNetworkID, GatewayBootnode } from "./gateway-bootnode"
 import { parseURL } from 'universal-parse-url'
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
 import { JsonBootnodeData } from "../models/gateway"
 import { promiseFuncWithTimeout, promiseWithTimeout } from "../util/timeout"
+import { Random } from "../util/random"
 
 
 const PARALLEL_GATEWAY_TESTS = 5
@@ -15,7 +16,7 @@ const PARALLEL_GATEWAY_TESTS = 5
 const MIN_ROUND_SUCCESS_COUNT = 2
 
 export type IGatewayDiscoveryParameters = {
-    networkId: NetworkID,
+    networkId: EthNetworkID,
     bootnodesContentUri?: string | ContentURI
     numberOfGateways?: number
     timeout?: number
@@ -73,17 +74,17 @@ async function getWorkingGateways(params: IGatewayDiscoveryParameters): Promise<
     try {
         // Extract BootnodeData
         const bootnodeData: JsonBootnodeData = await promiseFuncWithTimeout(() => {
-            if (bootnodesContentUri) return getGatewaysFromBootnode(bootnodesContentUri)
-            return getDefaultGateways(networkId)
+            if (bootnodesContentUri) return GatewayBootnode.getGatewaysFromUri(bootnodesContentUri)
+            return GatewayBootnode.getDefaultGateways(networkId)
         }, GATEWAY_SELECTION_TIMEOUT / 2
         ).catch(err => { throw new Error("Could not fetch the bootnode details") })
 
         // Randomizing DvoteGateways order
-        bootnodeData[networkId].dvote = shuffle(bootnodeData[networkId].dvote)
-        bootnodeData[networkId].web3 = shuffle(bootnodeData[networkId].web3)
+        bootnodeData[networkId].dvote = Random.shuffle(bootnodeData[networkId].dvote)
+        bootnodeData[networkId].web3 = Random.shuffle(bootnodeData[networkId].web3)
 
         // Instantiate gateways
-        const bnGateways = digestBootnodeNetworkData(bootnodeData, networkId, test)
+        const bnGateways = GatewayBootnode.digestNetwork(bootnodeData, networkId, test)
         totalDvoteNodes = bnGateways.dvote
         const totalWeb3Nodes: IWeb3Gateway[] = bnGateways.web3
 
@@ -180,7 +181,7 @@ async function filterHealthyNodes(discoveredDvoteNodes: IDVoteGateway[], discove
     throw new Error("No working gateways found out of " + discoveredDvoteNodes.length + " and " + discoveredWeb3Nodes.length)
 }
 
-function mapWeb3DvoteGateways(networkBootnodeData: JsonBootnodeData[NetworkID], dvoteGateways: IDVoteGateway[], web3Gateways: IWeb3Gateway[]) {
+function mapWeb3DvoteGateways(networkBootnodeData: JsonBootnodeData[EthNetworkID], dvoteGateways: IDVoteGateway[], web3Gateways: IWeb3Gateway[]) {
     let pairs: Map<IDVoteGateway, IWeb3Gateway> = new Map()
     for (let gateway of networkBootnodeData.dvote) {
         const dvoteIndex = networkBootnodeData.dvote.indexOf(gateway)
@@ -249,26 +250,4 @@ function selectActiveNodes(dvoteNodes: IDVoteGateway[], web3Nodes: IWeb3Gateway[
         .catch(() => {
             return result
         })
-}
-
-/**
- * Helper function that shuffles the elements of an array
- */
-function shuffle(array) {
-    var currentIndex = array.length, temporaryValue, randomIndex
-
-    // While there remain elements to shuffle...
-    while (0 !== currentIndex) {
-
-        // Pick a remaining element...
-        randomIndex = Math.floor(Math.random() * currentIndex);
-        currentIndex -= 1;
-
-        // And swap it with the current element.
-        temporaryValue = JSON.parse(JSON.stringify(array[currentIndex]));
-        array[currentIndex] = JSON.parse(JSON.stringify(array[randomIndex]));
-        array[randomIndex] = temporaryValue;
-    }
-
-    return array;
 }

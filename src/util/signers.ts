@@ -1,69 +1,50 @@
 import { providers, Wallet, utils } from "ethers"
 
-/**
- * Returns a standalone Ethers.js wallet and connects it to the given provider if one is set. It uses the given passphrase and
- * hexSeed to compute a deterministic private key along with some seed to salt the passphrase. Use `generateRandomHexSeed`
- * to generate a secure random seed. 
- * @param passphrase
- * @param hexSeed
- * @param provider (optional)
- */
-export function walletFromSeededPassphrase(passphrase: string, hexSeed: string, provider?: providers.Provider): Wallet {
-    if (typeof passphrase != "string") throw new Error("The passphrase must be a string")
-    else if (!strongPassphrase(passphrase)) throw new Error("The passphrase is not strong enough")
-    else if (typeof hexSeed != "string") throw new Error("The hexSeed must be a hex string: use generateRandomHexSeed() to create a new one")
+export class WalletUtil {
+    /**
+     * Returns a standalone Ethers.js wallet and connects it to the given provider if one is set. It uses the given passphrase and
+     * hexSeed to compute a deterministic private key along with some seed to salt the passphrase. Use `Random.getHex`
+     * to generate a secure random seed. 
+     * @param passphrase
+     * @param hexSeed
+     * @param provider (optional)
+     */
+    static fromSeededPassphrase(passphrase: string, hexSeed: string, provider?: providers.Provider): Wallet {
+        if (typeof passphrase != "string") throw new Error("The passphrase must be a string")
+        else if (!isStrongPassphrase(passphrase)) throw new Error("The passphrase is not strong enough")
+        else if (typeof hexSeed != "string") throw new Error("The hexSeed must be a hex string: use Random.getHex() to create a new one")
 
-    const privateKey = digestSeededPassphrase(passphrase, hexSeed)
+        const privateKey = digestSeededPassphrase(passphrase, hexSeed)
 
-    return provider ?
-        new Wallet(privateKey).connect(provider) :
-        new Wallet(privateKey)
+        return provider ?
+            new Wallet(privateKey).connect(provider) :
+            new Wallet(privateKey)
+    }
+
+    /**
+     * Returns a standalone Ethers.js wallet and connects it to the given provider if one is set
+     * @param mnemonic 
+     * @param mnemonicPath (optional)
+     * @param provider (optional)
+     */
+    static fromMnemonic(mnemonic: string, mnemonicPath: string = "m/44'/60'/0'/0/0", provider?: providers.Provider) {
+        return provider ?
+            Wallet.fromMnemonic(mnemonic, mnemonicPath).connect(provider) :
+            Wallet.fromMnemonic(mnemonic, mnemonicPath)
+    }
 }
 
-/**
- * Returns a standalone Ethers.js wallet and connects it to the given provider if one is set
- * @param mnemonic 
- * @param mnemonicPath (optional)
- * @param provider (optional)
- */
-export function walletFromMnemonic(mnemonic: string, mnemonicPath: string = "m/44'/60'/0'/0/0", provider?: providers.Provider) {
-    return provider ?
-        Wallet.fromMnemonic(mnemonic, mnemonicPath).connect(provider) :
-        Wallet.fromMnemonic(mnemonic, mnemonicPath)
-}
+export class SignerUtil {
+    /**
+     * Returns a Web3 signer if the browser supports it or if Metamask is available
+     * Returns null otherwise
+     */
+    static fromInjectedWeb3() {
+        if (typeof window == "undefined" || typeof window["web3"] == "undefined") return null
 
-/**
- * Returns a Web3 signer if the browser supports it or if Metamask is available
- * Returns null otherwise
- */
-export function signerFromBrowserProvider() {
-    if (typeof window == "undefined" || typeof window["web3"] == "undefined") return null
-
-    const provider = new providers.Web3Provider(window["web3"].currentProvider)
-    if (!provider.getSigner) return null
-    return provider.getSigner()
-}
-
-/**
- * Generates a random seed and returns a 32 byte keccak256 hash of it
- */
-export function generateRandomHexSeed(): string {
-    if (typeof window != "undefined") { // Browser
-        const bytes = new Uint8Array(32)
-        window.crypto.getRandomValues(bytes)
-
-        return utils.keccak256(bytes)
-    } else if (typeof process != "undefined") { // NodeJS
-        var crypto
-        if (typeof require != "undefined") {
-            crypto = require("crypto")
-        }
-        const bytes = crypto.randomBytes(32)
-        return utils.keccak256(bytes)
-    } else { // Other?
-        const payload = Math.random().toString() + Math.random().toString() + Date.now().toString() + Math.random().toString() + Math.random().toString()
-        const bytes = utils.toUtf8Bytes(payload)
-        return utils.keccak256(bytes)
+        const provider = new providers.Web3Provider(window["web3"].currentProvider)
+        if (!provider.getSigner) return null
+        return provider.getSigner()
     }
 }
 
@@ -76,7 +57,7 @@ export function generateRandomHexSeed(): string {
  * at least one digit, one lowercase character and an uppercase one
  * @param passphrase 
  */
-function strongPassphrase(passphrase: string): boolean {
+function isStrongPassphrase(passphrase: string): boolean {
     if (passphrase.length < 8) return false
     else if (!passphrase.match(/[a-z]+/)) return false
     else if (!passphrase.match(/[A-Z]+/)) return false
