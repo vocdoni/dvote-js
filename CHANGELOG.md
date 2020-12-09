@@ -48,3 +48,9 @@
         - Rename `entityResolverEnsDomain` to `publicResolverEnsDomain`
         - Rename `processEnsDomain` to `processesEnsDomain`
         - Exporting `namespacesEnsDomain` and `storageProofsEnsDomain`
+    - Web3
+        - Renaming `getProcessInstance` into `getProcessesInstance`
+        - Renaming `getNamespaceInstance` into `getNamespacesInstance`
+- Contracts
+    - Removing `deployEnsPublicResolverContract`, `deployNamespaceContract`, `deployProcessContract` as the functionality is available on `dvote-solidity`
+    - Removing `getEnsPublicResolverInstance`, `getNamespaceInstance`, `getProcessInstance` on `net/contracts` as they duplicate the functionality already present in `Gateway`

@@ -8,7 +8,6 @@ import {
     vocdoniMainnetEntityId, vocdoniGoerliEntityId, vocdoniXDaiEntityId, vocdoniSokolEntityId, XDAI_ENS_REGISTRY_ADDRESS, XDAI_PROVIDER_URI, XDAI_CHAIN_ID,
     SOKOL_CHAIN_ID, SOKOL_PROVIDER_URI, SOKOL_ENS_REGISTRY_ADDRESS, XDAI_TEST_ENS_REGISTRY_ADDRESS, vocdoniXDaiTestEntityId
 } from "../constants"
-import { getEnsPublicResolverInstance } from "../net/contracts"
 import { TextRecordKeys } from "../models/entity"
 import { JsonBootnodeData } from "../models/gateway"
 import { DVoteGateway, Web3Gateway, IDVoteGateway, IWeb3Gateway } from "./gateway"
@@ -41,7 +40,8 @@ export function getDefaultBootnodeUri(networkId: NetworkID, options: { testing: 
         default: throw new Error("Invalid Network ID")
     }
 
-    return getEnsPublicResolverInstance({ provider }).then(instance => {
+    const gw = new Web3Gateway(provider)
+    return gw.getEnsPublicResolverInstance().then(instance => {
         let entityId: string
         switch (networkId) {
             case "mainnet":

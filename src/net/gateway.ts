@@ -10,18 +10,22 @@ import GatewayInfo from "../wrappers/gateway-info"
 import { DVoteSupportedApi, DVoteGatewayMethod, fileApiMethods, voteApiMethods, censusApiMethods, dvoteGatewayApiMethods, resultsApiMethods, dvoteApis } from "../models/gateway"
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
 import { signJsonBody, isValidSignature, sortObjectFields, isByteSignatureValid } from "../util/json-sign"
-import { IProcessContract, IEnsPublicResolverContract, INamespaceContract, ITokenStorageProofContract } from "../net/contracts"
 import axios, { AxiosInstance, AxiosResponse } from "axios"
 import { NetworkID, getDefaultGateways, digestBootnodeNetworkData, getGatewaysFromBootnode } from "./gateway-bootnodes"
 import ContentURI from "../wrappers/content-uri"
 import { extractUint8ArrayJSONValue } from "../util/uint8array"
 import { readBlobText, readBlobArrayBuffer } from "../util/blob"
+import { IProcessContract, IEnsPublicResolverContract, INamespaceContract, ITokenStorageProofContract } from "../net/contracts"
 import {
-    EnsPublicResolver as EntityContractDefinition,
-    Process as ProcessContractDefinition,
-    Namespace as NamespaceContractDefinition,
-    TokenStorageProof as TokenStorageProofContractDefinition
-} from "dvote-solidity"
+    PublicResolverContractDefinition,
+    ProcessesContractDefinition,
+    NamespacesContractDefinition,
+    TokenStorageProofContractDefinition,
+    EnsPublicResolverContractMethods,
+    ProcessContractMethods,
+    NamespaceContractMethods,
+    TokenStorageProofContractMethods
+} from "./contracts"
 import { publicResolverEnsDomain, processesEnsDomain, namespacesEnsDomain, storageProofsEnsDomain } from "../constants"
 import { promiseFuncWithTimeout, promiseWithTimeout } from '../util/timeout'
 import { generateRandomHexSeed } from '../util/signers'
@@ -200,7 +204,7 @@ export class Gateway {
      */
     public init(requiredApis: DVoteSupportedApi[] = []): Promise<boolean> {
         return Promise.all([
-            this.web3.init(),
+            this.web3.initEns(),
             this.dvote.init()
         ]).then(() => {
             if (!this.dvote.supportedApis) return false
@@ -213,12 +217,8 @@ export class Gateway {
         })
     }
 
-    public isReady(): boolean {
-        // If web3 is connected
-        if (!this.web3.isReady) return false
-
-        // Check dvote connection
-        return this.dvote.isReady()
+    public get isReady(): boolean {
+        return this.web3.isReady && this.dvote.isReady
     }
 
     // DVOTE
@@ -275,44 +275,40 @@ export class Gateway {
         return this.web3.deploy<CustomContractMethods>(abi, bytecode, signParams, deployArguments)
     }
 
-    public async getEnsPublicResolverInstance(walletOrSigner?: Wallet | Signer): Promise<IEnsPublicResolverContract> {
-        if (!this.web3.isReady) await this.web3.init()
-
-        const address = this.web3.entityResolverContractAddress
-
-        if (walletOrSigner && (walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer))
-            return this.web3.attach<IEnsPublicResolverContract>(address, EntityContractDefinition.abi as any).connect(walletOrSigner) as (IEnsPublicResolverContract)
-        return this.web3.attach<IEnsPublicResolverContract>(address, EntityContractDefinition.abi as any)
+    /**
+     * Returns an ENS Public Resolver contract instance, bound to the current Web3 gateway instance
+     * @param walletOrSigner (optional) Either an ethers.js Wallet or a Signer
+     * @param customAddress (optional) Overrides the address of the contract instance, instead of the value from `*.vocdoni.eth`
+     */
+    public getEnsPublicResolverInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IEnsPublicResolverContract> {
+        return this.web3.getEnsPublicResolverInstance(walletOrSigner, customAddress)
     }
 
-    public async getProcessInstance(walletOrSigner?: Wallet | Signer): Promise<IProcessContract> {
-        if (!this.web3.isReady) await this.web3.init()
-
-        const address = this.web3.processContractAddress
-
-        if (walletOrSigner && (walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer))
-            return this.web3.attach<IProcessContract>(address, ProcessContractDefinition.abi as any).connect(walletOrSigner) as (IProcessContract)
-        return this.web3.attach<IProcessContract>(address, ProcessContractDefinition.abi as any)
+    /**
+     * Returns a Process contract instance, bound to the current Web3 gateway instance
+     * @param walletOrSigner (optional) Either an ethers.js Wallet or a Signer
+     * @param customAddress (optional) Overrides the address of the contract instance, instead of the value from `*.vocdoni.eth`
+     */
+    public getProcessesInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IProcessContract> {
+        return this.web3.getProcessesInstance(walletOrSigner, customAddress)
     }
 
-    public async getNamespaceInstance(walletOrSigner?: Wallet | Signer): Promise<INamespaceContract> {
-        if (!this.web3.isReady) await this.web3.init()
-
-        const address = this.web3.namespaceContractAddress
-
-        if (walletOrSigner && (walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer))
-            return this.web3.attach<INamespaceContract>(address, NamespaceContractDefinition.abi as any).connect(walletOrSigner) as (INamespaceContract)
-        return this.web3.attach<INamespaceContract>(address, NamespaceContractDefinition.abi as any)
+    /**
+     * Returns a Namespace contract instance, bound to the current Web3 gateway instance
+     * @param walletOrSigner (optional) Either an ethers.js Wallet or a Signer
+     * @param customAddress (optional) Overrides the address of the contract instance, instead of the address defined within `processes.vocdoni.eth`
+     */
+    public getNamespacesInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<INamespaceContract> {
+        return this.web3.getNamespacesInstance(walletOrSigner, customAddress)
     }
 
-    public async getTokenStorageProofInstance(walletOrSigner?: Wallet | Signer): Promise<ITokenStorageProofContract> {
-        if (!this.web3.isReady) await this.web3.init()
-
-        const address = this.web3.tokenStorageProofContractAddress
-
-        if (walletOrSigner && (walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer))
-            return this.web3.attach<ITokenStorageProofContract>(address, TokenStorageProofContractDefinition.abi as any).connect(walletOrSigner) as (ITokenStorageProofContract)
-        return this.web3.attach<ITokenStorageProofContract>(address, TokenStorageProofContractDefinition.abi as any)
+    /**
+     * Returns a Token Storage Proof contract instance, bound to the current Web3 gateway instance
+     * @param walletOrSigner (optional) Either an ethers.js Wallet or a Signer
+     * @param customAddress (optional) Overrides the address of the contract instance, instead of the address defined within `processes.vocdoni.eth`
+     */
+    public getTokenStorageProofInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<ITokenStorageProofContract> {
+        return this.web3.getTokenStorageProofInstance(walletOrSigner, customAddress)
     }
 }
 
@@ -354,7 +350,7 @@ export class DVoteGateway {
     }
 
     /** Check whether the client is connected to a Gateway */
-    public isReady(): boolean {
+    public get isReady(): boolean {
         return this.client && this._uri && this.supportedApis && this.supportedApis.length > 0
     }
 
@@ -371,7 +367,7 @@ export class DVoteGateway {
      * @param params (optional) Optional parameters. Timeout in milliseconds.
      */
     public async sendRequest(requestBody: IDvoteRequestParameters, wallet: Wallet | Signer = null, params: { timeout?: number } = { timeout: 15 * 1000 }) {
-        if (!this.isReady()) throw new Error("Not initialized")
+        if (!this.isReady) throw new Error("Not initialized")
         else if (typeof requestBody != "object") throw new Error("The payload should be a javascript object")
         else if (typeof wallet != "object") throw new Error("The wallet is required")
 
@@ -517,7 +513,7 @@ export class DVoteGateway {
      * If there is no connection open, the method returns null.
      */
     public async getGatewayInfo(timeout?: number): Promise<{ apiList: DVoteSupportedApi[], health: number }> {
-        if (!this.isReady()) return null
+        if (!this.isReady) return null
 
         try {
             const result = await promiseWithTimeout(
@@ -577,9 +573,9 @@ export class DVoteGateway {
  */
 export class Web3Gateway {
     private _provider: providers.BaseProvider
-    public entityResolverContractAddress: string
-    public namespaceContractAddress: string
-    public processContractAddress: string
+    public ensPublicResolverContractAddress: string
+    public namespacesContractAddress: string
+    public processesContractAddress: string
     public tokenStorageProofContractAddress: string
 
     /** Returns a JSON RPC provider that can be used for Ethereum communication */
@@ -612,7 +608,7 @@ export class Web3Gateway {
     }
 
     /** Initialize the contract addresses */
-    public async init() {
+    public async initEns() {
         const [addr1, addr2] = await Promise.all([
             this._provider.resolveName(publicResolverEnsDomain),
             this._provider.resolveName(processesEnsDomain)
@@ -620,11 +616,11 @@ export class Web3Gateway {
         if (!addr1) throw new Error("The resolver address could not be fetched")
         else if (!addr2) throw new Error("The process contract address bould not be fetched")
 
-        this.entityResolverContractAddress = addr1
-        this.processContractAddress = addr2
+        this.ensPublicResolverContractAddress = addr1
+        this.processesContractAddress = addr2
 
         // Get namespace and storage proof addresses from the process contract
-        const processInstance = this.attach<IProcessContract>(this.processContractAddress, ProcessContractDefinition.abi)
+        const processInstance = this.attach<IProcessContract>(this.processesContractAddress, ProcessesContractDefinition.abi)
 
         const [addr3, addr4] = await Promise.all([
             processInstance.namespaceAddress(),
@@ -634,7 +630,7 @@ export class Web3Gateway {
         if (!addr3) throw new Error("The process contract didn't return a namespace address")
         else if (!addr4) throw new Error("The process contract didn't return a storage proof address")
 
-        this.namespaceContractAddress = addr3
+        this.namespacesContractAddress = addr3
         this.tokenStorageProofContractAddress = addr4
     }
 
@@ -683,15 +679,15 @@ export class Web3Gateway {
     }
 
     /** Returns true if the provider and contract details are properly set */
-    public get isReady() {
-        return this._provider &&
-            this.entityResolverContractAddress &&
-            this.processContractAddress &&
-            this.namespaceContractAddress &&
-            this.tokenStorageProofContractAddress
+    public get isReady(): boolean {
+        return !!this._provider &&
+            !!this.ensPublicResolverContractAddress &&
+            !!this.processesContractAddress &&
+            !!this.namespacesContractAddress &&
+            !!this.tokenStorageProofContractAddress
     }
 
-    public isUp(timeout: number = GATEWAY_SELECTION_TIMEOUT): Promise<any> {
+    public isUp(timeout: number = GATEWAY_SELECTION_TIMEOUT, checkEns?: boolean): Promise<any> {
         return promiseFuncWithTimeout(() => {
             return this.getPeers()
                 .then(peersNumber => {
@@ -701,9 +697,10 @@ export class Web3Gateway {
                 .then(syncing => {
                     if (syncing) throw new Error("The Web3 gateway is syncing")
                     else if (this.isReady) return // done
+                    else if (!checkEns) return // done
 
                     // Fetch and set the contract addresses
-                    return this.init()
+                    return this.initEns()
                 })
                 .then(() => null)
                 .catch(err => {
@@ -739,5 +736,93 @@ export class Web3Gateway {
             if (!result) return -1
             return BigNumber.from(result).toNumber()
         })
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // CONTRACT INSTANCE GETTERS
+    ///////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Returns an ENS Public Resolver contract instance, bound to the current Web3 gateway instance
+     * @param walletOrSigner (optional) Either an ethers.js Wallet or a Signer
+     * @param customAddress (optional) Overrides the address of the contract instance, instead of the value from `*.vocdoni.eth`
+     */
+    public async getEnsPublicResolverInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IEnsPublicResolverContract> {
+        const contractAbi = PublicResolverContractDefinition.abi as ContractInterface
+        let contractAddress: string
+        if (customAddress) contractAddress = customAddress
+        else {
+            if (!this.isReady) await this.initEns()
+            contractAddress = this.ensPublicResolverContractAddress
+        }
+
+        if (walletOrSigner) {
+            return this.attach<EnsPublicResolverContractMethods>(contractAddress, contractAbi)
+                .connect(walletOrSigner) as IEnsPublicResolverContract
+        }
+        return this.attach<EnsPublicResolverContractMethods>(contractAddress, contractAbi)
+    }
+
+    /**
+     * Returns a Process contract instance, bound to the current Web3 gateway instance
+     * @param walletOrSigner (optional) Either an ethers.js Wallet or a Signer
+     * @param customAddress (optional) Overrides the address of the contract instance, instead of the value from `*.vocdoni.eth`
+     */
+    public async getProcessesInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IProcessContract> {
+        const contractAbi = ProcessesContractDefinition.abi as ContractInterface
+        let contractAddress: string
+        if (customAddress) contractAddress = customAddress
+        else {
+            if (!this.isReady) await this.initEns()
+            contractAddress = this.processesContractAddress
+        }
+
+        if (walletOrSigner) {
+            return this.attach<ProcessContractMethods>(contractAddress, contractAbi)
+                .connect(walletOrSigner) as IProcessContract
+        }
+        return this.attach<ProcessContractMethods>(contractAddress, contractAbi)
+    }
+
+    /**
+     * Returns a Namespace contract instance, bound to the current Web3 gateway instance
+     * @param walletOrSigner (optional) Either an ethers.js Wallet or a Signer
+     * @param customAddress (optional) Overrides the address of the contract instance, instead of the address defined within `processes.vocdoni.eth`
+     */
+    public async getNamespacesInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<INamespaceContract> {
+        const contractAbi = NamespacesContractDefinition.abi as ContractInterface
+        let contractAddress: string
+        if (customAddress) contractAddress = customAddress
+        else {
+            if (!this.isReady) await this.initEns()
+            contractAddress = this.namespacesContractAddress
+        }
+
+        if (walletOrSigner) {
+            return this.attach<NamespaceContractMethods>(contractAddress, contractAbi)
+                .connect(walletOrSigner) as INamespaceContract
+        }
+        return this.attach<NamespaceContractMethods>(contractAddress, contractAbi)
+    }
+
+    /**
+     * Returns a Token Storage Proof contract instance, bound to the current Web3 gateway instance
+     * @param walletOrSigner (optional) Either an ethers.js Wallet or a Signer
+     * @param customAddress (optional) Overrides the address of the contract instance, instead of the address defined within `processes.vocdoni.eth`
+     */
+    public async getTokenStorageProofInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<ITokenStorageProofContract> {
+        const contractAbi = TokenStorageProofContractDefinition.abi as ContractInterface
+        let contractAddress: string
+        if (customAddress) contractAddress = customAddress
+        else {
+            if (!this.isReady) await this.initEns()
+            contractAddress = this.tokenStorageProofContractAddress
+        }
+
+        if (walletOrSigner) {
+            return this.attach<TokenStorageProofContractMethods>(contractAddress, contractAbi)
+                .connect(walletOrSigner) as ITokenStorageProofContract
+        }
+        return this.attach<TokenStorageProofContractMethods>(contractAddress, contractAbi)
     }
 }

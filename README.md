@@ -90,12 +90,6 @@ const {
     // EtherUtils: { Providers, Signers }
 } = require("dvote-js")
 
-const {
-    getEnsPublicResolverInstance,
-    // getProcessInstance,
-    // deployEnsPublicResolverContract,
-    // deployProcessContract
-} = Contracts
 const { getEntityMetadata, setMetadata } = Entity
 const { Gateway } = Gateways
 const { getRandomGateway } = Discovery
@@ -132,12 +126,6 @@ const {
     // EtherUtils: { Providers, Signers }
 } = require("dvote-js")
 
-const {
-    getEnsPublicResolverInstance,
-    // getProcessInstance,
-    // deployEnsPublicResolverContract,
-    // deployProcessContract
-} = Contracts
 const { getEntityMetadata, setMetadata } = Entity
 const { addFile, fetchFileString } = File
 
@@ -171,12 +159,6 @@ const {
     // EtherUtils: { Providers, Signers }
 } = require("dvote-js")
 
-const {
-    getEnsPublicResolverInstance,
-    // getProcessInstance,
-    // deployEnsPublicResolverContract,
-    // deployProcessContract
-} = Contracts
 const { setMetadata } = Entity
 const { addFile, fetchFileString } = File
 
@@ -185,11 +167,13 @@ const { Wallet, providers } = require("ethers")
 const GATEWAY_WEB3_PROVIDER_URI = "https://rpc.slock.it/goerli"
 const MNEMONIC = "..."
 
-const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
 const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, GATEWAY_SUPPORTED_APIS, GATEWAY_WEB3_PROVIDER_URI, GATEWAY_PUBLIC_KEY)
+const gateway = await Gateway.fromInfo(gwInfo)
 
 // Attach to the Entity Resolver contract
-const resolverInstance = await getEnsPublicResolverInstance({ provider, wallet })
+const resolverInstance = await gateway.getEnsPublicResolverInstance({ provider, wallet })
+await gateway.init()
 
 const myEntityAddress = await wallet.getAddress()
 const entityNode = ensHashAddress(myEntityAddress)

@@ -16,7 +16,6 @@ import { addCensus, addClaim, addClaimBulk, getRoot, publishCensus, dump, dumpPl
 import { getDefaultGateways, digestBootnodeData } from "../src/net/gateway-bootnodes"
 import { EntityMetadataTemplate, EntityMetadata, TextRecordKeys } from "../src/models/entity"
 import { ProcessMetadata, ProcessMetadataTemplate } from "../src/models/process"
-import { deployEnsPublicResolverContract, getEnsPublicResolverInstance, deployProcessContract, getProcessInstance, deployNamespaceContract } from "../src/net/contracts"
 import { addFile, fetchFileString } from "../src/api/file"
 import GatewayInfo from "../src/wrappers/gateway-info"
 import { VOCHAIN_BLOCK_TIME } from "../src/constants"
@@ -41,36 +40,14 @@ const WALLET_PASSPHRASE = process.env.WALLET_PASSPHRASE
 const BOOTNODES_URL_RO = "https://bootnodes.vocdoni.net/gateways.json"
 const BOOTNODES_URL_RW = "https://bootnodes.vocdoni.net/gateways.dev.json"
 
-async function deployEntityResolver() {
-    const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI)
-    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
-
-    console.log("Deploying Entity Resolver contract...")
-    const contractInstance = await deployEnsPublicResolverContract({ provider, wallet })
-    await contractInstance.deployTransaction.wait()
-    console.log("Entity Resolver deployed at", contractInstance.address)
-
-    const myEntityAddress = await wallet.getAddress()
-    const entityEnsNode = ensHashAddress(myEntityAddress)
-
-    console.log("Entity Address:", myEntityAddress)
-    console.log("Entity NODE:", entityEnsNode)
-
-    console.log("Setting 'my-key' = '1234'")
-    const tx = await contractInstance.setText(entityEnsNode, "my-key", "1234")
-    await tx.wait()
-
-    console.log("Value set")
-    const val = await contractInstance.text(entityEnsNode, "my-key")
-    console.log("Value stored on the blockchain:", val)
-}
-
 async function attachToEntityResolver() {
-    const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI)
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+    // const gw = await Gateway.randomFromDefault(NETWORK_ID)
+    const gw = await Gateway.randomfromUri(NETWORK_ID, BOOTNODES_URL_RO)
+    await gw.init()
 
     console.log("Attaching to contract...")
-    const contractInstance = await getEnsPublicResolverInstance({ provider, wallet })
+    const resolverInstance = await gw.getEnsPublicResolverInstance(wallet)
 
     const myEntityAddress = await wallet.getAddress()
     const entityEnsNode = ensHashAddress(myEntityAddress)
@@ -78,60 +55,39 @@ async function attachToEntityResolver() {
     console.log("Entity Address:", myEntityAddress)
     console.log("Entity NODE:", entityEnsNode)
 
-    const tx = await contractInstance.setText(entityEnsNode, TextRecordKeys.VOCDONI_BOOT_NODES, "https://bootnodes.vocdoni.net/gateways.json")
+    const tx = await resolverInstance.setText(entityEnsNode, TextRecordKeys.VOCDONI_BOOT_NODES, "https://bootnodes.vocdoni.net/gateways.json")
     await tx.wait()
     console.log("Reading", TextRecordKeys.VOCDONI_BOOT_NODES)
-    const val = await contractInstance.text(entityEnsNode, TextRecordKeys.VOCDONI_BOOT_NODES)
+    const val = await resolverInstance.text(entityEnsNode, TextRecordKeys.VOCDONI_BOOT_NODES)
     console.log("Value stored on the blockchain:", val)
-}
-
-async function deployVotingProcess() {
-    const nullPredecessorAddress = "0x0000000000000000000000000000000000000000"
-    const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI)
-    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
-
-    console.log("Deploying Namespace contract...")
-    const namespaceInstance = await deployNamespaceContract({ provider, wallet })
-    await namespaceInstance.deployTransaction.wait()
-    console.log("Namespace deployed at", namespaceInstance.address)
-
-    console.log("Deploying Process contract...")
-    const contractInstance = await deployProcessContract({ provider, wallet }, [nullPredecessorAddress, namespaceInstance.address])
-    await contractInstance.deployTransaction.wait()
-    console.log("Process deployed at", contractInstance.address)
-
-    console.log("Setting genesis")
-    const tx = await contractInstance.setGenesis("ipfs://ipfs-hash-here!sha3-hash-here")
-    await tx.wait()
-
-    console.log("Deployment completed!")
 }
 
 async function attachToVotingProcess() {
-    const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI)
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+    // const gw = await Gateway.randomFromDefault(NETWORK_ID)
+    const gw = await Gateway.randomfromUri(NETWORK_ID, BOOTNODES_URL_RO)
+    await gw.init()
 
     console.log("Attaching to contract at from")
-    const contractInstance = await getProcessInstance({ provider, wallet })
+    const processInstance = await gw.getProcessesInstance(wallet)
 
     console.log("Reading 'genesis'")
-    let val = await contractInstance.getGenesis()
+    let val = await processInstance.getGenesis()
     console.log("Value stored on the blockchain:", val)
 
     console.log("Setting genesis")
-    const tx = await contractInstance.setGenesis("ipfs://ipfs-hash-2-here!sha3-hash-here")
+    const tx = await processInstance.setGenesis("ipfs://ipfs-hash-2-here!sha3-hash-here")
     await tx.wait()
 
     console.log("Reading 'genesis'")
-    val = await contractInstance.getGenesis()
+    val = await processInstance.getGenesis()
     console.log("Value stored on the blockchain:", val)
 }
 
 async function checkGatewayStatus() {
-    let gw: Gateway
     try {
-        // gw = await Gateway.randomFromDefault(NETWORK_ID)
-        gw = await Gateway.randomfromUri(NETWORK_ID, BOOTNODES_URL_RO)
+        // const gw = await Gateway.randomFromDefault(NETWORK_ID)
+        const gw = await Gateway.randomfromUri(NETWORK_ID, BOOTNODES_URL_RO)
 
         const status = await gw.getGatewayInfo()
         console.log("Gateway status", status)
@@ -142,11 +98,10 @@ async function checkGatewayStatus() {
 }
 
 async function fileUpload() {
-    var dvoteGw: DVoteGateway
     try {
         const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
-        dvoteGw = new DVoteGateway({ uri: GATEWAY_DVOTE_URI, supportedApis: ["file"], publicKey: GATEWAY_PUB_KEY })
+        const dvoteGw = new DVoteGateway({ uri: GATEWAY_DVOTE_URI, supportedApis: ["file"], publicKey: GATEWAY_PUB_KEY })
         await dvoteGw.init()
 
         console.log("SIGNING FROM ADDRESS", wallet.address)
@@ -165,11 +120,10 @@ async function fileUpload() {
 }
 
 async function fileDownload(address) {
-    let gw: Gateway
     try {
         const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
-        // gw = await Gateway.randomFromDefault(NETWORK_ID)
-        gw = await Gateway.randomfromUri(NETWORK_ID, BOOTNODES_URL_RO)
+        // const gw = await Gateway.randomFromDefault(NETWORK_ID)
+        const gw = await Gateway.randomfromUri(NETWORK_ID, BOOTNODES_URL_RO)
         await gw.init()
 
         console.log("SIGNING FROM ADDRESS", wallet.address)
@@ -193,11 +147,10 @@ async function emptyFeedUpload() {
         "expired": false,
         "items": []
     }
-    var gw: Gateway
     try {
         const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
-        // gw = await Gateway.randomFromDefault(NETWORK_ID)
-        gw = await Gateway.randomfromUri(NETWORK_ID, BOOTNODES_URL_RO)
+        // const gw = await Gateway.randomFromDefault(NETWORK_ID)
+        const gw = await Gateway.randomfromUri(NETWORK_ID, BOOTNODES_URL_RO)
         await gw.init()
 
         console.log("SIGNING FROM ADDRESS", wallet.address)
@@ -257,7 +210,6 @@ async function readEntity() {
 }
 
 async function updateEntityInfo() {
-
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
     const myEntityAddress = await wallet.getAddress()
@@ -323,11 +275,13 @@ async function createProcessRaw() {
     const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI)
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
-    const gw = new DVoteGateway({ uri: GATEWAY_DVOTE_URI, supportedApis: ["file"], publicKey: GATEWAY_PUB_KEY })
+    const dvoteGw = new DVoteGateway({ uri: GATEWAY_DVOTE_URI, supportedApis: ["file"], publicKey: GATEWAY_PUB_KEY })
+    const web3Gw = new Web3Gateway(provider)
+    const gw = new Gateway(dvoteGw, web3Gw)
     await gw.init()
 
     console.log("Attaching to contract")
-    const contractInstance = await getProcessInstance({ provider, wallet })
+    const processesInstance = await gw.getProcessesInstance(wallet)
 
     console.log("Uploading metadata...")
     const processMetadata = Object.assign({}, ProcessMetadataTemplate, { startBlock: 20000 })
@@ -362,7 +316,7 @@ async function createProcessRaw() {
         namespace: 0,
         paramsSignature: "0x0"
     })
-    const tx = await contractInstance.newProcess(...params.toContractParams())
+    const tx = await processesInstance.newProcess(...params.toContractParams())
     const result = await tx.wait()
     console.log("RESULT", result)
 }
@@ -764,7 +718,7 @@ async function gatewayHealthCheck() {
         for (let gw of gws[networkId].web3) {
             console.log("Checking Web3 GW...")
 
-            const instance = await getEnsPublicResolverInstance({ provider: gw.provider, wallet })
+            const instance = await gw.getEnsPublicResolverInstance(wallet)
             const tx = await instance.setText(entityEnsNode, "dummy", "1234")
             await tx.wait()
         }
@@ -865,9 +819,7 @@ async function testGatewayInitialization() {
 async function main() {
     // Ethereum
 
-    // await deployEntityResolver()
     // await attachToEntityResolver()
-    // await deployVotingProcess()
     // await attachToVotingProcess()
 
     // Vocdoni API's

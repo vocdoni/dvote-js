@@ -12,7 +12,6 @@ import DevServices, { TestAccount } from "../helpers/all-services"
 import { ProcessContractMethods, ProcessContractParameters, ProcessStatus } from "dvote-solidity"
 import { Buffer } from "buffer/"
 
-import { deployProcessContract, getProcessInstance } from "../../src/net/contracts"
 import { getSignedVoteNullifier, packageSignedEnvelope, IVotePackage, getProcessId, newProcess } from "../../src/api/voting"
 import { Asymmetric } from "../../src/util/encryption"
 import { checkValidProcessMetadata } from "../../src/models/process"
@@ -36,6 +35,7 @@ import ProcessBuilder, {
 import ProcessMetadataBuilder from "../builders/process-metadata"
 import NamespaceBuilder from "../builders/namespace"
 import { ContractReceipt } from "ethers"
+import { Gateway, Web3Gateway } from "../../src/net/gateway"
 
 let server: DevServices
 let accounts: TestAccount[]
@@ -46,7 +46,7 @@ let randomAccount1: TestAccount
 let randomAccount2: TestAccount
 let processId: string
 let contractInstance: ProcessContractMethods & Contract
-let tx: ContractReceipt
+// let tx: ContractReceipt
 
 const nullAddress = "0x0000000000000000000000000000000000000000"
 
@@ -71,18 +71,7 @@ describe("Governance Process", () => {
         processId = await contractInstance.getProcessId(entityAccount.address, 0, DEFAULT_NAMESPACE)
     })
 
-    // TODO: Move to integration/processes.ts
-
     describe("Smart Contract", () => {
-
-        it("Should deploy the smart contract", async () => {
-            const namespaceInstance = await new NamespaceBuilder(accounts).build()
-
-            contractInstance = await deployProcessContract({ provider: entityAccount.provider, wallet: entityAccount.wallet }, [nullAddress, namespaceInstance.address])
-
-            expect(contractInstance).to.be.ok
-            expect(contractInstance.address.match(/^0x[0-9a-fA-F]{40}$/)).to.be.ok
-        })
 
         it("Should attach to a given instance and deal with the same data", async () => {
             // set custom data on a deployed instance
@@ -94,7 +83,8 @@ describe("Governance Process", () => {
 
             // attach from a new object
 
-            const newInstance = await getProcessInstance({ provider: entityAccount.provider }, contractInstance.address)
+            const w3Gw = new Web3Gateway(entityAccount.provider)
+            const newInstance = await w3Gw.getProcessesInstance(entityAccount.wallet, contractInstance.address)
             expect(newInstance.address).to.equal(contractInstance.address)
 
             const data = ProcessContractParameters.fromContract(await newInstance.get(newProcessId))
@@ -163,13 +153,13 @@ describe("Governance Process", () => {
             const result1 = await contractInstance.getResults(processId)
             expect(result1).to.equal("")
 
-            const tx1 = await contractInstance.setResults(processId, [[1,5,4], [4,1,5]], 10)
+            const tx1 = await contractInstance.setResults(processId, [[1, 5, 4], [4, 1, 5]], 10)
             expect(tx1).to.be.ok
             expect(tx1.to).to.equal(contractInstance.address)
             await tx1.wait()
 
             const result2 = await contractInstance.getResults(processId)
-            expect(result2).to.equal([[1,5,4], [4,1,5]])
+            expect(result2).to.equal([[1, 5, 4], [4, 1, 5]])
         })
 
         it("should change the state to RESULTS")

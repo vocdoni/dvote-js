@@ -10,7 +10,7 @@ export default class DevServices {
     readonly ws: DevGatewayService
     readonly web3: DevWeb3Service
 
-    constructor(dvoteParams: { port?: number, responses?: TestResponseBody[] }, web3Params: { port?: number, mnemonic?: string }) {
+    constructor(dvoteParams: { port?: number, responses?: TestResponseBody[] } = {}, web3Params: { port?: number, mnemonic?: string } = {}) {
         this.ws = new DevGatewayService(dvoteParams)
         this.web3 = new DevWeb3Service(web3Params)
     }

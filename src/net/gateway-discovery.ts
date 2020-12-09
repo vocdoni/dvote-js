@@ -114,7 +114,7 @@ async function getWorkingGateways(params: IGatewayDiscoveryParameters): Promise<
 
         let hasInitialCandidate = false
         for (let gw of gwNodePairs) {
-            if (gw.dvote.isReady()) {
+            if (gw.dvote.isReady) {
                 hasInitialCandidate = true
                 break
             }

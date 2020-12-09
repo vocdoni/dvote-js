@@ -11,7 +11,6 @@ import { addCompletionHooks } from "../mocha-hooks"
 import DevServices, { TestAccount } from "../helpers/all-services"
 import { NamespaceContractMethods } from "dvote-solidity"
 
-// import { deployNamespaceContract, getNamespaceInstance } from "../../src/net/contracts"
 import { BigNumber, ContractReceipt } from "ethers"
 import NamespaceBuilder, { DEFAULT_NAMESPACE } from "../builders/namespace"
 

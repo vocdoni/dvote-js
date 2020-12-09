@@ -79,8 +79,8 @@ export class GatewayPool {
         return this.pool[0]
     }
 
-    public isReady(): boolean {
-        return this.activeGateway.isReady()
+    public get isReady(): boolean {
+        return this.activeGateway.isReady
     }
 
     // DVOTE
@@ -136,19 +136,19 @@ export class GatewayPool {
         return this.provider.getNetwork().then(network => network.chainId)
     }
 
-    public getEnsPublicResolverInstance(walletOrSigner?: Wallet | Signer): Promise<IEnsPublicResolverContract> {
-        return this.activeGateway.getEnsPublicResolverInstance(walletOrSigner)
+    public getEnsPublicResolverInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IEnsPublicResolverContract> {
+        return this.activeGateway.getEnsPublicResolverInstance(walletOrSigner, customAddress)
     }
 
-    public getProcessInstance(walletOrSigner?: Wallet | Signer): Promise<IProcessContract> {
-        return this.activeGateway.getProcessInstance(walletOrSigner)
+    public getProcessesInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IProcessContract> {
+        return this.activeGateway.getProcessesInstance(walletOrSigner, customAddress)
     }
 
-    public getNamespaceInstance(walletOrSigner?: Wallet | Signer): Promise<INamespaceContract> {
-        return this.activeGateway.getNamespaceInstance(walletOrSigner)
+    public getNamespacesInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<INamespaceContract> {
+        return this.activeGateway.getNamespacesInstance(walletOrSigner, customAddress)
     }
 
-    public getTokenStorageProofInstance(walletOrSigner?: Wallet | Signer): Promise<ITokenStorageProofContract> {
-        return this.activeGateway.getTokenStorageProofInstance(walletOrSigner)
+    public getTokenStorageProofInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<ITokenStorageProofContract> {
+        return this.activeGateway.getTokenStorageProofInstance(walletOrSigner, customAddress)
     }
 }

@@ -9,7 +9,7 @@ export async function setNamespace(namespace: number, chainId: string, genesis: 
     else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
     try {
-        const namespaceInstance = await gateway.getNamespaceInstance(walletOrSigner)
+        const namespaceInstance = await gateway.getNamespacesInstance(walletOrSigner)
 
         const tx = await namespaceInstance.setNamespace(namespace, chainId, genesis, validators, oracles)
         if (!tx) throw new Error("Could not start the blockchain transaction")
@@ -26,7 +26,7 @@ export async function setChainId(namespace: number, chainId: string, walletOrSig
     else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
     try {
-        const namespaceInstance = await gateway.getNamespaceInstance(walletOrSigner)
+        const namespaceInstance = await gateway.getNamespacesInstance(walletOrSigner)
 
         const tx = await namespaceInstance.setChainId(namespace, chainId)
         if (!tx) throw new Error("Could not start the blockchain transaction")
@@ -43,7 +43,7 @@ export async function setGenesis(namespace: number, genesis: string, walletOrSig
     else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
     try {
-        const namespaceInstance = await gateway.getNamespaceInstance(walletOrSigner)
+        const namespaceInstance = await gateway.getNamespacesInstance(walletOrSigner)
 
         const tx = await namespaceInstance.setGenesis(namespace, genesis)
         if (!tx) throw new Error("Could not start the blockchain transaction")
@@ -60,7 +60,7 @@ export async function addValidator(namespace: number, validatorPublicKey: string
     else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
     try {
-        const namespaceInstance = await gateway.getNamespaceInstance(walletOrSigner)
+        const namespaceInstance = await gateway.getNamespacesInstance(walletOrSigner)
 
         const tx = await namespaceInstance.addValidator(namespace, validatorPublicKey)
         if (!tx) throw new Error("Could not start the blockchain transaction")
@@ -77,7 +77,7 @@ export async function removeValidator(namespace: number, index: number, validato
     else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
     try {
-        const namespaceInstance = await gateway.getNamespaceInstance(walletOrSigner)
+        const namespaceInstance = await gateway.getNamespacesInstance(walletOrSigner)
 
         const tx = await namespaceInstance.removeValidator(namespace, index, validatorPublicKey)
         if (!tx) throw new Error("Could not start the blockchain transaction")
@@ -94,7 +94,7 @@ export async function addOracle(namespace: number, oracleAddress: string, wallet
     else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
     try {
-        const namespaceInstance = await gateway.getNamespaceInstance(walletOrSigner)
+        const namespaceInstance = await gateway.getNamespacesInstance(walletOrSigner)
 
         const tx = await namespaceInstance.addOracle(namespace, oracleAddress)
         if (!tx) throw new Error("Could not start the blockchain transaction")
@@ -111,7 +111,7 @@ export async function removeOracle(namespace: number, index: number, oracleAddre
     else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
     try {
-        const namespaceInstance = await gateway.getNamespaceInstance(walletOrSigner)
+        const namespaceInstance = await gateway.getNamespacesInstance(walletOrSigner)
 
         const tx = await namespaceInstance.removeOracle(namespace, index, oracleAddress)
         if (!tx) throw new Error("Could not start the blockchain transaction")
@@ -130,7 +130,7 @@ export async function getNamespace(namespace: number, walletOrSigner: Wallet | S
     else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
     try {
-        const namespaceInstance = await gateway.getNamespaceInstance(walletOrSigner)
+        const namespaceInstance = await gateway.getNamespacesInstance(walletOrSigner)
 
         const result = await namespaceInstance.getNamespace(namespace)
         if (!Array.isArray(result) || result.length != 4) throw new Error("Invalid response")
@@ -154,7 +154,7 @@ export async function isValidator(namespace: number, validatorPublicKey: string,
     else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
     try {
-        const namespaceInstance = await gateway.getNamespaceInstance(walletOrSigner)
+        const namespaceInstance = await gateway.getNamespacesInstance(walletOrSigner)
 
         return namespaceInstance.isValidator(namespace, validatorPublicKey)
     }
@@ -169,7 +169,7 @@ export async function isOracle(namespace: number, oracleAddress: string, walletO
     else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
     try {
-        const namespaceInstance = await gateway.getNamespaceInstance(walletOrSigner)
+        const namespaceInstance = await gateway.getNamespacesInstance(walletOrSigner)
 
         return namespaceInstance.isOracle(namespace, oracleAddress)
     }

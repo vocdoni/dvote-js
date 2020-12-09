@@ -7,7 +7,7 @@ async function example() {
     // DVote client
     const dvoteGw = services.ws.client
     await dvoteGw.init()
-    console.log("DVote ready:", dvoteGw.isReady())
+    console.log("DVote ready:", dvoteGw.isReady)
 
     // By default, a `getBlockStatus` dummy response is prepared on the GW mock,
     // so that `connect()` will succeed

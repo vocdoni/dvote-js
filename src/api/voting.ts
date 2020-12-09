@@ -48,7 +48,7 @@ export function getProcessParameters(processId: string, gateway: IGateway | IGat
     if (!processId) throw new Error("Invalid processId")
     else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
-    return gateway.getProcessInstance()
+    return gateway.getProcessesInstance()
         .then(processInstance => processInstance.get(processId))
         .then(params => ProcessContractParameters.fromContract(params))
         .catch(error => {
@@ -356,7 +356,7 @@ export async function newProcess(processParameters: Omit<Omit<IProcessCreatePara
     const metadata = checkValidProcessMetadata(processParameters.metadata)
 
     try {
-        const processInstance = await gateway.getProcessInstance(walletOrSigner)
+        const processInstance = await gateway.getProcessesInstance(walletOrSigner)
 
         const address = await walletOrSigner.getAddress()
 
@@ -428,7 +428,7 @@ export async function setStatus(processId: string, newStatus: IProcessStatus, wa
     else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) throw new Error("Invalid Gateway object")
 
     try {
-        const processInstance = await gateway.getProcessInstance(walletOrSigner)
+        const processInstance = await gateway.getProcessesInstance(walletOrSigner)
 
         const tx = await processInstance.setStatus(processId, newStatus)
         if (!tx) throw new Error("Could not start the blockchain transaction")
@@ -453,7 +453,7 @@ export async function incrementQuestionIndex(processId: string, walletOrSigner: 
     else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) throw new Error("Invalid Gateway object")
 
     try {
-        const processInstance = await gateway.getProcessInstance(walletOrSigner)
+        const processInstance = await gateway.getProcessesInstance(walletOrSigner)
 
         const tx = await processInstance.incrementQuestionIndex(processId)
         if (!tx) throw new Error("Could not start the blockchain transaction")
@@ -478,7 +478,7 @@ export async function setCensus(processId: string, censusMerkleRoot: string, cen
     else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) throw new Error("Invalid Gateway object")
 
     try {
-        const processInstance = await gateway.getProcessInstance(walletOrSigner)
+        const processInstance = await gateway.getProcessesInstance(walletOrSigner)
 
         const tx = await processInstance.setCensus(processId, censusMerkleRoot, censusMerkleTree)
         if (!tx) throw new Error("Could not start the blockchain transaction")
@@ -503,7 +503,7 @@ export async function setResults(processId: string, results: number[][], envelop
     else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) throw new Error("Invalid Gateway object")
 
     try {
-        const processInstance = await gateway.getProcessInstance(walletOrSigner)
+        const processInstance = await gateway.getProcessesInstance(walletOrSigner)
 
         const tx = await processInstance.setResults(processId, results, envelopeCount)
         if (!tx) throw new Error("Could not start the blockchain transaction")
