@@ -1,13 +1,28 @@
 // NOTE: This code is borrowed from dvote-solidity
 
-import { ProcessContractMethods, ProcessEnvelopeType, ProcessMode, IProcessEnvelopeType, IProcessMode, NamespaceContractMethods, ProcessContractParameters, IProcessCensusOrigin, ProcessCensusOrigin } from "../../src/net/contracts"
+import {
+    ProcessContractMethods,
+    ProcessesContractDefinition,
+    // NamespaceContractMethods,
+    // NamespacesContractDefinition,
+    // TokenStorageProofContractDefinition,
+    // TokenStorageProofContractMethods,
+
+    ProcessEnvelopeType,
+    IProcessEnvelopeType,
+    ProcessMode,
+    IProcessMode,
+    IProcessCensusOrigin,
+    ProcessCensusOrigin,
+    ProcessContractParameters
+} from "../../src/net/contracts"
 import { Contract, ContractFactory } from "ethers"
 import { TestAccount } from "../helpers/all-services"
 import NamespaceBuilder from "./namespace"
 import { assert } from "console"
 
-import { abi as processAbi, bytecode as processByteCode } from "dvote-solidity/build/processes.json"
-import { abi as namespaceAbi } from "dvote-solidity/build/namespaces.json"
+import StorageProofsBuilder from "./storage-proofs"
+import { Web3Gateway } from "../../src/net/gateway-web3"
 
 // DEFAULT VALUES
 export const DEFAULT_PREDECESSOR_INSTANCE_ADDRESS = "0x0000000000000000000000000000000000000000"
@@ -52,6 +67,7 @@ export default class ProcessBuilder {
     costExponent: number = DEFAULT_COST_EXPONENT
     namespace: number = DEFAULT_NAMESPACE
     namespaceAddress: string
+    storageProofAddress: string
     oracleAddress: string
     paramsSignature: string = DEFAULT_PARAMS_SIGNATURE
 
@@ -64,6 +80,7 @@ export default class ProcessBuilder {
         if (this.predecessorInstanceAddress != DEFAULT_PREDECESSOR_INSTANCE_ADDRESS && processCount > 0) throw new Error("Unable to create " + processCount + " processes without a null parent, since the contract is inactive. Call .build(0) instead.")
 
         const deployAccount = this.accounts[0]
+        const gw = new Web3Gateway(deployAccount.provider)
 
         let namespaceAddress = this.namespaceAddress
         if (!namespaceAddress) { // deploy a new one
@@ -79,17 +96,20 @@ export default class ProcessBuilder {
             }
         }
         else if (this.oracleAddress) { // attach to it and add the oracle
-            const namespaceInstance = new Contract(namespaceAddress, namespaceAbi, deployAccount.wallet) as Contract & NamespaceContractMethods
+            const namespaceInstance = await gw.getNamespacesInstance(deployAccount.wallet, namespaceAddress)
             const tx = await namespaceInstance.setNamespace(this.namespace, "dummy", "dummy-2", [], [this.oracleAddress])
             await tx.wait()
 
             assert(await namespaceInstance.isOracle(this.namespace, this.oracleAddress), "Not an oracle to the attached instance")
         }
 
-        const contractFactory = new ContractFactory(processAbi, processByteCode, deployAccount.wallet)
+        let storageProofAddress = this.storageProofAddress
+        if (!storageProofAddress) {
+            const storageProofInstance = await new StorageProofsBuilder(this.accounts).build()
+            storageProofAddress = storageProofInstance.address
+        }
 
-        let contractInstance = await contractFactory.deploy(this.predecessorInstanceAddress, namespaceAddress) as Contract & ProcessContractMethods
-
+        let contractInstance = await gw.deploy<ProcessContractMethods>(ProcessesContractDefinition.abi, ProcessesContractDefinition.bytecode, { wallet: deployAccount.wallet })
         contractInstance = contractInstance.connect(this.entityAccount.wallet) as Contract & ProcessContractMethods
 
         if (typeof processCount == "undefined") processCount = 1 // one by default

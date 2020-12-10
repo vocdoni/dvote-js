@@ -1,10 +1,13 @@
-import { ensHashAddress, EnsPublicResolverContractMethods } from "../../src/net/contracts"
+import { ensHashAddress, EnsPublicResolverContractMethods, PublicResolverContractDefinition } from "../../src/net/contracts"
 // import { TextRecordKeys } from "../../src/models/entity"
 import { Contract } from "ethers"
 import { TestAccount } from "../helpers/all-services"
+import { Web3Gateway } from "../../src/net/gateway-web3"
 
 // DEFAULT VALUES
 export const DEFAULT_NAME = "Entity Name"
+
+const nullAddress = "0x0000000000000000000000000000000000000000"
 
 // BUILDER
 export default class EntityResolverBuilder {
@@ -19,12 +22,13 @@ export default class EntityResolverBuilder {
     }
 
     async build(): Promise<EnsPublicResolverContractMethods & Contract> {
-        const contractInstance = await deployEnsPublicResolverContract({ provider: this.entityAccount.provider, wallet: this.entityAccount.wallet })
+        const gw = new Web3Gateway(this.entityAccount.provider)
+        const newInstnace = await gw.deploy<EnsPublicResolverContractMethods>(PublicResolverContractDefinition.abi, PublicResolverContractDefinition.bytecode, { wallet: this.entityAccount.wallet }, [nullAddress])
 
+        const contractInstance = await gw.getEnsPublicResolverInstance(this.entityAccount.wallet, newInstnace.address)
         const entityNode = ensHashAddress(this.entityAccount.address)
 
         await contractInstance.setText(entityNode, "key-name", this.name)
-
         return contractInstance
     }
 

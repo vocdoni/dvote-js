@@ -10,7 +10,7 @@
     - Updating the process metadata to feature `mode` and `envelopeType`. Deprecate `type`.
     - Added Namespace contract method functions
     - Remove the type from the old Vote Package
-    - Adding `deployNamespaceContract` and `getNamespaceInstance`
+    - Adding `getNamespaceInstance`
 - Improving the naming consistence (Vote API and Process-related methods)
     - Turning the `entityId` into `entityAddress` (no longer a hash)
     - Renaming `create` into `newProcess`, along with new parameters
@@ -29,7 +29,6 @@
     - Renaming `setEntityMetadata` into `setMetadata`
     - Renaming `sendMessage` to `sendRequest` for consistency
     - Renaming `getEntityResolverInstance` to `getEnsPublicResolverInstance`
-    - Renaming `deployEntityResolverContract` to `deployEnsPublicResolverContract`
     - Renaming `IEntityResolverContract` to `IEnsPublicResolverContract`
 - Borrowing builders to test the contract method integration
 - Revamped tests
@@ -44,6 +43,8 @@
         - All functions are now used like `VotingApi.<func>`
     - Census API
         - All functions are now used like `CensusApi.<func>`
+- Added Namespace API
+- Added CensusEthApi
 - Gateway client refactor
     - Using HTTP-only gateway clients
     - Cleaner Gateway Pool methods
@@ -67,7 +68,6 @@
     - Web3
         - Renaming `getProcessInstance` into `getProcessesInstance`
         - Renaming `getNamespaceInstance` into `getNamespacesInstance`
-- Added Namespace API
 - Utilities
     - Encapsulate the provider helper functions into `ProviderUril`
         - `providerFromUri` and `providerFromBrowserProvider` are now `ProviderUtil.fromUri` and `ProviderUtil.fromInjectedWeb3`
@@ -84,4 +84,4 @@
         - `waitEthBlocks` and `waitUntilEthBlock` are now `EthWaiter.wait` and `EthWaiter.waitUntil`
 - Contracts
     - Removing `deployEnsPublicResolverContract`, `deployNamespaceContract`, `deployProcessContract` as the functionality is available on `dvote-solidity`
-    - Removing `getEnsPublicResolverInstance`, `getNamespaceInstance`, `getProcessInstance` on `net/contracts` as they duplicate the functionality already present in `Gateway`
+    - Removing `getEnsPublicResolverInstance`, `getNamespaceInstance`, `getProcessInstance` functions on `net/contracts` as they duplicate the functionality already present in `Gateway`

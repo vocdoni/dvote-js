@@ -28,7 +28,7 @@ async function example() {
 
     // Do your logic here
 
-    services.stop()
+    await services.stop()
 }
 
 // example()

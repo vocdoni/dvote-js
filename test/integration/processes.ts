@@ -2,7 +2,7 @@ import "mocha" // using @types/mocha
 import { expect } from "chai"
 import DevServices from "../helpers/all-services"
 import { Gateway } from "../../src/net/gateway"
-import EntityResolverBuilder from "../builders/entity-resolver"
+import EnsResolverBuilder from "../builders/ens-resolver"
 import NamespaceBuilder, { DEFAULT_NAMESPACE } from "../builders/namespace"
 import ProcessBuilder, { DEFAULT_PARAMS_SIGNATURE } from "../builders/process"
 // import { ProcessMetadata } from "../../src/models/process"
@@ -23,15 +23,13 @@ describe("Process", () => {
     after(() => server.stop())
 
     beforeEach(async () => {
-        const entityInstance = await new EntityResolverBuilder(server.accounts).build()
+        const entityInstance = await new EnsResolverBuilder(server.accounts).build()
         const namespaceInstance = await new NamespaceBuilder(server.accounts).build()
         const processInstance = await new ProcessBuilder(server.accounts).build(0)
         gateway = await server.getGateway(entityInstance.address, namespaceInstance.address, processInstance.address)
 
         entityAccount = server.web3.accounts[1].wallet
     })
-
-
 
     // it("example", async () => {
     //     const gatewayServer = new GatewayMock({

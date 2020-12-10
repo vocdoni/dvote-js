@@ -4,8 +4,8 @@ import { json } from "body-parser"
 import { Server } from "http";
 import { Wallet } from "ethers"
 import { JsonSignature } from "../../src/util/data-signing"
-import { DVoteGateway } from "../../src/net/gateway"
-import GatewayInfo from "../../src/wrappers/gateway-info"
+import { DVoteGateway } from "../../src/net/gateway-dvote"
+import { GatewayInfo } from "../../src/wrappers/gateway-info"
 import { getWallets } from "./web3-service"
 
 
@@ -57,22 +57,25 @@ export class DevGatewayService {
     }
 
     public start(): Promise<void> {
-        if (this.server) this.stop()
+        return this.stop().then(() => {
+            const app = express()
+            app.use(json())
+            app.get("/ping", (req, res) => res.send("pong"))
+            app.post("/dvote", (req, res, next) => this.handleRequest(req, res, next))
 
-        const app = express()
-        app.use(json())
-        app.get("/ping", (req, res) => res.send("pong"))
-        app.post("/dvote", (req, res, next) => this.handleRequest(req, res, next))
-
-        return new Promise((resolve) => {
-            this.server = app.listen(this.port, () => resolve())
+            return new Promise((resolve) => {
+                this.server = app.listen(this.port, () => resolve())
+            })
         })
     }
 
-    public stop() {
-        if (!this.server || !this.server.listening) return
+    public stop(): Promise<void> {
+        if (!this.server || !this.server.listening) return Promise.resolve()
 
-        this.server.close()
+        return new Promise((resolve, reject) => this.server.close(err => {
+            if (err) reject(err)
+            else resolve()
+        }))
     }
 
     private async handleRequest(req: Request, res: Response, next?: NextFunction) {
@@ -111,7 +114,7 @@ export class DevGatewayService {
 
     // GETTERS
     get uri() { return `http://localhost:${this.port}/dvote` }
-    get privateKey() { return this.wallet["_signingKey"]().privateKey }
+    get privateKey() { return this.wallet.privateKey }
     get publicKey() { return this.wallet["_signingKey"]().compressedPublicKey }
     get client() {
         return new DVoteGateway({ uri: this.uri, supportedApis: ["file", "census", "vote", "results", "info"], publicKey: this.publicKey })

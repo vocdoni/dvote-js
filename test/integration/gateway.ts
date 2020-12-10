@@ -55,7 +55,7 @@ describe("DVote gateway client", () => {
             await gwClient.init()
             await gwClient.sendRequest({ method: "addClaim", processId: "1234", nullifier: "2345" })
 
-            dvoteServer1.stop()
+            await dvoteServer1.stop()
 
             const port2 = 9000
             const dvoteServer2 = new DevGatewayService({ port: port2, responses: [defaultDummyResponse] })
@@ -69,7 +69,7 @@ describe("DVote gateway client", () => {
             expect(gwClient.uri).to.equal(gatewayInfo2.dvote)
             await gwClient.sendRequest({ method: "addClaim", processId: "5678", nullifier: "6789" })
 
-            dvoteServer2.stop()
+            await dvoteServer2.stop()
 
             expect(dvoteServer1.interactionCount).to.equal(2)
             expect(dvoteServer2.interactionCount).to.equal(2)

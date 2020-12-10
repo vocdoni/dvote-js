@@ -20,6 +20,7 @@
     "postinstall": "rm -Rf node_modules/ganache-core/node_modules/web3-providers-ws/node_modules/websocket/.git || true"
   },
   "dependencies": {
+    "@vocdoni/storage-proofs-eth": "^0.2.0",
     "axios": "^0.21.0",
     "buffer": "^6.0.3",
     "circomlib": "^0.1.2",

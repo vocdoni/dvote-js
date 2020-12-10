@@ -26,7 +26,7 @@ describe("Boot nodes", () => {
 
             expect(typeof bootnodes[networkId].dvote[0].uri).to.equal("string")
             expect(typeof bootnodes[networkId].dvote[0].sendRequest).to.equal("function")
-            expect(typeof bootnodes[networkId].dvote[0].isReady).to.equal("function")
+            expect(typeof bootnodes[networkId].dvote[0].isReady).to.equal("boolean")
             expect(typeof bootnodes[networkId].dvote[0].publicKey).to.equal("string")
 
             expect(typeof bootnodes[networkId].web3[0].attach).to.equal("function")
@@ -51,7 +51,7 @@ describe("Boot nodes", () => {
 
         expect(typeof bootnodes[NETWORK_ID].dvote[0].uri).to.equal("string")
         expect(typeof bootnodes[NETWORK_ID].dvote[0].sendRequest).to.equal("function")
-        expect(typeof bootnodes[NETWORK_ID].dvote[0].isReady).to.equal("function")
+        expect(typeof bootnodes[NETWORK_ID].dvote[0].isReady).to.equal("boolean")
         expect(typeof bootnodes[NETWORK_ID].dvote[0].publicKey).to.equal("string")
 
         expect(typeof bootnodes[NETWORK_ID].web3[0].attach).to.equal("function")
@@ -76,7 +76,7 @@ describe("Boot nodes", () => {
 
         expect(typeof bootnodes[NETWORK_ID].dvote[0].uri).to.equal("string")
         expect(typeof bootnodes[NETWORK_ID].dvote[0].sendRequest).to.equal("function")
-        expect(typeof bootnodes[NETWORK_ID].dvote[0].isReady).to.equal("function")
+        expect(typeof bootnodes[NETWORK_ID].dvote[0].isReady).to.equal("boolean")
         expect(typeof bootnodes[NETWORK_ID].dvote[0].publicKey).to.equal("string")
 
         expect(typeof bootnodes[NETWORK_ID].web3[0].attach).to.equal("function")
@@ -87,7 +87,6 @@ describe("Boot nodes", () => {
     it("getDefaultGateways (default) should provide a bootnode JSON structure", async () => {
         let NETWORK_ID: EthNetworkID = "xdai"
         let bootnodes = await GatewayBootnode.getDefaultGateways(NETWORK_ID)
-
         for (let networkId in bootnodes) {
             expect(typeof networkId).to.equal("string")
         }

@@ -1,7 +1,7 @@
 import { ProcessMetadataTemplate, ProcessMetadata } from "../../src/models/process"
 import { URI } from "../../src/models/common"
 
-//BUILDER
+// BUILDER
 export default class ProcessMetadataBuilder {
     private metadata: ProcessMetadata = null
     constructor() {

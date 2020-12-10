@@ -1,4 +1,4 @@
-import { Wallet, Signer } from "ethers"
+import { Wallet, Signer, providers, BigNumber } from "ethers"
 import { Gateway, IGateway } from "../net/gateway"
 import { IDvoteRequestParameters } from "../net/gateway-dvote"
 import { IGatewayPool, GatewayPool } from "../net/gateway-pool"
@@ -6,6 +6,8 @@ import { sha3_256 } from 'js-sha3'
 import { hashBuffer } from "../util/hashing"
 import { hexStringToBuffer } from "../util/encoding"
 import { CENSUS_MAX_BULK_SIZE } from "../constants"
+import { ERC20Prover } from "@vocdoni/storage-proofs-eth"
+import { Web3Gateway } from "net/gateway-web3"
 // import { Buffer } from "buffer/"
 // import ContentURI from "../wrappers/content-uri"
 
@@ -303,5 +305,38 @@ export class CensusApi {
     static checkProof() {
         // TODO: Not implemented
         throw new Error("TODO: Unimplemented")
+    }
+}
+
+export class CensusEthApi {
+    static generateProof(address: string, storageKeys: string[], blockNumber: number | "latest", provider: string | providers.JsonRpcProvider | providers.Web3Provider | providers.IpcProvider | providers.InfuraProvider) {
+        const prover = new ERC20Prover(provider)
+        const verify = true
+        return prover.getProof(address, storageKeys, blockNumber, verify)
+    }
+
+    static verifyProof(stateRoot: string, address: string, proof: any, provider: string | providers.JsonRpcProvider | providers.Web3Provider | providers.IpcProvider | providers.InfuraProvider) {
+        const prover = new ERC20Prover(provider)
+        return prover.verify(stateRoot, address, proof)
+    }
+
+    static getHolderBalanceSlot(tokenAddress: string, balanceMappingSlot: number) {
+        return ERC20Prover.getHolderBalanceSlot(tokenAddress, balanceMappingSlot)
+    }
+
+    static registerToken(tokenAddress: string, balanceMappingPosition: number | BigNumber, blockNumber: number | BigNumber, blockHeaderRLP: Buffer, accountStateProof: Buffer, walletOrSigner: Wallet | Signer, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string) {
+        return gw.getTokenStorageProofInstance(walletOrSigner, customContractAddress)
+            .then((contractInstance) => contractInstance.registerToken(tokenAddress, balanceMappingPosition, blockNumber, blockHeaderRLP, accountStateProof))
+            .then(tx => tx.wait())
+    }
+
+    static getBalanceMappingPosition(tokenAddress: string, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string) {
+        return gw.getTokenStorageProofInstance(null, customContractAddress)
+            .then((contractInstance) => contractInstance.getBalanceMappingPosition(tokenAddress))
+    }
+
+    static isRegistered(tokenAddress: string, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string) {
+        return gw.getTokenStorageProofInstance(null, customContractAddress)
+            .then((contractInstance) => contractInstance.isRegistered(tokenAddress))
     }
 }

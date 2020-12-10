@@ -7,7 +7,7 @@ import { EnsPublicResolverContractMethods } from "../../src/net/contracts"
 
 import { ensHashAddress } from "../../src/net/contracts"
 import { Web3Gateway } from "../../src/net/gateway-web3"
-import EntityResolverBuilder, { DEFAULT_NAME } from "../builders/entity-resolver"
+import EntityResolverBuilder, { DEFAULT_NAME } from "../builders/ens-resolver"
 
 let server: DevServices
 let accounts: TestAccount[]
@@ -40,14 +40,13 @@ describe("Entity Resolver", () => {
     describe("Resolver Smart Contract", () => {
 
         it("Should attach to a given instance", async () => {
-            contractInstance = await deployEnsPublicResolverContract({ provider: entityAccount.provider, wallet: entityAccount.wallet })
-
             expect(contractInstance.address).to.be.ok
 
             await contractInstance.setText(entityNode, "custom-key", "custom value")
             expect(await contractInstance.text(entityNode, "custom-key")).to.equal("custom value")
 
-            const newInstance = await getEnsPublicResolverInstance({ provider: entityAccount.provider }, contractInstance.address)
+            const gw = new Web3Gateway(entityAccount.provider)
+            const newInstance = await gw.getEnsPublicResolverInstance(entityAccount.wallet, contractInstance.address)
 
             expect(newInstance.address).to.equal(contractInstance.address)
             expect(await newInstance.text(entityNode, "custom-key")).to.equal("custom value")

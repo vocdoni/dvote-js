@@ -1,7 +1,6 @@
 // NOTE: This code is borrowed from dvote-solidity
 
-import { abi as namespaceAbi, bytecode as namespaceByteCode } from "dvote-solidity/build/namespaces.json"
-import { NamespaceContractMethods } from "../../src/net/contracts"
+import { NamespaceContractMethods, NamespacesContractDefinition } from "../../src/net/contracts"
 import { Contract, ContractFactory } from "ethers"
 import { TestAccount } from "../helpers/all-services"
 
@@ -30,7 +29,7 @@ export default class NamespaceBuilder {
 
     async build(): Promise<Contract & NamespaceContractMethods> {
         const deployAccount = this.accounts[0]
-        const contractFactory = new ContractFactory(namespaceAbi, namespaceByteCode, deployAccount.wallet)
+        const contractFactory = new ContractFactory(NamespacesContractDefinition.abi, NamespacesContractDefinition.bytecode, deployAccount.wallet)
         let contractInstance = await contractFactory.deploy() as Contract & NamespaceContractMethods
 
         const tx = await contractInstance.setNamespace(this.namespaceIdx, this.chainId, this.genesis, this.validators, this.oracles)

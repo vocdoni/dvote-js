@@ -42,7 +42,7 @@ export class Web3Gateway {
      * @param gatewayOrProvider Can be a string with the host's URI or an Ethers Provider
      */
     constructor(gatewayOrProvider: string | GatewayInfo | providers.BaseProvider, networkId?: EthNetworkID, options: { testing: boolean } = { testing: false }) {
-        if (!gatewayOrProvider) throw new Error("Invalid Gateway or provider")
+        if (!gatewayOrProvider) throw new Error("Invalid GatewayInfo or provider")
         else if (typeof gatewayOrProvider == "string") {
             if (!gatewayOrProvider) throw new Error("Invalid Gateway URI")
 
