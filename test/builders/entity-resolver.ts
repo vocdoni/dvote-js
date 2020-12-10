@@ -1,7 +1,5 @@
-import { ensHashAddress } from "dvote-solidity"
-import { deployEnsPublicResolverContract } from "../../src/net/contracts"
+import { ensHashAddress, EnsPublicResolverContractMethods } from "../../src/net/contracts"
 // import { TextRecordKeys } from "../../src/models/entity"
-import { EnsPublicResolverContractMethods } from "dvote-solidity"
 import { Contract } from "ethers"
 import { TestAccount } from "../helpers/all-services"
 

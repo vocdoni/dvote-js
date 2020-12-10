@@ -1,6 +1,6 @@
 // NOTE: This code is borrowed from dvote-solidity
 
-import { ProcessContractMethods, ProcessEnvelopeType, ProcessMode, IProcessEnvelopeType, IProcessMode, NamespaceContractMethods, ProcessContractParameters, IProcessCensusOrigin, ProcessCensusOrigin } from "dvote-solidity"
+import { ProcessContractMethods, ProcessEnvelopeType, ProcessMode, IProcessEnvelopeType, IProcessMode, NamespaceContractMethods, ProcessContractParameters, IProcessCensusOrigin, ProcessCensusOrigin } from "../../src/net/contracts"
 import { Contract, ContractFactory } from "ethers"
 import { TestAccount } from "../helpers/all-services"
 import NamespaceBuilder from "./namespace"

@@ -10,7 +10,9 @@ import {
 } from "../constants"
 import { TextRecordKeys } from "../models/entity"
 import { JsonBootnodeData } from "../models/gateway"
-import { DVoteGateway, Web3Gateway, IDVoteGateway, IWeb3Gateway } from "./gateway"
+// import { Gateway } from "./gateway"
+import { DVoteGateway, IDVoteGateway } from "./gateway-dvote"
+import { IWeb3Gateway, Web3Gateway } from "./gateway-web3"
 import { getDefaultProvider, providers } from "ethers"
 
 export type EthNetworkID = "mainnet" | "goerli" | "xdai" | "sokol"

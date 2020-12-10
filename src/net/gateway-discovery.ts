@@ -1,6 +1,8 @@
 import ContentURI from "../wrappers/content-uri"
 // import GatewayInfo from "../wrappers/gateway-info"
-import { IDVoteGateway, IWeb3Gateway, Gateway } from "./gateway"
+import { Gateway } from "./gateway"
+import { IDVoteGateway } from "./gateway-dvote"
+import { IWeb3Gateway } from "./gateway-web3"
 import { EthNetworkID, GatewayBootnode } from "./gateway-bootnode"
 import { parseURL } from 'universal-parse-url'
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"

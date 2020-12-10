@@ -18,14 +18,21 @@ export {
     ProcessContractMethods,
     ensHashAddress,
 
+    // Interfaces
     IMethodOverrides,
     IProcessCreateParams,
+    IProcessMode,
+    IProcessEnvelopeType,
+    IProcessCensusOrigin,
+    IProcessResults,
     IProcessStatus,
+
     // Wrappers
     ProcessMode,
     ProcessEnvelopeType,
     ProcessCensusOrigin,
     ProcessStatus,
+    ProcessResults,
     ProcessContractParameters,
 } from "dvote-solidity"
 

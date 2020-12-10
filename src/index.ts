@@ -6,11 +6,13 @@ import * as Census from "./api/census"
 import * as Namespace from "./api/namespace"
 
 // NETWORK
-import * as Gateways from "./net/gateway"
+export * from "./net/gateway"
+export * from "./net/gateway-dvote"
+export * from "./net/gateway-web3"
 export * from "./net/gateway-bootnode"
 import * as Discovery from "./net/gateway-discovery"
 import * as Pool from "./net/gateway-pool"
-import * as Contracts from "./net/contracts"
+export * from "./net/contracts"
 
 // WRAPPERS
 export { default as ContentURI } from "./wrappers/content-uri"
@@ -34,7 +36,9 @@ import * as GatewayModel from "./models/gateway"
 // EXPORTS
 export const API = { File, Entity, Vote, Census }
 export const Models = { Entity: EntityModel, Process: ProcessModel, Gateway: GatewayModel, JsonFeed: JsonFeedModel }
-export const Network = { Gateways, Contracts, Discovery, Pool }
+export const Network = { Discovery, Pool }
+
+
 
 // // SOLIDITY HELPERS
 // export { ProcessMode, ProcessEnvelopeType, ProcessStatus } from "dvote-solidity"

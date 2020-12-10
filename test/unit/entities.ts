@@ -2,7 +2,7 @@ import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
 
-import { ensHashAddress } from "dvote-solidity"
+import { ensHashAddress } from "../../src/net/contracts"
 import { checkValidEntityMetadata, EntityMetadataTemplate } from "../../src/models/entity"
 
 addCompletionHooks()

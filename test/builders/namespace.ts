@@ -1,10 +1,10 @@
 // NOTE: This code is borrowed from dvote-solidity
 
-import { NamespaceContractMethods } from "dvote-solidity"
+import { abi as namespaceAbi, bytecode as namespaceByteCode } from "dvote-solidity/build/namespaces.json"
+import { NamespaceContractMethods } from "../../src/net/contracts"
 import { Contract, ContractFactory } from "ethers"
 import { TestAccount } from "../helpers/all-services"
 
-import { abi as namespaceAbi, bytecode as namespaceByteCode } from "dvote-solidity/build/namespaces.json"
 
 export const DEFAULT_NAMESPACE = 1
 export const DEFAULT_CHAIN_ID = "namespace-1"

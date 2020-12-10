@@ -6,10 +6,10 @@
 
 import "mocha" // using @types/mocha
 import { expect } from "chai"
-import { Contract, Wallet } from "ethers"
+import { Contract } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
 import DevServices, { TestAccount } from "../helpers/all-services"
-import { NamespaceContractMethods } from "dvote-solidity"
+import { NamespaceContractMethods } from "../../src/net/contracts"
 
 import { BigNumber, ContractReceipt } from "ethers"
 import NamespaceBuilder, { DEFAULT_NAMESPACE } from "../builders/namespace"

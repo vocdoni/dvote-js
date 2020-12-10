@@ -3,10 +3,10 @@ import { expect } from "chai"
 import { Contract } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
 import DevServices, { TestAccount } from "../helpers/all-services"
-import { EnsPublicResolverContractMethods } from "dvote-solidity"
+import { EnsPublicResolverContractMethods } from "../../src/net/contracts"
 
-import { ensHashAddress } from "dvote-solidity"
-import { deployEnsPublicResolverContract, getEnsPublicResolverInstance } from "../../src/net/contracts"
+import { ensHashAddress } from "../../src/net/contracts"
+import { Web3Gateway } from "../../src/net/gateway-web3"
 import EntityResolverBuilder, { DEFAULT_NAME } from "../builders/entity-resolver"
 
 let server: DevServices
@@ -38,13 +38,6 @@ describe("Entity Resolver", () => {
     })
 
     describe("Resolver Smart Contract", () => {
-
-        it("Should deploy the smart contract", async () => {
-            contractInstance = await deployEnsPublicResolverContract({ provider: entityAccount.provider, wallet: entityAccount.wallet })
-
-            expect(contractInstance).to.be.ok
-            expect(contractInstance.address.match(/^0x[0-9a-fA-F]{40}$/)).to.be.ok
-        })
 
         it("Should attach to a given instance", async () => {
             contractInstance = await deployEnsPublicResolverContract({ provider: entityAccount.provider, wallet: entityAccount.wallet })

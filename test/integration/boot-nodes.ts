@@ -1,7 +1,8 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
 
-import { DVoteGateway, Web3Gateway } from "../../src/net/gateway"
+import { DVoteGateway } from "../../src/net/gateway-dvote"
+import { Web3Gateway } from "../../src/net/gateway-web3"
 import { EthNetworkID, GatewayBootnode } from "../../src/net/gateway-bootnode"
 
 const DEV_BOOTNODES_URL = "https://bootnodes.vocdoni.net/gateways.dev.json"

@@ -8,7 +8,7 @@ import ProcessBuilder, { DEFAULT_PARAMS_SIGNATURE } from "../builders/process"
 // import { ProcessMetadata } from "../../src/models/process"
 // import { newProcess } from "../../src/api/voting"
 import { Wallet } from "ethers"
-// import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType } from "dvote-solidity"
+// import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType } from "../../src/net/contracts"
 // import { EntityMetadataTemplate } from "../../src/models/entity"
 
 let server: DevServices

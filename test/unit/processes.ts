@@ -9,7 +9,7 @@ import { expect } from "chai"
 import { Contract, Wallet } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
 import DevServices, { TestAccount } from "../helpers/all-services"
-import { ProcessContractMethods, ProcessContractParameters, ProcessStatus } from "dvote-solidity"
+import { ProcessContractMethods, ProcessContractParameters, ProcessStatus } from "../../src/net/contracts"
 import { Buffer } from "buffer/"
 
 import { getSignedVoteNullifier, packageSignedEnvelope, IVotePackage, getProcessId, newProcess } from "../../src/api/voting"
@@ -34,8 +34,7 @@ import ProcessBuilder, {
 } from "../builders/process"
 import ProcessMetadataBuilder from "../builders/process-metadata"
 import NamespaceBuilder from "../builders/namespace"
-import { ContractReceipt } from "ethers"
-import { Gateway, Web3Gateway } from "../../src/net/gateway"
+import { Web3Gateway } from "../../src/net/gateway-web3"
 
 let server: DevServices
 let accounts: TestAccount[]

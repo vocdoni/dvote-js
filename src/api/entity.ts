@@ -5,9 +5,7 @@ import { TextRecordKeys } from "../models/entity"
 import { fetchFileString, addFile } from "./file"
 import { IGatewayPool, GatewayPool } from "../net/gateway-pool"
 import { XDAI_CHAIN_ID, XDAI_GAS_PRICE, SOKOL_CHAIN_ID, SOKOL_GAS_PRICE } from "../constants"
-import { IMethodOverrides, ensHashAddress } from "dvote-solidity"
-
-export { ensHashAddress } from "dvote-solidity"
+import { IMethodOverrides, ensHashAddress } from "../net/contracts"
 
 /**
  * Asserts that the given object is a valid Entity JSON metadtata.

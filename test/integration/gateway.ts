@@ -1,7 +1,8 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
-import { DVoteGateway, Web3Gateway, IDVoteGateway, Gateway, IGateway } from "../../src/net/gateway"
+import { DVoteGateway, IDVoteGateway } from "../../src/net/gateway-dvote"
+import { Web3Gateway } from "../../src/net/gateway-web3"
 import { addFile, fetchFileBytes } from "../../src/api/file"
 import DevServices, { TestAccount, TestResponseBody } from "../helpers/all-services"
 import { DevGatewayService } from "../helpers/dvote-service"

@@ -1,4 +1,5 @@
-import { Gateway, IDvoteRequestParameters } from "./gateway"
+import { Gateway } from "./gateway"
+import { DVoteGatewayResponseBody, IDvoteRequestParameters } from "./gateway-dvote"
 // import { dvoteApis, DVoteSupportedApi } from "../models/gateway"
 import { discoverGateways, IGatewayDiscoveryParameters } from "./gateway-discovery"
 import { Wallet, Signer, providers } from "ethers"
@@ -89,7 +90,7 @@ export class GatewayPool {
         return this.activeGateway.dvoteUri
     }
 
-    public sendRequest(requestBody: IDvoteRequestParameters, wallet: Wallet | Signer = null, params?: { timeout: number }): Promise<any> {
+    public sendRequest(requestBody: IDvoteRequestParameters, wallet: Wallet | Signer = null, params?: { timeout: number }): Promise<DVoteGatewayResponseBody> {
         if (!this.activeGateway.supportsMethod(requestBody.method)) {
             this.errorCount += 1
             return this.shift()

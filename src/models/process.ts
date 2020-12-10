@@ -10,7 +10,7 @@ import {
 } from "./common"
 import { object, array, string, number } from "yup"
 import { by639_1 } from 'iso-language-codes'
-import { IProcessCreateParams } from "dvote-solidity"
+import { IProcessCreateParams } from "../net/contracts"
 
 export { ProcessMetadataTemplate } from "./templates/process"
 
