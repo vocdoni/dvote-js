@@ -105,8 +105,8 @@ describe("Process", () => {
         //         }]
         //     }
 
-        //     server.ws.addResponse({ ok: true, content: Buffer.from(EntityMetadataTemplate).toString("base64") }) // internal getMetadata > fetchFile
-        //     server.ws.addResponse({ ok: true, ... }) // fetchFile
+        //     server.dvote.addResponse({ ok: true, content: Buffer.from(EntityMetadataTemplate).toString("base64") }) // internal getMetadata > fetchFile
+        //     server.dvote.addResponse({ ok: true, ... }) // fetchFile
         //     const processId = await newProcess(params, metadata, entityAccount, gateway)
         // })
 

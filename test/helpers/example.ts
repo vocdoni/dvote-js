@@ -5,14 +5,14 @@ async function example() {
     await services.start()
 
     // DVote client
-    const dvoteGw = services.ws.client
+    const dvoteGw = services.dvote.client
     await dvoteGw.init()
     console.log("DVote ready:", dvoteGw.isReady)
 
     // By default, a `getBlockStatus` dummy response is prepared on the GW mock,
     // so that `connect()` will succeed
 
-    services.ws.addResponse({ ok: true, message: "Hello, John" })
+    services.dvote.addResponse({ ok: true, message: "Hello, John" })
     const res = await dvoteGw.sendRequest({ method: "publish", name: "John" })
     console.log("Received", res)
 
