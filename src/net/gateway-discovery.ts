@@ -25,26 +25,27 @@ export type IGatewayDiscoveryParameters = {
     testing?: boolean
 }
 
-/**
- * (wrapper of getWorkingGateways)
- * Retrieve a **connected and live** gateway, choosing based on the info provided by the healthStatus of the Gateway
- * @returns A Gateway array
- */
-export function discoverGateways(params: IGatewayDiscoveryParameters): Promise<Gateway[]> {
-    if (!params) return Promise.reject(new Error("Invalid parameters"))
-    else if (!params.networkId)
-        return Promise.reject(new Error("Invalid parameters. No networkId provided"))
-    // if (params.bootnodesContentUri && !((typeof params.bootnodesContentUri) in [String,ContentURI]) )
-    else if (params.numberOfGateways && !Number.isInteger(params.numberOfGateways))
-        return Promise.reject(new Error("Invalid parameters"))
-    else if (params.timeout && !Number.isInteger(params.timeout))
-        return Promise.reject(new Error("Invalid parameters"))
+export class GatewayDiscovery {
+    /**
+     * Retrieve a **connected and live** gateway, choosing based on the info provided by the healthStatus of the Gateway
+     * @returns A Gateway array
+     */
+    static run(params: IGatewayDiscoveryParameters): Promise<Gateway[]> {
+        if (!params) return Promise.reject(new Error("Invalid parameters"))
+        else if (!params.networkId)
+            return Promise.reject(new Error("Invalid parameters. No networkId provided"))
+        // if (params.bootnodesContentUri && !((typeof params.bootnodesContentUri) in [String,ContentURI]) )
+        else if (params.numberOfGateways && !Number.isInteger(params.numberOfGateways))
+            return Promise.reject(new Error("Invalid parameters"))
+        else if (params.timeout && !Number.isInteger(params.timeout))
+            return Promise.reject(new Error("Invalid parameters"))
 
-    return getWorkingGateways(params)
-        .then(gateways => gateways.map(gw => new Gateway(gw.dvote, gw.web3)))
-        .catch(error => {
-            throw new Error(error && error.message || "Unable to find a working gateway")
-        })
+        return getWorkingGateways(params)
+            .then(gateways => gateways.map(gw => new Gateway(gw.dvote, gw.web3)))
+            .catch(error => {
+                throw new Error(error && error.message || "Unable to find a working gateway")
+            })
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

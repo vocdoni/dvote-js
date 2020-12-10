@@ -6,7 +6,7 @@ import EntityResolverBuilder from "../builders/entity-resolver"
 import NamespaceBuilder, { DEFAULT_NAMESPACE } from "../builders/namespace"
 import ProcessBuilder, { DEFAULT_PARAMS_SIGNATURE } from "../builders/process"
 // import { ProcessMetadata } from "../../src/models/process"
-// import { newProcess } from "../../src/api/voting"
+// import { VotingApi } from "../../src/api/voting"
 import { Wallet } from "ethers"
 // import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType } from "../../src/net/contracts"
 // import { EntityMetadataTemplate } from "../../src/models/entity"
@@ -107,7 +107,7 @@ describe("Process", () => {
         //         }]
         //     }
 
-        //     server.ws.addResponse({ ok: true, content: Buffer.from(EntityMetadataTemplate).toString("base64") }) // internal getEntityMetadata > fetchFileString
+        //     server.ws.addResponse({ ok: true, content: Buffer.from(EntityMetadataTemplate).toString("base64") }) // internal getMetadata > fetchFile
         //     server.ws.addResponse({ ok: true, ... }) // fetchFile
         //     const processId = await newProcess(params, metadata, entityAccount, gateway)
         // })

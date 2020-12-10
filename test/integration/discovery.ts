@@ -1,11 +1,6 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
-import { Network } from "../.."
 
-
-const {
-    discoverGateways
-} = Network.Discovery
 
 const DEFAULT_BOOTNODES_URL = "https://bootnodes.vocdoni.net/gateways.dev.json"
 

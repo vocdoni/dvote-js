@@ -8,11 +8,11 @@ import { GatewayPool } from "../src/net/gateway-pool"
 import { EthNetworkID } from "../src/net/gateway-bootnode"
 import { ensHashAddress } from "../src/net/contracts"
 import { EntityMetadataTemplate } from "../src/models/entity"
-import { setMetadata, getEntityMetadata } from "../src/api/entity"
-import { digestHexClaim, addCensus, addClaimBulk, publishCensus, dumpPlain, generateProof } from "../src/api/census"
+import { EntityApi } from "../src/api/entity"
+import { VotingApi } from "../src/api/voting"
+import { CensusApi } from "../src/api/census"
 import { ProcessMetadata, ProcessMetadataTemplate } from "../src/models/process"
 import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../src/net/contracts"
-import { getProcessMetadata, getProcessParameters, getBlockHeight, newProcess, getProcessList, getProcessKeys, packageSignedEnvelope, submitEnvelope, getSignedVoteNullifier, getEnvelopeStatus, getEnvelopeHeight, setStatus, getResultsDigest } from "../src/api/voting"
 import { JsonSignature } from "../src/util/data-signing"
 import { VochainWaiter, EthWaiter } from "../src/util/waiters"
 
@@ -155,11 +155,11 @@ async function setEntityMetadata() {
         }
     ]
 
-    await setMetadata(await entityWallet.getAddress(), metadata, entityWallet, pool)
+    await EntityApi.setMetadata(await entityWallet.getAddress(), metadata, entityWallet, pool)
     console.log("Metadata updated")
 
     // Read back
-    const entityMetaPost = await getEntityMetadata(await entityWallet.getAddress(), pool)
+    const entityMetaPost = await EntityApi.getMetadata(await entityWallet.getAddress(), pool)
     assert(entityMetaPost)
     assert.equal(entityMetaPost.name.default, metadata.name.default)
     assert.equal(entityMetaPost.description.default, metadata.description.default)
@@ -181,7 +181,7 @@ function createWallets(amount) {
             mnemonic: wallet.mnemonic.phrase,
             privateKey: wallet["_signingKey"]().privateKey,
             publicKey: wallet["_signingKey"]().publicKey,
-            publicKeyHash: digestHexClaim(wallet["_signingKey"]().publicKey)
+            publicKeyHash: CensusApi.digestHexClaim(wallet["_signingKey"]().publicKey)
             // address: wallet.address
         })
     }
@@ -380,19 +380,19 @@ async function generatePublicCensusFromDb(token) {
     // Adding claims
     console.log("Registering the new census to the Census Service")
 
-    const { censusId } = await addCensus(censusIdSuffix, managerPublicKeys, entityWallet, pool)
+    const { censusId } = await CensusApi.addCensus(censusIdSuffix, managerPublicKeys, entityWallet, pool)
 
     console.log("Adding", publicKeyDigests.length, "claims")
-    const result = await addClaimBulk(censusId, publicKeyDigests, true, entityWallet, pool)
+    const result = await CensusApi.addClaimBulk(censusId, publicKeyDigests, true, entityWallet, pool)
 
     if (result.invalidClaims.length > 0) throw new Error("Census Service invalid claims count is " + result.invalidClaims.length)
 
     // Publish the census
     console.log("Publishing the new census")
-    const merkleTreeUri = await publishCensus(censusId, entityWallet, pool)
+    const merkleTreeUri = await CensusApi.publishCensus(censusId, entityWallet, pool)
 
     // Check that the census is published
-    const exportedMerkleTree = await dumpPlain(censusId, entityWallet, pool)
+    const exportedMerkleTree = await CensusApi.dumpPlain(censusId, entityWallet, pool)
     if (config.stopOnError) {
         assert(Array.isArray(exportedMerkleTree))
         assert(exportedMerkleTree.length == config.numAccounts)
@@ -424,19 +424,19 @@ async function generatePublicCensusFromAccounts(accounts) {
     // Adding claims
     console.log("Registering the new census to the Census Service")
 
-    const { censusId } = await addCensus(censusIdSuffix, managerPublicKeys, entityWallet, pool)
+    const { censusId } = await CensusApi.addCensus(censusIdSuffix, managerPublicKeys, entityWallet, pool)
 
     console.log("Adding", publicKeyDigests.length, "claims")
-    const result = await addClaimBulk(censusId, publicKeyDigests, true, entityWallet, pool)
+    const result = await CensusApi.addClaimBulk(censusId, publicKeyDigests, true, entityWallet, pool)
 
     if (result.invalidClaims.length > 0) throw new Error("Census Service invalid claims count is " + result.invalidClaims.length)
 
     // Publish the census
     console.log("Publishing the new census")
-    const merkleTreeUri = await publishCensus(censusId, entityWallet, pool)
+    const merkleTreeUri = await CensusApi.publishCensus(censusId, entityWallet, pool)
 
     // Check that the census is published
-    const exportedMerkleTree = await dumpPlain(censusId, entityWallet, pool)
+    const exportedMerkleTree = await CensusApi.dumpPlain(censusId, entityWallet, pool)
     if (config.stopOnError) {
         assert(Array.isArray(exportedMerkleTree))
         assert(exportedMerkleTree.length == config.numAccounts)
@@ -484,22 +484,22 @@ async function launchNewVote(merkleRoot, merkleTreeUri) {
     }
 
     console.log("Getting the block height")
-    const currentBlock = await getBlockHeight(pool)
+    const currentBlock = await VotingApi.getBlockHeight(pool)
     const startBlock = currentBlock + 25
     processParams.startBlock = startBlock
     processParams.blockCount = 60480
     console.log("Creating the process")
-    processId = await newProcess(processParamsPre, entityWallet, pool)
+    processId = await VotingApi.newProcess(processParamsPre, entityWallet, pool)
 
     console.log("Reading the process metadata back")
-    const entityMetaPost = await getEntityMetadata(await entityWallet.getAddress(), pool)
+    const entityMetaPost = await EntityApi.getMetadata(await entityWallet.getAddress(), pool)
 
     assert(processId)
     assert(entityMetaPost)
 
     // Reading back
-    processParams = await getProcessParameters(processId, pool)
-    processMetadata = await getProcessMetadata(processId, pool)
+    processParams = await VotingApi.getProcessParameters(processId, pool)
+    processMetadata = await VotingApi.getProcessMetadata(processId, pool)
     assert.equal(processParams.entityAddress, entityAddr)
     assert.equal(processParams.startBlock, processParamsPre.startBlock, "SENT " + JSON.stringify(processParamsPre) + " GOT " + JSON.stringify(processParams))
     assert.equal(processParams.blockCount, processParamsPre.blockCount)
@@ -516,13 +516,13 @@ async function waitUntilStarted() {
 
     console.log("Checking that the Process ID is on the list")
 
-    let processList: string[] = await getProcessList(entityAddr, pool)
+    let processList: string[] = await VotingApi.getProcessList(entityAddr, pool)
     assert(processList.length > 0)
 
     let lastId = processList[processList.length - 1]
     const trimProcId = processId.replace(/^0x/, "")
     while (!processList.some(v => v == trimProcId) && processList.length > 1) {
-        processList = await getProcessList(entityAddr, pool, lastId)
+        processList = await VotingApi.getProcessList(entityAddr, pool, lastId)
         if (processList.length) {
             if (lastId == processList[processList.length - 1]) break
             lastId = processList[processList.length - 1]
@@ -534,7 +534,7 @@ async function waitUntilStarted() {
 async function launchVotes(accounts) {
     console.log("Launching votes")
 
-    const processKeys = processParams.envelopeType.hasEncryptedVotes ? await getProcessKeys(processId, pool) : null
+    const processKeys = processParams.envelopeType.hasEncryptedVotes ? await VotingApi.getProcessKeys(processId, pool) : null
 
     await Bluebird.map(accounts, async (account, idx) => {
         process.stdout.write(`Starting [${idx}] ; `)
@@ -542,9 +542,9 @@ async function launchVotes(accounts) {
         const wallet = new Wallet(account.privateKey)
 
         process.stdout.write(`Gen Proof [${idx}] ; `)
-        const merkleProof = await generateProof(processParams.censusMerkleRoot, account.publicKeyHash, true, pool)
+        const merkleProof = await CensusApi.generateProof(processParams.censusMerkleRoot, account.publicKeyHash, true, pool)
             .catch(err => {
-                console.error("\ngenerateProof ERR", account, err)
+                console.error("\nCensusApi.generateProof ERR", account, err)
                 if (config.stopOnError) throw err
                 return null
             })
@@ -554,11 +554,11 @@ async function launchVotes(accounts) {
         const choices = getChoicesForVoter(idx)
 
         const voteEnvelope = processParams.envelopeType.hasEncryptedVotes ?
-            await packageSignedEnvelope({ votes: choices, merkleProof, processId, walletOrSigner: wallet, processKeys }) :
-            await packageSignedEnvelope({ votes: choices, merkleProof, processId, walletOrSigner: wallet })
+            await VotingApi.packageSignedEnvelope({ votes: choices, merkleProof, processId, walletOrSigner: wallet, processKeys }) :
+            await VotingApi.packageSignedEnvelope({ votes: choices, merkleProof, processId, walletOrSigner: wallet })
 
         process.stdout.write(`Sending [${idx}] ; `)
-        await submitEnvelope(voteEnvelope, pool)
+        await VotingApi.submitEnvelope(voteEnvelope, pool)
             .catch(err => {
                 console.error("\nsubmitEnvelope ERR", account.publicKey, voteEnvelope, err)
                 if (config.stopOnError) throw err
@@ -568,8 +568,8 @@ async function launchVotes(accounts) {
         await new Promise(resolve => setTimeout(resolve, 11000))
 
         process.stdout.write(`Checking [${idx}] ; `)
-        const nullifier = await getSignedVoteNullifier(wallet.address, processId)
-        const { registered, date, block } = await getEnvelopeStatus(processId, nullifier, pool)
+        const nullifier = await VotingApi.getSignedVoteNullifier(wallet.address, processId)
+        const { registered, date, block } = await VotingApi.getEnvelopeStatus(processId, nullifier, pool)
             .catch(err => {
                 console.error("\ngetEnvelopeStatus ERR", account.publicKey, nullifier, err)
                 if (config.stopOnError) throw err
@@ -588,30 +588,30 @@ async function checkVoteResults() {
 
     if (config.encryptedVote) {
         console.log("Waiting a bit for the votes to be received", processId)
-        const nextBlock = 2 + await getBlockHeight(pool)
+        const nextBlock = 2 + await VotingApi.getBlockHeight(pool)
         await VochainWaiter.waitUntil(nextBlock, pool, { verbose: true })
 
         console.log("Fetching the number of votes for", processId)
-        const envelopeHeight = await getEnvelopeHeight(processId, pool)
+        const envelopeHeight = await VotingApi.getEnvelopeHeight(processId, pool)
         assert.equal(envelopeHeight, config.numAccounts)
 
-        processParams = await getProcessParameters(processId, pool)
+        processParams = await VotingApi.getProcessParameters(processId, pool)
 
         if (!processParams.status.isEnded) {
             console.log("Canceling/ending the process", processId)
-            await setStatus(processId, ProcessStatus.ENDED, entityWallet, pool)
+            await VotingApi.setStatus(processId, ProcessStatus.ENDED, entityWallet, pool)
 
             console.log("Waiting a bit for the votes to be decrypted", processId)
             await EthWaiter.wait(18, pool, { verbose: true })
         }
     }
     console.log("Waiting a bit for the results to be ready", processId)
-    const nextBlock = 3 + await getBlockHeight(pool)
+    const nextBlock = 3 + await VotingApi.getBlockHeight(pool)
     await VochainWaiter.waitUntil(nextBlock, pool, { verbose: true })
 
     console.log("Fetching the vote results for", processId)
-    const resultsDigest = await getResultsDigest(processId, pool)
-    const totalVotes = await getEnvelopeHeight(processId, pool)
+    const resultsDigest = await VotingApi.getResultsDigest(processId, pool)
+    const totalVotes = await VotingApi.getEnvelopeHeight(processId, pool)
 
     assert.equal(resultsDigest.questions.length, 1)
     assert(resultsDigest.questions[0].voteResults)

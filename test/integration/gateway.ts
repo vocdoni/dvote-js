@@ -3,12 +3,12 @@ import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
 import { DVoteGateway, IDVoteGateway } from "../../src/net/gateway-dvote"
 import { Web3Gateway } from "../../src/net/gateway-web3"
-import { addFile, fetchFileBytes } from "../../src/api/file"
+import { FileApi } from "../../src/api/file"
 import DevServices, { TestAccount, TestResponseBody } from "../helpers/all-services"
 import { DevGatewayService } from "../helpers/dvote-service"
 import { DevWeb3Service, getWallets } from "../helpers/web3-service"
 import { Buffer } from "buffer/"
-import GatewayInfo from "../../src/wrappers/gateway-info"
+import { GatewayInfo } from "../../src/wrappers/gateway-info"
 
 // let accounts: TestAccount[]
 let baseAccount: TestAccount
@@ -190,7 +190,7 @@ describe("DVote gateway client", () => {
 
             dvoteServer.addResponse({ ok: true, uri: "ipfs://1234" })
 
-            const result1 = await addFile(buffData, "my-file.txt", baseAccount.wallet, gw)
+            const result1 = await FileApi.add(buffData, "my-file.txt", baseAccount.wallet, gw)
 
             expect(dvoteServer.interactionCount).to.equal(1)
             expect(dvoteServer.interactionList[0].requested.request.method).to.equal("addFile")
@@ -216,12 +216,12 @@ describe("DVote gateway client", () => {
             const gw = new DVoteGateway(gatewayInfo)
             await gw.init()
 
-            const result1 = await addFile(buffData, "my-file.txt", baseAccount.wallet, gw)
+            const result1 = await FileApi.add(buffData, "my-file.txt", baseAccount.wallet, gw)
             expect(result1).to.equal("ipfs://2345")
 
             expect(dvoteServer.interactionCount).to.equal(1)
 
-            const result2 = await fetchFileBytes(result1, gw)
+            const result2 = await FileApi.fetchBytes(result1, gw)
             expect(result2.toString()).to.equal(buffData.toString())
 
             expect(dvoteServer.interactionCount).to.equal(2)
@@ -249,7 +249,7 @@ describe("DVote gateway client", () => {
                 await gw.init()
 
                 await new Promise(resolve => setTimeout(resolve, 10))
-                await addFile(buffData, "my-file.txt", baseAccount.wallet, gw)
+                await FileApi.add(buffData, "my-file.txt", baseAccount.wallet, gw)
                 throw new Error("Should have thrown an error but didn't")
             }
             catch (err) {

@@ -1,7 +1,7 @@
 import { Gateway } from "./gateway"
 import { DVoteGatewayResponseBody, IDvoteRequestParameters } from "./gateway-dvote"
 // import { dvoteApis, DVoteSupportedApi } from "../models/gateway"
-import { discoverGateways, IGatewayDiscoveryParameters } from "./gateway-discovery"
+import { GatewayDiscovery, IGatewayDiscoveryParameters } from "./gateway-discovery"
 import { Wallet, Signer, providers } from "ethers"
 import { IProcessContract, IEnsPublicResolverContract, INamespaceContract, ITokenStorageProofContract } from "./contracts"
 
@@ -34,7 +34,7 @@ export class GatewayPool {
 
     /** Searches for healthy gateways and initialized them for immediate usage */
     static discover(params: IGatewayDiscoveryParameters): Promise<GatewayPool> {
-        return discoverGateways(params)
+        return GatewayDiscovery.run(params)
             .then((bestNodes: Gateway[]) => {
                 const pool = new GatewayPool(bestNodes, params)
 
@@ -53,9 +53,7 @@ export class GatewayPool {
 
     /** Launches a new discovery process and selects the healthiest gateway pair */
     public refresh(): Promise<void> {
-        console.log("Refreshing Gateway Pool")
-
-        return discoverGateways(this.params)
+        return GatewayDiscovery.run(this.params)
             .then((bestNodes: Gateway[]) => {
                 this.pool = bestNodes
                 this.errorCount = 0

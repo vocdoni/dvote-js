@@ -12,7 +12,7 @@ import DevServices, { TestAccount } from "../helpers/all-services"
 import { ProcessContractMethods, ProcessContractParameters, ProcessStatus } from "../../src/net/contracts"
 import { Buffer } from "buffer/"
 
-import { getSignedVoteNullifier, packageSignedEnvelope, IVotePackage, getProcessId, newProcess } from "../../src/api/voting"
+import { VotingApi, IVotePackage } from "../../src/api/voting"
 import { Asymmetric } from "../../src/util/encryption"
 import { checkValidProcessMetadata } from "../../src/models/process"
 import ProcessBuilder, {
@@ -112,7 +112,7 @@ describe("Governance Process", () => {
 
             for (let account of accounts.filter(() => Math.random() >= 0.5)) {
                 for (let index of indexes) {
-                    let expected = getProcessId(account.address, index, DEFAULT_NAMESPACE)
+                    let expected = VotingApi.getProcessId(account.address, index, DEFAULT_NAMESPACE)
                     let received = await contractInstance.getProcessId(account.address, index, DEFAULT_NAMESPACE)
                     expect(received).to.equal(expected)
                 }
@@ -184,16 +184,16 @@ describe("Governance Process", () => {
                 expect(wallet.privateKey).to.eq("0xdc44bf8c260abe06a7265c5775ea4fb68ecd1b1940cfa76c1726141ec0da5ddc")
                 expect(wallet.address).to.eq("0xaDDAa28Fb1fe87362A6dFdC9d3EEA03d0C221d81")
 
-                let nullifier = getSignedVoteNullifier(wallet.address, processId)
+                let nullifier = VotingApi.getSignedVoteNullifier(wallet.address, processId)
                 expect(nullifier).to.eq("0xf6e3fe2d68f3ccc3af2a7835b302e42c257e2de6539c264542f11e5588e8c162")
 
-                nullifier = getSignedVoteNullifier(baseAccount.address, processId)
+                nullifier = VotingApi.getSignedVoteNullifier(baseAccount.address, processId)
                 expect(nullifier).to.eq("0x13bf966813b5299110d34b1e565d62d8c26ecb1f76f92ca8bd21fd91600360bc")
 
-                nullifier = getSignedVoteNullifier(randomAccount.address, processId)
+                nullifier = VotingApi.getSignedVoteNullifier(randomAccount.address, processId)
                 expect(nullifier).to.eq("0x25e1ec205509664e2433b9f9930c901eb1f2e31e851468a6ef7329dd9ada3bc8")
 
-                nullifier = getSignedVoteNullifier(randomAccount1.address, processId)
+                nullifier = VotingApi.getSignedVoteNullifier(randomAccount1.address, processId)
                 expect(nullifier).to.eq("0x419761e28c5103fa4ddac3d575a940c683aa647c31a8ac1073c8780f4664efcb")
             })
             it("Should package a signed envelope")
@@ -205,7 +205,7 @@ describe("Governance Process", () => {
             let processId = "0x8b35e10045faa886bd2e18636cd3cb72e80203a04e568c47205bf0313a0f60d1"
             let siblings = "0x0003000000000000000000000000000000000000000000000000000000000006f0d72fbd8b3a637488107b0d8055410180ec017a4d76dbb97bee1c3086a25e25b1a6134dbd323c420d6fc2ac3aaf8fff5f9ac5bc0be5949be64b7cfd1bcc5f1f"
 
-            const envelope1 = await packageSignedEnvelope({ votes: [1, 2, 3], merkleProof: siblings, processId, walletOrSigner: wallet })
+            const envelope1 = await VotingApi.packageSignedEnvelope({ votes: [1, 2, 3], merkleProof: siblings, processId, walletOrSigner: wallet })
             expect(envelope1.processId).to.eq(processId)
             expect(envelope1.proof).to.eq(siblings)
             const pkg1: IVotePackage = JSON.parse(Buffer.from(envelope1.votePackage, "base64").toString())
@@ -215,7 +215,7 @@ describe("Governance Process", () => {
             processId = "0x36c886bd2e18605bf03a0428be100313a0f6e568c470d135d3cb72e802045faa"
             siblings = "0x0003000000100000000002000000000300000000000400000000000050000006f0d72fbd8b3a637488107b0d8055410180ec017a4d76dbb97bee1c3086a25e25b1a6134dbd323c420d6fc2ac3aaf8fff5f9ac5bc0be5949be64b7cfd1bcc5f1f"
 
-            const envelope2 = await packageSignedEnvelope({ votes: [5, 6, 7], merkleProof: siblings, processId, walletOrSigner: wallet })
+            const envelope2 = await VotingApi.packageSignedEnvelope({ votes: [5, 6, 7], merkleProof: siblings, processId, walletOrSigner: wallet })
             expect(envelope2.processId).to.eq(processId)
             expect(envelope2.proof).to.eq(siblings)
             const pkg2: IVotePackage = JSON.parse(Buffer.from(envelope2.votePackage, "base64").toString())
@@ -249,7 +249,7 @@ describe("Governance Process", () => {
             // one key
             for (let item of processes) {
                 const processKeys = { encryptionPubKeys: [{ idx: 1, key: votePublicKey }] }
-                const envelope = await packageSignedEnvelope({ votes: item.votes, merkleProof: item.siblings, processId: item.processId, walletOrSigner: wallet, processKeys })
+                const envelope = await VotingApi.packageSignedEnvelope({ votes: item.votes, merkleProof: item.siblings, processId: item.processId, walletOrSigner: wallet, processKeys })
                 expect(envelope.processId).to.eq(item.processId)
                 expect(envelope.proof).to.eq(item.siblings)
                 expect(envelope.encryptionKeyIndexes).to.be.deep.equal([1])
@@ -304,7 +304,7 @@ describe("Governance Process", () => {
             for (let item of processes) {
                 const processKeys = { encryptionPubKeys: encryptionKeys.map((kp, idx) => ({ idx, key: kp.publicKey })) }
 
-                const envelope = await packageSignedEnvelope({
+                const envelope = await VotingApi.packageSignedEnvelope({
                     votes: item.votes,
                     merkleProof: item.siblings,
                     processId: item.processId,

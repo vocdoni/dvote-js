@@ -8,18 +8,18 @@ config({ path: __dirname + "/.env" })
 import * as fs from "fs"
 import { utils, providers, Wallet } from "ethers"
 import { WalletUtil } from "../src/util/signers"
-import { getEntityMetadata, setMetadata } from "../src/api/entity"
-import { newProcess, getProcessMetadata, estimateBlockAtDateTime, setResults, getRawResults, getResultsDigest, getBlockHeight, getEnvelopeHeight, estimateDateAtBlock, packageSignedEnvelope, submitEnvelope, getEnvelopeList, getEnvelope, setStatus, getProcessParameters } from "../src/api/voting"
+import { FileApi } from "../src/api/file"
+import { EntityApi } from "../src/api/entity"
+import { VotingApi } from "../src/api/voting"
+import { CensusApi } from "../src/api/census"
 import { ProcessContractParameters } from "../src/net/contracts"
 import { Gateway } from "../src/net/gateway"
 import { DVoteGateway } from "../src/net/gateway-dvote"
 import { Web3Gateway } from "../src/net/gateway-web3"
 import { GatewayPool } from "../src/net/gateway-pool"
-import { addCensus, addClaim, addClaimBulk, getRoot, publishCensus, dump, dumpPlain, getCensusSize, digestHexClaim, generateProof } from "../src/api/census"
 import { GatewayBootnode } from "../src/net/gateway-bootnode"
 import { EntityMetadataTemplate, EntityMetadata, TextRecordKeys } from "../src/models/entity"
 import { ProcessMetadata, ProcessMetadataTemplate } from "../src/models/process"
-import { addFile, fetchFileString } from "../src/api/file"
 import { GatewayInfo } from "../src/wrappers/gateway-info"
 import { VOCHAIN_BLOCK_TIME } from "../src/constants"
 import { JsonSignature, BytesSignature } from "../src/util/data-signing"
@@ -110,11 +110,11 @@ async function fileUpload() {
 
         const strData = fs.readFileSync(__dirname + "/mobile-org-web-action-example.html").toString()
         console.error("PUTTING STRING OF LENGTH: ", strData.length)
-        const origin = await addFile(Buffer.from(strData), "mobile-org-web-action-example.html", wallet, dvoteGw)
+        const origin = await FileApi.add(Buffer.from(strData), "mobile-org-web-action-example.html", wallet, dvoteGw)
         console.log("DATA STORED ON:", origin)
 
         console.log("\nReading back", origin)
-        const data = await fetchFileString(origin, dvoteGw)
+        const data = await FileApi.fetchString(origin, dvoteGw)
         console.log("DATA:", data)
     } catch (err) {
         console.error(err)
@@ -129,7 +129,7 @@ async function fileDownload(address) {
         await gw.init()
 
         console.log("SIGNING FROM ADDRESS", wallet.address)
-        const data = await fetchFileString(address, gw)
+        const data = await FileApi.fetchString(address, gw)
         console.log("DATA:", JSON.stringify(JSON.parse(data), null, 2))
 
     } catch (err) {
@@ -159,11 +159,11 @@ async function emptyFeedUpload() {
 
         const strData = JSON.stringify(feed)
         console.error("PUTTING STRING OF LENGTH: ", strData.length)
-        const origin = await addFile(Buffer.from(strData), "feed-template.json", wallet, gw)
+        const origin = await FileApi.add(Buffer.from(strData), "feed-template.json", wallet, gw)
         console.log("DATA STORED ON:", origin)
 
         console.log("\nReading back", origin)
-        const data = await fetchFileString(origin, gw)
+        const data = await FileApi.fetchString(origin, gw)
         console.log("DATA:", data)
 
     } catch (err) {
@@ -187,7 +187,7 @@ async function registerEntity() {
     await pool.init()
 
     const entityMetadata = Object.assign({}, EntityMetadataTemplate, { name: { default: "TEST ENTITY" } })
-    const contentUri = await setMetadata(myEntityAddress, entityMetadata, wallet, pool)
+    const contentUri = await EntityApi.setMetadata(myEntityAddress, entityMetadata, wallet, pool)
 
     // show stored values
     console.log("\nEntity registered!\n")
@@ -207,7 +207,7 @@ async function readEntity() {
     const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: "https://bootnodes.vocdoni.net/gateways.json" })
     await pool.init()
 
-    const meta = await getEntityMetadata(myEntityAddress, pool)
+    const meta = await EntityApi.getMetadata(myEntityAddress, pool)
     console.log("JSON METADATA\n", meta)
 }
 
@@ -219,9 +219,9 @@ async function updateEntityInfo() {
     await pool.init()
 
     console.log("UPDATING ENTITY NODE:", ensHashAddress(myEntityAddress))
-    const meta = await getEntityMetadata(myEntityAddress, pool)
+    const meta = await EntityApi.getMetadata(myEntityAddress, pool)
 
-    await setMetadata(myEntityAddress, meta, wallet, pool)
+    await EntityApi.setMetadata(myEntityAddress, meta, wallet, pool)
     console.log("updated")
 }
 
@@ -246,30 +246,30 @@ async function censusMethods() {
     console.log(publicKeyClaims);
 
     // Create a census if it doesn't exist
-    let result1 = await addCensus(censusName, adminPublicKeys, wallet, gw)
+    let result1 = await CensusApi.addCensus(censusName, adminPublicKeys, wallet, gw)
     console.log(`ADD CENSUS "${censusName}" RESULT:`, result1)
 
     // Add a claim to the new census
     const censusId = result1.censusId
-    let result2 = await addClaim(censusId, publicKeyClaims[0], false, wallet, gw)
+    let result2 = await CensusApi.addClaim(censusId, publicKeyClaims[0], false, wallet, gw)
     console.log("ADDED", publicKeyClaims[0], "TO", censusId)
 
     // Add claims to the new census
-    let result3 = await addClaimBulk(censusId, publicKeyClaims.slice(1), false, wallet, gw)
+    let result3 = await CensusApi.addClaimBulk(censusId, publicKeyClaims.slice(1), false, wallet, gw)
     console.log("ADDED", publicKeyClaims.slice(1), "TO", censusId)
     if (result3.invalidClaims.length > 0) console.log("INVALID CLAIMS", result3.invalidClaims)
 
-    const merkleRoot = await getRoot(censusId, gw)
+    const merkleRoot = await CensusApi.getRoot(censusId, gw)
     console.log("MERKLE ROOT", merkleRoot)  // 0x....
 
-    const merkleTree = await publishCensus(censusId, wallet, gw)
+    const merkleTree = await CensusApi.publishCensus(censusId, wallet, gw)
     console.log("PUBLISHED", censusId)
     console.log(merkleTree)   // ipfs://....
 
-    let result4 = await dump(censusId, wallet, gw)
+    let result4 = await CensusApi.dump(censusId, wallet, gw)
     console.log("DUMP", result4)
 
-    let result5 = await dumpPlain(censusId, wallet, gw)
+    let result5 = await CensusApi.dumpPlain(censusId, wallet, gw)
     console.log("DUMP PLAIN", result5)
 }
 
@@ -288,7 +288,7 @@ async function createProcessRaw() {
     console.log("Uploading metadata...")
     const processMetadata = Object.assign({}, ProcessMetadataTemplate, { startBlock: 20000 })
     const strData = JSON.stringify(processMetadata)
-    const origin = await addFile(Buffer.from(strData), "process-metadata.json", wallet, gw)
+    const origin = await FileApi.add(Buffer.from(strData), "process-metadata.json", wallet, gw)
     console.log("process-metadata.json\nDATA STORED ON:", origin)
 
     const metaCuri = new ContentHashedUri(`ipfs://${origin}`)
@@ -331,7 +331,7 @@ async function createProcessFull() {
     const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: "https://bootnodes.vocdoni.net/gateways.dev.json" })
     await pool.init()
 
-    const entityMetaPre = await getEntityMetadata(myEntityAddress, pool)
+    const entityMetaPre = await EntityApi.getMetadata(myEntityAddress, pool)
 
     const processMetadata: ProcessMetadata = {
         "version": "1.1",
@@ -387,13 +387,13 @@ async function createProcessFull() {
         maxVoteOverwrites: 1
     }
 
-    const processId = await newProcess(params, wallet, pool)
-    const entityMetaPost = await getEntityMetadata(myEntityAddress, pool)
+    const processId = await VotingApi.newProcess(params, wallet, pool)
+    const entityMetaPost = await EntityApi.getMetadata(myEntityAddress, pool)
 
     console.log("CREATED", processId)
 
     // READING BACK:
-    const metadata = await getProcessMetadata(processId, pool)
+    const metadata = await VotingApi.getProcessMetadata(processId, pool)
     console.log("PROCESS METADATA", metadata)
 }
 
@@ -423,16 +423,16 @@ async function setProcessStatus() {
         paramsSignature: "0x0"
     }
 
-    const processId = await newProcess(processParams, wallet, pool)
+    const processId = await VotingApi.newProcess(processParams, wallet, pool)
     console.log("Created", processId)
 
     // Get process parameters on the contract
-    let params = await getProcessParameters(processId, pool)
+    let params = await VotingApi.getProcessParameters(processId, pool)
     console.log("Prior status:", params.status, params.status.isEnded)
 
     // Set new status
-    await setStatus(processId, ProcessStatus.ENDED, wallet, pool)
-    params = await getProcessParameters(processId, pool)
+    await VotingApi.setStatus(processId, ProcessStatus.ENDED, wallet, pool)
+    params = await VotingApi.getProcessParameters(processId, pool)
     console.log("Current status:", params.status)
 }
 
@@ -447,8 +447,8 @@ async function showProcessResults() {
 
     const processId = "0xc69acd6435f622f5dda70e887cbebe3994b67d68686ca31872cb9b4a64525374"
 
-    console.log("getRawRawResults", await getRawResults(processId, pool))
-    console.log("getResultsDigest", JSON.stringify(await getResultsDigest(processId, pool), null, 2))
+    console.log("getRawRawResults", await VotingApi.getRawResults(processId, pool))
+    console.log("getResultsDigest", JSON.stringify(await VotingApi.getResultsDigest(processId, pool), null, 2))
 }
 
 async function cloneVotingProcess() {
@@ -459,9 +459,9 @@ async function cloneVotingProcess() {
 
     console.log("Updating...")
     const PROCESS_ID_CURRENT = "0x6529717ebd0926f9096d6ae342c67bfd7dce90ce8eb2dbf9342a51d70fffb759"
-    const currentMetadata = await getProcessMetadata(PROCESS_ID_CURRENT, pool)
-    const currentParameters = await getProcessParameters(PROCESS_ID_CURRENT, pool)
-    const currentBlock = await getBlockHeight(pool)
+    const currentMetadata = await VotingApi.getProcessMetadata(PROCESS_ID_CURRENT, pool)
+    const currentParameters = await VotingApi.getProcessParameters(PROCESS_ID_CURRENT, pool)
+    const currentBlock = await VotingApi.getBlockHeight(pool)
     const startBlock = currentBlock + 100
     const blockCount = 2000
 
@@ -486,17 +486,17 @@ async function cloneVotingProcess() {
         maxTotalCost: currentParameters.maxTotalCost,
         maxVoteOverwrites: currentParameters.maxVoteOverwrites
     }
-    const processId = await newProcess(params, wallet, pool)
+    const processId = await VotingApi.newProcess(params, wallet, pool)
 
     delete currentParameters.entityAddress // these are overwritten later on
     delete currentParameters.questionCount
 
-    const newProcessId = await newProcess(params, wallet, pool)
+    const newProcessId = await VotingApi.newProcess(params, wallet, pool)
 
     console.log("CREATED", newProcessId)
 
     // READING BACK:
-    const metadata = await getProcessMetadata(newProcessId, pool)
+    const metadata = await VotingApi.getProcessMetadata(newProcessId, pool)
     console.log("PROCESS METADATA", metadata)
 }
 
@@ -508,14 +508,14 @@ async function useVoteApi() {
     const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL })
     await pool.init()
 
-    const entityMeta = await getEntityMetadata(myEntityAddress, pool)
+    const entityMeta = await EntityApi.getMetadata(myEntityAddress, pool)
     console.log("- Active processes:", entityMeta.votingProcesses.active)
 
     const processId = entityMeta.votingProcesses.active[entityMeta.votingProcesses.active.length - 1]
     // const processId = "0xf36b729d6226b8257922a60cea6ab80e47686c3f86edbd0749b1c3291e2651ed"
     // const processId = "0x04eff29970a18ff5e46ff9b1eae5b320ee782ecadaaef341e842cb97ef310477"
-    const processParams = await getProcessParameters(processId, pool)
-    // const processMeta = await getProcessMetadata(processId, pool)
+    const processParams = await VotingApi.getProcessParameters(processId, pool)
+    // const processMeta = await VotingApi.getProcessMetadata(processId, pool)
 
     const censusMerkleRoot = processParams.censusMerkleRoot
 
@@ -524,41 +524,41 @@ async function useVoteApi() {
     console.log("BLOCKCHAIN INFO:\n")
     console.log("- Process startBlock:", processParams.startBlock)
     console.log("- Process endBlock:", processParams.startBlock + processParams.blockCount)
-    console.log("- Census size:", await getCensusSize(censusMerkleRoot, pool))
-    console.log("- Block height:", await getBlockHeight(pool))
-    console.log("- Envelope height:", await getEnvelopeHeight(processId, pool))
+    console.log("- Census size:", await CensusApi.getCensusSize(censusMerkleRoot, pool))
+    console.log("- Block height:", await VotingApi.getBlockHeight(pool))
+    console.log("- Envelope height:", await VotingApi.getEnvelopeHeight(processId, pool))
 
-    const startDate = await estimateDateAtBlock(processParams.startBlock, pool)
+    const startDate = await VotingApi.estimateDateAtBlock(processParams.startBlock, pool)
     console.log("- Start date:", startDate < new Date() ? "[already started]" : startDate)
 
-    const endDate = await estimateDateAtBlock(processParams.startBlock + processParams.blockCount, pool)
+    const endDate = await VotingApi.estimateDateAtBlock(processParams.startBlock + processParams.blockCount, pool)
     console.log("- End date:", endDate < new Date() ? "[already ended]" : endDate)
 
-    console.log("- Date at block 500:", await estimateDateAtBlock(500, pool))
-    console.log("- Block in 200 seconds:", await estimateBlockAtDateTime(new Date(Date.now() + VOCHAIN_BLOCK_TIME * 20), pool))
+    console.log("- Date at block 500:", await VotingApi.estimateDateAtBlock(500, pool))
+    console.log("- Block in 200 seconds:", await VotingApi.estimateBlockAtDateTime(new Date(Date.now() + VOCHAIN_BLOCK_TIME * 20), pool))
 
-    const publicKeyHash = digestHexClaim(wallet["_signingKey"]().publicKey)
-    const merkleProof = await generateProof(censusMerkleRoot, publicKeyHash, true, pool)
+    const publicKeyHash = CensusApi.digestHexClaim(wallet["_signingKey"]().publicKey)
+    const merkleProof = await CensusApi.generateProof(censusMerkleRoot, publicKeyHash, true, pool)
     const votes = [1, 2, 1]
 
     // Open vote version:
-    const voteEnvelope = await packageSignedEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet })
+    const voteEnvelope = await VotingApi.packageSignedEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet })
 
     // Encrypted vote version:
-    // const voteEnvelope = await packageSignedEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
+    // const voteEnvelope = await VotingApi.packageSignedEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
 
     console.log("- Poll Envelope:", voteEnvelope)
 
     console.log("- Submitting vote envelope")
-    await submitEnvelope(voteEnvelope, pool)
+    await VotingApi.submitEnvelope(voteEnvelope, pool)
 
-    const envelopeList = await getEnvelopeList(processId, 0, 100, pool)
+    const envelopeList = await VotingApi.getEnvelopeList(processId, 0, 100, pool)
     console.log("- Envelope list:", envelopeList)
     if (envelopeList.length > 0)
-        console.log("- Retrieved Vote:", await getEnvelope(processId, pool, envelopeList[envelopeList.length - 1]))
+        console.log("- Retrieved Vote:", await VotingApi.getEnvelope(processId, pool, envelopeList[envelopeList.length - 1]))
 
-    console.log("getRawRawResults", await getRawResults(processId, pool))
-    console.log("getResultsDigest", JSON.stringify(await getResultsDigest(processId, pool), null, 2))
+    console.log("getRawRawResults", await VotingApi.getRawResults(processId, pool))
+    console.log("getResultsDigest", JSON.stringify(await VotingApi.getResultsDigest(processId, pool), null, 2))
 }
 
 async function submitVoteBatch() {
@@ -566,7 +566,7 @@ async function submitVoteBatch() {
     const toAccountIdx = 9
 
     // const entityEnsNode = "0x180dd5765d9f7ecef810b565a2e5bd14a3ccd536c442b3de74867df552855e85"
-    // const entityMeta = await getEntityMetadata(myEntityAddress, gw)
+    // const entityMeta = await EntityApi.getMetadata(myEntityAddress, gw)
     // const processId = entityMeta.votingProcesses.active[entityMeta.votingProcesses.active.length - 1]
 
     const processId = "0xfbfdb1795eadc8fb8b0249e8a597ab7cc4a6a2a5f3a87db454eadda818cba014"
@@ -575,8 +575,8 @@ async function submitVoteBatch() {
     const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL })
     await pool.init()
 
-    const processParams = await getProcessParameters(processId, pool)
-    const processMeta = await getProcessMetadata(processId, pool)
+    const processParams = await VotingApi.getProcessParameters(processId, pool)
+    const processMeta = await VotingApi.getProcessMetadata(processId, pool)
     const censusMerkleRoot = processParams.censusMerkleRoot
 
     console.log("On Process", processId)
@@ -595,17 +595,17 @@ async function submitVoteBatch() {
             const wallet = Wallet.fromMnemonic(mnemonic, PATH)
             // const myEntityAddress = await wallet.getAddress()
 
-            const publicKeyHash = digestHexClaim(wallet["_signingKey"]().publicKey)
-            const merkleProof = await generateProof(censusMerkleRoot, publicKeyHash, true, pool)
+            const publicKeyHash = CensusApi.digestHexClaim(wallet["_signingKey"]().publicKey)
+            const merkleProof = await CensusApi.generateProof(censusMerkleRoot, publicKeyHash, true, pool)
             const votes = [1]
-            const voteEnvelope = await packageSignedEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet })
+            const voteEnvelope = await VotingApi.packageSignedEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet })
             // Encrypted version:
-            // const voteEnvelope = await packageSignedEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
+            // const voteEnvelope = await VotingApi.packageSignedEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
 
             console.log("- Submitting vote envelope")
-            await submitEnvelope(voteEnvelope, pool)
+            await VotingApi.submitEnvelope(voteEnvelope, pool)
 
-            console.log("- Envelope height is now:", await getEnvelopeHeight(processId, pool))
+            console.log("- Envelope height is now:", await VotingApi.getEnvelopeHeight(processId, pool))
         } catch (err) {
             console.error("- Failed:", err)
         }
@@ -691,7 +691,7 @@ async function fetchMerkleProof() {
     console.log("FETCHING CLAIM", process.env.BASE64_CLAIM_DATA)
     console.log("on Merkle Tree", process.env.CENSUS_MERKLE_ROOT)
 
-    const siblings = await generateProof(process.env.CENSUS_MERKLE_ROOT, process.env.BASE64_CLAIM_DATA, true, pool)
+    const siblings = await CensusApi.generateProof(process.env.CENSUS_MERKLE_ROOT, process.env.BASE64_CLAIM_DATA, true, pool)
     console.log("SIBLINGS:", siblings)
 }
 
@@ -713,7 +713,7 @@ async function gatewayHealthCheck() {
             console.log("Checking", gw.uri)
 
             await gw.init()
-            const origin = await addFile(response.data, "hn-rss.xml", wallet, gw)
+            const origin = await FileApi.add(response.data, "hn-rss.xml", wallet, gw)
             console.log("STORED ON", origin, "USING", gw.uri)
         }
 
@@ -747,7 +747,7 @@ async function gatewayRawRequest() {
     const origin = "ipfs://12341234..."
     console.log("\nReading from", GATEWAY_DVOTE_URI)
     console.log("\nReading", origin)
-    const data = await fetchFileString(origin, pool)
+    const data = await FileApi.fetchString(origin, pool)
     console.log("DATA:", data)
 }
 

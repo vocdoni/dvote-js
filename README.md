@@ -12,8 +12,8 @@ This library implements the protocol defined on https://vocdoni.io/docs/#/archit
 npm install dvote-js ethers
 ```
 
-- Gateways can serve as a **DVote** gateway, **Census** gateway and as a **Web3** Gateway
-  - `DVoteGateway`, `CensysGateway` and `Web3Gateway`
+- Gateways can serve as a **DVote** gateway and as a **Web3** Gateway
+  - `DVoteGateway` and `Web3Gateway`
 - **Signers** and **Wallets** are both used to sign Web3 transactions, as well as authenticating DVote requests
 
 **Ethers.js**
@@ -29,11 +29,7 @@ To upload a file and pin it on IPFS, you need the data as a `String` or o as a `
 
 ```javascript
 
-const {
-    API: { File: { addFile, fetchFileString }, Entity, Census, Vote },
-    Network: { Bootnodes, Gateways: { Gateway }, Contracts, Discovery, Pool: { GatewayPool } }
-} = require("dvote-js")
-
+const { FileApi, Gateway } = require("dvote-js")
 const { Wallet } = require("ethers")
 
 const MNEMONIC = "..."
@@ -64,15 +60,15 @@ console.log("SIGNING FROM ADDRESS", wallet.address)
 
 // Upload the file
 const strData = "HELLO WORLD"
-const origin = await addFile(Buffer.from(strData), "my-file.txt", wallet, dvoteGw)
+const origin = await FileApi.add(Buffer.from(strData), "my-file.txt", wallet, dvoteGw)
 console.log("DATA STORED ON:", origin)
 
 // Read the contents back as a string
-const data = await fetchFileString(origin, dvoteGw)
+const data = await FileApi.fetchString(origin, dvoteGw)
 console.log("DATA:", data)
 
 // Read the contents back as a byte array
-const data = await fetchFileBytes(origin, dvoteGw)
+const data = await FileApi.fetchBytes(origin, dvoteGw)
 console.log("DATA:", data)
 ```
 
@@ -81,16 +77,7 @@ console.log("DATA:", data)
 #### Register or update an Entity:
 
 ```javascript
-const {
-    API: { File, Entity, Census, Vote },
-    Network: { Bootnodes, Gateway, Contracts },
-    Wrappers: { GatewayInfo, ContentURI, ContentHashedURI },
-    // EtherUtils: { Providers, Signers }
-} = require("dvote-js")
-
-const { getEntityMetadata, setMetadata } = Entity
-const { Gateway } = Gateways
-const { getRandomGateway } = Discovery
+const { EntityApi, Gateway } = require("dvote-js")
 const { Wallet, providers } = require("ethers")
 
 const MNEMONIC = "..."
@@ -109,7 +96,7 @@ const myEntityAddress = await wallet.getAddress()
 const jsonMetadata = { ... } // EDIT THIS
 
 // Request the update
-const contentUri = await setMetadata(myEntityAddress, jsonMetadata, wallet, gw)
+const contentUri = await EntityApi.setMetadata(myEntityAddress, jsonMetadata, wallet, gw)
 
 console.log("IPFS ORIGIN:", contentUri)
 ```
@@ -117,16 +104,7 @@ console.log("IPFS ORIGIN:", contentUri)
 #### Fetch the metadata of an Entity:
 
 ```javascript
-const {
-    API: { File, Entity, Census, Vote },
-    Network: { Bootnodes, Gateway: { Gateway }, Contracts },
-    Wrappers: { GatewayInfo, ContentURI, ContentHashedURI },
-    // EtherUtils: { Providers, Signers }
-} = require("dvote-js")
-
-const { getEntityMetadata, setMetadata } = Entity
-const { addFile, fetchFileString } = File
-
+const { EntityApi, Gateway } = require("dvote-js")
 const { Wallet, providers } = require("ethers")
 
 const GATEWAY_DVOTE_URI = "wss://host:443/dvote"
@@ -143,23 +121,14 @@ const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, GATEWAY_SUPPORTED_APIS, GATEWA
 const gateway = await Gateway.fromInfo(gwInfo)
 await gateway.init()
 
-const meta = await getEntityMetadata(myEntityAddress, gateway)
+const meta = await EntityApi.getMetadata(myEntityAddress, gateway)
 console.log("JSON METADATA", meta)
 ```
 
 #### Set ENS text records
 
 ```javascript
-const {
-    API: { File, Entity, Census, Vote },
-    Network: { Bootnodes, Gateway, Contracts },
-    Wrappers: { GatewayInfo, ContentURI, ContentHashedURI },
-    // EtherUtils: { Providers, Signers }
-} = require("dvote-js")
-
-const { setMetadata } = Entity
-const { addFile, fetchFileString } = File
-
+const { Gateway, ensHashAddress } = require("dvote-js")
 const { Wallet, providers } = require("ethers")
 
 const GATEWAY_WEB3_PROVIDER_URI = "https://rpc.slock.it/goerli"
@@ -214,11 +183,12 @@ const web3Provider2 = new ethers.providers.Web3Provider(currentProvider2)
 Generating a wallet from a mnemonic (and an optional path and Web3 provider):
 
 ```typescript
+const { WalletUtil } = require("dvote-js")
 const mnemonic = "my mnemonic ..."
 const mnemonicPath = "m/44'/60'/0'/0/0"
 const provider = ethers.getDefaultProvider('goerli')
 
-const wallet = walletFromMnemonic(mnemonic, mnemonicPath, provider)
+const wallet = WalletUtil.fromMnemonic(mnemonic, mnemonicPath, provider)
 wallet.sendTransaction(...)
 // ...
 ```
@@ -226,6 +196,7 @@ wallet.sendTransaction(...)
 Generating a standalone deterministic wallet from a passphrase and a (non-private) seed. They are intended to provide wallets where the private key can be accessed.
 
 ```typescript
+const { Random, WalletUtil } = require("dvote-js")
 const provider = ethers.getDefaultProvider('goerli')
 
 // Created from scratch
@@ -236,7 +207,7 @@ const passphrase = "A very Difficult 1234 passphrase" // must be private and inc
 const hexSeed = "0xfdbc446f9f3ea732d23c7bcd10c784d041887d48ebc392c4ff51882ae569ca15"
 const passphrase = "A very Difficult 1234 passphrase" // must be private and include upper/lowercase chars and numbers
 
-const wallet = walletFromSeededPassphrase(passphrase, hexSeed, provider)
+const wallet = WalletUtil.fromSeededPassphrase(passphrase, hexSeed, provider)
 wallet.signMessage(...)
 // ...
 ```
@@ -244,6 +215,7 @@ wallet.signMessage(...)
 Accessing the browser wallet or MetaMask:
 
 ```typescript
+const { SignerUtil } = require("dvote-js")
 const signer = SignerUtil.fromInjectedWeb3()
 signer.sendTransaction(...)
 ```

@@ -2,6 +2,8 @@
 
 ## 0.17.0
 
+**Major breaking changes**
+
 - Deep refactor to support the new Process contract methods
     - Adding `setStatus`, `incrementQuestionIndex`, `setCensus` and `setResults`
     - Exposing `ProcessMode`, `ProcessEnvelopeType`, `ProcessStatus` and `ProcessContractParameters` from DVote Solidity
@@ -33,10 +35,20 @@
 - Revamped tests
 - Adding Gateway mocks and disposable Ethereum servers for testing
 - Census methods now have wallet and gateway parameters swapped, for consistency with the rest of API methods
+- API methods arranged by class
+    - File API
+        - `fetchFileString`, `fetchFileBytes` and `addFile` are now `FileApi.fetchString`, `FileApi.fetchBytes` and `FileApi.add`
+    - Entity API
+        - `getEntityMetadata` and `setMetadata` are now `EntityApi.getMetadata` and `EntityApi.setMetadata`
+    - Voting API
+        - All functions are now used like `VotingApi.<func>`
+    - Census API
+        - All functions are now used like `CensusApi.<func>`
 - Gateway client refactor
     - Using HTTP-only gateway clients
     - Cleaner Gateway Pool methods
     - Discovery
+        - Rearrange `discoverGateways` into `GatewayDiscovery.run`
         - Rename `fetchFromBootNode` into `getGatewaysFromBootnode`
         - Rename `fetchDefaultBootNode` into `getDefaultGateways`
         - Rename `getNetworkGatewaysFromBootNodeData` into `digestBootnodeNetworkData`
@@ -55,6 +67,7 @@
     - Web3
         - Renaming `getProcessInstance` into `getProcessesInstance`
         - Renaming `getNamespaceInstance` into `getNamespacesInstance`
+- Added Namespace API
 - Utilities
     - Encapsulate the provider helper functions into `ProviderUril`
         - `providerFromUri` and `providerFromBrowserProvider` are now `ProviderUtil.fromUri` and `ProviderUtil.fromInjectedWeb3`

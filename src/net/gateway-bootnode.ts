@@ -3,7 +3,7 @@
 // It provides a wrapper to use a Vocdoni Gateway, as well as a wrapper a Web3 one
 
 import { ContentUri } from "../wrappers/content-uri"
-import { fetchFileString } from "../api/file"
+import { FileApi } from "../api/file"
 import {
     vocdoniMainnetEntityId, vocdoniGoerliEntityId, vocdoniXDaiEntityId, vocdoniSokolEntityId, XDAI_ENS_REGISTRY_ADDRESS, XDAI_PROVIDER_URI, XDAI_CHAIN_ID,
     SOKOL_CHAIN_ID, SOKOL_PROVIDER_URI, SOKOL_ENS_REGISTRY_ADDRESS, XDAI_TEST_ENS_REGISTRY_ADDRESS, vocdoniXDaiTestEntityId
@@ -26,7 +26,7 @@ export class GatewayBootnode {
      */
     static getDefaultGateways(networkId: EthNetworkID, options: { testing: boolean } = { testing: false }): Promise<JsonBootnodeData> {
         return GatewayBootnode.getDefaultUri(networkId, options)
-            .then(contentUri => fetchFileString(contentUri))
+            .then(contentUri => FileApi.fetchString(contentUri))
             .then(strResult => JSON.parse(strResult))
             .catch(err => {
                 throw new Error(err && err.message || "Unable to fetch the boot node(s) data")
@@ -91,7 +91,7 @@ export class GatewayBootnode {
     static getGatewaysFromUri(bootnodesContentUri: string | ContentUri): Promise<JsonBootnodeData> {
         if (!bootnodesContentUri) return Promise.reject(new Error("Invalid bootNodeUri"))
 
-        return fetchFileString(bootnodesContentUri)
+        return FileApi.fetchString(bootnodesContentUri)
             .then(strResult => JSON.parse(strResult))
             .catch(err => {
                 throw new Error(err && err.message || "Unable to fetch the boot node(s) data")
