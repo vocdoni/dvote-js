@@ -5,7 +5,7 @@
 import { parseURL } from 'universal-parse-url'
 import { Contract, ContractFactory, providers, Wallet, Signer, ContractInterface, BigNumber } from "ethers"
 import { ProviderUtil } from "../util/providers"
-import GatewayInfo from "../wrappers/gateway-info"
+import { GatewayInfo } from "../wrappers/gateway-info"
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
 import { EthNetworkID } from "./gateway-bootnode"
 import { IProcessContract, IEnsPublicResolverContract, INamespaceContract, ITokenStorageProofContract } from "../net/contracts"

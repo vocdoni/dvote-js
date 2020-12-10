@@ -3,17 +3,14 @@
 // It provides a wrapper to use a Vocdoni Gateway, as well as a wrapper a Web3 one
 
 import { Contract, providers, utils, Wallet, Signer } from "ethers"
-import GatewayInfo from "../wrappers/gateway-info"
+import { GatewayInfo } from "../wrappers/gateway-info"
 import { DVoteSupportedApi, DVoteGatewayMethod } from "../models/gateway"
 import { GatewayBootnode, EthNetworkID } from "./gateway-bootnode"
-import ContentURI from "../wrappers/content-uri"
+import { ContentUri } from "../wrappers/content-uri"
 import { IProcessContract, IEnsPublicResolverContract, INamespaceContract, ITokenStorageProofContract } from "../net/contracts"
 import { DVoteGateway, IDVoteGateway, IDvoteRequestParameters } from "./gateway-dvote"
 import { IWeb3Gateway, Web3Gateway } from "./gateway-web3"
 
-///////////////////////////////////////////////////////////////////////////////
-// DVOTE GATEWAY
-///////////////////////////////////////////////////////////////////////////////
 
 // Export the class typings as an interface
 export type IGateway = InstanceType<typeof Gateway>
@@ -84,7 +81,7 @@ export class Gateway {
      * @param bootnodesContentUri The uri from which contains the available gateways
      * @param requiredApis A list of the required APIs
      */
-    static randomfromUri(networkId: EthNetworkID, bootnodesContentUri: string | ContentURI, requiredApis: DVoteSupportedApi[] = [], options: { testing: boolean } = { testing: false }): Promise<Gateway> {
+    static randomfromUri(networkId: EthNetworkID, bootnodesContentUri: string | ContentUri, requiredApis: DVoteSupportedApi[] = [], options: { testing: boolean } = { testing: false }): Promise<Gateway> {
         return GatewayBootnode.getGatewaysFromUri(bootnodesContentUri)
             .then(async bootNodeData => {
                 const gateways = GatewayBootnode.digestNetwork(bootNodeData, networkId, options)

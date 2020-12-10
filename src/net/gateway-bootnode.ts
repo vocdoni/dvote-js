@@ -2,7 +2,7 @@
 // This component is meant to be a simple communication wrapper.
 // It provides a wrapper to use a Vocdoni Gateway, as well as a wrapper a Web3 one
 
-import ContentURI from "../wrappers/content-uri"
+import { ContentUri } from "../wrappers/content-uri"
 import { fetchFileString } from "../api/file"
 import {
     vocdoniMainnetEntityId, vocdoniGoerliEntityId, vocdoniXDaiEntityId, vocdoniSokolEntityId, XDAI_ENS_REGISTRY_ADDRESS, XDAI_PROVIDER_URI, XDAI_CHAIN_ID,
@@ -38,7 +38,7 @@ export class GatewayBootnode {
      * @param networkId Either "mainnet" or "goerli" (test)
      * @returns A ContentURI object
      */
-    static getDefaultUri(networkId: EthNetworkID, options: { testing: boolean } = { testing: false }): Promise<ContentURI> {
+    static getDefaultUri(networkId: EthNetworkID, options: { testing: boolean } = { testing: false }): Promise<ContentUri> {
         let provider: providers.BaseProvider
 
         switch (networkId) {
@@ -79,7 +79,7 @@ export class GatewayBootnode {
             return instance.text(entityId, TextRecordKeys.VOCDONI_BOOT_NODES)
         }).then(uri => {
             if (!uri) throw new Error("The boot nodes Content URI is not defined on " + networkId)
-            else return new ContentURI(uri)
+            else return new ContentUri(uri)
         })
     }
 
@@ -88,7 +88,7 @@ export class GatewayBootnode {
      * @param bootnodesContentUri The Content URI from which the list of gateways will be extracted
      * @returns A JsonBootnodeData object that represents the ata derrived from a Bootnode Content URI.
      */
-    static getGatewaysFromUri(bootnodesContentUri: string | ContentURI): Promise<JsonBootnodeData> {
+    static getGatewaysFromUri(bootnodesContentUri: string | ContentUri): Promise<JsonBootnodeData> {
         if (!bootnodesContentUri) return Promise.reject(new Error("Invalid bootNodeUri"))
 
         return fetchFileString(bootnodesContentUri)

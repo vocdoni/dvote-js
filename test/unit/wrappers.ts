@@ -3,9 +3,9 @@ import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
 const { Buffer } = require("buffer/")
 
-import ContentUri from "../../src/wrappers/content-uri"
-import ContentHashedUri from "../../src/wrappers/content-hashed-uri"
-import GatewayInfo from "../../src/wrappers/gateway-info"
+import { ContentUri } from "../../src/wrappers/content-uri"
+import { ContentHashedUri } from "../../src/wrappers/content-hashed-uri"
+import { GatewayInfo } from "../../src/wrappers/gateway-info"
 
 addCompletionHooks()
 

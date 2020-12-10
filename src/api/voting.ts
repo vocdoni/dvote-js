@@ -706,7 +706,7 @@ export async function getResultsDigest(processId: string, gateway: IGateway | IG
  * @param voteEnvelope
  * @param gateway
  */
-export async function submitEnvelope(voteEnvelope: IAnonymousVoteEnvelope | ISignedVoteEnvelope, gateway: IGateway | GatewayPool): Promise<void> {
+export async function submitEnvelope(voteEnvelope: IAnonymousVoteEnvelope | ISignedVoteEnvelope, gateway: IGateway | GatewayPool) {
     if (!voteEnvelope) return Promise.reject(new Error("Invalid parameters"))
     else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 

@@ -15,9 +15,9 @@ import * as Pool from "./net/gateway-pool"
 export * from "./net/contracts"
 
 // WRAPPERS
-export { default as ContentURI } from "./wrappers/content-uri"
-export { default as ContentHashedURI } from "./wrappers/content-hashed-uri"
-export { default as GatewayInfo } from "./wrappers/gateway-info"
+export * from "./wrappers/content-uri"
+export * from "./wrappers/content-hashed-uri"
+export * from "./wrappers/gateway-info"
 
 // UTIL
 export * from "./util/providers"
@@ -27,15 +27,14 @@ export * from "./util/data-signing"
 export * from "./util/waiters"
 
 // MODELS
-import * as EntityModel from "./models/entity"
-import * as ProcessModel from "./models/process"
-import * as JsonFeedModel from "./models/json-feed"
-import * as GatewayModel from "./models/gateway"
+export * from "./models/entity"
+export * from "./models/process"
+export * from "./models/json-feed"
+export * from "./models/gateway"
 
 
 // EXPORTS
 export const API = { File, Entity, Vote, Census }
-export const Models = { Entity: EntityModel, Process: ProcessModel, Gateway: GatewayModel, JsonFeed: JsonFeedModel }
 export const Network = { Discovery, Pool }
 
 

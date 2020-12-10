@@ -1,5 +1,6 @@
 import { Wallet, Signer } from "ethers"
-import { Gateway, IGateway, IDvoteRequestParameters } from "../net/gateway"
+import { Gateway, IGateway } from "../net/gateway"
+import { IDvoteRequestParameters } from "../net/gateway-dvote"
 import { IGatewayPool, GatewayPool } from "../net/gateway-pool"
 import { sha3_256 } from 'js-sha3'
 // import ContentURI from "../wrappers/content-uri"

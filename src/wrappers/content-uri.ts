@@ -1,4 +1,4 @@
-export default class ContentURI {
+export class ContentUri {
     protected _contentUri: string[];
 
     /** Parses the given string into a Content URI */

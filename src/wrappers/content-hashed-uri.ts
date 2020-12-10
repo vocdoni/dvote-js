@@ -1,8 +1,8 @@
-import ContentURI from "./content-uri"
+import { ContentUri } from "./content-uri"
 import { sha3_256 } from 'js-sha3'
 import { Buffer } from 'buffer/'
 
-export default class ContentHashedURI extends ContentURI {
+export class ContentHashedUri extends ContentUri {
     protected _hash: string
 
     /**
@@ -33,7 +33,7 @@ export default class ContentHashedURI extends ContentURI {
     public get hash(): string { return this._hash || null }
 
     public setHashFrom(data: string | Uint8Array | Buffer | number[]) {
-        this._hash = ContentHashedURI.hashFrom(data)
+        this._hash = ContentHashedUri.hashFrom(data)
     }
 
     /** Computes the SHA3 256 hash of the content provided */

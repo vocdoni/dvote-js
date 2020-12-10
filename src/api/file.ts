@@ -1,6 +1,7 @@
-import ContentURI from "../wrappers/content-uri"
-import ContentHashedURI from "../wrappers/content-hashed-uri"
-import { Gateway, IGateway, DVoteGateway, IDVoteGateway, IDvoteRequestParameters } from "../net/gateway"
+import { ContentUri } from "../wrappers/content-uri"
+import { ContentHashedUri } from "../wrappers/content-hashed-uri"
+import { Gateway, IGateway } from "../net/gateway"
+import { DVoteGateway, IDVoteGateway, IDvoteRequestParameters } from "../net/gateway-dvote"
 import { IGatewayPool, GatewayPool } from "../net/gateway-pool"
 import { fetchIpfsHash } from "../net/ipfs"
 import { Buffer } from 'buffer/'
@@ -15,11 +16,11 @@ import { Wallet, Signer } from "ethers"
  * @param contentUri
  * @param gateway (optional) A Vocdoni Gateway to use
  */
-export function fetchFileString(contentUri: ContentURI | ContentHashedURI | string, gateway: IDVoteGateway | IGateway | IGatewayPool = null): Promise<string> {
+export function fetchFileString(contentUri: ContentUri | ContentHashedUri | string, gateway: IDVoteGateway | IGateway | IGatewayPool = null): Promise<string> {
     if (gateway && !(gateway instanceof DVoteGateway || gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
-    let cUri: ContentURI | ContentHashedURI
-    if (typeof contentUri == "string") cUri = new ContentURI(contentUri)
+    let cUri: ContentUri | ContentHashedUri
+    if (typeof contentUri == "string") cUri = new ContentUri(contentUri)
     else cUri = contentUri
 
     return fetchFileBytes(cUri, gateway).then((bytes: Buffer) => {
@@ -35,13 +36,13 @@ export function fetchFileString(contentUri: ContentURI | ContentHashedURI | stri
  * @param contentUri
  * @param gateway (optional) A Vocdoni Gateway to use
  */
-export async function fetchFileBytes(contentUri: ContentURI | ContentHashedURI | string, gateway: IDVoteGateway | IGateway | IGatewayPool = null): Promise<Buffer> {
+export async function fetchFileBytes(contentUri: ContentUri | ContentHashedUri | string, gateway: IDVoteGateway | IGateway | IGatewayPool = null): Promise<Buffer> {
     if (!contentUri) throw new Error("Invalid contentUri")
     else if (gateway && !(gateway instanceof DVoteGateway || gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
-    let cUri: ContentHashedURI
-    if (typeof contentUri == "string") cUri = new ContentHashedURI(contentUri)
-    else cUri = new ContentHashedURI(contentUri.toString())
+    let cUri: ContentHashedUri
+    if (typeof contentUri == "string") cUri = new ContentHashedUri(contentUri)
+    else cUri = new ContentHashedUri(contentUri.toString())
 
     // Attempt 1: fetch all from the given gateway
     // if ((gateway instanceof DVoteGateway) || (gateway instanceof Gateway) || (gateway instanceof GatewayPool)) {

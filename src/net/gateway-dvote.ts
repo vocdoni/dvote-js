@@ -1,7 +1,7 @@
 import { parseURL } from 'universal-parse-url'
 import { Buffer } from 'buffer/'
 import { Wallet, Signer } from "ethers"
-import GatewayInfo from "../wrappers/gateway-info"
+import { GatewayInfo } from "../wrappers/gateway-info"
 import { DVoteSupportedApi, DVoteGatewayMethod, dvoteGatewayApiMethods, dvoteApis } from "../models/gateway"
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
 import { JsonSignature, BytesSignature } from "../util/data-signing"

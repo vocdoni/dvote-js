@@ -20,13 +20,13 @@ import { GatewayBootnode } from "../src/net/gateway-bootnode"
 import { EntityMetadataTemplate, EntityMetadata, TextRecordKeys } from "../src/models/entity"
 import { ProcessMetadata, ProcessMetadataTemplate } from "../src/models/process"
 import { addFile, fetchFileString } from "../src/api/file"
-import GatewayInfo from "../src/wrappers/gateway-info"
+import { GatewayInfo } from "../src/wrappers/gateway-info"
 import { VOCHAIN_BLOCK_TIME } from "../src/constants"
 import { JsonSignature, BytesSignature } from "../src/util/data-signing"
 import { DVoteGatewayMethod } from "../src/models/gateway"
 import { IGatewayDiscoveryParameters } from "../src/net/gateway-discovery"
 import { ProcessEnvelopeType, ProcessMode, ProcessStatus, ProcessCensusOrigin, ensHashAddress } from "../src/net/contracts"
-import ContentHashedURI from "../src/wrappers/content-hashed-uri"
+import { ContentHashedUri } from "../src/wrappers/content-hashed-uri"
 
 const { Buffer } = require("buffer/")
 
@@ -291,10 +291,10 @@ async function createProcessRaw() {
     const origin = await addFile(Buffer.from(strData), "process-metadata.json", wallet, gw)
     console.log("process-metadata.json\nDATA STORED ON:", origin)
 
-    const metaCuri = new ContentHashedURI(`ipfs://${origin}`)
+    const metaCuri = new ContentHashedUri(`ipfs://${origin}`)
     metaCuri.setHashFrom(strData)
 
-    const censusCuri = new ContentHashedURI("http://localhost/")
+    const censusCuri = new ContentHashedUri("http://localhost/")
     censusCuri.setHashFrom("")
 
     console.log("Creating process with parameters:", metaCuri.toString(), "0x0", censusCuri.toString())

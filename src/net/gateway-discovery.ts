@@ -1,4 +1,4 @@
-import ContentURI from "../wrappers/content-uri"
+import { ContentUri } from "../wrappers/content-uri"
 // import GatewayInfo from "../wrappers/gateway-info"
 import { Gateway } from "./gateway"
 import { IDVoteGateway } from "./gateway-dvote"
@@ -19,7 +19,7 @@ const MIN_ROUND_SUCCESS_COUNT = 2
 
 export type IGatewayDiscoveryParameters = {
     networkId: EthNetworkID,
-    bootnodesContentUri?: string | ContentURI
+    bootnodesContentUri?: string | ContentUri
     numberOfGateways?: number
     timeout?: number
     testing?: boolean
