@@ -119,6 +119,8 @@ export class GatewayBootnode {
      * @returns An object with a list of IDVoteGateway(s) and IWeb3Gateway(s)
      */
     static digestNetwork(bootnodeData: JsonBootnodeData, networkId: string, options: { testing: boolean } = { testing: false }): { dvote: IDVoteGateway[], web3: IWeb3Gateway[] } {
+        if (!bootnodeData || typeof bootnodeData[networkId] != "object") return { dvote: [], web3: [] }
+
         return {
             dvote: (bootnodeData[networkId].dvote || []).map(item => {
                 return new DVoteGateway({ uri: item.uri, supportedApis: item.apis, publicKey: item.pubKey })

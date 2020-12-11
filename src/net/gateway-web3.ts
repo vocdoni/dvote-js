@@ -78,7 +78,7 @@ export class Web3Gateway {
 
         const [addr3, addr4] = await Promise.all([
             processInstance.namespaceAddress(),
-            processInstance.tokenStorageProof()
+            processInstance.tokenStorageProofAddress()
         ])
 
         if (!addr3) throw new Error("The process contract didn't return a namespace address")
@@ -212,7 +212,7 @@ export class Web3Gateway {
 
         if (walletOrSigner) {
             return this.attach<EnsPublicResolverContractMethods>(contractAddress, contractAbi)
-                .connect(walletOrSigner) as IEnsPublicResolverContract
+                .connect(walletOrSigner.connect(this.provider)) as IEnsPublicResolverContract
         }
         return this.attach<EnsPublicResolverContractMethods>(contractAddress, contractAbi)
     }
@@ -233,7 +233,7 @@ export class Web3Gateway {
 
         if (walletOrSigner) {
             return this.attach<ProcessContractMethods>(contractAddress, contractAbi)
-                .connect(walletOrSigner) as IProcessContract
+                .connect(walletOrSigner.connect(this.provider)) as IProcessContract
         }
         return this.attach<ProcessContractMethods>(contractAddress, contractAbi)
     }
@@ -254,7 +254,7 @@ export class Web3Gateway {
 
         if (walletOrSigner) {
             return this.attach<NamespaceContractMethods>(contractAddress, contractAbi)
-                .connect(walletOrSigner) as INamespaceContract
+                .connect(walletOrSigner.connect(this.provider)) as INamespaceContract
         }
         return this.attach<NamespaceContractMethods>(contractAddress, contractAbi)
     }
@@ -275,7 +275,7 @@ export class Web3Gateway {
 
         if (walletOrSigner) {
             return this.attach<TokenStorageProofContractMethods>(contractAddress, contractAbi)
-                .connect(walletOrSigner) as ITokenStorageProofContract
+                .connect(walletOrSigner.connect(this.provider)) as ITokenStorageProofContract
         }
         return this.attach<TokenStorageProofContractMethods>(contractAddress, contractAbi)
     }

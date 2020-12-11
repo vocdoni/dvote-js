@@ -73,16 +73,8 @@ async function attachToVotingProcess() {
     console.log("Attaching to contract at from")
     const processInstance = await gw.getProcessesInstance(wallet)
 
-    console.log("Reading 'genesis'")
-    let val = await processInstance.getGenesis()
-    console.log("Value stored on the blockchain:", val)
-
-    console.log("Setting genesis")
-    const tx = await processInstance.setGenesis("ipfs://ipfs-hash-2-here!sha3-hash-here")
-    await tx.wait()
-
-    console.log("Reading 'genesis'")
-    val = await processInstance.getGenesis()
+    console.log("Reading the namespace contract address")
+    let val = await processInstance.namespaceAddress()
     console.log("Value stored on the blockchain:", val)
 }
 
@@ -121,15 +113,13 @@ async function fileUpload() {
     }
 }
 
-async function fileDownload(address) {
+async function fileDownload(hash) {
     try {
-        const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
         // const gw = await Gateway.randomFromDefault(NETWORK_ID)
         const gw = await Gateway.randomfromUri(NETWORK_ID, BOOTNODES_URL_RO)
         await gw.init()
 
-        console.log("SIGNING FROM ADDRESS", wallet.address)
-        const data = await FileApi.fetchString(address, gw)
+        const data = await FileApi.fetchString(hash, gw)
         console.log("DATA:", JSON.stringify(JSON.parse(data), null, 2))
 
     } catch (err) {

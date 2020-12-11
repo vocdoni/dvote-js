@@ -40,43 +40,30 @@ export class Gateway {
     }
 
     /**
-     * Returns a new random *connected*(Dvote-wise) Gateway that is
-     * 1. Attached to the required network
-     * 2. Servers the required APIs
+     * Returns a new random Gateway that is attached to the required network
      * @param networkId Either "mainnet" or "goerli" (test)
      * @param requiredApis A list of the required APIs
      */
     static randomFromDefault(networkId: EthNetworkID, requiredApis: DVoteSupportedApi[] = [], options: { testing: boolean } = { testing: false }): Promise<Gateway> {
         return GatewayBootnode.getDefaultGateways(networkId)
             .then(async bootNodeData => {
+                if (!bootNodeData[networkId]) throw new Error("The bootnode doesn't define any gateway for " + networkId)
+
                 const gateways = GatewayBootnode.digestNetwork(bootNodeData, networkId, options)
-                let web3: Web3Gateway
-                for (let i = 0; i < gateways.web3.length; i++) {
-                    let w3 = gateways.web3[i]
-                    const isUp = await w3.isUp().then(() => true).catch(() => false)
-                    if (!isUp) continue
-                    web3 = w3
-                    break
-                }
+
+                const [web3, dvote] = await Promise.all([
+                    Promise.race(gateways.web3.map(w3 => w3.isUp().then(() => w3))),
+                    Promise.race(gateways.dvote.map(dv => dv.isUp().then(() => dv)))
+                ])
                 if (!web3) throw new Error("Could not find an active Web3 Gateway")
+                else if (!dvote) throw new Error("Could not find an active DVote Gateway")
 
-                let gw: Gateway = null
-                let connected = false
-                do {
-                    gw = new Gateway(gateways.dvote.pop(), web3)
-                    connected = await gw.init(requiredApis).catch(() => (false))
-                } while (!connected && gateways.dvote.length)
-
-                if (connected) return gw
-                throw new Error('Could not find an active DVote gateway')
+                return new Gateway(dvote, web3)
             })
     }
 
     /**
-     * Returns a new random *connected*(Dvote-wise) Gateway that is
-     * 1. Attached to the required network
-     * 2. Included in the provided URI of bootnodes
-     * 2. Servers the required APIs
+     * Returns a new random Gateway that is attached to the required network
      * @param networkId Either "mainnet" or "goerli" (test)
      * @param bootnodesContentUri The uri from which contains the available gateways
      * @param requiredApis A list of the required APIs
@@ -84,26 +71,18 @@ export class Gateway {
     static randomfromUri(networkId: EthNetworkID, bootnodesContentUri: string | ContentUri, requiredApis: DVoteSupportedApi[] = [], options: { testing: boolean } = { testing: false }): Promise<Gateway> {
         return GatewayBootnode.getGatewaysFromUri(bootnodesContentUri)
             .then(async bootNodeData => {
+                if (!bootNodeData[networkId]) throw new Error("The bootnode doesn't define any gateway for " + networkId)
+
                 const gateways = GatewayBootnode.digestNetwork(bootNodeData, networkId, options)
-                let web3: Web3Gateway
-                for (let i = 0; i < gateways.web3.length; i++) {
-                    let w3 = gateways.web3[i]
-                    const isUp = await w3.isUp().then(() => true).catch(() => false)
-                    if (!isUp) continue
-                    web3 = w3
-                    break
-                }
+
+                const [web3, dvote] = await Promise.all([
+                    Promise.race(gateways.web3.map(w3 => w3.isUp().then(() => w3))),
+                    Promise.race(gateways.dvote.map(dv => dv.isUp().then(() => dv)))
+                ])
                 if (!web3) throw new Error("Could not find an active Web3 Gateway")
+                else if (!dvote) throw new Error("Could not find an active DVote Gateway")
 
-                let gw: Gateway = null
-                let connected = false
-                do {
-                    gw = new Gateway(gateways.dvote.pop(), web3)
-                    connected = await gw.init(requiredApis).catch(() => (false))
-                } while (!connected && gateways.dvote.length)
-
-                if (connected) return gw
-                throw new Error('Could not find an active DVote gateway')
+                return new Gateway(dvote, web3)
             })
     }
 
@@ -130,31 +109,18 @@ export class Gateway {
         }
         const gateway = new Gateway(dvoteGateway, web3Gateway)
         return gateway.init()
-            .then(connected => {
-                if (connected) return gateway
-                throw new Error("Could not connect to the chosen gateway")
-            }).catch(error => {
+            .then(() => gateway)
+            .catch(error => {
                 throw new Error("Could not connect to the chosen gateway: " + error)
             })
     }
 
     /**
-     * Initializes and checks the connection of the DVote and Web3 nodes. Returns true if both are OK.
+     * Initializes and checks the connection of the DVote node.
      * @param requiredApis Expected DVote APIs
      */
-    public init(requiredApis: DVoteSupportedApi[] = []): Promise<boolean> {
-        return Promise.all([
-            this.web3.initEns(),
-            this.dvote.init()
-        ]).then(() => {
-            if (!this.dvote.supportedApis) return false
-            else if (!requiredApis.length) return true
-            else if (requiredApis.length && requiredApis.every(api => this.dvote.supportedApis.includes(api)))
-                return true
-            return false
-        }).catch(error => {
-            throw new Error(error)
-        })
+    public init(requiredApis: DVoteSupportedApi[] = []): Promise<void> {
+        return this.dvote.init(requiredApis)
     }
 
     public get isReady(): boolean {

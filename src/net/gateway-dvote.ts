@@ -85,8 +85,14 @@ export class DVoteGateway {
     }
 
     /** Checks the gateway status and updates the currently available API's. Same as calling `isUp()` */
-    public init(): Promise<any> {
-        return this.isUp().then(() => { })
+    public init(requiredApis: DVoteSupportedApi[] = []): Promise<void> {
+        return this.isUp().then(() => {
+            if (!this.supportedApis) return
+            else if (!requiredApis.length) return
+            const missingApi = requiredApis.find(api => !this.supportedApis.includes(api))
+            
+            if (missingApi) throw new Error("A required API is not available: " + missingApi)
+        })
     }
 
     /** Check whether the client is connected to a Gateway */
@@ -232,7 +238,7 @@ export class DVoteGateway {
                     if (isUp !== true) throw new Error("No ping reply")
                     return this.updateGatewayStatus(timeout)
                 }),
-            timeout || 2 * 1000,
+            timeout || 4 * 1000,
             "The DVote Gateway seems to be down")
     }
 
@@ -283,8 +289,7 @@ export class DVoteGateway {
         const uri = parseURL(this._uri)
         const pingUrl = `${uri.protocol}//${uri.host}/ping`
 
-        return promiseWithTimeout(axios.get(pingUrl), 2 * 1000)
-            .catch(err => null)
+        return promiseWithTimeout(axios.get(pingUrl), 4 * 1000)
             .then((response?: AxiosResponse<any>) => (
                 response != null && response.status === 200 && response.data === "pong"
             ))

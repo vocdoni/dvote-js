@@ -8,8 +8,11 @@
             "type": "node",
             "request": "launch",
             "name": "Run Example",
-            "program": "${workspaceFolder}/example/index",
-            "cwd": "${workspaceFolder}/example"
+            "runtimeArgs": ["--nolazy", "-r", "ts-node/register/transpile-only"],
+            "program": "${workspaceFolder}/example/index.ts",
+            "cwd": "${workspaceFolder}/example",
+            "internalConsoleOptions": "openOnSessionStart",
+            "skipFiles": ["<node_internals>/**", "node_modules/**"]
         }
     ]
 }

@@ -22,7 +22,7 @@ export const XDAI_TEST_ENS_REGISTRY_ADDRESS = "0x9e638E90c8CdFaC1297EF261859E25c
 export const SOKOL_CHAIN_ID = 77
 export const SOKOL_PROVIDER_URI = "https://sokol.poa.network"
 export const SOKOL_GAS_PRICE = utils.parseUnits("1", "gwei")
-export const SOKOL_ENS_REGISTRY_ADDRESS = "0x43541c49308bF2956d3893836F5AF866fd78A295"
+export const SOKOL_ENS_REGISTRY_ADDRESS = "0xDb6C74071116D17a47D9c191cbE6d640111Ee5C2"
 
 // export const SIGNATURE_TIMESTAMP_TOLERANCE = 60 * 8 // +/- 8 minutes
 export const VOCHAIN_BLOCK_TIME = 12 // seconds
