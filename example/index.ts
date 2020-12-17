@@ -42,8 +42,9 @@ const WALLET_PASSPHRASE = process.env.WALLET_PASSPHRASE
 const BOOTNODES_URL_RO = "https://bootnodes.vocdoni.net/gateways.json"
 const BOOTNODES_URL_RW = "https://bootnodes.vocdoni.net/gateways.dev.json"
 
+// const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+
 async function attachToEntityResolver() {
-    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
     // const gw = await Gateway.randomFromDefault(NETWORK_ID)
     const gw = await Gateway.randomfromUri(NETWORK_ID, BOOTNODES_URL_RO)
     await gw.init()
@@ -95,18 +96,19 @@ async function fileUpload() {
     try {
         const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
-        const dvoteGw = new DVoteGateway({ uri: GATEWAY_DVOTE_URI, supportedApis: ["file"], publicKey: GATEWAY_PUB_KEY })
-        await dvoteGw.init()
+        // const dvoteGw = new DVoteGateway({ uri: GATEWAY_DVOTE_URI, supportedApis: ["file"], publicKey: GATEWAY_PUB_KEY })
+        const gw = await Gateway.randomfromUri(NETWORK_ID, BOOTNODES_URL_RO)
+        await gw.init()
 
         console.log("SIGNING FROM ADDRESS", wallet.address)
 
         const strData = fs.readFileSync(__dirname + "/mobile-org-web-action-example.html").toString()
         console.error("PUTTING STRING OF LENGTH: ", strData.length)
-        const origin = await FileApi.add(Buffer.from(strData), "mobile-org-web-action-example.html", wallet, dvoteGw)
+        const origin = await FileApi.add(Buffer.from(strData), "mobile-org-web-action-example.html", wallet, gw)
         console.log("DATA STORED ON:", origin)
 
         console.log("\nReading back", origin)
-        const data = await FileApi.fetchString(origin, dvoteGw)
+        const data = await FileApi.fetchString(origin, gw)
         console.log("DATA:", data)
     } catch (err) {
         console.error(err)
@@ -164,7 +166,7 @@ async function emptyFeedUpload() {
 async function registerEntity() {
     // const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI)
     // const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
-    const wallet = WalletUtil.fromSeededPassphrase(WALLET_PASSPHRASE, WALLET_SEED)
+    // const wallet = WalletUtil.fromSeededPassphrase(WALLET_PASSPHRASE, WALLET_SEED)
 
     const myEntityAddress = await wallet.getAddress()
     const entityEnsNode = ensHashAddress(myEntityAddress)
@@ -188,13 +190,13 @@ async function registerEntity() {
 async function readEntity() {
     // const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI)
     // const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
-    const wallet = WalletUtil.fromSeededPassphrase(WALLET_PASSPHRASE, WALLET_SEED)
+    // const wallet = WalletUtil.fromSeededPassphrase(WALLET_PASSPHRASE, WALLET_SEED)
 
     const myEntityAddress = await wallet.getAddress()
 
     console.log("Entity Addr", myEntityAddress)
     // console.log("Entity Node:", ensHashAddress(myEntityAddress))
-    const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: "https://bootnodes.vocdoni.net/gateways.json" })
+    const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL_RW })
     await pool.init()
 
     const meta = await EntityApi.getMetadata(myEntityAddress, pool)
@@ -202,10 +204,10 @@ async function readEntity() {
 }
 
 async function updateEntityInfo() {
-    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+    // const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
     const myEntityAddress = await wallet.getAddress()
-    const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: "https://bootnodes.vocdoni.net/gateways.dev.json" })
+    const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL_RW })
     await pool.init()
 
     console.log("UPDATING ENTITY NODE:", ensHashAddress(myEntityAddress))
@@ -217,71 +219,73 @@ async function updateEntityInfo() {
 
 async function censusMethods() {
     // SIGNED
-    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+    // const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
-    const dvoteGw = new DVoteGateway({ uri: GATEWAY_DVOTE_URI, supportedApis: ["file", "census"], publicKey: GATEWAY_PUB_KEY })
-    const gw = new Gateway(dvoteGw, null)
+    // const dvoteGw = new DVoteGateway({ uri: GATEWAY_DVOTE_URI, supportedApis: ["file", "census"], publicKey: GATEWAY_PUB_KEY })
+    // const gw = new Gateway(dvoteGw, null)
+    // await gw.init()
 
-    await gw.init()
+    const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL_RW })
+    await pool.init()
 
     const censusName = "My census name " + Math.random().toString().substr(2)
-    const adminPublicKeys = [await wallet["_signingKey"]().publicKey]
+    const adminPublicKeys = [wallet["_signingKey"]().publicKey]
     const publicKeyClaims = [
-        "0412d6dc30db7d2a32dddd0ba080d244cc26fcddcc29beb3fcb369564b468b9927445ab996fecbdd6603f6accbc4b3f773a9fe59b66f6e8ef6d9ecf70d8cee5a73",
-        "043980b22e9432aa2884772570c47a6f78a39bcc08b428161a503eeb91f66b1901ece9b82d2624ed5b44fa02922c28080c717f474eca16c54aecd74aba3eb76953",
-        "04f64bd4dc997f1eed4f20843730c13d926199ff45a9edfad191feff0cea6e3d54de43867463acdeeaae990ee6882138b79ee33e3ae7e4f2c12dc0a52088bbb620",
-        "04b9bd5b6f90833586cfcd181d1abe66d14152bb100ed7ec63ff94ecfe48dab18757177cac4551bc56bcf586d056d0f3709443face6b6bac7c55316e54522b4d2b"
+        Buffer.from("0212d6dc30db7d2a32dddd0ba080d244cc26fcddcc29beb3fcb369564b468b49f1", "hex").toString("base64"),
+        Buffer.from("033980b22e9432aa2884772570c47a6f78a39bcc08b428161a503eeb91f66b1901", "hex").toString("base64"),
+        Buffer.from("03f64bd4dc997f1eed4f20843730c13d926199ff45a9edfad191feff0cea6e3d54", "hex").toString("base64"),
+        Buffer.from("02b9bd5b6f90833586cfcd181d1abe66d14152bb100ed7ec63ff94ecfe48dab187", "hex").toString("base64")
     ]
-    publicKeyClaims[publicKeyClaims.length - 1] = "wrong_value"
     console.log(publicKeyClaims);
 
     // Create a census if it doesn't exist
-    let result1 = await CensusApi.addCensus(censusName, adminPublicKeys, wallet, gw)
+    let result1 = await CensusApi.addCensus(censusName, adminPublicKeys, wallet, pool)
     console.log(`ADD CENSUS "${censusName}" RESULT:`, result1)
 
     // Add a claim to the new census
     const censusId = result1.censusId
-    let result2 = await CensusApi.addClaim(censusId, publicKeyClaims[0], false, wallet, gw)
+    let result2 = await CensusApi.addClaim(censusId, publicKeyClaims[0], false, wallet, pool)
     console.log("ADDED", publicKeyClaims[0], "TO", censusId)
 
     // Add claims to the new census
-    let result3 = await CensusApi.addClaimBulk(censusId, publicKeyClaims.slice(1), false, wallet, gw)
+    let result3 = await CensusApi.addClaimBulk(censusId, publicKeyClaims.slice(1), false, wallet, pool)
     console.log("ADDED", publicKeyClaims.slice(1), "TO", censusId)
     if (result3.invalidClaims.length > 0) console.log("INVALID CLAIMS", result3.invalidClaims)
 
-    const merkleRoot = await CensusApi.getRoot(censusId, gw)
+    const merkleRoot = await CensusApi.getRoot(censusId, pool)
     console.log("MERKLE ROOT", merkleRoot)  // 0x....
 
-    const merkleTree = await CensusApi.publishCensus(censusId, wallet, gw)
+    const merkleTree = await CensusApi.publishCensus(censusId, wallet, pool)
     console.log("PUBLISHED", censusId)
     console.log(merkleTree)   // ipfs://....
 
-    let result4 = await CensusApi.dump(censusId, wallet, gw)
+    let result4 = await CensusApi.dump(censusId, wallet, pool)
     console.log("DUMP", result4)
 
-    let result5 = await CensusApi.dumpPlain(censusId, wallet, gw)
+    let result5 = await CensusApi.dumpPlain(censusId, wallet, pool)
     console.log("DUMP PLAIN", result5)
 }
 
 async function createProcessRaw() {
-    const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI)
-    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+    // const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI)
+    // const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
-    const dvoteGw = new DVoteGateway({ uri: GATEWAY_DVOTE_URI, supportedApis: ["file"], publicKey: GATEWAY_PUB_KEY })
-    const web3Gw = new Web3Gateway(provider)
-    const gw = new Gateway(dvoteGw, web3Gw)
-    await gw.init()
+    // const dvoteGw = new DVoteGateway({ uri: GATEWAY_DVOTE_URI, supportedApis: ["file"], publicKey: GATEWAY_PUB_KEY })
+    // const web3Gw = new Web3Gateway(provider)
+    // const gw = new Gateway(dvoteGw, web3Gw)
+    const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL_RW })
+    await pool.init()
 
     console.log("Attaching to contract")
-    const processesInstance = await gw.getProcessesInstance(wallet)
+    const processesInstance = await pool.getProcessesInstance(wallet)
 
     console.log("Uploading metadata...")
     const processMetadata = Object.assign({}, ProcessMetadataTemplate, { startBlock: 20000 })
     const strData = JSON.stringify(processMetadata)
-    const origin = await FileApi.add(Buffer.from(strData), "process-metadata.json", wallet, gw)
+    const origin = await FileApi.add(Buffer.from(strData), "process-metadata.json", wallet, pool)
     console.log("process-metadata.json\nDATA STORED ON:", origin)
 
-    const metaCuri = new ContentHashedUri(`ipfs://${origin}`)
+    const metaCuri = new ContentHashedUri(origin)
     metaCuri.setHashFrom(strData)
 
     const censusCuri = new ContentHashedUri("http://localhost/")
@@ -295,7 +299,7 @@ async function createProcessRaw() {
         envelopeType: ProcessEnvelopeType.ENCRYPTED_VOTES | ProcessEnvelopeType.SERIAL | ProcessEnvelopeType.UNIQUE_VALUES, // bit mask
         censusOrigin: ProcessCensusOrigin.OFF_CHAIN,
         metadata: metaCuri.toString(),
-        censusMerkleRoot: "0x0",
+        censusMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000",
         censusMerkleTree: censusCuri.toString(),
         startBlock: 500,
         blockCount: 1000,
@@ -306,7 +310,7 @@ async function createProcessRaw() {
         costExponent: 10000,
         maxVoteOverwrites: 1,
         namespace: 0,
-        paramsSignature: "0x0"
+        paramsSignature: "0x0000000000000000000000000000000000000000000000000000000000000000"
     })
     const tx = await processesInstance.newProcess(...params.toContractParams())
     const result = await tx.wait()
@@ -315,10 +319,10 @@ async function createProcessRaw() {
 
 async function createProcessFull() {
     // const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
-    const wallet = WalletUtil.fromSeededPassphrase(WALLET_PASSPHRASE, WALLET_SEED)
+    // const wallet = WalletUtil.fromSeededPassphrase(WALLET_PASSPHRASE, WALLET_SEED)
     const myEntityAddress = await wallet.getAddress()
 
-    const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: "https://bootnodes.vocdoni.net/gateways.dev.json" })
+    const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL_RW })
     await pool.init()
 
     const entityMetaPre = await EntityApi.getMetadata(myEntityAddress, pool)
@@ -364,20 +368,20 @@ async function createProcessFull() {
         metadata: processMetadata,
         startBlock: 100,
         blockCount: 1000,
-        censusMerkleRoot: "0x01234",
+        censusMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000",
         censusMerkleTree: "ipfs://1234",
         maxCount: 1,
         questionCount: 2,
         costExponent: 1000,
         namespace: 1,
-        paramsSignature: "0x1234...",
+        paramsSignature: "0x0000000000000000000000000000000000000000000000000000000000000000",
         uniqueValues: true,
         maxValue: 5,
         maxTotalCost: 0,
         maxVoteOverwrites: 1
     }
 
-    const processId = await VotingApi.newProcess(params, wallet, pool)
+    const processId = await VotingApi.newProcess(params, wallet.connect(pool.provider), pool)
     const entityMetaPost = await EntityApi.getMetadata(myEntityAddress, pool)
 
     console.log("CREATED", processId)
@@ -388,9 +392,9 @@ async function createProcessFull() {
 }
 
 async function setProcessStatus() {
-    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+    // const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
-    const pool = await GatewayPool.discover({ networkId: NETWORK_ID })
+    const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL_RW })
     await pool.init()
 
     const processMetadata: ProcessMetadata = JSON.parse(JSON.stringify(ProcessMetadataTemplate)) // make a copy of the template
@@ -410,7 +414,7 @@ async function setProcessStatus() {
         costExponent: 10000,
         maxVoteOverwrites: 1,
         namespace: 0,
-        paramsSignature: "0x0"
+        paramsSignature: "0x0000000000000000000000000000000000000000000000000000000000000000"
     }
 
     const processId = await VotingApi.newProcess(processParams, wallet, pool)
@@ -418,21 +422,20 @@ async function setProcessStatus() {
 
     // Get process parameters on the contract
     let params = await VotingApi.getProcessParameters(processId, pool)
-    console.log("Prior status:", params.status, params.status.isEnded)
+    console.log("Prior status:", params.status, "Ended:", params.status.isEnded)
 
     // Set new status
     await VotingApi.setStatus(processId, ProcessStatus.ENDED, wallet, pool)
     params = await VotingApi.getProcessParameters(processId, pool)
-    console.log("Current status:", params.status)
+    console.log("Current status:", params.status, "Ended:", params.status.isEnded)
 }
 
 async function showProcessResults() {
-    const wallet = WalletUtil.fromSeededPassphrase(WALLET_PASSPHRASE, WALLET_SEED)
+    // const wallet = WalletUtil.fromSeededPassphrase(WALLET_PASSPHRASE, WALLET_SEED)
     const myEntityAddress = await wallet.getAddress()
 
     console.log("Entity Addr", myEntityAddress)
-    // const pool = await GatewayPool.discover({ networkId: "goerli" })
-    const pool = await GatewayPool.discover({ networkId: NETWORK_ID })
+    const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL_RW })
     await pool.init()
 
     const processId = "0xc69acd6435f622f5dda70e887cbebe3994b67d68686ca31872cb9b4a64525374"
@@ -442,13 +445,12 @@ async function showProcessResults() {
 }
 
 async function cloneVotingProcess() {
-    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
-    const BOOTNODES_URL = " ... "
-    const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL })
+    // const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+    const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL_RW })
     await pool.init()
 
     console.log("Updating...")
-    const PROCESS_ID_CURRENT = "0x6529717ebd0926f9096d6ae342c67bfd7dce90ce8eb2dbf9342a51d70fffb759"
+    const PROCESS_ID_CURRENT = "0xe0b52bee5470b195b7633d007b587fbfa74653c8cac31ba260ddbc22b7d1d6eb"
     const currentMetadata = await VotingApi.getProcessMetadata(PROCESS_ID_CURRENT, pool)
     const currentParameters = await VotingApi.getProcessParameters(PROCESS_ID_CURRENT, pool)
     const currentBlock = await VotingApi.getBlockHeight(pool)
@@ -471,7 +473,7 @@ async function cloneVotingProcess() {
         questionCount: currentParameters.questionCount,
         costExponent: currentParameters.costExponent,
         namespace: currentParameters.namespace,
-        paramsSignature: "0x1234...",
+        paramsSignature: "0x0000000000000000000000000000000000000000000000000000000000000000",
         maxValue: currentParameters.maxCount,
         maxTotalCost: currentParameters.maxTotalCost,
         maxVoteOverwrites: currentParameters.maxVoteOverwrites
@@ -491,11 +493,10 @@ async function cloneVotingProcess() {
 }
 
 async function useVoteApi() {
-    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+    // const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
     const myEntityAddress = await wallet.getAddress()
 
-    const BOOTNODES_URL = " ... "
-    const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL })
+    const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL_RW })
     await pool.init()
 
     const entityMeta = await EntityApi.getMetadata(myEntityAddress, pool)
@@ -503,7 +504,7 @@ async function useVoteApi() {
 
     const processId = entityMeta.votingProcesses.active[entityMeta.votingProcesses.active.length - 1]
     // const processId = "0xf36b729d6226b8257922a60cea6ab80e47686c3f86edbd0749b1c3291e2651ed"
-    // const processId = "0x04eff29970a18ff5e46ff9b1eae5b320ee782ecadaaef341e842cb97ef310477"
+    // const processId = "0x55b6f0b5180c918d8e815e5a6e7b093caf3c496bd104a177d90bd81bfe1bd312"
     const processParams = await VotingApi.getProcessParameters(processId, pool)
     // const processMeta = await VotingApi.getProcessMetadata(processId, pool)
 
@@ -720,7 +721,7 @@ async function gatewayHealthCheck() {
 async function gatewayRawRequest() {
     // const BOOTNODES_URL = " ... "
     // const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL })
-    const pool = await GatewayPool.discover({ networkId: NETWORK_ID })
+    const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL_RW })
     await pool.init()
 
     console.log("THE DVOTE GW:", pool.activeGateway.publicKey)

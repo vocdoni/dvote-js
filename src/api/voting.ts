@@ -373,15 +373,9 @@ export class VotingApi {
         else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool))
             return Promise.reject(new Error("Invalid Gateway object"))
 
-        // Merge parameters and metadata, by now
-        const questionCount = processParameters.metadata.questions.length
-        const contractParameters = ProcessContractParameters.fromParams({ ...processParameters, questionCount, metadata: "" })
-
-        // throw if not valid
-        const metadata = checkValidProcessMetadata(processParameters.metadata)
-
         try {
-            const processInstance = await gateway.getProcessesInstance(walletOrSigner)
+            // throw if not valid
+            const metadata = checkValidProcessMetadata(processParameters.metadata)
 
             const address = await walletOrSigner.getAddress()
 
@@ -391,11 +385,17 @@ export class VotingApi {
 
             // UPLOAD THE METADATA
             const strJsonMeta = JSON.stringify(metadata)
-            const processMetaOrigin = await FileApi.add(strJsonMeta, `process-metadata.json`, walletOrSigner, gateway)
-            if (!processMetaOrigin) return Promise.reject(new Error("The process metadata could not be uploaded"))
+            const metadataOrigin = await FileApi.add(strJsonMeta, `process-metadata.json`, walletOrSigner, gateway)
+            if (!metadataOrigin) return Promise.reject(new Error("The process metadata could not be uploaded"))
+
+            // Merge parameters and metadata, by now
+            const questionCount = processParameters.metadata.questions.length
+            const contractParameters = ProcessContractParameters.fromParams({ ...processParameters, questionCount, metadata: metadataOrigin })
+
+            const processInstance = await gateway.getProcessesInstance(walletOrSigner)
 
             // SET METADATA IN PARAMS
-            contractParameters.metadata = processMetaOrigin
+            contractParameters.metadata = metadataOrigin
 
             // REGISTER THE NEW PROCESS
             const chainId = await gateway.chainId
@@ -408,7 +408,7 @@ export class VotingApi {
                     break
                 case SOKOL_CHAIN_ID:
                     const addr = await walletOrSigner.getAddress()
-                    const nonce = await walletOrSigner.provider.getTransactionCount(addr)
+                    const nonce = await walletOrSigner.connect(gateway.provider).provider.getTransactionCount(addr)
                     options = {
                         gasPrice: SOKOL_GAS_PRICE,
                         nonce,

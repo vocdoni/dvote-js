@@ -59,7 +59,7 @@ const processMetadataSchema = object().shape({
     title: object().shape(multiLanguageStringKeys).required(),
     description: object().shape(multiLanguageStringKeys).required(),
     media: object().shape({
-        headerImage: string().required(),
+        header: string().required(),
         streamUri: string().optional()
     }),
     questions: array().of(

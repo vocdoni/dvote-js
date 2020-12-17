@@ -196,13 +196,14 @@ export class CensusApi {
         if (!censusMerkleRootHash || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
-        return gateway.sendRequest({ method: "getSize", censusId: censusMerkleRootHash }).then(response => {
-            if (isNaN(response.size)) throw new Error("The census size could not be retrieved")
-            return response.size
-        }).catch(error => {
-            const message = (error.message) ? error.message : "The request could not be completed"
-            throw new Error(message)
-        })
+        return gateway.sendRequest({ method: "getSize", censusId: censusMerkleRootHash })
+            .then(response => {
+                if (isNaN(response.size)) throw new Error("The census size could not be retrieved")
+                return response.size
+            }).catch(error => {
+                const message = (error.message) ? error.message : "The request could not be completed"
+                throw new Error(message)
+            })
     }
 
     /** Dumps the entire content of the census as an array of hexStrings rady to be imported to another census service

@@ -19,7 +19,7 @@ const MIN_ROUND_SUCCESS_COUNT = 2
 
 export type IGatewayDiscoveryParameters = {
     networkId: EthNetworkID,
-    bootnodesContentUri?: string | ContentUri
+    bootnodesContentUri: string | ContentUri
     numberOfGateways?: number
     timeout?: number
     testing?: boolean
@@ -34,11 +34,12 @@ export class GatewayDiscovery {
         if (!params) return Promise.reject(new Error("Invalid parameters"))
         else if (!params.networkId)
             return Promise.reject(new Error("Invalid parameters. No networkId provided"))
-        // if (params.bootnodesContentUri && !((typeof params.bootnodesContentUri) in [String,ContentURI]) )
+        else if (!params.bootnodesContentUri)
+            return Promise.reject(new Error("Empty bootnodesContentUri"))
         else if (params.numberOfGateways && !Number.isInteger(params.numberOfGateways))
-            return Promise.reject(new Error("Invalid parameters"))
+            return Promise.reject(new Error("Invalid numberOfGateways"))
         else if (params.timeout && !Number.isInteger(params.timeout))
-            return Promise.reject(new Error("Invalid parameters"))
+            return Promise.reject(new Error("Invalid timeout"))
 
         return getWorkingGateways(params)
             .then(gateways => gateways.map(gw => new Gateway(gw.dvote, gw.web3)))
