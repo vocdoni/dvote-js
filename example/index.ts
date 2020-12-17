@@ -562,8 +562,7 @@ async function submitVoteBatch() {
 
     const processId = "0xfbfdb1795eadc8fb8b0249e8a597ab7cc4a6a2a5f3a87db454eadda818cba014"
 
-    const BOOTNODES_URL = " ... "
-    const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL })
+    const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL_RW })
     await pool.init()
 
     const processParams = await VotingApi.getProcessParameters(processId, pool)
@@ -675,8 +674,7 @@ async function checkSignature() {
 }
 
 async function fetchMerkleProof() {
-    const BOOTNODES_URL = " ... "
-    const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL })
+    const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL_RW })
     await pool.init()
 
     console.log("FETCHING CLAIM", process.env.BASE64_CLAIM_DATA)
@@ -688,8 +686,6 @@ async function fetchMerkleProof() {
 
 async function gatewayHealthCheck() {
     // SIGNED
-    const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
-
     const myEntityAddress = await wallet.getAddress()
     const entityEnsNode = ensHashAddress(myEntityAddress)
 
@@ -719,8 +715,6 @@ async function gatewayHealthCheck() {
 }
 
 async function gatewayRawRequest() {
-    // const BOOTNODES_URL = " ... "
-    // const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL })
     const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL_RW })
     await pool.init()
 
@@ -742,8 +736,8 @@ async function gatewayRawRequest() {
 }
 
 async function ensResolver() {
-    // const provider = new providers.EtherscanProvider()
-    const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI)
+    // const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI)
+    const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI, { chainId: SOKOL_CHAIN_ID, name: NETWORK_ID, ensAddress: SOKOL_ENS_REGISTRY_ADDRESS })
 
     const resolverAddr = await provider.resolveName("entities.vocdoni.eth")
     const processesAddr = await provider.resolveName("processes.vocdoni.eth")
@@ -762,7 +756,7 @@ async function testGatewayInitialization() {
     let pool: GatewayPool, gateway: Gateway
     let options: IGatewayDiscoveryParameters = {
         networkId: ETH_NETWORK_ID,
-        bootnodesContentUri: BOOTNODES_URL_RO,
+        bootnodesContentUri: BOOTNODES_URL_RW,
         numberOfGateways: 2,
         timeout: 5 * 1000,
     }
@@ -771,7 +765,7 @@ async function testGatewayInitialization() {
     console.time("Pool")
     pool = await GatewayPool.discover(options)
     await pool.init()
-    console.log("Connected to", await pool.dvoteUri)
+    console.log("Connected to", pool.dvoteUri)
     console.log("Connected to", pool.web3Uri)
 
     // Default Gateway
@@ -782,7 +776,7 @@ async function testGatewayInitialization() {
 
     await gateway.init()
     console.log("Connected to", gateway.dvoteUri)
-    console.log("Connected to", gateway.provider["connection"].url)
+    console.log("Connected to", gateway.web3Uri)
 
     // Gateway from URI
     console.log("==============================")
@@ -792,7 +786,7 @@ async function testGatewayInitialization() {
 
     await gateway.init()
     console.log("Connected to", gateway.dvoteUri)
-    console.log("Connected to", gateway.provider["connection"].url)
+    console.log("Connected to", gateway.web3Uri)
 
     // Gateway from info
     console.log("==============================")
@@ -803,7 +797,7 @@ async function testGatewayInitialization() {
 
     await gateway.init()
     console.log("Connected to", gateway.dvoteUri)
-    console.log("Connected to", gateway.provider["connection"].url)
+    console.log("Connected to", gateway.web3Uri)
 
     return
 }
@@ -823,13 +817,13 @@ async function main() {
     // await registerEntity()
     // await readEntity()
     // await updateEntityInfo()
+    // await censusMethods()
     // await createProcessRaw()
     // await createProcessFull()
-    // await censusMethods()
-    // await showProcessResults()
     // await setProcessStatus()
+    // await showProcessResults()
     // await cloneVotingProcess()
-    await useVoteApi()
+    // await useVoteApi()
     // await submitVoteBatch()
     // await fetchMerkleProof()
     // await checkSignature()
@@ -837,8 +831,7 @@ async function main() {
     // await testGatewayInitialization()
 
     // await gatewayHealthCheck()
-    // await ensResolver()
-    // await workingGatewayInfo()
+    await ensResolver()
 }
 
 main()

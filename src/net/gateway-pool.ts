@@ -130,7 +130,7 @@ export class GatewayPool {
     // WEB3
 
     public get provider(): providers.BaseProvider { return this.activeGateway.provider }
-    public get web3Uri(): string { return this.provider["connection"].uri }
+    public get web3Uri(): string { return this.activeGateway.web3Uri }
 
     public get chainId(): Promise<number> {
         return this.provider.getNetwork().then(network => network.chainId)

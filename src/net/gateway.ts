@@ -174,6 +174,7 @@ export class Gateway {
     }
 
     public get provider(): providers.BaseProvider { return this.web3.provider }
+    public get web3Uri(): string { return this.web3.provider["connection"].url }
 
     public deploy<CustomContractMethods>(abi: string | (string | utils.ParamType)[] | utils.Interface, bytecode: string,
         signParams: { signer?: Signer, wallet?: Wallet } = {}, deployArguments: any[] = []): Promise<(Contract & CustomContractMethods)> {
