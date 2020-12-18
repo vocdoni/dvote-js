@@ -27,7 +27,6 @@ import { Web3Gateway } from "../../src/net/gateway-web3"
 // DEFAULT VALUES
 export const DEFAULT_PREDECESSOR_INSTANCE_ADDRESS = "0x0000000000000000000000000000000000000000"
 export const DEFAULT_NAMESPACE = 0
-export const DEFAULT_CHAIN_ID = "vochain"
 export const DEFAULT_PROCESS_MODE = ProcessMode.make()
 export const DEFAULT_ENVELOPE_TYPE = ProcessEnvelopeType.make()
 export const DEFAULT_CENSUS_ORIGIN = ProcessCensusOrigin.OFF_CHAIN
@@ -109,7 +108,7 @@ export default class ProcessBuilder {
             storageProofAddress = storageProofInstance.address
         }
 
-        let contractInstance = await gw.deploy<ProcessContractMethods>(ProcessesContractDefinition.abi, ProcessesContractDefinition.bytecode, { wallet: deployAccount.wallet })
+        let contractInstance = await gw.deploy<ProcessContractMethods>(ProcessesContractDefinition.abi, ProcessesContractDefinition.bytecode, { wallet: deployAccount.wallet }, [this.predecessorInstanceAddress, namespaceAddress, storageProofAddress])
         contractInstance = contractInstance.connect(this.entityAccount.wallet) as Contract & ProcessContractMethods
 
         if (typeof processCount == "undefined") processCount = 1 // one by default

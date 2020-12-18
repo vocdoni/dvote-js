@@ -17,7 +17,7 @@ let entityAccount: Wallet
 
 describe("Process", () => {
     before(() => {
-        server = new DevServices()
+        server = new DevServices({ port: 9001 }, { port: 9002 })
         return server.start()
     })
     after(() => server.stop())

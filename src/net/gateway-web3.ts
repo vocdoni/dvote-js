@@ -93,15 +93,15 @@ export class Web3Gateway {
      * If a signer is given, its current connection will be used.
      * If a wallet is given, the Gateway URI will be used unless the wallet is already connected
      */
-    async deploy<CustomContractMethods>(abi: ContractInterface, bytecode: string,
-        signParams: { signer?: Signer, wallet?: Wallet } = {}, deployArguments?: any[]): Promise<(Contract & CustomContractMethods)> {
+    deploy<CustomContractMethods>(abi: ContractInterface, bytecode: string,
+        signParams: { signer?: Signer, wallet?: Wallet } = {}, deployArguments: any[] = []): Promise<(Contract & CustomContractMethods)> {
         var contractFactory: ContractFactory
 
-        if (!signParams) throw new Error("Invalid signing parameters")
+        if (!signParams) return Promise.reject(new Error("Invalid signing parameters"))
         let { signer, wallet } = signParams
-        if (!signer && !wallet) throw new Error("A signer or a wallet is needed")
+        if (!signer && !wallet) return Promise.reject(new Error("A signer or a wallet is needed"))
         else if (signer) {
-            if (!signer.provider) throw new Error("A signer connected to a RPC provider ")
+            if (!signer.provider) return Promise.reject(new Error("A signer connected to a RPC provider is needed"))
 
             contractFactory = new ContractFactory(abi, bytecode, signer)
         }
@@ -112,7 +112,9 @@ export class Web3Gateway {
 
             contractFactory = new ContractFactory(abi, bytecode, wallet)
         }
-        return (await contractFactory.deploy(...deployArguments)) as (Contract & CustomContractMethods)
+        return contractFactory
+            .deploy(...deployArguments)
+            .then(response => response as (Contract & CustomContractMethods))
     }
 
     /**

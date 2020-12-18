@@ -736,7 +736,6 @@ async function gatewayRawRequest() {
 
     // UNSIGNED
     const origin = "ipfs://12341234..."
-    console.log("\nReading from", GATEWAY_DVOTE_URI)
     console.log("\nReading", origin)
     const data = await FileApi.fetchString(origin, pool)
     console.log("DATA:", data)

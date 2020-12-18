@@ -11,10 +11,10 @@ import { Buffer } from "buffer/"
 import { GatewayInfo } from "../../src/wrappers/gateway-info"
 
 // let accounts: TestAccount[]
-let baseAccount: TestAccount
+let baseAccount = new DevWeb3Service({ port: 80000 }).accounts[0]
 // let entityAccount: TestAccount
 // let randomAccount: TestAccount
-let port: number
+let port: number = 9100
 
 const defaultDummyResponse = { ok: true }
 
@@ -23,11 +23,10 @@ addCompletionHooks()
 describe("DVote gateway client", () => {
     let dvoteServer: DevGatewayService
     beforeEach(() => {
-        port = 8500
         dvoteServer = new DevGatewayService({ port })
         return dvoteServer.start()
     })
-    after(() => dvoteServer.stop())
+    afterEach(() => dvoteServer.stop())
 
     describe("Lifecycle", () => {
         it("Should create a DVoteGateway instance", async () => {
@@ -44,8 +43,7 @@ describe("DVote gateway client", () => {
         })
 
         it("Should update the gateway's URI and point to the new location", async () => {
-            const port1 = port + 1
-            const dvoteServer1 = new DevGatewayService({ port: port1, responses: [defaultDummyResponse] })
+            const dvoteServer1 = new DevGatewayService({ port, responses: [defaultDummyResponse] })
             const gatewayUri1 = dvoteServer1.uri
             expect(dvoteServer1.interactionCount).to.equal(0)
 
@@ -98,20 +96,20 @@ describe("DVote gateway client", () => {
             expect(response3.result).to.equal("OK 3")
             expect(response4.result).to.equal("OK 4")
             expect(response5.result).to.equal("OK 5")
-            expect(dvoteServer.interactionCount).to.equal(5)
-            expect(dvoteServer.interactionList[0].requested.request.method).to.equal("addCensus")
-            expect(dvoteServer.interactionList[0].requested.request.processId).to.equal("1234")
-            expect(dvoteServer.interactionList[0].requested.request.nullifier).to.equal("2345")
-            expect(dvoteServer.interactionList[1].requested.request.method).to.equal("addClaim")
-            expect(dvoteServer.interactionList[1].requested.request.processId).to.equal("3456")
-            expect(dvoteServer.interactionList[1].requested.request.nullifier).to.equal("4567")
-            expect(dvoteServer.interactionList[2].requested.request.method).to.equal("addClaimBulk")
-            expect(dvoteServer.interactionList[2].requested.request.processId).to.equal("5678")
-            expect(dvoteServer.interactionList[2].requested.request.nullifier).to.equal("6789")
-            expect(dvoteServer.interactionList[3].requested.request.method).to.equal("fetchFile")
-            expect(dvoteServer.interactionList[3].requested.request.uri).to.equal("12345")
-            expect(dvoteServer.interactionList[4].requested.request.method).to.equal("fetchFile")
-            expect(dvoteServer.interactionList[4].requested.request.uri).to.equal("67890")
+            expect(dvoteServer.interactionCount).to.equal(5 + 1)
+            expect(dvoteServer.interactionList[0 + 1].requested.request.method).to.equal("addCensus")
+            expect(dvoteServer.interactionList[0 + 1].requested.request.processId).to.equal("1234")
+            expect(dvoteServer.interactionList[0 + 1].requested.request.nullifier).to.equal("2345")
+            expect(dvoteServer.interactionList[1 + 1].requested.request.method).to.equal("addClaim")
+            expect(dvoteServer.interactionList[1 + 1].requested.request.processId).to.equal("3456")
+            expect(dvoteServer.interactionList[1 + 1].requested.request.nullifier).to.equal("4567")
+            expect(dvoteServer.interactionList[2 + 1].requested.request.method).to.equal("addClaimBulk")
+            expect(dvoteServer.interactionList[2 + 1].requested.request.processId).to.equal("5678")
+            expect(dvoteServer.interactionList[2 + 1].requested.request.nullifier).to.equal("6789")
+            expect(dvoteServer.interactionList[3 + 1].requested.request.method).to.equal("fetchFile")
+            expect(dvoteServer.interactionList[3 + 1].requested.request.uri).to.equal("12345")
+            expect(dvoteServer.interactionList[4 + 1].requested.request.method).to.equal("fetchFile")
+            expect(dvoteServer.interactionList[4 + 1].requested.request.uri).to.equal("67890")
         })
         it("Should provide an encrypted channel to communicate with clients")
         it("Should report errors and throw them as an error", async () => {
@@ -161,20 +159,20 @@ describe("DVote gateway client", () => {
                 expect(err.message).to.equal("ERROR 5")
             }
 
-            expect(dvoteServer.interactionCount).to.equal(5)
-            expect(dvoteServer.interactionList[0].requested.request.method).to.equal("addCensus")
-            expect(dvoteServer.interactionList[0].requested.request.processId).to.equal("1234")
-            expect(dvoteServer.interactionList[0].requested.request.nullifier).to.equal("2345")
-            expect(dvoteServer.interactionList[1].requested.request.method).to.equal("addCensus")
-            expect(dvoteServer.interactionList[1].requested.request.processId).to.equal("3456")
-            expect(dvoteServer.interactionList[1].requested.request.nullifier).to.equal("4567")
-            expect(dvoteServer.interactionList[2].requested.request.method).to.equal("addCensus")
-            expect(dvoteServer.interactionList[2].requested.request.processId).to.equal("5678")
-            expect(dvoteServer.interactionList[2].requested.request.nullifier).to.equal("6789")
-            expect(dvoteServer.interactionList[3].requested.request.method).to.equal("fetchFile")
-            expect(dvoteServer.interactionList[3].requested.request.uri).to.equal("12345")
-            expect(dvoteServer.interactionList[4].requested.request.method).to.equal("fetchFile")
-            expect(dvoteServer.interactionList[4].requested.request.uri).to.equal("67890")
+            expect(dvoteServer.interactionCount).to.equal(5 + 1)
+            expect(dvoteServer.interactionList[0 + 1].requested.request.method).to.equal("addCensus")
+            expect(dvoteServer.interactionList[0 + 1].requested.request.processId).to.equal("1234")
+            expect(dvoteServer.interactionList[0 + 1].requested.request.nullifier).to.equal("2345")
+            expect(dvoteServer.interactionList[1 + 1].requested.request.method).to.equal("addCensus")
+            expect(dvoteServer.interactionList[1 + 1].requested.request.processId).to.equal("3456")
+            expect(dvoteServer.interactionList[1 + 1].requested.request.nullifier).to.equal("4567")
+            expect(dvoteServer.interactionList[2 + 1].requested.request.method).to.equal("addCensus")
+            expect(dvoteServer.interactionList[2 + 1].requested.request.processId).to.equal("5678")
+            expect(dvoteServer.interactionList[2 + 1].requested.request.nullifier).to.equal("6789")
+            expect(dvoteServer.interactionList[3 + 1].requested.request.method).to.equal("fetchFile")
+            expect(dvoteServer.interactionList[3 + 1].requested.request.uri).to.equal("12345")
+            expect(dvoteServer.interactionList[4 + 1].requested.request.method).to.equal("fetchFile")
+            expect(dvoteServer.interactionList[4 + 1].requested.request.uri).to.equal("67890")
         })
     })
 
@@ -192,12 +190,12 @@ describe("DVote gateway client", () => {
 
             const result1 = await FileApi.add(buffData, "my-file.txt", baseAccount.wallet, gw)
 
-            expect(dvoteServer.interactionCount).to.equal(1)
-            expect(dvoteServer.interactionList[0].requested.request.method).to.equal("addFile")
-            expect(dvoteServer.interactionList[0].requested.request.type).to.equal("ipfs")
-            expect(dvoteServer.interactionList[0].requested.request.content).to.equal(buffData.toString("base64"))
-            expect(dvoteServer.interactionList[0].requested.id).to.match(/^[0-9a-fA-F]{10}$/)
-            expect(dvoteServer.interactionList[0].requested.signature).to.match(/^0x[0-9a-fA-F]{100,}$/)
+            expect(dvoteServer.interactionCount).to.equal(1 + 1)
+            expect(dvoteServer.interactionList[0 + 1].requested.request.method).to.equal("addFile")
+            expect(dvoteServer.interactionList[0 + 1].requested.request.type).to.equal("ipfs")
+            expect(dvoteServer.interactionList[0 + 1].requested.request.content).to.equal(buffData.toString("base64"))
+            expect(dvoteServer.interactionList[0 + 1].requested.id).to.match(/^[0-9a-fA-F]{10}$/)
+            expect(dvoteServer.interactionList[0 + 1].requested.signature).to.match(/^0x[0-9a-fA-F]{100,}$/)
 
             expect(result1.length).to.be.ok
             expect(result1).to.equal("ipfs://1234")
@@ -219,15 +217,15 @@ describe("DVote gateway client", () => {
             const result1 = await FileApi.add(buffData, "my-file.txt", baseAccount.wallet, gw)
             expect(result1).to.equal("ipfs://2345")
 
-            expect(dvoteServer.interactionCount).to.equal(1)
+            expect(dvoteServer.interactionCount).to.equal(1 + 1)
 
             const result2 = await FileApi.fetchBytes(result1, gw)
             expect(result2.toString()).to.equal(buffData.toString())
 
-            expect(dvoteServer.interactionCount).to.equal(2)
-            expect(dvoteServer.interactionList[1].requested.request.method).to.equal("fetchFile")
-            expect(dvoteServer.interactionList[1].requested.request.uri).to.equal(result1)
-            expect(dvoteServer.interactionList[1].requested.id).to.match(/^[0-9a-fA-F]{10}$/)
+            expect(dvoteServer.interactionCount).to.equal(2 + 1)
+            expect(dvoteServer.interactionList[1 + 1].requested.request.method).to.equal("fetchFile")
+            expect(dvoteServer.interactionList[1 + 1].requested.request.uri).to.equal(result1)
+            expect(dvoteServer.interactionList[1 + 1].requested.id).to.match(/^[0-9a-fA-F]{10}$/)
         })
 
         it("Should request to unpin an old file")
@@ -256,7 +254,7 @@ describe("DVote gateway client", () => {
                 expect(err.message).to.equal("The data could not be uploaded: Invalid wallet")
             }
 
-            expect(dvoteServer.interactionCount).to.equal(1)
+            expect(dvoteServer.interactionCount).to.equal(1 + 1)
         })
 
         it("Should enforce authenticated unpin requests")

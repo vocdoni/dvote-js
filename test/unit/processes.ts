@@ -8,7 +8,7 @@ import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { Contract, Wallet } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
-import DevServices, { TestAccount } from "../helpers/all-services"
+import { DevWeb3Service, TestAccount } from "../helpers/web3-service"
 import { ProcessContractMethods, ProcessContractParameters, ProcessStatus } from "../../src/net/contracts"
 import { Buffer } from "buffer/"
 
@@ -36,7 +36,6 @@ import ProcessMetadataBuilder from "../builders/process-metadata"
 import NamespaceBuilder from "../builders/namespace"
 import { Web3Gateway } from "../../src/net/gateway-web3"
 
-let server: DevServices
 let accounts: TestAccount[]
 let baseAccount: TestAccount
 let entityAccount: TestAccount
@@ -47,17 +46,12 @@ let processId: string
 let contractInstance: ProcessContractMethods & Contract
 // let tx: ContractReceipt
 
+const server = new DevWeb3Service()
 const nullAddress = "0x0000000000000000000000000000000000000000"
 
 addCompletionHooks()
 
 describe("Governance Process", () => {
-    before(() => {
-        server = new DevServices()
-        return server.start()
-    })
-    after(() => server.stop())
-
     beforeEach(async () => {
         accounts = server.accounts
         baseAccount = accounts[0]
@@ -66,9 +60,11 @@ describe("Governance Process", () => {
         randomAccount1 = accounts[3]
         randomAccount2 = accounts[4]
 
+        await server.start()
         contractInstance = await new ProcessBuilder(accounts).build()
         processId = await contractInstance.getProcessId(entityAccount.address, 0, DEFAULT_NAMESPACE)
     })
+    afterEach(() => server.stop())
 
     describe("Smart Contract", () => {
 
@@ -94,7 +90,7 @@ describe("Governance Process", () => {
             expect(data.censusMerkleRoot).to.equal(DEFAULT_MERKLE_ROOT)
             expect(data.censusMerkleTree).to.equal(DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI)
             expect(data.entityAddress).to.equal(entityAccount.address)
-            expect(data.status.value).to.eq(ProcessStatus.PAUSED)
+            expect(data.status.isPaused).to.eq(true)
             expect(data.maxCount).to.eq(DEFAULT_MAX_COUNT)
             expect(data.maxValue).to.eq(DEFAULT_MAX_VALUE)
             expect(data.maxTotalCost).to.eq(DEFAULT_MAX_TOTAL_COST)
@@ -150,7 +146,8 @@ describe("Governance Process", () => {
                 .build()
 
             const result1 = await contractInstance.getResults(processId)
-            expect(result1).to.equal("")
+            expect(result1.tally).to.deep.equal([])
+            expect(result1.height).to.equal(0)
 
             const tx1 = await contractInstance.setResults(processId, [[1, 5, 4], [4, 1, 5]], 10)
             expect(tx1).to.be.ok
@@ -158,7 +155,8 @@ describe("Governance Process", () => {
             await tx1.wait()
 
             const result2 = await contractInstance.getResults(processId)
-            expect(result2).to.equal([[1, 5, 4], [4, 1, 5]])
+            expect(result2.tally).to.equal([[1, 5, 4], [4, 1, 5]])
+            expect(result2.height).to.eq(10)
         })
 
         it("should change the state to RESULTS")
@@ -342,9 +340,8 @@ describe("Governance Process", () => {
         })
 
         it("Should reject a non valid Process Metadata JSON", () => {
-            const processMetadata = new ProcessMetadataBuilder().get()
             expect(() => {
-                checkValidProcessMetadata(processMetadata)
+                checkValidProcessMetadata(null)
             }).to.throw()
         })
 
