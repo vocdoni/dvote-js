@@ -30,6 +30,8 @@ async function main() {
     if (config.readExistingAccounts) {
         console.log("Reading account list")
         accounts = JSON.parse(readFileSync(config.accountListFilePath).toString())
+
+        // await setEntityMetadata()
     }
     else {
         // Create from scratch
@@ -57,6 +59,7 @@ async function main() {
         const procInfo: { processId: string, processMetadata: ProcessMetadata } = JSON.parse(readFileSync(config.processInfoFilePath).toString())
         processId = procInfo.processId
         processMetadata = procInfo.processMetadata
+        processParams = await VotingApi.getProcessParameters(processId, gwPool)
 
         assert(processId)
         assert(processMetadata)
@@ -123,9 +126,9 @@ async function connectGateways(): Promise<GatewayPool> {
     // WEB3 CLIENT
     entityWallet = Wallet.fromMnemonic(config.mnemonic, config.ethPath).connect(pool.provider)
 
-    entityAddr = ensHashAddress(await entityWallet.getAddress())
-    console.log("Entity Address", await entityWallet.getAddress())
-    console.log("Entity ID", entityAddr)
+    entityAddr = await entityWallet.getAddress()
+    console.log("Entity Address", entityAddr)
+    // console.log("Entity ID", ensHashAddress(entityAddr))
 
     return pool
 }
@@ -464,6 +467,11 @@ async function launchNewVote(merkleRoot, merkleTreeUri) {
     processMetadataPre.questions[0].choices[1].title.default = "No"
     processMetadataPre.questions[0].choices[1].value = 1
 
+    console.log("Getting the block height")
+    const currentBlock = await VotingApi.getBlockHeight(pool)
+    const startBlock = currentBlock + 35
+    const blockCount = 60480
+
     const processParamsPre = {
         mode: ProcessMode.make({ autoStart: true, interruptible: true }), // helper
         envelopeType: ProcessEnvelopeType.ENCRYPTED_VOTES | ProcessEnvelopeType.SERIAL, // bit mask
@@ -471,8 +479,8 @@ async function launchNewVote(merkleRoot, merkleTreeUri) {
         metadata: ProcessMetadataTemplate,
         censusMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000",
         censusMerkleTree: "ipfs://1234123412341234",
-        startBlock: 500,
-        blockCount: 1000,
+        startBlock,
+        blockCount,
         maxCount: 1,
         maxValue: 3,
         maxTotalCost: 0,
@@ -480,21 +488,15 @@ async function launchNewVote(merkleRoot, merkleTreeUri) {
         costExponent: 10000,
         maxVoteOverwrites: 1,
         namespace: 0,
-        paramsSignature: "0x0"
+        paramsSignature: "0x0000000000000000000000000000000000000000000000000000000000000000"
     }
 
-    console.log("Getting the block height")
-    const currentBlock = await VotingApi.getBlockHeight(pool)
-    const startBlock = currentBlock + 25
-    processParams.startBlock = startBlock
-    processParams.blockCount = 60480
     console.log("Creating the process")
     processId = await VotingApi.newProcess(processParamsPre, entityWallet, pool)
+    assert(processId)
 
     console.log("Reading the process metadata back")
     const entityMetaPost = await EntityApi.getMetadata(await entityWallet.getAddress(), pool)
-
-    assert(processId)
     assert(entityMetaPost)
 
     // Reading back
@@ -512,7 +514,7 @@ async function waitUntilStarted() {
     assert(processId)
     assert(processParams)
 
-    await VochainWaiter.wait(processParams.startBlock, pool, { verbose: true })
+    await VochainWaiter.waitUntil(processParams.startBlock, pool, { verbose: true })
 
     console.log("Checking that the Process ID is on the list")
 

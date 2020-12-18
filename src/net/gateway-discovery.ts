@@ -21,6 +21,7 @@ export type IGatewayDiscoveryParameters = {
     networkId: EthNetworkID,
     bootnodesContentUri: string | ContentUri
     numberOfGateways?: number
+    /** Timeout in milliseconds */
     timeout?: number
     testing?: boolean
 }
@@ -80,7 +81,7 @@ async function getWorkingGateways(params: IGatewayDiscoveryParameters): Promise<
         const bootnodeData: JsonBootnodeData = await promiseFuncWithTimeout(() => {
             if (bootnodesContentUri) return GatewayBootnode.getGatewaysFromUri(bootnodesContentUri)
             return GatewayBootnode.getDefaultGateways(networkId)
-        }, GATEWAY_SELECTION_TIMEOUT / 2
+        }, GATEWAY_SELECTION_TIMEOUT
         ).catch(err => { throw new Error("Could not fetch the bootnode details") })
 
         // Randomizing DvoteGateways order
@@ -233,7 +234,7 @@ function selectActiveNodes(dvoteNodes: IDVoteGateway[], web3Nodes: IWeb3Gateway[
         let prom = dvoteGw.isUp(timeout)
             .then(() => { result.dvote.push(dvoteGw) })
             .catch(error => {
-                console.error("Health check failed:", error)
+                console.error("Health check failed:", dvoteGw.uri, error)
                 // Skip adding tot the list
             })
         checks.push(prom)
@@ -243,7 +244,7 @@ function selectActiveNodes(dvoteNodes: IDVoteGateway[], web3Nodes: IWeb3Gateway[
         let prom = web3Gw.isUp(timeout)
             .then(() => { result.web3.push(web3Gw) })
             .catch(error => {
-                console.error("Health check failed:", error)
+                console.error("Health check failed:", web3Gw.provider["connection"].url, error)
                 // Skip adding tot the list
             })
         checks.push(prom)

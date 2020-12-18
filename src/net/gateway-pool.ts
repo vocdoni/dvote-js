@@ -71,6 +71,7 @@ export class GatewayPool {
         }
 
         this.pool.push(this.pool.shift())
+        return Promise.resolve()
     }
 
     public get activeGateway(): Gateway {

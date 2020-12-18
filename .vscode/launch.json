@@ -7,10 +7,20 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Run Example",
+            "name": "Example",
             "runtimeArgs": ["--nolazy", "-r", "ts-node/register/transpile-only"],
             "program": "${workspaceFolder}/example/index.ts",
             "cwd": "${workspaceFolder}/example",
+            "internalConsoleOptions": "openOnSessionStart",
+            "skipFiles": ["<node_internals>/**", "node_modules/**"]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Benchmark",
+            "runtimeArgs": ["--nolazy", "-r", "ts-node/register/transpile-only"],
+            "program": "${workspaceFolder}/benchmark/index.ts",
+            "cwd": "${workspaceFolder}/benchmark",
             "internalConsoleOptions": "openOnSessionStart",
             "skipFiles": ["<node_internals>/**", "node_modules/**"]
         }
