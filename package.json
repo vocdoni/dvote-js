@@ -10,14 +10,14 @@
   "private": false,
   "scripts": {
     "prepublishOnly": "npm run build",
-    "clean": "rm -fR dist",
+    "clean": "rimraf dist",
     "build": "npm run clean && ./node_modules/.bin/tsc",
     "watch": "./node_modules/.bin/tsc -w -p .",
     "ts-node": "./node_modules/.bin/ts-node",
     "test": "npm run build && ./node_modules/.bin/mocha -r ts-node/register test/**/*.ts",
     "test:unit": "npm run build && ./node_modules/.bin/mocha -r ts-node/register test/unit/*.ts",
     "test:integration": "npm run build && ./node_modules/.bin/mocha -r ts-node/register test/integration/*.ts",
-    "postinstall": "rm -Rf node_modules/ganache-core/node_modules/web3-providers-ws/node_modules/websocket/.git || true"
+    "postinstall": "rimraf node_modules/ganache-core/node_modules/web3-providers-ws/node_modules/websocket/.git || true"
   },
   "dependencies": {
     "@vocdoni/storage-proofs-eth": "^0.2.1",
@@ -47,6 +47,7 @@
     "ganache-cli": "^6.4.5",
     "ganache-core": "^2.6.1",
     "mocha": "^5.2.0",
+    "rimraf": "^3.0.2",
     "sinon": "^7.3.1",
     "ts-node": "^7.0.1",
     "tslint": "^5.18.0",
