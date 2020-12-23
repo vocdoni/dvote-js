@@ -858,6 +858,7 @@ export class VotingApi {
      */
     static packageVoteContent(votes: number[], processKeys?: IProcessKeys): { votePackage: string, keyIndexes?: number[] } {
         if (!Array.isArray(votes)) throw new Error("Invalid votes")
+        else if (votes.some(vote => typeof vote != "number")) throw new Error("Votes needs to be an array of numbers")
         else if (processKeys) {
             if (!Array.isArray(processKeys.encryptionPubKeys) || !processKeys.encryptionPubKeys.every(
                 item => item && typeof item.idx == "number" && typeof item.key == "string" && item.key.match(/^(0x)?[0-9a-zA-Z]+$/))) {

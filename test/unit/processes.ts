@@ -219,6 +219,11 @@ describe("Governance Process", () => {
             const pkg2: IVotePackage = JSON.parse(Buffer.from(envelope2.votePackage, "base64").toString())
             expect(pkg2.votes.length).to.eq(3)
             expect(pkg2.votes).to.deep.equal([5, 6, 7])
+
+            // Strings are not allowed
+            expect(async () => {
+                await VotingApi.packageSignedEnvelope({ votes: ["1", "2", "3"], merkleProof: siblings, processId, walletOrSigner: wallet } as any)
+            }).to.throw
         })
         it("Should bundle an encrypted Vote Package into a valid Vote Envelope", async () => {
             const wallet = Wallet.fromMnemonic("seven family better journey display approve crack burden run pattern filter topple")
