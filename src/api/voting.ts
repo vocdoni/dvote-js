@@ -650,7 +650,7 @@ export class VotingApi {
 
         return gateway.sendRequest({ method: "getResults", processId })
             .then((response) => {
-                if (!Array.isArray(response.results)) throw new Error("The gateway response is not valid")
+                if (response.results && !Array.isArray(response.results)) throw new Error("The gateway response is not valid")
                 const results = (Array.isArray(response.results) && response.results.length) ? response.results : []
                 const status = response.state || ""
                 return { results, status }
