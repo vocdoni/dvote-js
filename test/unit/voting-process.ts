@@ -557,6 +557,10 @@ describe("Voting Process", () => {
             expect(pkg2.type).to.eq("poll-vote")
             expect(pkg2.votes.length).to.eq(3)
             expect(pkg2.votes).to.deep.equal([5, 6, 7])
+
+            expect(async () => {
+                await packagePollEnvelope({votes: ["1", "2", "3"], merkleProof: siblings, processId, walletOrSigner: wallet} as any)
+            }).to.throw
         })
         it("Should bundle an encrypted Vote Package into a valid Vote Envelope", async () => {
             const wallet = Wallet.fromMnemonic("seven family better journey display approve crack burden run pattern filter topple")
