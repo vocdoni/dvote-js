@@ -82,10 +82,11 @@ describe("Governance Process", () => {
             const newInstance = await w3Gw.getProcessesInstance(entityAccount.wallet, contractInstance.address)
             expect(newInstance.address).to.equal(contractInstance.address)
 
-            const data = ProcessContractParameters.fromContract(await newInstance.get(newProcessId))
+            const contractState = await newInstance.get(newProcessId)
+            const data = ProcessContractParameters.fromContract(contractState)
             expect(data.mode.value).to.equal(DEFAULT_PROCESS_MODE)
             expect(data.envelopeType.value).to.equal(DEFAULT_PROCESS_MODE)
-            expect(data.censusOrigin).to.eq(DEFAULT_CENSUS_ORIGIN)
+            expect(data.censusOrigin.value).to.eq(DEFAULT_CENSUS_ORIGIN)
             expect(data.metadata.toLowerCase()).to.equal(DEFAULT_METADATA_CONTENT_HASHED_URI)
             expect(data.censusMerkleRoot).to.equal(DEFAULT_MERKLE_ROOT)
             expect(data.censusMerkleTree).to.equal(DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI)
@@ -97,7 +98,7 @@ describe("Governance Process", () => {
             expect(data.costExponent).to.eq(DEFAULT_COST_EXPONENT)
             expect(data.maxVoteOverwrites).to.eq(DEFAULT_MAX_VOTE_OVERWRITES)
             expect(data.namespace).to.eq(DEFAULT_NAMESPACE)
-            expect(data.paramsSignature).to.eq(DEFAULT_PARAMS_SIGNATURE)
+            // expect(data.paramsSignature).to.eq(null)  // Not retrieved by contract.get(...)
         })
 
         it("Should compute process ID's in the same way as the on-chain version", async () => {
@@ -113,7 +114,7 @@ describe("Governance Process", () => {
                     expect(received).to.equal(expected)
                 }
             }
-        }).timeout(5000)
+        }).timeout(10000)
 
         it("The getProcessId() should match getNextProcessId()", async () => {
             // entityAddress has one process created by default from the builder
@@ -128,34 +129,38 @@ describe("Governance Process", () => {
             const builder = new ProcessBuilder(accounts)
 
             contractInstance = await builder.withEntityAccount(randomAccount).build()
-            let params = ProcessContractParameters.fromContract(await contractInstance.get(processId))
+            let contractState = await contractInstance.get(processId)
+            let params = ProcessContractParameters.fromContract(contractState)
             expect(params.entityAddress).to.eq(randomAccount.address)
 
+            processId = await contractInstance.getNextProcessId(randomAccount2.address, DEFAULT_NAMESPACE)
             contractInstance = await builder.withEntityAccount(randomAccount2).build()
-            params = ProcessContractParameters.fromContract(await contractInstance.get(processId))
+            contractState = await contractInstance.get(processId)
+            params = ProcessContractParameters.fromContract(contractState)
             expect(params.entityAddress).to.eq(randomAccount2.address)
-        })
+        }).timeout(5000)
     })
 
     describe("Results publishing", () => {
-
         it("Should allow to publish the results", async () => {
             // created by the entity
             contractInstance = await new ProcessBuilder(accounts)
                 .withEntityAccount(entityAccount)
+                .withOracle(randomAccount1.address)
+                .withQuestionCount(2)
                 .build()
 
             const result1 = await contractInstance.getResults(processId)
             expect(result1.tally).to.deep.equal([])
             expect(result1.height).to.equal(0)
 
-            const tx1 = await contractInstance.setResults(processId, [[1, 5, 4], [4, 1, 5]], 10)
+            const tx1 = await contractInstance.connect(randomAccount1.wallet).setResults(processId, [[1, 5, 4], [4, 1, 5]], 10)
             expect(tx1).to.be.ok
             expect(tx1.to).to.equal(contractInstance.address)
             await tx1.wait()
 
             const result2 = await contractInstance.getResults(processId)
-            expect(result2.tally).to.equal([[1, 5, 4], [4, 1, 5]])
+            expect(result2.tally).to.deep.equal([[1, 5, 4], [4, 1, 5]])
             expect(result2.height).to.eq(10)
         })
 

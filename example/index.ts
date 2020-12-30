@@ -21,7 +21,7 @@ import { GatewayBootnode } from "../src/net/gateway-bootnode"
 import { EntityMetadataTemplate, EntityMetadata, TextRecordKeys } from "../src/models/entity"
 import { ProcessMetadata, ProcessMetadataTemplate } from "../src/models/process"
 import { GatewayInfo } from "../src/wrappers/gateway-info"
-import { VOCHAIN_BLOCK_TIME } from "../src/constants"
+import { SOKOL_CHAIN_ID, SOKOL_ENS_REGISTRY_ADDRESS, VOCHAIN_BLOCK_TIME } from "../src/constants"
 import { JsonSignature, BytesSignature } from "../src/util/data-signing"
 import { DVoteGatewayMethod } from "../src/models/gateway"
 import { IGatewayDiscoveryParameters } from "../src/net/gateway-discovery"
@@ -730,6 +730,7 @@ async function gatewayRawRequest() {
 
     // UNSIGNED
     const origin = "ipfs://12341234..."
+    console.log("\nReading from", GATEWAY_DVOTE_URI)
     console.log("\nReading", origin)
     const data = await FileApi.fetchString(origin, pool)
     console.log("DATA:", data)

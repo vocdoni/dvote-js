@@ -16,6 +16,7 @@ let baseAccount = new DevWeb3Service({ port: 80000 }).accounts[0]
 // let randomAccount: TestAccount
 let port: number = 9100
 
+const defaultConnectResponse = { timestamp: 123, ok: true, apiList: ["file", "vote", "census", "results", "info"], health: 100 }
 const defaultDummyResponse = { ok: true }
 
 addCompletionHooks()
@@ -43,7 +44,9 @@ describe("DVote gateway client", () => {
         })
 
         it("Should update the gateway's URI and point to the new location", async () => {
-            const dvoteServer1 = new DevGatewayService({ port, responses: [defaultDummyResponse] })
+            const port1 = 9010
+            const dvoteServer1 = new DevGatewayService({ port: port1, responses: [defaultConnectResponse, defaultDummyResponse] })
+            await dvoteServer1.start()
             const gatewayUri1 = dvoteServer1.uri
             expect(dvoteServer1.interactionCount).to.equal(0)
 
@@ -55,8 +58,9 @@ describe("DVote gateway client", () => {
 
             await dvoteServer1.stop()
 
-            const port2 = 9000
-            const dvoteServer2 = new DevGatewayService({ port: port2, responses: [defaultDummyResponse] })
+            const port2 = 9011
+            const dvoteServer2 = new DevGatewayService({ port: port2, responses: [defaultConnectResponse, defaultDummyResponse] })
+            await dvoteServer2.start()
             const gatewayUri2 = dvoteServer2.uri
             const gatewayInfo2 = new GatewayInfo(gatewayUri2, ["file", "vote", "census"], "https://server/path", "")
 

@@ -24,7 +24,7 @@
     "axios": "^0.21.0",
     "buffer": "^6.0.3",
     "circomlib": "^0.1.2",
-    "dvote-solidity": "^0.12.0",
+    "dvote-solidity": "^0.12.1",
     "ethers": "^5.0.23",
     "iso-language-codes": "^1.0.6",
     "js-sha3": "^0.8.0",
