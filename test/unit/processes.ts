@@ -35,15 +35,15 @@ import ProcessBuilder, {
 import ProcessMetadataBuilder from "../builders/process-metadata"
 import NamespaceBuilder from "../builders/namespace"
 import { Web3Gateway } from "../../src/net/gateway-web3"
-import {
+import { BytesSignature } from "../../src/util/data-signing"
+const {
     VoteEnvelope,
     Proof,
     ProofGraviton,
     // ProofIden3,
     // ProofEthereumStorage,
     // ProofEthereumAccount
-} from "../../lib/protobuf/build/js/common/vote_pb.js"
-import { BytesSignature } from "../../src/util/data-signing"
+} = require("../../lib/protobuf/build/js/common/vote_pb.js")
 
 let accounts: TestAccount[]
 let baseAccount: TestAccount

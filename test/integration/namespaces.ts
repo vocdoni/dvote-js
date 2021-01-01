@@ -6,7 +6,7 @@
 
 import "mocha" // using @types/mocha
 import { expect } from "chai"
-import { Contract } from "ethers"
+import { Contract, providers } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
 import DevServices, { TestAccount } from "../helpers/all-services"
 import { NamespaceContractMethods } from "../../src/net/contracts"
@@ -45,6 +45,8 @@ describe("Namespaces", () => {
 
         contractInstance = (await new NamespaceBuilder(accounts).build()).connect(baseAccount.wallet) as NamespaceContractMethods & Contract
     })
+    // Stop polling
+    afterEach(() => (contractInstance.provider as providers.BaseProvider).polling = false)
 
     describe("Genesis info", () => {
         it("Should allow to set the genesis Content Hashed URI", async () => {
