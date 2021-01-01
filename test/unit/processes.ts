@@ -237,6 +237,10 @@ describe("Governance Process", () => {
             expect(pkg2.votes.length).to.eq(3)
             expect(pkg2.votes).to.deep.equal([5, 6, 7])
             expect(BytesSignature.isValid(signature2, wallet._signingKey().publicKey, e2)).to.eq(true)
+
+            expect(async () => {
+                await VotingApi.packageSignedEnvelope({ votes: ["1", "2", "3"], merkleProof: siblings, processId, walletOrSigner: wallet } as any)
+            }).to.throw
         })
 
         it("Should bundle an encrypted Vote Package into a valid Vote Envelope", async () => {
