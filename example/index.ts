@@ -440,7 +440,7 @@ async function showProcessResults() {
 
     const processId = "0xc69acd6435f622f5dda70e887cbebe3994b67d68686ca31872cb9b4a64525374"
 
-    console.log("getRawRawResults", await VotingApi.getRawResults(processId, pool))
+    console.log("getRawResults", await VotingApi.getRawResults(processId, pool))
     console.log("getResultsDigest", JSON.stringify(await VotingApi.getResultsDigest(processId, pool), null, 2))
 }
 
@@ -533,22 +533,23 @@ async function useVoteApi() {
     const votes = [1, 2, 1]
 
     // Open vote version:
-    const voteEnvelope = await VotingApi.packageSignedEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet })
+    const { envelope, signature } = await VotingApi.packageSignedEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet })
 
     // Encrypted vote version:
     // const voteEnvelope = await VotingApi.packageSignedEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
 
-    console.log("- Poll Envelope:", voteEnvelope)
+    console.log("- Poll Envelope:", envelope)
+    console.log("- Poll Signature:", signature)
 
     console.log("- Submitting vote envelope")
-    await VotingApi.submitEnvelope(voteEnvelope, pool)
+    await VotingApi.submitEnvelope(envelope, signature, pool)
 
     const envelopeList = await VotingApi.getEnvelopeList(processId, 0, 100, pool)
     console.log("- Envelope list:", envelopeList)
     if (envelopeList.length > 0)
         console.log("- Retrieved Vote:", await VotingApi.getEnvelope(processId, pool, envelopeList[envelopeList.length - 1]))
 
-    console.log("getRawRawResults", await VotingApi.getRawResults(processId, pool))
+    console.log("getRawResults", await VotingApi.getRawResults(processId, pool))
     console.log("getResultsDigest", JSON.stringify(await VotingApi.getResultsDigest(processId, pool), null, 2))
 }
 
@@ -588,12 +589,12 @@ async function submitVoteBatch() {
             const publicKeyHash = CensusApi.digestHexClaim(wallet["_signingKey"]().publicKey)
             const merkleProof = await CensusApi.generateProof(censusMerkleRoot, publicKeyHash, true, pool)
             const votes = [1]
-            const voteEnvelope = await VotingApi.packageSignedEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet })
+            const { envelope, signature } = await VotingApi.packageSignedEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet })
             // Encrypted version:
             // const voteEnvelope = await VotingApi.packageSignedEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
 
             console.log("- Submitting vote envelope")
-            await VotingApi.submitEnvelope(voteEnvelope, pool)
+            await VotingApi.submitEnvelope(envelope, signature, pool)
 
             console.log("- Envelope height is now:", await VotingApi.getEnvelopeHeight(processId, pool))
         } catch (err) {

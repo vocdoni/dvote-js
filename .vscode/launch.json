@@ -49,10 +49,10 @@
                 "--timeout",
                 "999999",
                 "--colors",
-                "${workspaceFolder}/test/unit/processes.ts",
+                "${workspaceFolder}/test/integration/processes.ts",
             ],
             "console": "integratedTerminal",
-            "internalConsoleOptions": "neverOpen",
+            "internalConsoleOptions": "openOnSessionStart",
             "protocol": "inspector"
         }
     ]

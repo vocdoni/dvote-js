@@ -474,10 +474,10 @@ async function launchNewVote(merkleRoot, merkleTreeUri) {
 
     const processParamsPre = {
         mode: ProcessMode.make({ autoStart: true, interruptible: true }), // helper
-        envelopeType: ProcessEnvelopeType.ENCRYPTED_VOTES | ProcessEnvelopeType.SERIAL, // bit mask
+        envelopeType: ProcessEnvelopeType.ENCRYPTED_VOTES, // bit mask
         censusOrigin: ProcessCensusOrigin.OFF_CHAIN,
         metadata: ProcessMetadataTemplate,
-        censusMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000",
+        censusMerkleRoot: merkleRoot,
         censusMerkleTree: "ipfs://1234123412341234",
         startBlock,
         blockCount,
@@ -555,14 +555,14 @@ async function launchVotes(accounts) {
         process.stdout.write(`Pkg Envelope [${idx}] ; `)
         const choices = getChoicesForVoter(idx)
 
-        const voteEnvelope = processParams.envelopeType.hasEncryptedVotes ?
+        const { envelope, signature } = processParams.envelopeType.hasEncryptedVotes ?
             await VotingApi.packageSignedEnvelope({ votes: choices, merkleProof, processId, walletOrSigner: wallet, processKeys }) :
             await VotingApi.packageSignedEnvelope({ votes: choices, merkleProof, processId, walletOrSigner: wallet })
 
         process.stdout.write(`Sending [${idx}] ; `)
-        await VotingApi.submitEnvelope(voteEnvelope, pool)
+        await VotingApi.submitEnvelope(envelope, signature, pool)
             .catch(err => {
-                console.error("\nsubmitEnvelope ERR", account.publicKey, voteEnvelope, err)
+                console.error("\nsubmitEnvelope ERR", account.publicKey, envelope, signature, err)
                 if (config.stopOnError) throw err
             })
 

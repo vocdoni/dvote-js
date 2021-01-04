@@ -739,13 +739,15 @@ export class VotingApi {
 
     /**
      * Submit the vote envelope to a Gateway
-     * @param payload Base64 encoded contents of the (protobuf) Vote Envelope
-     * @param gateway
+     * @param {Uint8Array} voteEnvelope Binary contents of the (protobuf) Vote Envelope
+     * @param {String} signature Hex encoded signature of the voteEnvelope
+     * @param {Gateway|GatewayPool} gateway
      */
-    async submitEnvelope(base64VoteEnvelope: string, hexSignature: string = "", gateway: IGateway | GatewayPool): Promise<DVoteGatewayResponseBody> {
-        if (!base64VoteEnvelope) return Promise.reject(new Error("Invalid parameters"))
+    static async submitEnvelope(bytesVoteEnvelope: Uint8Array, hexSignature: string = "", gateway: IGateway | GatewayPool): Promise<DVoteGatewayResponseBody> {
+        if (!bytesVoteEnvelope) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
+        const base64VoteEnvelope = Buffer.from(bytesVoteEnvelope).toString("base64")
         return gateway.sendRequest({ method: "submitEnvelope", payload: base64VoteEnvelope, signature: hexSignature || "" })
             .catch((error) => {
                 const message = (error.message) ? "Could not submit the vote envelope: " + error.message : "Could not submit the vote envelope"
@@ -827,7 +829,7 @@ export class VotingApi {
         votes: number[], merkleProof: string, processId: string, walletOrSigner: Wallet | Signer,
         processKeys?: IProcessKeys
     }): Promise<{ envelope: Uint8Array, signature: string }> {
-        if (!params) throw new Error("Invalid parameters");
+        if (!params) throw new Error("Invalid parameters")
         else if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
         else if (typeof params.merkleProof != "string" || !params.merkleProof.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid Merkle Proof")
         else if (typeof params.processId != "string" || !params.processId.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid processId")

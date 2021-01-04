@@ -7,28 +7,55 @@ import NamespaceBuilder, { DEFAULT_NAMESPACE } from "../builders/namespace"
 import ProcessBuilder, { DEFAULT_PARAMS_SIGNATURE } from "../builders/process"
 // import { ProcessMetadata } from "../../src/models/process"
 // import { VotingApi } from "../../src/api/voting"
-import { Wallet } from "ethers"
-// import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType } from "../../src/net/contracts"
-// import { EntityMetadataTemplate } from "../../src/models/entity"
+import { Contract, providers, Wallet } from "ethers"
+import { EnsPublicResolverContractMethods, ProcessCensusOrigin, ProcessContractMethods, ProcessContractParameters, ProcessEnvelopeType, ProcessMode } from "../../src/net/contracts"
+import { ProcessMetadata } from "../../src/models/process"
+import { EntityMetadataTemplate } from "../../src/models/entity"
+import { VotingApi } from "../../src/api/voting"
+import { GatewayInfo } from "../../src/wrappers/gateway-info"
+import { DVoteGateway } from "../../src/net/gateway-dvote"
+import { Web3Gateway } from "../../src/net/gateway-web3"
 
 let server: DevServices
 let gateway: Gateway
 let entityAccount: Wallet
+let entityInstance: EnsPublicResolverContractMethods & Contract
+let processInstance: Contract & ProcessContractMethods
+
+// function mockResolveName(input: string) {
+//     switch (input) {
+//         case "entities.vocdoni.eth": return Promise.resolve(entityInstance.address)
+//         case "namespaces.vocdoni.eth": return processInstance.namespaceAddress()
+//         case "erc20.proofs.vocdoni.eth": return processInstance.tokenStorageProofAddress()
+//         case "processes.vocdoni.eth": return Promise.resolve(processInstance.address)
+//     }
+//     if (input.startsWith("0x")) return Promise.resolve(input)
+//     return Promise.reject(new Error("Unrecognized input: " + input))
+// }
 
 describe("Process", () => {
     before(() => {
         server = new DevServices({ port: 9001 }, { port: 9002 })
         return server.start()
     })
-    after(() => server.stop())
+    after(() => {
+        return server.stop()
+    })
 
     beforeEach(async () => {
-        const entityInstance = await new EnsResolverBuilder(server.accounts).build()
-        const namespaceInstance = await new NamespaceBuilder(server.accounts).build()
-        const processInstance = await new ProcessBuilder(server.accounts).build(0)
-        gateway = await server.getGateway(entityInstance.address, namespaceInstance.address, processInstance.address)
+        entityInstance = await new EnsResolverBuilder(server.accounts).build()
+        processInstance = await new ProcessBuilder(server.accounts).build(0)
+
+        gateway = await server.getGateway(entityInstance.address,
+            await processInstance.namespaceAddress(),
+            await processInstance.tokenStorageProofAddress(),
+            processInstance.address)
 
         entityAccount = server.web3.accounts[1].wallet
+    })
+    afterEach(() => {
+        (entityInstance.provider as providers.BaseProvider).polling = false;
+        (processInstance.provider as providers.BaseProvider).polling = false;
     })
 
     // it("example", async () => {
@@ -68,26 +95,18 @@ describe("Process", () => {
 
     describe("Process metadata", () => {
         it("Should register a new process on the blockchain")
-        //     it("Should register a new process on the blockchain", async () => {
 
-        //     const params = {
-        //         mode: ProcessMode.AUTO_START,
-        //         envelopeType: ProcessEnvelopeType.make(),
-        //         // metadata not needed
-        //         censusMerkleRoot: "0x1",
-        //         censusMerkleTree: "ipfs://1234",
-        //         startBlock: 200,
-        //         blockCount: 1000,
-        //         maxCount: 1,
-        //         maxValue: 5,
-        //         maxTotalCost: 10,
-        //         maxVoteOverwrites: 0,
-        //         uniqueValues: true,
-        //         costExponent: 10000,
-        //         questionCount: 5, /////
-        //         namespace: DEFAULT_NAMESPACE,
-        //         paramsSignature: DEFAULT_PARAMS_SIGNATURE
-        //     }
+        // TODO: ENS contracts need to be mocked
+
+        // it("Should register a new process on the blockchain", async () => {
+        //     const dvoteGw = new DVoteGateway({ uri: "http://localhost:9001/dvote", supportedApis: ["file", "vote", "census"] })
+        //     const w3Gw = new Web3Gateway(server.web3.provider)
+        //     let gw = new Gateway(dvoteGw, w3Gw)
+        //     await gw.init()
+
+        //     const oldResolveName = gw.provider.resolveName
+        //     gw["web3"]["_provider"].resolveName = mockResolveName
+
         //     const metadata: ProcessMetadata = {
         //         version: "1.1",
         //         title: { default: "test" },
@@ -104,12 +123,32 @@ describe("Process", () => {
         //             ]
         //         }]
         //     }
+        //     const params = {
+        //         mode: ProcessMode.AUTO_START,
+        //         envelopeType: ProcessEnvelopeType.make(),
+        //         censusOrigin: ProcessCensusOrigin.OFF_CHAIN,
+        //         metadata,
+        //         censusMerkleRoot: "0x1",
+        //         censusMerkleTree: "ipfs://1234",
+        //         startBlock: 200,
+        //         blockCount: 1000,
+        //         maxCount: 1,
+        //         maxValue: 5,
+        //         maxTotalCost: 10,
+        //         maxVoteOverwrites: 0,
+        //         costExponent: 10000,
+        //         namespace: DEFAULT_NAMESPACE,
+        //         paramsSignature: DEFAULT_PARAMS_SIGNATURE
+        //     }
 
-        //     server.dvote.addResponse({ ok: true, content: Buffer.from(EntityMetadataTemplate).toString("base64") }) // internal getMetadata > fetchFile
-        //     server.dvote.addResponse({ ok: true, ... }) // fetchFile
-        //     const processId = await newProcess(params, metadata, entityAccount, gateway)
+        //     server.dvote.addResponse({ ok: true, content: Buffer.from(JSON.stringify(EntityMetadataTemplate)).toString("base64") }) // internal getMetadata > fetchFile
+        //     server.dvote.addResponse({ ok: true, content: "" }) // fetchFile
+        //     const processId = await VotingApi.newProcess(params, entityAccount, gw)
+
+        //     gw.disconnect()
+
+        //     gw["web3"]["_provider"].resolveName = oldResolveName
         // })
-
 
         it("Should fetch the metadata of a process")
         it("Should fail creating a process if the Entity does not exist")
