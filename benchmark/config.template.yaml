@@ -13,10 +13,6 @@ bootnodesUrlRw: "https://server/gateways.json"     # Bootnode used by default
 dvoteGatewayUri:                                   # If set, overrides bootnodesUrlRw
 dvoteGatewayPublicKey:                             # If set, overrides bootnodesUrlRw
 
-registryApiPrefix: "https://my-registry"
-censusManagerApiPrefix: "https://my-census-manager"
-entityManagerUriPrefix: "https://my-entity-manager"
-
 numAccounts: 10000
 maxConcurrency: 4500
 

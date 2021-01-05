@@ -1,17 +1,14 @@
-// ALTERNATIVE APPROACH WITH ETHERS.JS
-
 import * as ethers from "ethers"
 import ganache from "ganache-cli"
 
-
-const { getConfig } = require("./util")
-const config = getConfig()
+const config = {
+    MNEMONIC: "..."
+}
 
 const { abi: entityResolverAbi, bytecode: entityResolverByteCode } = require("../build/entity-resolver.json")
 const { abi: votingProcessAbi, bytecode: votingProcessByteCode } = require("../build/process.json")
 
 async function main() {
-
     // local blockchain with prefinded accounts
     const provider = new ethers.providers.Web3Provider(ganache.provider({
         mnemonic: config.MNEMONIC

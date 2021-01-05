@@ -12,14 +12,14 @@ import { Web3Gateway } from "net/gateway-web3"
 // import ContentURI from "../wrappers/content-uri"
 
 
-export class CensusApi {
+export class CensusOffChainApi {
     /**
      * A census ID consists of the Entity Address and the hash of the name.
      * This function returns the full Census ID
      */
     static generateCensusId(censusName: string, entityAddress: string) {
         const prefix = "0x" + entityAddress.toLowerCase().substr(2)
-        const suffix = CensusApi.generateCensusIdSuffix(censusName)
+        const suffix = CensusOffChainApi.generateCensusIdSuffix(censusName)
         return prefix + "/" + suffix
     }
 
@@ -69,23 +69,23 @@ export class CensusApi {
         else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!walletOrSigner || !(walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer)) return Promise.reject(new Error("Invalid WalletOrSinger object"))
 
-        const censusId = CensusApi.generateCensusId(censusName, await walletOrSigner.getAddress())
+        const censusId = CensusOffChainApi.generateCensusId(censusName, await walletOrSigner.getAddress())
 
         // Check if the census already exists
         let existingRoot
         try {
             // TODO: normalize the `censusId` parameter value
             // Pass the full censusId instead of the second term only
-            existingRoot = await CensusApi.getRoot(censusId, gateway)
+            existingRoot = await CensusOffChainApi.getRoot(censusId, gateway)
             if (typeof existingRoot == "string" && existingRoot.match(/^0x[0-9a-zA-Z]+$/)) return { censusId, merkleRoot: existingRoot }
         } catch (error) {
             // If it errors because it doesn't exist, we continue below
         }
 
         try {
-            const censusIdSuffix = CensusApi.generateCensusIdSuffix(censusName)
+            const censusIdSuffix = CensusOffChainApi.generateCensusIdSuffix(censusName)
             const response = await gateway.sendRequest({ method: "addCensus", censusId: censusIdSuffix, pubKeys: managerPublicKeys }, walletOrSigner)
-            const merkleRoot = await CensusApi.getRoot(response.censusId, gateway)
+            const merkleRoot = await CensusOffChainApi.getRoot(response.censusId, gateway)
             return { censusId: response.censusId, merkleRoot }
         } catch (error) {
             const message = (error.message) ? "The census could not be created: " + error.message : "The census could not be created "
@@ -111,7 +111,7 @@ export class CensusApi {
 
         return gateway.sendRequest({ method: "addClaim", censusId, digested, claimData }, walletOrSigner)
             .then((response) => {
-                return CensusApi.getRoot(censusId, gateway)
+                return CensusOffChainApi.getRoot(censusId, gateway)
             })
             .catch((error) => {
                 const message = (error.message) ? "The claim could not be added: " + error.message : "The claim could not be added."
@@ -140,11 +140,11 @@ export class CensusApi {
         while (addedClaims < claimsData.length) {
             let claims = claimsData.slice(addedClaims, addedClaims + CENSUS_MAX_BULK_SIZE)
             addedClaims += CENSUS_MAX_BULK_SIZE
-            const partialInvalidClaims = await CensusApi.addClaimChunk(censusId, claims, digested, walletOrSigner, gateway)
+            const partialInvalidClaims = await CensusOffChainApi.addClaimChunk(censusId, claims, digested, walletOrSigner, gateway)
             invalidClaims = invalidClaims.concat(partialInvalidClaims)
         }
 
-        const merkleRoot = await CensusApi.getRoot(censusId, gateway)
+        const merkleRoot = await CensusOffChainApi.getRoot(censusId, gateway)
 
         return { merkleRoot, invalidClaims }
     }
@@ -309,11 +309,11 @@ export class CensusApi {
     }
 }
 
-export class CensusEthApi {
-    static generateProof(address: string, storageKeys: string[], blockNumber: number | "latest", provider: string | providers.JsonRpcProvider | providers.Web3Provider | providers.IpcProvider | providers.InfuraProvider) {
+export class CensusErc20Api {
+    static generateProof(tokenAddress: string, storageKeys: string[], blockNumber: number | "latest", provider: string | providers.JsonRpcProvider | providers.Web3Provider | providers.IpcProvider | providers.InfuraProvider) {
         const prover = new ERC20Prover(provider)
         const verify = true
-        return prover.getProof(address, storageKeys, blockNumber, verify)
+        return prover.getProof(tokenAddress, storageKeys, blockNumber, verify)
     }
 
     static verifyProof(stateRoot: string, address: string, proof: any, provider: string | providers.JsonRpcProvider | providers.Web3Provider | providers.IpcProvider | providers.InfuraProvider) {
@@ -321,8 +321,8 @@ export class CensusEthApi {
         return prover.verify(stateRoot, address, proof)
     }
 
-    static getHolderBalanceSlot(tokenAddress: string, balanceMappingSlot: number) {
-        return ERC20Prover.getHolderBalanceSlot(tokenAddress, balanceMappingSlot)
+    static getHolderBalanceSlot(holderAddress: string, balanceMappingSlot: number) {
+        return ERC20Prover.getHolderBalanceSlot(holderAddress, balanceMappingSlot)
     }
 
     static registerToken(tokenAddress: string, balanceMappingPosition: number | BigNumber, blockNumber: number | BigNumber, blockHeaderRLP: Buffer, accountStateProof: Buffer, walletOrSigner: Wallet | Signer, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string) {

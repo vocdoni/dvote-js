@@ -11,7 +11,7 @@ import { WalletUtil } from "../src/util/signers"
 import { FileApi } from "../src/api/file"
 import { EntityApi } from "../src/api/entity"
 import { VotingApi } from "../src/api/voting"
-import { CensusApi } from "../src/api/census"
+import { CensusOffChainApi } from "../src/api/census"
 import { ProcessContractParameters } from "../src/net/contracts"
 import { Gateway } from "../src/net/gateway"
 import { DVoteGateway } from "../src/net/gateway-dvote"
@@ -102,7 +102,7 @@ async function fileUpload() {
 
         console.log("SIGNING FROM ADDRESS", wallet.address)
 
-        const strData = fs.readFileSync(__dirname + "/mobile-org-web-action-example.html").toString()
+        const strData = fs.readFileSync(__dirname + "/data/file.html").toString()
         console.error("PUTTING STRING OF LENGTH: ", strData.length)
         const origin = await FileApi.add(Buffer.from(strData), "mobile-org-web-action-example.html", wallet, gw)
         console.log("DATA STORED ON:", origin)
@@ -239,30 +239,30 @@ async function censusMethods() {
     console.log(publicKeyClaims);
 
     // Create a census if it doesn't exist
-    let result1 = await CensusApi.addCensus(censusName, adminPublicKeys, wallet, pool)
+    let result1 = await CensusOffChainApi.addCensus(censusName, adminPublicKeys, wallet, pool)
     console.log(`ADD CENSUS "${censusName}" RESULT:`, result1)
 
     // Add a claim to the new census
     const censusId = result1.censusId
-    let result2 = await CensusApi.addClaim(censusId, publicKeyClaims[0], false, wallet, pool)
+    let result2 = await CensusOffChainApi.addClaim(censusId, publicKeyClaims[0], false, wallet, pool)
     console.log("ADDED", publicKeyClaims[0], "TO", censusId)
 
     // Add claims to the new census
-    let result3 = await CensusApi.addClaimBulk(censusId, publicKeyClaims.slice(1), false, wallet, pool)
+    let result3 = await CensusOffChainApi.addClaimBulk(censusId, publicKeyClaims.slice(1), false, wallet, pool)
     console.log("ADDED", publicKeyClaims.slice(1), "TO", censusId)
     if (result3.invalidClaims.length > 0) console.log("INVALID CLAIMS", result3.invalidClaims)
 
-    const merkleRoot = await CensusApi.getRoot(censusId, pool)
+    const merkleRoot = await CensusOffChainApi.getRoot(censusId, pool)
     console.log("MERKLE ROOT", merkleRoot)  // 0x....
 
-    const merkleTree = await CensusApi.publishCensus(censusId, wallet, pool)
+    const merkleTree = await CensusOffChainApi.publishCensus(censusId, wallet, pool)
     console.log("PUBLISHED", censusId)
     console.log(merkleTree)   // ipfs://....
 
-    let result4 = await CensusApi.dump(censusId, wallet, pool)
+    let result4 = await CensusOffChainApi.dump(censusId, wallet, pool)
     console.log("DUMP", result4)
 
-    let result5 = await CensusApi.dumpPlain(censusId, wallet, pool)
+    let result5 = await CensusOffChainApi.dumpPlain(censusId, wallet, pool)
     console.log("DUMP PLAIN", result5)
 }
 
@@ -515,7 +515,7 @@ async function useVoteApi() {
     console.log("BLOCKCHAIN INFO:\n")
     console.log("- Process startBlock:", processParams.startBlock)
     console.log("- Process endBlock:", processParams.startBlock + processParams.blockCount)
-    console.log("- Census size:", await CensusApi.getCensusSize(censusMerkleRoot, pool))
+    console.log("- Census size:", await CensusOffChainApi.getCensusSize(censusMerkleRoot, pool))
     console.log("- Block height:", await VotingApi.getBlockHeight(pool))
     console.log("- Envelope height:", await VotingApi.getEnvelopeHeight(processId, pool))
 
@@ -528,8 +528,8 @@ async function useVoteApi() {
     console.log("- Date at block 500:", await VotingApi.estimateDateAtBlock(500, pool))
     console.log("- Block in 200 seconds:", await VotingApi.estimateBlockAtDateTime(new Date(Date.now() + VOCHAIN_BLOCK_TIME * 20), pool))
 
-    const publicKeyHash = CensusApi.digestHexClaim(wallet["_signingKey"]().publicKey)
-    const merkleProof = await CensusApi.generateProof(censusMerkleRoot, publicKeyHash, true, pool)
+    const publicKeyHash = CensusOffChainApi.digestHexClaim(wallet["_signingKey"]().publicKey)
+    const merkleProof = await CensusOffChainApi.generateProof(censusMerkleRoot, publicKeyHash, true, pool)
     const votes = [1, 2, 1]
 
     // Open vote version:
@@ -573,8 +573,8 @@ async function submitVoteBatch() {
     console.log("On Process", processId)
 
     // Load a set of registered accounts that can vote on the process
-    if (!require('fs').existsSync(__dirname + "/user-accounts.json")) throw new Error("File user-accounts.json does not exist")
-    var censusAccounts = require(__dirname + "/user-accounts.json")
+    if (!require('fs').existsSync(__dirname + "/data/user-accounts.json")) throw new Error("File user-accounts.json does not exist")
+    var censusAccounts = require(__dirname + "/data/user-accounts.json")
     if (!Array.isArray(censusAccounts)) throw new Error("File user-accounts.json does not contain a valid array")
     else if (toAccountIdx >= censusAccounts.length) throw new Error("'toAccountIdx' is greater than the size of the user accounts array")
 
@@ -586,8 +586,8 @@ async function submitVoteBatch() {
             const wallet = Wallet.fromMnemonic(mnemonic, PATH)
             // const myEntityAddress = await wallet.getAddress()
 
-            const publicKeyHash = CensusApi.digestHexClaim(wallet["_signingKey"]().publicKey)
-            const merkleProof = await CensusApi.generateProof(censusMerkleRoot, publicKeyHash, true, pool)
+            const publicKeyHash = CensusOffChainApi.digestHexClaim(wallet["_signingKey"]().publicKey)
+            const merkleProof = await CensusOffChainApi.generateProof(censusMerkleRoot, publicKeyHash, true, pool)
             const votes = [1]
             const { envelope, signature } = await VotingApi.packageSignedEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet })
             // Encrypted version:
@@ -681,7 +681,7 @@ async function fetchMerkleProof() {
     console.log("FETCHING CLAIM", process.env.BASE64_CLAIM_DATA)
     console.log("on Merkle Tree", process.env.CENSUS_MERKLE_ROOT)
 
-    const siblings = await CensusApi.generateProof(process.env.CENSUS_MERKLE_ROOT, process.env.BASE64_CLAIM_DATA, true, pool)
+    const siblings = await CensusOffChainApi.generateProof(process.env.CENSUS_MERKLE_ROOT, process.env.BASE64_CLAIM_DATA, true, pool)
     console.log("SIBLINGS:", siblings)
 }
 

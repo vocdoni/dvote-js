@@ -1,19 +1,16 @@
 import * as Bluebird from "bluebird"
-import axios from "axios"
 import { Wallet, utils } from "ethers"
 import * as assert from "assert"
 import { readFileSync, writeFileSync } from "fs"
 import * as YAML from 'yaml'
 import { GatewayPool } from "../src/net/gateway-pool"
 import { EthNetworkID } from "../src/net/gateway-bootnode"
-import { ensHashAddress } from "../src/net/contracts"
 import { EntityMetadataTemplate } from "../src/models/entity"
 import { EntityApi } from "../src/api/entity"
 import { VotingApi } from "../src/api/voting"
-import { CensusApi } from "../src/api/census"
+import { CensusOffChainApi } from "../src/api/census"
 import { ProcessMetadata, ProcessMetadataTemplate } from "../src/models/process"
 import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../src/net/contracts"
-import { JsonSignature } from "../src/util/data-signing"
 import { VochainWaiter, EthWaiter } from "../src/util/waiters"
 
 
@@ -82,7 +79,6 @@ async function main() {
     console.log("- Process merkle root", processParams.censusMerkleRoot)
     console.log("- Process merkle tree", processParams.censusMerkleTree)
     console.log("-", accounts.length, "accounts on the census")
-    console.log("- Entity Manager link:", config.entityManagerUriPrefix + "/processes/#/" + entityAddr + "/" + processId)
 
     // Wait until the current block >= startBlock
     await waitUntilStarted()
@@ -132,18 +128,6 @@ async function setEntityMetadata() {
         ended: []
     }
 
-    metadata.actions = [
-        {
-            type: "register",
-            actionKey: "register",
-            name: {
-                default: "Sign up",
-            },
-            url: config.registryApiPrefix + "/api/actions/register",
-            visible: config.registryApiPrefix + "/api/actions"
-        }
-    ]
-
     await EntityApi.setMetadata(await entityWallet.getAddress(), metadata, entityWallet, pool)
     console.log("Metadata updated")
 
@@ -170,7 +154,7 @@ function createWallets(amount) {
             mnemonic: wallet.mnemonic.phrase,
             privateKey: wallet["_signingKey"]().privateKey,
             publicKey: wallet["_signingKey"]().publicKey,
-            publicKeyHash: CensusApi.digestHexClaim(wallet["_signingKey"]().publicKey)
+            publicKeyHash: CensusOffChainApi.digestHexClaim(wallet["_signingKey"]().publicKey)
             // address: wallet.address
         })
     }
@@ -198,19 +182,19 @@ async function generatePublicCensusFromAccounts(accounts) {
     // Adding claims
     console.log("Registering the new census to the Census Service")
 
-    const { censusId } = await CensusApi.addCensus(censusIdSuffix, managerPublicKeys, entityWallet, pool)
+    const { censusId } = await CensusOffChainApi.addCensus(censusIdSuffix, managerPublicKeys, entityWallet, pool)
 
     console.log("Adding", publicKeyDigests.length, "claims")
-    const result = await CensusApi.addClaimBulk(censusId, publicKeyDigests, true, entityWallet, pool)
+    const result = await CensusOffChainApi.addClaimBulk(censusId, publicKeyDigests, true, entityWallet, pool)
 
     if (result.invalidClaims.length > 0) throw new Error("Census Service invalid claims count is " + result.invalidClaims.length)
 
     // Publish the census
     console.log("Publishing the new census")
-    const merkleTreeUri = await CensusApi.publishCensus(censusId, entityWallet, pool)
+    const merkleTreeUri = await CensusOffChainApi.publishCensus(censusId, entityWallet, pool)
 
     // Check that the census is published
-    const exportedMerkleTree = await CensusApi.dumpPlain(censusId, entityWallet, pool)
+    const exportedMerkleTree = await CensusOffChainApi.dumpPlain(censusId, entityWallet, pool)
     if (config.stopOnError) {
         assert(Array.isArray(exportedMerkleTree))
         assert(exportedMerkleTree.length == config.numAccounts)
@@ -315,7 +299,7 @@ async function launchVotes(accounts) {
         const wallet = new Wallet(account.privateKey)
 
         process.stdout.write(`Gen Proof [${idx}] ; `)
-        const merkleProof = await CensusApi.generateProof(processParams.censusMerkleRoot, account.publicKeyHash, true, pool)
+        const merkleProof = await CensusOffChainApi.generateProof(processParams.censusMerkleRoot, account.publicKeyHash, true, pool)
             .catch(err => {
                 console.error("\nCensusApi.generateProof ERR", account, err)
                 if (config.stopOnError) throw err
@@ -480,9 +464,6 @@ function getConfig(): Config {
     assert(typeof config.bootnodesUrlRw == "string", "config.yaml > bootnodesUrlRw should be a string")
     assert(!config.dvoteGatewayUri || typeof config.dvoteGatewayUri == "string", "config.yaml > dvoteGatewayUri should be a string")
     assert(!config.dvoteGatewayPublicKey || typeof config.dvoteGatewayPublicKey == "string", "config.yaml > dvoteGatewayPublicKey should be a string")
-    assert(typeof config.registryApiPrefix == "string", "config.yaml > registryApiPrefix should be a string")
-    assert(typeof config.censusManagerApiPrefix == "string", "config.yaml > censusManagerApiPrefix should be a string")
-    assert(typeof config.entityManagerUriPrefix == "string", "config.yaml > entityManagerUriPrefix should be a string")
     assert(typeof config.numAccounts == "number", "config.yaml > numAccounts should be a number")
     assert(typeof config.maxConcurrency == "number", "config.yaml > maxConcurrency should be a number")
     assert(typeof config.encryptedVote == "boolean", "config.yaml > encryptedVote should be a boolean")
@@ -506,15 +487,11 @@ type Config = {
     dvoteGatewayUri: string
     dvoteGatewayPublicKey: string
 
-    registryApiPrefix: string
-    censusManagerApiPrefix: string
-    entityManagerUriPrefix: string
-
     numAccounts: number
     maxConcurrency: number
 
     encryptedVote: boolean
-    votesPattern: string
+    votesPattern: "all-0" | "all-1" | "all-2" | "all-even" | "incremental"
 }
 
 type Account = {

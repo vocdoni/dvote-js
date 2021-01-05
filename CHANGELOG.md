@@ -1,5 +1,10 @@
 # DVote JS changelog
 
+## 0.17.2
+
+- Renamed `CensusApi` to `CensusOffChainApi`
+- Renamed `CensusEthApi` to `CensusErc20Api`
+
 ## 0.17.1
 
 - `submitEnvelope` now accepts a `Uint8Array` as the envelope
