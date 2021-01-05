@@ -42,16 +42,10 @@ async function main() {
 
         // Create N wallets
         accounts = createWallets(config.numAccounts)
+        assert(accounts && accounts.length)
 
         // Write them to a file
         writeFileSync(config.accountListFilePath, JSON.stringify(accounts, null, 2))
-
-        // Submit the accounts to the entity
-        const adminAccesstoken = await adminLogin()
-        await databasePrepare(adminAccesstoken)
-        await submitAccountsToRegistry(accounts)
-        await checkDatabaseKeys(adminAccesstoken, accounts)
-        assert(accounts)
     }
 
     if (config.readExistingProcess) {
@@ -65,18 +59,10 @@ async function main() {
         assert(processMetadata)
     }
     else {
-        let adminAccesstoken
-        if (!config.readExistingAccounts) {
-            adminAccesstoken = await adminLogin()
-            await checkDatabaseKeys(adminAccesstoken, accounts)  // optional
-        }
-
         // Generate and publish the census
         // Get the merkle root and IPFS origin of the Merkle Tree
         console.log("Publishing census")
-        const { merkleRoot, merkleTreeUri } = config.readExistingAccounts ?
-            await generatePublicCensusFromAccounts(accounts) :   // Read from JSON
-            await generatePublicCensusFromDb(adminAccesstoken)   // Dump from DB
+        const { merkleRoot, merkleTreeUri } = await generatePublicCensusFromAccounts(accounts)
 
         // Create a new voting process
         await launchNewVote(merkleRoot, merkleTreeUri)
@@ -191,221 +177,6 @@ function createWallets(amount) {
 
     console.log() // \n
     return accounts
-}
-
-async function adminLogin() {
-    assert(entityWallet)
-    console.log("Logging into the registry admin")
-
-    // Admin Log in
-    const msg = JSON.stringify({ timestamp: Date.now() })
-    const msgBytes = utils.toUtf8Bytes(msg)
-    const signature = await entityWallet.signMessage(msgBytes)
-
-    let body = {
-        payload: msg,
-        signature
-    }
-    var response = await axios.post(config.censusManagerApiPrefix + "/api/auth/session", body)
-    if (!response || !response.data || !response.data.token) throw new Error("Invalid Census Manager token")
-    const token = response.data.token
-
-    return token
-}
-
-async function databasePrepare(token) {
-    // List current census
-    var request: any = {
-        headers: {
-            'Content-Type': 'application/json',
-            'Cookie': "session-jwt=" + token
-        },
-        json: true
-    }
-
-    request.method = 'GET'
-    request.url = config.censusManagerApiPrefix + "/api/census?filter=%7B%7D&order=ASC&perPage=100000&sort=name&start=0"
-
-    var response = await axios(request)
-    assert(Array.isArray(response.data))
-    const cIds = response.data.map(item => item._id)
-
-    // Delete current DB census
-    if (cIds.length > 0) {
-        console.log("Cleaning existing census")
-
-        request.method = 'DELETE'
-        request.data = undefined
-        request.url = config.censusManagerApiPrefix + "/api/census?" + cIds.map(id => "ids=" + id).join("&")
-        response = await axios(request)
-    }
-
-    // List current users
-    request.method = 'GET'
-    request.url = config.censusManagerApiPrefix + "/api/members?filter=%7B%7D&order=ASC&perPage=1000000&sort=name&start=0"
-
-    response = await axios(request)
-    assert(Array.isArray(response.data))
-    const mIds = response.data.map(item => item._id)
-
-    // Delete current DB users
-    if (mIds.length > 0) {
-        console.log("Cleaning existing members")
-
-        request.method = 'DELETE'
-        request.data = undefined
-
-        // Delete in chunks of 100
-        for (let i = 0; i < mIds.length / 100; i++) {
-            const ids = mIds.slice(i * 100, i * 100 + 100)
-            if (ids.length == 0) break
-
-            request.url = config.censusManagerApiPrefix + "/api/members?" + ids.map(id => "ids=" + id).join("&")
-            response = await axios(request)
-        }
-        response = await axios(request)
-    }
-
-    return token
-}
-
-async function submitAccountsToRegistry(accounts) {
-    console.log("Registering", accounts.length, "accounts to the entity")
-
-    await Bluebird.map(accounts, async (account, idx) => {
-        if (idx % 50 == 0) process.stdout.write("Account " + idx + " ; ")
-        const wallet = new Wallet(account.privateKey)
-        const timestamp = Date.now()
-
-        const body = {
-            request: {
-                method: "register",
-                actionKey: "register",
-                firstName: "Name",
-                lastName: "Last Name " + idx,
-                email: `user${idx}@mail.com`,
-                phone: "1234 5678",
-                dateOfBirth: `19${10 + (idx % 90)}-10-20T12:00:00.000Z`,
-                entityAddr: entityAddr,
-                timestamp: timestamp,
-            },
-            signature: ""
-        }
-        body.signature = await JsonSignature.sign(body.request, wallet)
-
-        const res = await axios.post(`${config.registryApiPrefix}/api/actions/register`, body)
-
-        const response = res.data && res.data.response
-        if (!response) throw new Error("Empty response")
-        else if (response.error) throw new Error(response.error)
-        else if (!response.ok) throw new Error("Registration returned ok: false")
-    }, { concurrency: 50 })
-
-    console.log() // \n
-}
-
-async function checkDatabaseKeys(token, accounts) {
-    console.log("Checking database key values")
-
-    // Get the DB members data
-    var request: any = {
-        headers: {
-            'Content-Type': 'application/json',
-            'Cookie': "session-jwt=" + token
-        },
-        json: true
-    }
-    request.method = 'GET'
-    request.url = config.censusManagerApiPrefix + "/api/members?filter=%7B%7D&order=ASC&perPage=1000000&sort=email&start=0"
-
-    const response = await axios(request)
-    if (config.stopOnError) assert(response.data.length >= config.numAccounts)
-
-    const dbAccounts = response.data
-    for (let account of accounts) {
-        const dbAccount = dbAccounts.find(dbAccount => dbAccount.user.email == "user" + account.idx + "@mail.com")
-        if (config.stopOnError) assert(dbAccount, "There is no such account for index " + account.idx)
-        else if (!dbAccount) continue
-        if (dbAccount.user.digestedPublicKey == account.publicKeyHash && dbAccount.user.publicKey == account.publicKey) continue
-
-        // not found??
-        console.error("Generated account does not match the one on the DB:")
-        if (dbAccount.user.digestedPublicKey != account.publicKeyHash) {
-            console.error("- Original pub key:", account.publicKey)
-            console.error("- DB pub key:", dbAccount.user.publicKey)
-        }
-        else {
-            console.error("- Pub key:", account.publicKey)
-            console.error("- Original pub key hash:", account.publicKeyHash)
-            console.error("- DB pub key hash:", dbAccount.user.digestedPublicKey)
-        }
-    }
-}
-
-async function generatePublicCensusFromDb(token) {
-    // Create new census
-    console.log("Creating a new census")
-
-    var request: any = {
-        headers: {
-            'Content-Type': 'application/json',
-            'Cookie': "session-jwt=" + token
-        },
-        json: true
-    }
-
-    // Create the census we will later export
-    request.method = 'POST'
-    request.url = config.censusManagerApiPrefix + "/api/census"
-    request.data = { "name": "E2E Test census " + Date.now(), "filters": [{ "key": "dateOfBirth", "predicate": { "operator": "$gt", "value": "1800-01-01" } }] }
-
-    var response = await axios(request)
-    assert(response.data._id.length == 24)
-    const newCensusId = response.data._id
-
-    // Dump the census
-    console.log("Exporting the census", newCensusId)
-
-    request.method = 'GET'
-    request.url = config.censusManagerApiPrefix + "/api/census/" + newCensusId + "/dump"
-    request.data = undefined
-
-    response = await axios(request)
-    const { censusIdSuffix, publicKeyDigests, managerPublicKeys } = response.data
-    if (config.stopOnError) {
-        assert(censusIdSuffix.length == 64)
-        assert(Array.isArray(publicKeyDigests))
-        assert(publicKeyDigests.length == config.numAccounts)
-        assert(Array.isArray(managerPublicKeys))
-        assert(managerPublicKeys.length == 1)
-    }
-
-    // Adding claims
-    console.log("Registering the new census to the Census Service")
-
-    const { censusId } = await CensusApi.addCensus(censusIdSuffix, managerPublicKeys, entityWallet, pool)
-
-    console.log("Adding", publicKeyDigests.length, "claims")
-    const result = await CensusApi.addClaimBulk(censusId, publicKeyDigests, true, entityWallet, pool)
-
-    if (result.invalidClaims.length > 0) throw new Error("Census Service invalid claims count is " + result.invalidClaims.length)
-
-    // Publish the census
-    console.log("Publishing the new census")
-    const merkleTreeUri = await CensusApi.publishCensus(censusId, entityWallet, pool)
-
-    // Check that the census is published
-    const exportedMerkleTree = await CensusApi.dumpPlain(censusId, entityWallet, pool)
-    if (config.stopOnError) {
-        assert(Array.isArray(exportedMerkleTree))
-        assert(exportedMerkleTree.length == config.numAccounts)
-    }
-
-    // Return the census ID / Merkle Root
-    return {
-        merkleTreeUri,
-        merkleRoot: result.merkleRoot
-    }
 }
 
 async function generatePublicCensusFromAccounts(accounts) {
@@ -600,11 +371,11 @@ async function checkVoteResults() {
         processParams = await VotingApi.getProcessParameters(processId, pool)
 
         if (!processParams.status.isEnded) {
-            console.log("Canceling/ending the process", processId)
+            console.log("Ending the process", processId)
             await VotingApi.setStatus(processId, ProcessStatus.ENDED, entityWallet, pool)
 
             console.log("Waiting a bit for the votes to be decrypted", processId)
-            await EthWaiter.wait(18, pool, { verbose: true })
+            await EthWaiter.wait(12, pool, { verbose: true })
         }
     }
     console.log("Waiting a bit for the results to be ready", processId)
