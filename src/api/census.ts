@@ -325,9 +325,9 @@ export class CensusErc20Api {
         return ERC20Prover.getHolderBalanceSlot(holderAddress, balanceMappingSlot)
     }
 
-    static registerToken(tokenAddress: string, balanceMappingPosition: number | BigNumber, blockNumber: number | BigNumber, blockHeaderRLP: Buffer, accountStateProof: Buffer, walletOrSigner: Wallet | Signer, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string) {
+    static registerToken(tokenAddress: string, balanceMappingPosition: number | BigNumber, blockNumber: number | BigNumber, blockHeaderRLP: Buffer, accountStateProof: Buffer, storageProof: Buffer, walletOrSigner: Wallet | Signer, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string) {
         return gw.getTokenStorageProofInstance(walletOrSigner, customContractAddress)
-            .then((contractInstance) => contractInstance.registerToken(tokenAddress, balanceMappingPosition, blockNumber, blockHeaderRLP, accountStateProof))
+            .then((contractInstance) => contractInstance.registerToken(tokenAddress, balanceMappingPosition, blockNumber, blockHeaderRLP, accountStateProof, storageProof))
             .then(tx => tx.wait())
     }
 

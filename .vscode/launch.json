@@ -24,6 +24,23 @@
         {
             "type": "node",
             "request": "launch",
+            "name": "Bridge",
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register/transpile-only"
+            ],
+            "program": "${workspaceFolder}/example/bridge/index.ts",
+            "cwd": "${workspaceFolder}/example/bridge",
+            "internalConsoleOptions": "openOnSessionStart",
+            "skipFiles": [
+                "<node_internals>/**",
+                "node_modules/**"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
             "name": "Benchmark",
             "runtimeArgs": [
                 "--nolazy",
@@ -41,7 +58,7 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Mocha All",
+            "name": "Mocha Test",
             "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
             "args": [
                 "-r",

@@ -15,6 +15,7 @@ import {
     ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin,
     VochainWaiter, EthWaiter
 } from "../.."
+import { Buffer } from "buffer/"
 
 
 const CONFIG_PATH = "./config.yaml"
@@ -111,11 +112,15 @@ async function launchNewVote() {
         const result = await CensusErc20Api.generateProof(config.tokenAddress, [balanceSlot], blockNumber, pool.provider as providers.JsonRpcProvider)
         const { proof, block, blockHeaderRLP, accountProofRLP, storageProofsRLP } = result
 
+        // TODO: Convert storageProofsRLP into storageProof
+        const storageProof = Buffer.from([])
+
         await CensusErc20Api.registerToken(config.tokenAddress,
             config.tokenBalanceMappingPosition,
             blockNumber,
             Buffer.from(blockHeaderRLP.replace("0x", ""), "hex"),
             Buffer.from(accountProofRLP.replace("0x", ""), "hex"),
+            storageProof,
             creatorWallet,
             pool)
 
