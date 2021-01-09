@@ -10,7 +10,7 @@ import { Asymmetric } from "../util/encryption"
 import { GatewayPool, IGatewayPool } from "../net/gateway-pool"
 import { VochainWaiter } from "../util/waiters"
 import { Random } from "../util/random"
-import { IMethodOverrides, ProcessStatus, ProcessContractParameters, IProcessCreateParams, IProcessStatus } from "../net/contracts"
+import { IMethodOverrides, ProcessStatus, ProcessContractParameters, IProcessCreateParams, IProcessStatus, ProcessCensusOrigin } from "../net/contracts"
 import {
     VoteEnvelope,
     Proof,
@@ -20,6 +20,7 @@ import {
     // ProofEthereumAccount
 } from "../../lib/protobuf/build/js/common/vote_pb.js"
 import { DVoteGatewayResponseBody } from "net/gateway-dvote"
+import { CensusErc20Api } from "./census"
 
 // TYPES
 
@@ -373,15 +374,25 @@ export class VotingApi {
      * @param gateway
      * @returns The process ID
      */
-    static async newProcess(processParameters: Omit<Omit<IProcessCreateParams, "metadata">, "questionCount"> & { metadata: ProcessMetadata },
+    static newProcess(processParameters: Omit<Omit<IProcessCreateParams, "metadata">, "questionCount"> & { metadata: ProcessMetadata },
         walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
         if (!processParameters) return Promise.reject(new Error("Invalid process metadata"))
         else if (!processParameters.metadata) return Promise.reject(new Error("Invalid process metadata"))
-        else if (!walletOrSigner || !(walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer))
+        else if (!walletOrSigner || !walletOrSigner._isSigner)
             return Promise.reject(new Error("Invalid Wallet or Signer"))
         else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool))
             return Promise.reject(new Error("Invalid Gateway object"))
 
+        if (processParameters.censusOrigin == ProcessCensusOrigin.OFF_CHAIN) {
+            return VotingApi.newProcessOffchainCensus(processParameters, walletOrSigner, gateway)
+        }
+        else {
+            return VotingApi.newProcessEvmCensus(processParameters, walletOrSigner, gateway)
+        }
+    }
+
+    private static async newProcessOffchainCensus(processParameters: Omit<Omit<IProcessCreateParams, "metadata">, "questionCount"> & { metadata: ProcessMetadata },
+        walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
         try {
             // throw if not valid
             const metadata = checkValidProcessMetadata(processParameters.metadata)
@@ -435,11 +446,76 @@ export class VotingApi {
             if (!count || count.isZero()) return Promise.reject(new Error("The process could not be created"))
             const processId = await processInstance.getProcessId(address, count.toNumber() - 1, contractParameters.namespace)
 
+            // TODO: This might be simplified in the future (skip the process list updates here)
+
             // UPDATE THE ENTITY
             if (!entityMetadata.votingProcesses) entityMetadata.votingProcesses = { active: [], ended: [] }
             entityMetadata.votingProcesses.active = [processId].concat(entityMetadata.votingProcesses.active || [])
 
             await EntityApi.setMetadata(address, entityMetadata, walletOrSigner, gateway)
+
+            return processId
+        }
+        catch (err) {
+            console.error(err)
+            throw err
+        }
+    }
+
+    private static async newProcessEvmCensus(processParameters: Omit<Omit<IProcessCreateParams, "metadata">, "questionCount"> & { metadata: ProcessMetadata },
+        walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
+        try {
+            // throw if not valid
+            const metadata = checkValidProcessMetadata(processParameters.metadata)
+            // const holderAddress = await walletOrSigner.getAddress()
+
+            // CHECK THAT THE TOKEN EXISTS
+            if (!await CensusErc20Api.isRegistered(processParameters.tokenAddress, gateway)) {
+                return Promise.reject(new Error("The token is not yet registered"))
+            }
+
+            // UPLOAD THE METADATA
+            const strJsonMeta = JSON.stringify(metadata)
+            const metadataOrigin = await FileApi.add(strJsonMeta, "process-metadata.json", walletOrSigner, gateway)
+            if (!metadataOrigin) return Promise.reject(new Error("The process metadata could not be uploaded"))
+
+            // Merge parameters and metadata, by now
+            const questionCount = processParameters.metadata.questions.length
+            const contractParameters = ProcessContractParameters.fromParams({ ...processParameters, questionCount, metadata: metadataOrigin })
+
+            const processInstance = await gateway.getProcessesInstance(walletOrSigner)
+
+            // SET METADATA IN PARAMS
+            contractParameters.metadata = metadataOrigin
+
+            // REGISTER THE NEW PROCESS
+            const chainId = await gateway.chainId
+            let options: IMethodOverrides
+            let tx: ContractTransaction
+            switch (chainId) {
+                case XDAI_CHAIN_ID:
+                    options = { gasPrice: XDAI_GAS_PRICE }
+                    tx = await processInstance.newProcess(...contractParameters.toContractParams(options))
+                    break
+                case SOKOL_CHAIN_ID:
+                    const addr = await walletOrSigner.getAddress()
+                    const nonce = await walletOrSigner.connect(gateway.provider).provider.getTransactionCount(addr)
+                    options = {
+                        gasPrice: SOKOL_GAS_PRICE,
+                        nonce,
+                    }
+                    tx = await processInstance.newProcess(...contractParameters.toContractParams(options))
+                    break
+                default:
+                    tx = await processInstance.newProcess(...contractParameters.toContractParams())
+            }
+
+            if (!tx) throw new Error("Could not start the blockchain transaction")
+            await tx.wait()
+
+            const count = await processInstance.getEntityProcessCount(processParameters.tokenAddress)
+            if (!count || count.isZero()) return Promise.reject(new Error("The process could not be created"))
+            const processId = await processInstance.getProcessId(processParameters.tokenAddress, count.toNumber() - 1, contractParameters.namespace)
 
             return processId
         }

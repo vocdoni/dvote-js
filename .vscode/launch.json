@@ -36,7 +36,8 @@
             "skipFiles": [
                 "<node_internals>/**",
                 "node_modules/**"
-            ]
+            ],
+            "preLaunchTask": "npm: build"
         },
         {
             "type": "node",

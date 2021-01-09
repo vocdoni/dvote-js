@@ -102,7 +102,7 @@ async function connectGateways(): Promise<GatewayPool> {
     }
     const pool = await GatewayPool.discover(options)
 
-    console.log("Connected to", await pool.dvoteUri)
+    console.log("Connected to", pool.dvoteUri)
     console.log("Connected to", pool.provider["connection"].url)
 
     // WEB3 CLIENT

@@ -4,11 +4,11 @@ import * as assert from "assert"
 import { readFileSync, writeFileSync } from "fs"
 import * as YAML from 'yaml'
 import {
-    EntityApi,
     VotingApi,
     CensusOffChainApi,
     CensusErc20Api,
     GatewayPool,
+    Gateway, GatewayInfo,
     EthNetworkID,
     EntityMetadataTemplate,
     ProcessMetadata, ProcessMetadataTemplate,
@@ -21,7 +21,7 @@ import { Buffer } from "buffer/"
 const CONFIG_PATH = "./config.yaml"
 const config = getConfig(CONFIG_PATH)
 
-let pool: GatewayPool, creatorWallet: Wallet, processId: string, processParams: ProcessContractParameters, processMetadata: ProcessMetadata, accounts: Account[]
+let pool: GatewayPool | Gateway, creatorWallet: Wallet, processId: string, processParams: ProcessContractParameters, processMetadata: ProcessMetadata, accounts: Account[]
 
 async function main() {
     console.log("Reading account list")
@@ -36,15 +36,14 @@ async function main() {
     })
 
     // Connect to a GW
-    const gwPool = await connectGateways(accounts)
-    pool = gwPool
+    pool = await connectGateways(accounts)
 
     if (config.readExistingProcess) {
         console.log("Reading process metadata")
         const procInfo: { processId: string, processMetadata: ProcessMetadata } = JSON.parse(readFileSync(config.processInfoFilePath).toString())
         processId = procInfo.processId
         processMetadata = procInfo.processMetadata
-        processParams = await VotingApi.getProcessParameters(processId, gwPool)
+        processParams = await VotingApi.getProcessParameters(processId, pool)
 
         assert(processId)
         assert(processMetadata)
@@ -80,49 +79,64 @@ async function main() {
     await checkVoteResults()
 }
 
-async function connectGateways(accounts: Account[]): Promise<GatewayPool> {
+async function connectGateways(accounts: Account[]): Promise<GatewayPool | Gateway> {
     console.log("Connecting to the gateways")
-    const options = {
-        networkId: config.ethNetworkId as EthNetworkID,
-        bootnodesContentUri: config.bootnodesUrlRw,
-        numberOfGateways: 2,
-        race: false,
-        // timeout: 10000,
-    }
-    const pool = await GatewayPool.discover(options)
+    let gw: GatewayPool | Gateway
 
-    console.log("Connected to", await pool.dvoteUri)
-    console.log("Connected to", pool.provider["connection"].url)
+    if (config.dvoteGatewayUri && config.web3Uri) {
+        const info = new GatewayInfo(config.dvoteGatewayUri, ["census", "file", "info", "results", "vote"], config.web3Uri, config.dvoteGatewayPublicKey || "")
+        gw = await Gateway.fromInfo(info)
+    }
+    else {
+        const options = {
+            networkId: config.ethNetworkId as EthNetworkID,
+            bootnodesContentUri: config.bootnodesUrlRw,
+            numberOfGateways: 2,
+            race: false,
+            // timeout: 10000,
+        }
+        gw = await GatewayPool.discover(options)
+    }
+    await gw.init()
+
+    console.log("Connected to", gw.dvoteUri)
+    console.log("Connected to", gw.provider["connection"].url)
 
     // WEB3 CLIENT
-    creatorWallet = new Wallet(accounts[0].privateKey).connect(pool.provider)
+    creatorWallet = new Wallet(accounts[0].privateKey).connect(gw.provider)
+
+    const balance = await creatorWallet.getBalance()
+    if (balance.isZero()) throw new Error("The first account of the list has no ether balance\n" + creatorWallet.address)
 
     console.log("Entity Address", config.tokenAddress)
 
-    return pool
+    return gw
 }
 
 async function launchNewVote() {
     console.log("Computing the storage proof of creator the account")
 
     const blockNumber = await pool.provider.getBlockNumber()
+    const balanceSlot = CensusErc20Api.getHolderBalanceSlot(creatorWallet.address, config.tokenBalanceMappingPosition)
+    const result = await CensusErc20Api.generateProof(config.tokenAddress, [balanceSlot], blockNumber, pool.provider as providers.JsonRpcProvider)
+    const { proof, block, blockHeaderRLP, accountProofRLP, storageProofsRLP } = result
 
     if (!await CensusErc20Api.isRegistered(config.tokenAddress, pool)) {
-        const balanceSlot = CensusErc20Api.getHolderBalanceSlot(creatorWallet.address, config.tokenBalanceMappingPosition)
-        const result = await CensusErc20Api.generateProof(config.tokenAddress, [balanceSlot], blockNumber, pool.provider as providers.JsonRpcProvider)
-        const { proof, block, blockHeaderRLP, accountProofRLP, storageProofsRLP } = result
+        // TODO: Check the conversion of storageProofsRLP into storageProof as a buffer
+        const storageProof = Buffer.from(storageProofsRLP[0].replace("0x", ""), "hex")
 
-        // TODO: Convert storageProofsRLP into storageProof
-        const storageProof = Buffer.from([])
+        // const storageProof = await this.verifyProof(storageRoot, Buffer.from(path, 'hex'), storageProof.proof)
 
-        await CensusErc20Api.registerToken(config.tokenAddress,
+        await CensusErc20Api.registerToken(
+            config.tokenAddress,
             config.tokenBalanceMappingPosition,
             blockNumber,
             Buffer.from(blockHeaderRLP.replace("0x", ""), "hex"),
             Buffer.from(accountProofRLP.replace("0x", ""), "hex"),
-            storageProof,
+            storageProof, // flatten
             creatorWallet,
-            pool)
+            pool
+        )
 
         assert(await CensusErc20Api.isRegistered(config.tokenAddress, pool))
     }
@@ -144,11 +158,15 @@ async function launchNewVote() {
     const startBlock = currentBlock + 35
     const blockCount = 60480
 
+    // TODO: COMPUTE THE PARAMS SIGNATURE
+    // TODO: INCLUDE THE BALANCE SLOT IN THE SIGNATURE
+
     const processParamsPre: Omit<Omit<IProcessCreateParams, "metadata">, "questionCount"> & { metadata: ProcessMetadata } = {
-        mode: ProcessMode.make({ autoStart: true, interruptible: true }), // helper
+        mode: ProcessMode.make({ autoStart: true }),
         envelopeType: ProcessEnvelopeType.ENCRYPTED_VOTES, // bit mask
         censusOrigin: ProcessCensusOrigin.ERC20,
         metadata: ProcessMetadataTemplate,
+        censusMerkleRoot: proof.storageHash,
         startBlock,
         blockCount,
         maxCount: 1,
@@ -165,10 +183,6 @@ async function launchNewVote() {
     console.log("Creating the process")
     processId = await VotingApi.newProcess(processParamsPre, creatorWallet, pool)
     assert(processId)
-
-    console.log("Reading the process metadata back")
-    const entityMetaPost = await EntityApi.getMetadata(await creatorWallet.getAddress(), pool)
-    assert(entityMetaPost)
 
     // Reading back
     processParams = await VotingApi.getProcessParameters(processId, pool)
@@ -325,6 +339,7 @@ function getConfig(path: string): Config {
     assert(typeof config.bootnodesUrlRw == "string", "config.yaml > bootnodesUrlRw should be a string")
     assert(!config.dvoteGatewayUri || typeof config.dvoteGatewayUri == "string", "config.yaml > dvoteGatewayUri should be a string")
     assert(!config.dvoteGatewayPublicKey || typeof config.dvoteGatewayPublicKey == "string", "config.yaml > dvoteGatewayPublicKey should be a string")
+    assert(!config.web3Uri || typeof config.web3Uri == "string", "config.yaml > web3Uri should be a string")
     assert(typeof config.encryptedVote == "boolean", "config.yaml > encryptedVote should be a boolean")
     return config
 }
@@ -343,6 +358,7 @@ type Config = {
     bootnodesUrlRw: string
     dvoteGatewayUri: string
     dvoteGatewayPublicKey: string
+    web3Uri: string
 
     encryptedVote: boolean
 }

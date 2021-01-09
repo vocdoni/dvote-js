@@ -1,4 +1,4 @@
-import { Wallet, Signer, providers, BigNumber } from "ethers"
+import { Wallet, Signer, providers, BigNumber, ContractReceipt } from "ethers"
 import { Gateway, IGateway } from "../net/gateway"
 import { IDvoteRequestParameters } from "../net/gateway-dvote"
 import { IGatewayPool, GatewayPool } from "../net/gateway-pool"
@@ -67,7 +67,7 @@ export class CensusOffChainApi {
     static async addCensus(censusName: string, managerPublicKeys: string[], walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<{ censusId: string, merkleRoot: string }> {
         if (!censusName || !managerPublicKeys || !managerPublicKeys.length || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
-        else if (!walletOrSigner || !(walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer)) return Promise.reject(new Error("Invalid WalletOrSinger object"))
+        else if (!walletOrSigner || !walletOrSigner._isSigner) return Promise.reject(new Error("Invalid WalletOrSinger object"))
 
         const censusId = CensusOffChainApi.generateCensusId(censusName, await walletOrSigner.getAddress())
 
@@ -107,7 +107,7 @@ export class CensusOffChainApi {
     static addClaim(censusId: string, claimData: string, digested: boolean, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
         if (!censusId || !claimData || !claimData.length || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
-        else if (!walletOrSigner || !(walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer)) return Promise.reject(new Error("Invalid WalletOrSinger object"))
+        else if (!walletOrSigner || !walletOrSigner._isSigner) return Promise.reject(new Error("Invalid WalletOrSinger object"))
 
         return gateway.sendRequest({ method: "addClaim", censusId, digested, claimData }, walletOrSigner)
             .then((response) => {
@@ -133,7 +133,7 @@ export class CensusOffChainApi {
     static async addClaimBulk(censusId: string, claimsData: string[], digested: boolean, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<{ merkleRoot: string, invalidClaims: any[] }> {
         if (!censusId || !claimsData || !claimsData.length || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
-        else if (!walletOrSigner || !(walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer)) return Promise.reject(new Error("Invalid WalletOrSinger object"))
+        else if (!walletOrSigner || !walletOrSigner._isSigner) return Promise.reject(new Error("Invalid WalletOrSinger object"))
 
         let invalidClaims = []
         let addedClaims = 0
@@ -153,7 +153,7 @@ export class CensusOffChainApi {
         if (!censusId || !claimsData || claimsData.length > CENSUS_MAX_BULK_SIZE || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!claimsData.length) return Promise.resolve([])
-        else if (!walletOrSigner || !(walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer)) return Promise.reject(new Error("Invalid WalletOrSinger object"))
+        else if (!walletOrSigner || !walletOrSigner._isSigner) return Promise.reject(new Error("Invalid WalletOrSinger object"))
 
 
         return gateway.sendRequest({ method: "addClaimBulk", censusId, digested, claimsData }, walletOrSigner)
@@ -266,7 +266,7 @@ export class CensusOffChainApi {
     static publishCensus(censusId: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
         if (!censusId || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
-        else if (!walletOrSigner || !(walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer)) return Promise.reject(new Error("Invalid WalletOrSinger object"))
+        else if (!walletOrSigner || !walletOrSigner._isSigner) return Promise.reject(new Error("Invalid WalletOrSinger object"))
 
         return gateway.sendRequest({ method: "publish", censusId }, walletOrSigner)
             .then(response => {
@@ -310,9 +310,9 @@ export class CensusOffChainApi {
 }
 
 export class CensusErc20Api {
-    static generateProof(tokenAddress: string, storageKeys: string[], blockNumber: number | "latest", provider: string | providers.JsonRpcProvider | providers.Web3Provider | providers.IpcProvider | providers.InfuraProvider) {
+    static generateProof(tokenAddress: string, storageKeys: string[], blockNumber: number | "latest", provider: string | providers.JsonRpcProvider | providers.Web3Provider | providers.IpcProvider | providers.InfuraProvider, options?: { verify?: boolean }) {
         const prover = new ERC20Prover(provider)
-        const verify = true
+        const verify = options && options.verify || false
         return prover.getProof(tokenAddress, storageKeys, blockNumber, verify)
     }
 
@@ -325,13 +325,21 @@ export class CensusErc20Api {
         return ERC20Prover.getHolderBalanceSlot(holderAddress, balanceMappingSlot)
     }
 
-    static registerToken(tokenAddress: string, balanceMappingPosition: number | BigNumber, blockNumber: number | BigNumber, blockHeaderRLP: Buffer, accountStateProof: Buffer, storageProof: Buffer, walletOrSigner: Wallet | Signer, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string) {
+    static registerToken(tokenAddress: string, balanceMappingPosition: number | BigNumber, blockNumber: number | BigNumber, blockHeaderRLP: Buffer, accountStateProof: Buffer, storageProof: Buffer, walletOrSigner: Wallet | Signer, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string): Promise<ContractReceipt> {
         return gw.getTokenStorageProofInstance(walletOrSigner, customContractAddress)
-            .then((contractInstance) => contractInstance.registerToken(tokenAddress, balanceMappingPosition, blockNumber, blockHeaderRLP, accountStateProof, storageProof))
+            .then((contractInstance) =>
+                contractInstance.registerToken(tokenAddress,
+                    balanceMappingPosition,
+                    blockNumber,
+                    blockHeaderRLP,
+                    accountStateProof,
+                    storageProof
+                )
+            )
             .then(tx => tx.wait())
     }
 
-    static getBalanceMappingPosition(tokenAddress: string, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string) {
+    static getBalanceMappingPosition(tokenAddress: string, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string): Promise<BigNumber> {
         return gw.getTokenStorageProofInstance(null, customContractAddress)
             .then((contractInstance) => contractInstance.getBalanceMappingPosition(tokenAddress))
     }
