@@ -16,5 +16,6 @@ privKeys:
 bootnodesUrlRw: "https://server/gateways.json"     # Bootnode used by default
 dvoteGatewayUri:                                   # If set, overrides bootnodesUrlRw
 dvoteGatewayPublicKey:                             # If set, overrides bootnodesUrlRw
+web3Uri:
 
 encryptedVote: true

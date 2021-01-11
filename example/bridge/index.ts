@@ -15,7 +15,7 @@ import {
     ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin,
     VochainWaiter, EthWaiter
 } from "../.."
-import { Buffer } from "buffer/"
+// import { Buffer } from "buffer/"
 
 
 const CONFIG_PATH = "./config.yaml"
@@ -108,7 +108,7 @@ async function connectGateways(accounts: Account[]): Promise<GatewayPool | Gatew
     const balance = await creatorWallet.getBalance()
     if (balance.isZero()) throw new Error("The first account of the list has no ether balance\n" + creatorWallet.address)
 
-    console.log("Entity Address", config.tokenAddress)
+    console.log("Token Address", config.tokenAddress)
 
     return gw
 }
@@ -156,10 +156,10 @@ async function launchNewVote() {
     console.log("Getting the block height")
     const currentBlock = await VotingApi.getBlockHeight(pool)
     const startBlock = currentBlock + 35
-    const blockCount = 60480
+    const blockCount = 15
 
     // TODO: COMPUTE THE PARAMS SIGNATURE
-    // TODO: INCLUDE THE BALANCE SLOT IN THE SIGNATURE
+    // TODO: INCLUDE THE BALANCE SLOT IN SUCH SIGNATURE
 
     const processParamsPre: Omit<Omit<IProcessCreateParams, "metadata">, "questionCount"> & { metadata: ProcessMetadata } = {
         mode: ProcessMode.make({ autoStart: true }),
@@ -191,7 +191,6 @@ async function launchNewVote() {
     assert.equal(processParams.startBlock, processParamsPre.startBlock, "SENT " + JSON.stringify(processParamsPre) + " GOT " + JSON.stringify(processParams))
     assert.equal(processParams.blockCount, processParamsPre.blockCount)
     assert.equal(processParams.censusMerkleRoot, processParamsPre.censusMerkleRoot)
-    assert.equal(processParams.censusMerkleTree, processParamsPre.censusMerkleTree)
 }
 
 async function waitUntilStarted() {
@@ -210,10 +209,10 @@ async function waitUntilStarted() {
     const trimProcId = processId.replace(/^0x/, "")
     while (!processList.some(v => v == trimProcId) && processList.length > 1) {
         processList = await VotingApi.getProcessList(config.tokenAddress, pool, lastId)
-        if (processList.length) {
-            if (lastId == processList[processList.length - 1]) break
-            lastId = processList[processList.length - 1]
-        }
+
+        if (!processList.length) break
+        else if (lastId == processList[processList.length - 1]) break
+        lastId = processList[processList.length - 1]
     }
     assert(processList.some(v => v == trimProcId))
 }
@@ -222,6 +221,7 @@ async function submitVotes(accounts: Account[]) {
     console.log("Launching votes")
 
     const processKeys = processParams.envelopeType.hasEncryptedVotes ? await VotingApi.getProcessKeys(processId, pool) : null
+    const balanceMappingPosition = await CensusErc20Api.getBalanceMappingPosition(config.tokenAddress, pool)
 
     await Bluebird.map(accounts, async (account: Account, idx: number) => {
         process.stdout.write(`Starting [${idx}] ; `)
@@ -229,25 +229,23 @@ async function submitVotes(accounts: Account[]) {
         const wallet = new Wallet(account.privateKey)
 
         process.stdout.write(`Gen Proof [${idx}] ; `)
-        const merkleProof = await CensusOffChainApi.generateProof(processParams.censusMerkleRoot, account.publicKeyHash, true, pool)
-            .catch(err => {
-                console.error("\nCensusApi.generateProof ERR", account, err)
-                if (config.stopOnError) throw err
-                return null
-            })
-        if (!merkleProof) return // skip when !config.stopOnError
+
+        const balanceSlot = CensusErc20Api.getHolderBalanceSlot(wallet.address, balanceMappingPosition.toNumber())
+        const result = await CensusErc20Api.generateProof(config.tokenAddress, [balanceSlot], processParams.evmBlockHeight, pool.provider as providers.JsonRpcProvider)
 
         process.stdout.write(`Pkg Envelope [${idx}] ; `)
+
         const choices = [0]
+        const censusProof = result.proof.storageProof[0]
 
         const { envelope, signature } = processParams.envelopeType.hasEncryptedVotes ?
-            await VotingApi.packageSignedEnvelope({ votes: choices, merkleProof, processId, walletOrSigner: wallet, processKeys }) :
-            await VotingApi.packageSignedEnvelope({ votes: choices, merkleProof, processId, walletOrSigner: wallet })
+            await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet, processKeys }) :
+            await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet })
 
         process.stdout.write(`Sending [${idx}] ; `)
         await VotingApi.submitEnvelope(envelope, signature, pool)
             .catch(err => {
-                console.error("\nsubmitEnvelope ERR", account.publicKey, envelope, signature, err)
+                console.error("\nsubmitEnvelope ERR", account.publicKey, err)
                 if (config.stopOnError) throw err
             })
 
@@ -284,17 +282,11 @@ async function checkVoteResults() {
 
         processParams = await VotingApi.getProcessParameters(processId, pool)
 
-        if (!processParams.status.isEnded) {
-            console.log("Ending the process", processId)
-            await VotingApi.setStatus(processId, ProcessStatus.ENDED, creatorWallet, pool)
-
-            console.log("Waiting a bit for the votes to be decrypted", processId)
-            await EthWaiter.wait(12, pool, { verbose: true })
-        }
+        console.log("Waiting for the process to end", processId)
+        await VochainWaiter.waitUntil(processParams.startBlock + processParams.blockCount, pool, { verbose: true })
     }
     console.log("Waiting a bit for the results to be ready", processId)
-    const nextBlock = 3 + await VotingApi.getBlockHeight(pool)
-    await VochainWaiter.waitUntil(nextBlock, pool, { verbose: true })
+    await VochainWaiter.wait(10, pool, { verbose: true })
 
     console.log("Fetching the vote results for", processId)
     const resultsDigest = await VotingApi.getResultsDigest(processId, pool)

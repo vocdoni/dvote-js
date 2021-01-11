@@ -16,7 +16,7 @@ import {
     Proof,
     ProofGraviton,
     // ProofIden3,
-    // ProofEthereumStorage,
+    ProofEthereumStorage,
     // ProofEthereumAccount
 } from "../../lib/protobuf/build/js/common/vote_pb.js"
 import { DVoteGatewayResponseBody } from "net/gateway-dvote"
@@ -689,8 +689,8 @@ export class VotingApi {
             if (afterId) req.fromId = afterId
 
             const response = await gateway.sendRequest(req)
-            if (!response || !Array.isArray(response.processList)) throw new Error("Invalid response")
-            return response.processList
+            if (!response || !Array.isArray(response.processList || [])) throw new Error("Invalid response")
+            return response.processList || []
         }
         catch (err) {
             throw err
@@ -873,12 +873,12 @@ export class VotingApi {
      * @param params
      */
     static packageAnonymousEnvelope(params: {
-        votes: number[], merkleProof: string, processId: string, privateKey: string,
+        votes: number[], censusProof: string, processId: string, privateKey: string,
         processKeys?: IProcessKeys
     }): Uint8Array {
         if (!params) throw new Error("Invalid parameters");
         if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
-        else if (typeof params.merkleProof != "string" || !params.merkleProof.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid Merkle Proof")
+        else if (typeof params.censusProof != "string" || !params.censusProof.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid Merkle Proof")
         else if (typeof params.processId != "string" || !params.processId.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid processId")
         else if (!params.privateKey || !params.privateKey.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid private key")
         else if (params.processKeys) {
@@ -902,12 +902,13 @@ export class VotingApi {
      * @param params
      */
     static async packageSignedEnvelope(params: {
-        votes: number[], merkleProof: string, processId: string, walletOrSigner: Wallet | Signer,
+        censusOrigin: ProcessCensusOrigin,
+        votes: number[], processId: string, walletOrSigner: Wallet | Signer,
+        censusProof: string | { key: string, proof: string[], value: string },
         processKeys?: IProcessKeys
     }): Promise<{ envelope: Uint8Array, signature: string }> {
         if (!params) throw new Error("Invalid parameters")
         else if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
-        else if (typeof params.merkleProof != "string" || !params.merkleProof.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid Merkle Proof")
         else if (typeof params.processId != "string" || !params.processId.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid processId")
         else if (!params.walletOrSigner || !params.walletOrSigner.signMessage) throw new Error("Invalid wallet or signer")
         else if (params.processKeys) {
@@ -918,14 +919,38 @@ export class VotingApi {
         }
 
         try {
-            const nonce = Random.getHex().substr(2)
-
-            const gProof = new ProofGraviton()
-            gProof.setSiblings(new Uint8Array(Buffer.from(params.merkleProof.replace("0x", ""), "hex")))
-
             const proof = new Proof()
-            proof.setGraviton(gProof)
 
+            if (params.censusOrigin.isOffChain) {
+                // Check census proof
+                if (typeof params.censusProof != "string" || !params.censusProof.match(/^(0x)?[0-9a-zA-Z]+$/))
+                    throw new Error("Invalid census proof (must be a hex string)")
+
+                const gProof = new ProofGraviton()
+                gProof.setSiblings(Buffer.from((params.censusProof as string).replace("0x", ""), "hex").valueOf())
+                proof.setGraviton(gProof)
+            } else {
+                // Check census proof
+                if (typeof params.censusProof == "string") throw new Error("Invalid census proof for an EVM process")
+                else if (typeof params.censusProof.key != "string" ||
+                    !Array.isArray(params.censusProof.proof) || typeof params.censusProof.value != "string")
+                    throw new Error("Invalid census proof (must be an object)")
+
+                const esProof = new ProofEthereumStorage()
+                esProof.setKey(new Uint8Array(Buffer.from(params.censusProof.key.replace("0x", ""), "hex")))
+                const siblings = params.censusProof.proof.map(sibling => new Uint8Array(Buffer.from(sibling.replace("0x", ""), "hex")))
+
+                let hexValue = params.censusProof.value
+                if (params.censusProof.value.length % 2 !== 0) {
+                    hexValue = params.censusProof.value.replace("0x", "0x0")
+                }
+                esProof.setValue(utils.zeroPad(hexValue, 32))
+
+                esProof.setSiblingsList(siblings)
+                proof.setEthereumstorage(esProof)
+            }
+
+            const nonce = Random.getHex().substr(2)
             const envelope = new VoteEnvelope()
             envelope.setProof(proof)
             envelope.setProcessid(new Uint8Array(Buffer.from(params.processId.replace("0x", ""), "hex")))
