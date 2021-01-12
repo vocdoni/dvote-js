@@ -102,7 +102,7 @@ async function connectGateways(): Promise<GatewayPool> {
     }
     const pool = await GatewayPool.discover(options)
 
-    console.log("Connected to", await pool.dvoteUri)
+    console.log("Connected to", pool.dvoteUri)
     console.log("Connected to", pool.provider["connection"].url)
 
     // WEB3 CLIENT
@@ -299,20 +299,20 @@ async function launchVotes(accounts) {
         const wallet = new Wallet(account.privateKey)
 
         process.stdout.write(`Gen Proof [${idx}] ; `)
-        const merkleProof = await CensusOffChainApi.generateProof(processParams.censusMerkleRoot, account.publicKeyHash, true, pool)
+        const censusProof = await CensusOffChainApi.generateProof(processParams.censusMerkleRoot, account.publicKeyHash, true, pool)
             .catch(err => {
                 console.error("\nCensusApi.generateProof ERR", account, err)
                 if (config.stopOnError) throw err
                 return null
             })
-        if (!merkleProof) return // skip when !config.stopOnError
+        if (!censusProof) return // skip when !config.stopOnError
 
         process.stdout.write(`Pkg Envelope [${idx}] ; `)
         const choices = getChoicesForVoter(idx)
 
         const { envelope, signature } = processParams.envelopeType.hasEncryptedVotes ?
-            await VotingApi.packageSignedEnvelope({ votes: choices, merkleProof, processId, walletOrSigner: wallet, processKeys }) :
-            await VotingApi.packageSignedEnvelope({ votes: choices, merkleProof, processId, walletOrSigner: wallet })
+            await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet, processKeys }) :
+            await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet })
 
         process.stdout.write(`Sending [${idx}] ; `)
         await VotingApi.submitEnvelope(envelope, signature, pool)

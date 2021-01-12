@@ -42,7 +42,7 @@ const WALLET_PASSPHRASE = process.env.WALLET_PASSPHRASE
 const BOOTNODES_URL_RO = "https://bootnodes.vocdoni.net/gateways.json"
 const BOOTNODES_URL_RW = "https://bootnodes.vocdoni.net/gateways.dev.json"
 
-// const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
 async function attachToEntityResolver() {
     // const gw = await Gateway.randomFromDefault(NETWORK_ID)
@@ -529,14 +529,14 @@ async function useVoteApi() {
     console.log("- Block in 200 seconds:", await VotingApi.estimateBlockAtDateTime(new Date(Date.now() + VOCHAIN_BLOCK_TIME * 20), pool))
 
     const publicKeyHash = CensusOffChainApi.digestHexClaim(wallet["_signingKey"]().publicKey)
-    const merkleProof = await CensusOffChainApi.generateProof(censusMerkleRoot, publicKeyHash, true, pool)
+    const censusProof = await CensusOffChainApi.generateProof(censusMerkleRoot, publicKeyHash, true, pool)
     const votes = [1, 2, 1]
 
     // Open vote version:
-    const { envelope, signature } = await VotingApi.packageSignedEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet })
+    const { envelope, signature } = await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet })
 
     // Encrypted vote version:
-    // const voteEnvelope = await VotingApi.packageSignedEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
+    // const voteEnvelope = await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
 
     console.log("- Poll Envelope:", envelope)
     console.log("- Poll Signature:", signature)
@@ -587,11 +587,11 @@ async function submitVoteBatch() {
             // const myEntityAddress = await wallet.getAddress()
 
             const publicKeyHash = CensusOffChainApi.digestHexClaim(wallet["_signingKey"]().publicKey)
-            const merkleProof = await CensusOffChainApi.generateProof(censusMerkleRoot, publicKeyHash, true, pool)
+            const censusProof = await CensusOffChainApi.generateProof(censusMerkleRoot, publicKeyHash, true, pool)
             const votes = [1]
-            const { envelope, signature } = await VotingApi.packageSignedEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet })
+            const { envelope, signature } = await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet })
             // Encrypted version:
-            // const voteEnvelope = await VotingApi.packageSignedEnvelope({ votes, merkleProof, processId, walletOrSigner: wallet, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
+            // const voteEnvelope = await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
 
             console.log("- Submitting vote envelope")
             await VotingApi.submitEnvelope(envelope, signature, pool)

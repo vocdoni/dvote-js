@@ -10,16 +10,17 @@ import { Asymmetric } from "../util/encryption"
 import { GatewayPool, IGatewayPool } from "../net/gateway-pool"
 import { VochainWaiter } from "../util/waiters"
 import { Random } from "../util/random"
-import { IMethodOverrides, ProcessStatus, ProcessContractParameters, IProcessCreateParams, IProcessStatus } from "../net/contracts"
+import { IMethodOverrides, ProcessStatus, ProcessContractParameters, IProcessCreateParams, IProcessStatus, ProcessCensusOrigin } from "../net/contracts"
 import {
     VoteEnvelope,
     Proof,
     ProofGraviton,
     // ProofIden3,
-    // ProofEthereumStorage,
+    ProofEthereumStorage,
     // ProofEthereumAccount
 } from "../../lib/protobuf/build/js/common/vote_pb.js"
 import { DVoteGatewayResponseBody } from "net/gateway-dvote"
+import { CensusErc20Api } from "./census"
 
 // TYPES
 
@@ -373,15 +374,25 @@ export class VotingApi {
      * @param gateway
      * @returns The process ID
      */
-    static async newProcess(processParameters: Omit<Omit<IProcessCreateParams, "metadata">, "questionCount"> & { metadata: ProcessMetadata },
+    static newProcess(processParameters: Omit<Omit<IProcessCreateParams, "metadata">, "questionCount"> & { metadata: ProcessMetadata },
         walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
         if (!processParameters) return Promise.reject(new Error("Invalid process metadata"))
         else if (!processParameters.metadata) return Promise.reject(new Error("Invalid process metadata"))
-        else if (!walletOrSigner || !(walletOrSigner instanceof Wallet || walletOrSigner instanceof Signer))
+        else if (!walletOrSigner || !walletOrSigner._isSigner)
             return Promise.reject(new Error("Invalid Wallet or Signer"))
         else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool))
             return Promise.reject(new Error("Invalid Gateway object"))
 
+        if (processParameters.censusOrigin == ProcessCensusOrigin.OFF_CHAIN) {
+            return VotingApi.newProcessOffchainCensus(processParameters, walletOrSigner, gateway)
+        }
+        else {
+            return VotingApi.newProcessEvmCensus(processParameters, walletOrSigner, gateway)
+        }
+    }
+
+    private static async newProcessOffchainCensus(processParameters: Omit<Omit<IProcessCreateParams, "metadata">, "questionCount"> & { metadata: ProcessMetadata },
+        walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
         try {
             // throw if not valid
             const metadata = checkValidProcessMetadata(processParameters.metadata)
@@ -435,11 +446,76 @@ export class VotingApi {
             if (!count || count.isZero()) return Promise.reject(new Error("The process could not be created"))
             const processId = await processInstance.getProcessId(address, count.toNumber() - 1, contractParameters.namespace)
 
+            // TODO: This might be simplified in the future (skip the process list updates here)
+
             // UPDATE THE ENTITY
             if (!entityMetadata.votingProcesses) entityMetadata.votingProcesses = { active: [], ended: [] }
             entityMetadata.votingProcesses.active = [processId].concat(entityMetadata.votingProcesses.active || [])
 
             await EntityApi.setMetadata(address, entityMetadata, walletOrSigner, gateway)
+
+            return processId
+        }
+        catch (err) {
+            console.error(err)
+            throw err
+        }
+    }
+
+    private static async newProcessEvmCensus(processParameters: Omit<Omit<IProcessCreateParams, "metadata">, "questionCount"> & { metadata: ProcessMetadata },
+        walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
+        try {
+            // throw if not valid
+            const metadata = checkValidProcessMetadata(processParameters.metadata)
+            // const holderAddress = await walletOrSigner.getAddress()
+
+            // CHECK THAT THE TOKEN EXISTS
+            if (!await CensusErc20Api.isRegistered(processParameters.tokenAddress, gateway)) {
+                return Promise.reject(new Error("The token is not yet registered"))
+            }
+
+            // UPLOAD THE METADATA
+            const strJsonMeta = JSON.stringify(metadata)
+            const metadataOrigin = await FileApi.add(strJsonMeta, "process-metadata.json", walletOrSigner, gateway)
+            if (!metadataOrigin) return Promise.reject(new Error("The process metadata could not be uploaded"))
+
+            // Merge parameters and metadata, by now
+            const questionCount = processParameters.metadata.questions.length
+            const contractParameters = ProcessContractParameters.fromParams({ ...processParameters, questionCount, metadata: metadataOrigin })
+
+            const processInstance = await gateway.getProcessesInstance(walletOrSigner)
+
+            // SET METADATA IN PARAMS
+            contractParameters.metadata = metadataOrigin
+
+            // REGISTER THE NEW PROCESS
+            const chainId = await gateway.chainId
+            let options: IMethodOverrides
+            let tx: ContractTransaction
+            switch (chainId) {
+                case XDAI_CHAIN_ID:
+                    options = { gasPrice: XDAI_GAS_PRICE }
+                    tx = await processInstance.newProcess(...contractParameters.toContractParams(options))
+                    break
+                case SOKOL_CHAIN_ID:
+                    const addr = await walletOrSigner.getAddress()
+                    const nonce = await walletOrSigner.connect(gateway.provider).provider.getTransactionCount(addr)
+                    options = {
+                        gasPrice: SOKOL_GAS_PRICE,
+                        nonce,
+                    }
+                    tx = await processInstance.newProcess(...contractParameters.toContractParams(options))
+                    break
+                default:
+                    tx = await processInstance.newProcess(...contractParameters.toContractParams())
+            }
+
+            if (!tx) throw new Error("Could not start the blockchain transaction")
+            await tx.wait()
+
+            const count = await processInstance.getEntityProcessCount(processParameters.tokenAddress)
+            if (!count || count.isZero()) return Promise.reject(new Error("The process could not be created"))
+            const processId = await processInstance.getProcessId(processParameters.tokenAddress, count.toNumber() - 1, contractParameters.namespace)
 
             return processId
         }
@@ -613,8 +689,8 @@ export class VotingApi {
             if (afterId) req.fromId = afterId
 
             const response = await gateway.sendRequest(req)
-            if (!response || !Array.isArray(response.processList)) throw new Error("Invalid response")
-            return response.processList
+            if (!response || !Array.isArray(response.processList || [])) throw new Error("Invalid response")
+            return response.processList || []
         }
         catch (err) {
             throw err
@@ -797,12 +873,12 @@ export class VotingApi {
      * @param params
      */
     static packageAnonymousEnvelope(params: {
-        votes: number[], merkleProof: string, processId: string, privateKey: string,
+        votes: number[], censusProof: string, processId: string, privateKey: string,
         processKeys?: IProcessKeys
     }): Uint8Array {
         if (!params) throw new Error("Invalid parameters");
         if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
-        else if (typeof params.merkleProof != "string" || !params.merkleProof.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid Merkle Proof")
+        else if (typeof params.censusProof != "string" || !params.censusProof.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid Merkle Proof")
         else if (typeof params.processId != "string" || !params.processId.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid processId")
         else if (!params.privateKey || !params.privateKey.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid private key")
         else if (params.processKeys) {
@@ -826,12 +902,13 @@ export class VotingApi {
      * @param params
      */
     static async packageSignedEnvelope(params: {
-        votes: number[], merkleProof: string, processId: string, walletOrSigner: Wallet | Signer,
+        censusOrigin: ProcessCensusOrigin,
+        votes: number[], processId: string, walletOrSigner: Wallet | Signer,
+        censusProof: string | { key: string, proof: string[], value: string },
         processKeys?: IProcessKeys
     }): Promise<{ envelope: Uint8Array, signature: string }> {
         if (!params) throw new Error("Invalid parameters")
         else if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
-        else if (typeof params.merkleProof != "string" || !params.merkleProof.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid Merkle Proof")
         else if (typeof params.processId != "string" || !params.processId.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid processId")
         else if (!params.walletOrSigner || !params.walletOrSigner.signMessage) throw new Error("Invalid wallet or signer")
         else if (params.processKeys) {
@@ -842,14 +919,38 @@ export class VotingApi {
         }
 
         try {
-            const nonce = Random.getHex().substr(2)
-
-            const gProof = new ProofGraviton()
-            gProof.setSiblings(new Uint8Array(Buffer.from(params.merkleProof.replace("0x", ""), "hex")))
-
             const proof = new Proof()
-            proof.setGraviton(gProof)
 
+            if (params.censusOrigin.isOffChain) {
+                // Check census proof
+                if (typeof params.censusProof != "string" || !params.censusProof.match(/^(0x)?[0-9a-zA-Z]+$/))
+                    throw new Error("Invalid census proof (must be a hex string)")
+
+                const gProof = new ProofGraviton()
+                gProof.setSiblings(new Uint8Array(Buffer.from((params.censusProof as string).replace("0x", ""), "hex")))
+                proof.setGraviton(gProof)
+            } else {
+                // Check census proof
+                if (typeof params.censusProof == "string") throw new Error("Invalid census proof for an EVM process")
+                else if (typeof params.censusProof.key != "string" ||
+                    !Array.isArray(params.censusProof.proof) || typeof params.censusProof.value != "string")
+                    throw new Error("Invalid census proof (must be an object)")
+
+                const esProof = new ProofEthereumStorage()
+                esProof.setKey(new Uint8Array(Buffer.from(params.censusProof.key.replace("0x", ""), "hex")))
+                const siblings = params.censusProof.proof.map(sibling => new Uint8Array(Buffer.from(sibling.replace("0x", ""), "hex")))
+
+                let hexValue = params.censusProof.value
+                if (params.censusProof.value.length % 2 !== 0) {
+                    hexValue = params.censusProof.value.replace("0x", "0x0")
+                }
+                esProof.setValue(utils.zeroPad(hexValue, 32))
+
+                esProof.setSiblingsList(siblings)
+                proof.setEthereumstorage(esProof)
+            }
+
+            const nonce = Random.getHex().substr(2)
             const envelope = new VoteEnvelope()
             envelope.setProof(proof)
             envelope.setProcessid(new Uint8Array(Buffer.from(params.processId.replace("0x", ""), "hex")))

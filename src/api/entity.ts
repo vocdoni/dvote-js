@@ -43,7 +43,7 @@ export class EntityApi {
         checkValidEntityMetadata(metadata)
         const strJsonMeta = JSON.stringify(metadata)
 
-        if (walletOrSigner instanceof Wallet && !walletOrSigner.provider) {
+        if (walletOrSigner._isSigner && !walletOrSigner.provider) {
             walletOrSigner = walletOrSigner.connect(gateway.provider)
         }
 

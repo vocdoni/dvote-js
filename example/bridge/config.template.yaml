@@ -7,14 +7,15 @@ ethNetworkId: "goerli"
 tokenAddress: "0x2b7222146a805bba0dbb61869c4b3a03209dffba"
 tokenBalanceMappingPosition: 2
 privKeys:
-	- "0x...."
-	- "0x...."
-	- "0x...."
-	- "0x...."
-	- "0x...."
+- "0x...."
+- "0x...."
+- "0x...."
+- "0x...."
+- "0x...."
 
 bootnodesUrlRw: "https://server/gateways.json"     # Bootnode used by default
 dvoteGatewayUri:                                   # If set, overrides bootnodesUrlRw
 dvoteGatewayPublicKey:                             # If set, overrides bootnodesUrlRw
+web3Uri:
 
 encryptedVote: true

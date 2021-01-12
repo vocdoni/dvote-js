@@ -9,7 +9,7 @@ import { expect } from "chai"
 import { Contract, Wallet } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
 import { DevWeb3Service, TestAccount } from "../helpers/web3-service"
-import { ProcessContractMethods, ProcessContractParameters, ProcessStatus } from "../../src/net/contracts"
+import { ProcessCensusOrigin, ProcessContractMethods, ProcessContractParameters, ProcessStatus } from "../../src/net/contracts"
 import { Buffer } from "buffer/"
 
 import { VotingApi, IVotePackage } from "../../src/api/voting"
@@ -217,7 +217,7 @@ describe("Governance Process", () => {
             let processId = "0x8b35e10045faa886bd2e18636cd3cb72e80203a04e568c47205bf0313a0f60d1"
             let siblings = "0x0003000000000000000000000000000000000000000000000000000000000006f0d72fbd8b3a637488107b0d8055410180ec017a4d76dbb97bee1c3086a25e25b1a6134dbd323c420d6fc2ac3aaf8fff5f9ac5bc0be5949be64b7cfd1bcc5f1f"
 
-            const { envelope: e1, signature: signature1 } = await VotingApi.packageSignedEnvelope({ votes: [1, 2, 3], merkleProof: siblings, processId, walletOrSigner: wallet })
+            const { envelope: e1, signature: signature1 } = await VotingApi.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN), votes: [1, 2, 3], censusProof: siblings, processId, walletOrSigner: wallet })
             const envelope1 = VoteEnvelope.deserializeBinary(e1)
             expect(Buffer.from(envelope1.getProcessid()).toString("hex")).to.eq(processId.slice(2))
             expect(Buffer.from(envelope1.getProof().getGraviton().getSiblings()).toString("hex")).to.eq(siblings.slice(2))
@@ -229,7 +229,7 @@ describe("Governance Process", () => {
             processId = "0x36c886bd2e18605bf03a0428be100313a0f6e568c470d135d3cb72e802045faa"
             siblings = "0x0003000000100000000002000000000300000000000400000000000050000006f0d72fbd8b3a637488107b0d8055410180ec017a4d76dbb97bee1c3086a25e25b1a6134dbd323c420d6fc2ac3aaf8fff5f9ac5bc0be5949be64b7cfd1bcc5f1f"
 
-            const { envelope: e2, signature: signature2 } = await VotingApi.packageSignedEnvelope({ votes: [5, 6, 7], merkleProof: siblings, processId, walletOrSigner: wallet })
+            const { envelope: e2, signature: signature2 } = await VotingApi.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN), votes: [5, 6, 7], censusProof: siblings, processId, walletOrSigner: wallet })
             const envelope2 = VoteEnvelope.deserializeBinary(e2)
             expect(Buffer.from(envelope2.getProcessid()).toString("hex")).to.eq(processId.slice(2))
             expect(Buffer.from(envelope2.getProof().getGraviton().getSiblings()).toString("hex")).to.eq(siblings.slice(2))
@@ -239,7 +239,7 @@ describe("Governance Process", () => {
             expect(BytesSignature.isValid(signature2, wallet._signingKey().publicKey, e2)).to.eq(true)
 
             expect(async () => {
-                await VotingApi.packageSignedEnvelope({ votes: ["1", "2", "3"], merkleProof: siblings, processId, walletOrSigner: wallet } as any)
+                await VotingApi.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN), votes: ["1", "2", "3"], censusProof: siblings, processId, walletOrSigner: wallet } as any)
             }).to.throw
         })
 
@@ -270,7 +270,7 @@ describe("Governance Process", () => {
             // one key
             for (let item of processes) {
                 const processKeys = { encryptionPubKeys: [{ idx: 1, key: votePublicKey }] }
-                const { envelope: envelopeBytes, signature } = await VotingApi.packageSignedEnvelope({ votes: item.votes, merkleProof: item.siblings, processId: item.processId, walletOrSigner: wallet, processKeys })
+                const { envelope: envelopeBytes, signature } = await VotingApi.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN), votes: item.votes, censusProof: item.siblings, processId: item.processId, walletOrSigner: wallet, processKeys })
                 const envelope = VoteEnvelope.deserializeBinary(envelopeBytes)
 
                 expect(Buffer.from(envelope.getProcessid()).toString("hex")).to.eq(item.processId.slice(2))
@@ -330,8 +330,9 @@ describe("Governance Process", () => {
                 const processKeys = { encryptionPubKeys: encryptionKeys.map((kp, idx) => ({ idx, key: kp.publicKey })) }
 
                 const { envelope: envelopeBytes, signature } = await VotingApi.packageSignedEnvelope({
+                    censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN),
                     votes: item.votes,
-                    merkleProof: item.siblings,
+                    censusProof: item.siblings,
                     processId: item.processId,
                     walletOrSigner: wallet,
                     processKeys
