@@ -222,13 +222,15 @@ signer.sendTransaction(...)
 
 ## Components
 
-### Entity Resolver
+### Entity
 
-Mainly used to query the metadata of an Entity on a ENS resolver, but also used to set and update its values.
+The entity API allows updating and querying the key-value fields of the Entity Resolver contract. On top of the key-value storage, lies a link to the entity's metadata, which is the human readable information about it.
 
-### Voting Process
+### Process
 
-Mainly used to query the metadata of a voting process within the contract instance. Also used to create votes, publish batches and get the encryption keys.
+Resembling the likes of a Unix process, a Vocdoni process contains a set of flags defining how an L2 governance process is conducted on the Vochain.
+
+In addition to the flags is the process metadata, which is the human readable content that voters will be prompted for making a choice.
 
 ### Gateway
 
@@ -236,7 +238,12 @@ Provides utility functions to fetch data from decentralized filesystems, sending
 
 ## Example
 
-Check out `example/index.js`.
+For more involved examples, check out:
+
+- `example/index.js` for examples about specific components
+- `example/standard/index.js` for an end to end standard process
+- `example/bridge/index.js` for an end to end process using an ERC20 based census
+- `example/ethers/index.js` for general usage tips about Ethers.js Wallets and Providers
 
 ## Development
 

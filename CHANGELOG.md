@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 0.18.0
+
+- Adding support for ERC20 census based processes
+
 ## 0.17.2
 
 - Renamed `CensusApi` to `CensusOffChainApi`
