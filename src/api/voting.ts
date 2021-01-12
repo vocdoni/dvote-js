@@ -927,7 +927,7 @@ export class VotingApi {
                     throw new Error("Invalid census proof (must be a hex string)")
 
                 const gProof = new ProofGraviton()
-                gProof.setSiblings(Buffer.from((params.censusProof as string).replace("0x", ""), "hex").valueOf())
+                gProof.setSiblings(new Uint8Array(Buffer.from((params.censusProof as string).replace("0x", ""), "hex")))
                 proof.setGraviton(gProof)
             } else {
                 // Check census proof

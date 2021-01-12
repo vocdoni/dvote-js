@@ -67,7 +67,7 @@
                 "--timeout",
                 "999999",
                 "--colors",
-                "${workspaceFolder}/test/integration/processes.ts",
+                "${workspaceFolder}/test/unit/processes.ts",
             ],
             "console": "integratedTerminal",
             "internalConsoleOptions": "openOnSessionStart",
