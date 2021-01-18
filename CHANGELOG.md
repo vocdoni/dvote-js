@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 0.18.1
+
+- Connecting contracts to the pool provider only when a Wallet is passed
+
 ## 0.18.0
 
 - Adding support for ERC20 census based processes

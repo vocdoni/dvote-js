@@ -218,8 +218,13 @@ export class Web3Gateway {
         }
 
         if (walletOrSigner) {
+            if (walletOrSigner instanceof Wallet) {
+                return this.attach<EnsPublicResolverContractMethods>(contractAddress, contractAbi)
+                    .connect(walletOrSigner.connect(this.provider)) as IEnsPublicResolverContract
+            }
+            // Signers' provider can't be manually set
             return this.attach<EnsPublicResolverContractMethods>(contractAddress, contractAbi)
-                .connect(walletOrSigner.connect(this.provider)) as IEnsPublicResolverContract
+                .connect(walletOrSigner) as IEnsPublicResolverContract
         }
         return this.attach<EnsPublicResolverContractMethods>(contractAddress, contractAbi)
     }
@@ -239,8 +244,13 @@ export class Web3Gateway {
         }
 
         if (walletOrSigner) {
+            if (walletOrSigner instanceof Wallet) {
+                return this.attach<ProcessContractMethods>(contractAddress, contractAbi)
+                    .connect(walletOrSigner.connect(this.provider)) as IProcessContract
+            }
+            // Signers' provider can't be manually set
             return this.attach<ProcessContractMethods>(contractAddress, contractAbi)
-                .connect(walletOrSigner.connect(this.provider)) as IProcessContract
+                .connect(walletOrSigner) as IProcessContract
         }
         return this.attach<ProcessContractMethods>(contractAddress, contractAbi)
     }
@@ -260,8 +270,13 @@ export class Web3Gateway {
         }
 
         if (walletOrSigner) {
+            if (walletOrSigner instanceof Wallet) {
+                return this.attach<NamespaceContractMethods>(contractAddress, contractAbi)
+                    .connect(walletOrSigner.connect(this.provider)) as INamespaceContract
+            }
+            // Signers' provider can't be manually set
             return this.attach<NamespaceContractMethods>(contractAddress, contractAbi)
-                .connect(walletOrSigner.connect(this.provider)) as INamespaceContract
+                .connect(walletOrSigner) as INamespaceContract
         }
         return this.attach<NamespaceContractMethods>(contractAddress, contractAbi)
     }
@@ -281,8 +296,13 @@ export class Web3Gateway {
         }
 
         if (walletOrSigner) {
+            if (walletOrSigner instanceof Wallet) {
+                return this.attach<TokenStorageProofContractMethods>(contractAddress, contractAbi)
+                    .connect(walletOrSigner.connect(this.provider)) as ITokenStorageProofContract
+            }
+            // Signers' provider can't be manually set
             return this.attach<TokenStorageProofContractMethods>(contractAddress, contractAbi)
-                .connect(walletOrSigner.connect(this.provider)) as ITokenStorageProofContract
+                .connect(walletOrSigner) as ITokenStorageProofContract
         }
         return this.attach<TokenStorageProofContractMethods>(contractAddress, contractAbi)
     }

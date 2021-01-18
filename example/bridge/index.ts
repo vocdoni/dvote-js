@@ -144,28 +144,34 @@ async function launchNewVote() {
     console.log("Preparing the new vote metadata")
 
     const processMetadataPre: ProcessMetadata = JSON.parse(JSON.stringify(ProcessMetadataTemplate)) // make a copy of the template
-    processMetadataPre.title.default = "E2E process"
-    processMetadataPre.description.default = "E2E process"
-    processMetadataPre.questions[0].title.default = "Should 1+1 equal 2?"
-    processMetadataPre.questions[0].description.default = "Description here"
-    processMetadataPre.questions[0].choices[0].title.default = "Yes"
+    processMetadataPre.title.default = "Bridge Process"
+    processMetadataPre.description.default = "This is the description of the testing bridge end to end process. It is very important that you read carefully the text below."
+    processMetadataPre.questions[0].title.default = "What's your feeling about the Aragon - Vocdoni deal?"
+    processMetadataPre.questions[0].description.default = "Are you happy and proud of the new adventure that we are undertaking?"
+    processMetadataPre.questions[0].choices[0].title.default = "I'm so happy"
     processMetadataPre.questions[0].choices[0].value = 0
-    processMetadataPre.questions[0].choices[1].title.default = "No"
+    processMetadataPre.questions[0].choices[1].title.default = "Not sure"
     processMetadataPre.questions[0].choices[1].value = 1
+    processMetadataPre.questions[0].choices.push({
+        title: { default: "Not really" },
+        value: 2
+    })
 
     console.log("Getting the block height")
     const currentBlock = await VotingApi.getBlockHeight(pool)
     const startBlock = currentBlock + 35
-    const blockCount = 15
+    // const blockCount = 6 * 60 * 24 * 10
+    const blockCount = 6 * 20 // 20m
+    // const blockCount = 15
 
     // TODO: COMPUTE THE PARAMS SIGNATURE
     // TODO: INCLUDE THE BALANCE SLOT IN SUCH SIGNATURE
 
     const processParamsPre: Omit<Omit<IProcessCreateParams, "metadata">, "questionCount"> & { metadata: ProcessMetadata } = {
         mode: ProcessMode.make({ autoStart: true }),
-        envelopeType: ProcessEnvelopeType.ENCRYPTED_VOTES, // bit mask
+        envelopeType: ProcessEnvelopeType.make({}), // bit mask
         censusOrigin: ProcessCensusOrigin.ERC20,
-        metadata: ProcessMetadataTemplate,
+        metadata: processMetadataPre,
         censusMerkleRoot: proof.storageHash,
         startBlock,
         blockCount,
