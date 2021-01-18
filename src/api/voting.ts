@@ -383,11 +383,18 @@ export class VotingApi {
         else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool))
             return Promise.reject(new Error("Invalid Gateway object"))
 
-        if (processParameters.censusOrigin == ProcessCensusOrigin.OFF_CHAIN) {
-            return VotingApi.newProcessOffchainCensus(processParameters, walletOrSigner, gateway)
-        }
-        else {
-            return VotingApi.newProcessEvmCensus(processParameters, walletOrSigner, gateway)
+        switch (processParameters.censusOrigin) {
+            case ProcessCensusOrigin.OFF_CHAIN_TREE:
+            case ProcessCensusOrigin.OFF_CHAIN_TREE_WEIGHTED:
+            case ProcessCensusOrigin.OFF_CHAIN_CA:
+                return VotingApi.newProcessOffchainCensus(processParameters, walletOrSigner, gateway)
+            case ProcessCensusOrigin.ERC20:
+            case ProcessCensusOrigin.ERC721:
+            case ProcessCensusOrigin.ERC1155:
+            case ProcessCensusOrigin.ERC777:
+                return VotingApi.newProcessEvmCensus(processParameters, walletOrSigner, gateway)
+            default:
+                throw new Error("Invalid Census Origin")
         }
     }
 
@@ -582,7 +589,7 @@ export class VotingApi {
      * @param walletOrSigner
      * @param web3Gateway
      */
-    static async setCensus(processId: string, censusMerkleRoot: string, censusMerkleTree: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<void> {
+    static async setCensus(processId: string, censusRoot: string, censusUri: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<void> {
         if (!processId) throw new Error("Invalid process ID")
         else if (!walletOrSigner) throw new Error("Invalid Wallet or Signer")
         else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) throw new Error("Invalid Gateway object")
@@ -590,7 +597,7 @@ export class VotingApi {
         try {
             const processInstance = await gateway.getProcessesInstance(walletOrSigner)
 
-            const tx = await processInstance.setCensus(processId, censusMerkleRoot, censusMerkleTree)
+            const tx = await processInstance.setCensus(processId, censusRoot, censusUri)
             if (!tx) throw new Error("Could not start the blockchain transaction")
             await tx.wait()
         }

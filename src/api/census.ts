@@ -188,15 +188,15 @@ export class CensusOffChainApi {
 
     /**
      * Get the number of people in the census with the given Merkle Root Hash
-     * @param censusMerkleRootHash The Merkle Root of the census to fetch from the Gateway
+     * @param censusRootHash The Merkle Root of the census to fetch from the Gateway
      * @param dvoteGw A Gateway instance pointing to a remote Gateway
      * @returns Promise resolving with the census size
      */
-    static getCensusSize(censusMerkleRootHash: string, gateway: IGateway | IGatewayPool): Promise<string> {
-        if (!censusMerkleRootHash || !gateway) return Promise.reject(new Error("Invalid parameters"))
+    static getCensusSize(censusRootHash: string, gateway: IGateway | IGatewayPool): Promise<string> {
+        if (!censusRootHash || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
-        return gateway.sendRequest({ method: "getSize", censusId: censusMerkleRootHash })
+        return gateway.sendRequest({ method: "getSize", censusId: censusRootHash })
             .then(response => {
                 if (isNaN(response.size)) throw new Error("The census size could not be retrieved")
                 return response.size
@@ -281,17 +281,17 @@ export class CensusOffChainApi {
 
     /**
      * Fetch the proof of the given claim on the given census merkleTree using the given gateway
-     * @param censusMerkleRoot The Merkle Root of the Census to query
+     * @param censusRoot The Merkle Root of the Census to query
      * @param base64Claim Base64-encoded claim of the leaf to request
      * @param gateway
      */
-    static generateProof(censusMerkleRoot: string, base64Claim: string, isDigested: boolean, gateway: IGateway | IGatewayPool): Promise<string> {
-        if (!censusMerkleRoot || !base64Claim || !gateway) return Promise.reject(new Error("Invalid parameters"))
+    static generateProof(censusRoot: string, base64Claim: string, isDigested: boolean, gateway: IGateway | IGatewayPool): Promise<string> {
+        if (!censusRoot || !base64Claim || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({
             method: "genProof",
-            censusId: censusMerkleRoot,
+            censusId: censusRoot,
             digested: isDigested,
             claimData: base64Claim,
         }).then(response => {

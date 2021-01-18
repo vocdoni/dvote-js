@@ -76,8 +76,8 @@ async function main() {
     console.log("- Process ID", processId)
     console.log("- Process start block", processParams.startBlock)
     console.log("- Process end block", processParams.startBlock + processParams.blockCount)
-    console.log("- Process merkle root", processParams.censusMerkleRoot)
-    console.log("- Process merkle tree", processParams.censusMerkleTree)
+    console.log("- Process merkle root", processParams.censusRoot)
+    console.log("- Process merkle tree", processParams.censusUri)
     console.log("-", accounts.length, "accounts on the census")
 
     // Wait until the current block >= startBlock
@@ -230,10 +230,10 @@ async function launchNewVote(merkleRoot, merkleTreeUri) {
     const processParamsPre = {
         mode: ProcessMode.make({ autoStart: true, interruptible: true }), // helper
         envelopeType: ProcessEnvelopeType.ENCRYPTED_VOTES, // bit mask
-        censusOrigin: ProcessCensusOrigin.OFF_CHAIN,
+        censusOrigin: ProcessCensusOrigin.OFF_CHAIN_TREE,
         metadata: ProcessMetadataTemplate,
-        censusMerkleRoot: merkleRoot,
-        censusMerkleTree: "ipfs://1234123412341234",
+        censusRoot: merkleRoot,
+        censusUri: "ipfs://1234123412341234",
         startBlock,
         blockCount,
         maxCount: 1,
@@ -260,8 +260,8 @@ async function launchNewVote(merkleRoot, merkleTreeUri) {
     assert.equal(processParams.entityAddress, entityAddr)
     assert.equal(processParams.startBlock, processParamsPre.startBlock, "SENT " + JSON.stringify(processParamsPre) + " GOT " + JSON.stringify(processParams))
     assert.equal(processParams.blockCount, processParamsPre.blockCount)
-    assert.equal(processParams.censusMerkleRoot, processParamsPre.censusMerkleRoot)
-    assert.equal(processParams.censusMerkleTree, processParamsPre.censusMerkleTree)
+    assert.equal(processParams.censusRoot, processParamsPre.censusRoot)
+    assert.equal(processParams.censusUri, processParamsPre.censusUri)
 }
 
 async function waitUntilStarted() {
@@ -299,7 +299,7 @@ async function launchVotes(accounts) {
         const wallet = new Wallet(account.privateKey)
 
         process.stdout.write(`Gen Proof [${idx}] ; `)
-        const censusProof = await CensusOffChainApi.generateProof(processParams.censusMerkleRoot, account.publicKeyHash, true, pool)
+        const censusProof = await CensusOffChainApi.generateProof(processParams.censusRoot, account.publicKeyHash, true, pool)
             .catch(err => {
                 console.error("\nCensusApi.generateProof ERR", account, err)
                 if (config.stopOnError) throw err

@@ -126,10 +126,10 @@ describe("Process", () => {
         //     const params = {
         //         mode: ProcessMode.AUTO_START,
         //         envelopeType: ProcessEnvelopeType.make(),
-        //         censusOrigin: ProcessCensusOrigin.OFF_CHAIN,
+        //         censusOrigin: ProcessCensusOrigin.OFF_CHAIN_TREE,
         //         metadata,
-        //         censusMerkleRoot: "0x1",
-        //         censusMerkleTree: "ipfs://1234",
+        //         censusRoot: "0x1",
+        //         censusUri: "ipfs://1234",
         //         startBlock: 200,
         //         blockCount: 1000,
         //         maxCount: 1,

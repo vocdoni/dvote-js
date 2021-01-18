@@ -64,8 +64,8 @@ async function main() {
     console.log("- Process ID", processId)
     console.log("- Process start block", processParams.startBlock)
     console.log("- Process end block", processParams.startBlock + processParams.blockCount)
-    console.log("- Process merkle root", processParams.censusMerkleRoot)
-    console.log("- Process merkle tree", processParams.censusMerkleTree)
+    console.log("- Process merkle root", processParams.censusRoot)
+    console.log("- Process merkle tree", processParams.censusUri)
     console.log("-", accounts.length, "accounts on the census")
 
     // Wait until the current block >= startBlock
@@ -172,7 +172,7 @@ async function launchNewVote() {
         envelopeType: ProcessEnvelopeType.make({}), // bit mask
         censusOrigin: ProcessCensusOrigin.ERC20,
         metadata: processMetadataPre,
-        censusMerkleRoot: proof.storageHash,
+        censusRoot: proof.storageHash,
         startBlock,
         blockCount,
         maxCount: 1,
@@ -196,7 +196,7 @@ async function launchNewVote() {
     assert.equal(processParams.entityAddress, config.tokenAddress)
     assert.equal(processParams.startBlock, processParamsPre.startBlock, "SENT " + JSON.stringify(processParamsPre) + " GOT " + JSON.stringify(processParams))
     assert.equal(processParams.blockCount, processParamsPre.blockCount)
-    assert.equal(processParams.censusMerkleRoot, processParamsPre.censusMerkleRoot)
+    assert.equal(processParams.censusRoot, processParamsPre.censusRoot)
 }
 
 async function waitUntilStarted() {

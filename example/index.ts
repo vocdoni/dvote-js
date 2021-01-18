@@ -297,10 +297,10 @@ async function createProcessRaw() {
     const params = ProcessContractParameters.fromParams({
         mode: ProcessMode.make({ autoStart: true, interruptible: true }), // helper
         envelopeType: ProcessEnvelopeType.ENCRYPTED_VOTES | ProcessEnvelopeType.SERIAL | ProcessEnvelopeType.UNIQUE_VALUES, // bit mask
-        censusOrigin: ProcessCensusOrigin.OFF_CHAIN,
+        censusOrigin: ProcessCensusOrigin.OFF_CHAIN_TREE,
         metadata: metaCuri.toString(),
-        censusMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000",
-        censusMerkleTree: censusCuri.toString(),
+        censusRoot: "0x0000000000000000000000000000000000000000000000000000000000000000",
+        censusUri: censusCuri.toString(),
         startBlock: 500,
         blockCount: 1000,
         questionCount: 5,
@@ -364,12 +364,12 @@ async function createProcessFull() {
     const params = {
         mode: ProcessMode.make({ autoStart: true }),
         envelopeType: ProcessEnvelopeType.make({ encryptedVotes: true }),
-        censusOrigin: ProcessCensusOrigin.OFF_CHAIN,
+        censusOrigin: ProcessCensusOrigin.OFF_CHAIN_TREE,
         metadata: processMetadata,
         startBlock: 100,
         blockCount: 1000,
-        censusMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000",
-        censusMerkleTree: "ipfs://1234",
+        censusRoot: "0x0000000000000000000000000000000000000000000000000000000000000000",
+        censusUri: "ipfs://1234",
         maxCount: 1,
         questionCount: 2,
         costExponent: 1000,
@@ -401,10 +401,10 @@ async function setProcessStatus() {
     const processParams = {
         mode: ProcessMode.make({ autoStart: true, interruptible: true }), // helper
         envelopeType: ProcessEnvelopeType.ENCRYPTED_VOTES | ProcessEnvelopeType.SERIAL, // bit mask
-        censusOrigin: ProcessCensusOrigin.OFF_CHAIN,
+        censusOrigin: ProcessCensusOrigin.OFF_CHAIN_TREE,
         metadata: processMetadata,
-        censusMerkleRoot: "0x0000000000000000000000000000000000000000000000000000000000000000",
-        censusMerkleTree: "ipfs://1234123412341234",
+        censusRoot: "0x0000000000000000000000000000000000000000000000000000000000000000",
+        censusUri: "ipfs://1234123412341234",
         startBlock: 500,
         blockCount: 1000,
         maxCount: 1,
@@ -467,8 +467,8 @@ async function cloneVotingProcess() {
         metadata: currentMetadata,
         startBlock,
         blockCount,
-        censusMerkleRoot: NEW_MERKLE_ROOT,
-        censusMerkleTree: NEW_MERKLE_TREE_ORIGIN,
+        censusRoot: NEW_MERKLE_ROOT,
+        censusUri: NEW_MERKLE_TREE_ORIGIN,
         maxCount: currentParameters.maxCount,
         questionCount: currentParameters.questionCount,
         costExponent: currentParameters.costExponent,
@@ -508,14 +508,14 @@ async function useVoteApi() {
     const processParams = await VotingApi.getProcessParameters(processId, pool)
     // const processMeta = await VotingApi.getProcessMetadata(processId, pool)
 
-    const censusMerkleRoot = processParams.censusMerkleRoot
+    const censusRoot = processParams.censusRoot
 
     console.log("Reading", processId)
 
     console.log("BLOCKCHAIN INFO:\n")
     console.log("- Process startBlock:", processParams.startBlock)
     console.log("- Process endBlock:", processParams.startBlock + processParams.blockCount)
-    console.log("- Census size:", await CensusOffChainApi.getCensusSize(censusMerkleRoot, pool))
+    console.log("- Census size:", await CensusOffChainApi.getCensusSize(censusRoot, pool))
     console.log("- Block height:", await VotingApi.getBlockHeight(pool))
     console.log("- Envelope height:", await VotingApi.getEnvelopeHeight(processId, pool))
 
@@ -529,7 +529,7 @@ async function useVoteApi() {
     console.log("- Block in 200 seconds:", await VotingApi.estimateBlockAtDateTime(new Date(Date.now() + VOCHAIN_BLOCK_TIME * 20), pool))
 
     const publicKeyHash = CensusOffChainApi.digestHexClaim(wallet["_signingKey"]().publicKey)
-    const censusProof = await CensusOffChainApi.generateProof(censusMerkleRoot, publicKeyHash, true, pool)
+    const censusProof = await CensusOffChainApi.generateProof(censusRoot, publicKeyHash, true, pool)
     const votes = [1, 2, 1]
 
     // Open vote version:
@@ -568,7 +568,7 @@ async function submitVoteBatch() {
 
     const processParams = await VotingApi.getProcessParameters(processId, pool)
     const processMeta = await VotingApi.getProcessMetadata(processId, pool)
-    const censusMerkleRoot = processParams.censusMerkleRoot
+    const censusRoot = processParams.censusRoot
 
     console.log("On Process", processId)
 
@@ -587,7 +587,7 @@ async function submitVoteBatch() {
             // const myEntityAddress = await wallet.getAddress()
 
             const publicKeyHash = CensusOffChainApi.digestHexClaim(wallet["_signingKey"]().publicKey)
-            const censusProof = await CensusOffChainApi.generateProof(censusMerkleRoot, publicKeyHash, true, pool)
+            const censusProof = await CensusOffChainApi.generateProof(censusRoot, publicKeyHash, true, pool)
             const votes = [1]
             const { envelope, signature } = await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet })
             // Encrypted version:

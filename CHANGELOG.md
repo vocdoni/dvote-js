@@ -1,5 +1,12 @@
 # DVote JS changelog
 
+## 0.19.0
+
+- Upgrading dvote-solidity
+- Adapting the census enum
+    - Renaming `OFF_CHAIN` into `OFF_CHAIN_TREE`
+    - Adding `OFF_CHAIN_TREE_WEIGHTED` ad `OFF_CHAIN_CA`
+
 ## 0.18.1
 
 - Connecting contracts to the pool provider only when a Wallet is passed

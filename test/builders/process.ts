@@ -29,7 +29,7 @@ export const DEFAULT_PREDECESSOR_INSTANCE_ADDRESS = "0x0000000000000000000000000
 export const DEFAULT_NAMESPACE = 0
 export const DEFAULT_PROCESS_MODE = ProcessMode.make()
 export const DEFAULT_ENVELOPE_TYPE = ProcessEnvelopeType.make()
-export const DEFAULT_CENSUS_ORIGIN = ProcessCensusOrigin.OFF_CHAIN
+export const DEFAULT_CENSUS_ORIGIN = ProcessCensusOrigin.OFF_CHAIN_TREE
 export const DEFAULT_METADATA_CONTENT_HASHED_URI = "ipfs://1234,https://server/uri!0987654321"
 export const DEFAULT_MERKLE_ROOT = "0x123456789"
 export const DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI = "ipfs://1234,https://server/uri!1234567812345678"
@@ -51,8 +51,8 @@ export default class ProcessBuilder {
     predecessorInstanceAddress: string = DEFAULT_PREDECESSOR_INSTANCE_ADDRESS
     enabled: boolean = true
     metadata: string = DEFAULT_METADATA_CONTENT_HASHED_URI
-    merkleRoot: string = DEFAULT_MERKLE_ROOT
-    merkleTree: string = DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI
+    censusRoot: string = DEFAULT_MERKLE_ROOT
+    censusUri: string = DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI
     startBlock: number = DEFAULT_START_BLOCK
     blockCount: number = DEFAULT_BLOCK_COUNT
     mode: IProcessMode = DEFAULT_PROCESS_MODE
@@ -119,8 +119,8 @@ export default class ProcessBuilder {
                 envelopeType: this.envelopeType,
                 censusOrigin: this.censusOrigin,
                 metadata: this.metadata,
-                censusMerkleRoot: this.merkleRoot,
-                censusMerkleTree: this.merkleTree,
+                censusRoot: this.censusRoot,
+                censusUri: this.censusUri,
                 startBlock: this.startBlock,
                 blockCount: this.blockCount,
                 questionCount: this.questionCount,
@@ -230,8 +230,8 @@ export default class ProcessBuilder {
             envelopeType: DEFAULT_ENVELOPE_TYPE,
             censusOrigin: DEFAULT_CENSUS_ORIGIN,
             metadata: DEFAULT_METADATA_CONTENT_HASHED_URI,
-            censusMerkleRoot: DEFAULT_MERKLE_ROOT,
-            censusMerkleTree: DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI,
+            censusRoot: DEFAULT_MERKLE_ROOT,
+            censusUri: DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI,
             startBlock: DEFAULT_START_BLOCK,
             blockCount: DEFAULT_BLOCK_COUNT,
             questionCount: DEFAULT_QUESTION_COUNT,
