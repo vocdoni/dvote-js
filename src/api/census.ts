@@ -98,19 +98,20 @@ export class CensusOffChainApi {
      * NOTE: This function is intended to be called from NodeJS 10+
      *
      * @param censusId Full Census ID containing the Entity ID and the hash of the original name
-     * @param claimData A string containing a base64 encoded Public Key or the base64 encoded Poseidon Hash of it
-     * @param digested Set to true if the claim is already hashed using Poseidon Hash. False otherwise.
+     * @param claim The details of the claim to add, including a base64 encoded Public Key (or its keccak256/Poseidon hash) and optionally the voting weight of the key
+     * @param digested Set to true if the claim is already hashed. False otherwise.
      * @param gateway A Gateway instance pointing to a remote Gateway
      * @param walletOrSigner
      * @returns Promise resolving with the new merkleRoot
      */
-    static addClaim(censusId: string, claimData: string, digested: boolean, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
-        if (!censusId || !claimData || !claimData.length || !gateway) return Promise.reject(new Error("Invalid parameters"))
+    static addClaim(censusId: string, claim: { key: string, value?: string }, digested: boolean, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
+        if (!censusId || !claim || !claim.key || !claim.key.length || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!walletOrSigner || !walletOrSigner._isSigner) return Promise.reject(new Error("Invalid WalletOrSinger object"))
 
-        return gateway.sendRequest({ method: "addClaim", censusId, digested, claimData }, walletOrSigner)
+        return gateway.sendRequest({ method: "addClaim", censusId, digested, censusKey: claim.key, censusValue: claim.value || undefined }, walletOrSigner)
             .then((response) => {
+                if (typeof response.root == "string") return response.root
                 return CensusOffChainApi.getRoot(censusId, gateway)
             })
             .catch((error) => {
@@ -124,21 +125,21 @@ export class CensusOffChainApi {
      * NOTE: This function is intended to be called from NodeJS 10+
      *
      * @param censusId Full Census ID containing the Entity ID and the hash of the original name
-     * @param claimsData A string array containing base64 encoded Public Keys or the base64 encoded Poseidon Hashes of them
-     * @param digested Set to true if the claims are already hashed using Poseidon Hash. False otherwise.
+     * @param claimList The list of claims to add, including each a base64 encoded Public Key (or its keccak256/Poseidon hash) and optionally the voting weight of the corresponding key
+     * @param digested Set to true if the claims are already hashed. False otherwise.
      * @param gateway A Gateway instance pointing to a remote Gateway
      * @param walletOrSigner
      * @returns Promise resolving with the new merkleRoot
      */
-    static async addClaimBulk(censusId: string, claimsData: string[], digested: boolean, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<{ merkleRoot: string, invalidClaims: any[] }> {
-        if (!censusId || !claimsData || !claimsData.length || !gateway) return Promise.reject(new Error("Invalid parameters"))
+    static async addClaimBulk(censusId: string, claimList: { key: string, value?: string }[], digested: boolean, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<{ merkleRoot: string, invalidClaims: any[] }> {
+        if (!censusId || !claimList || !claimList.length || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!walletOrSigner || !walletOrSigner._isSigner) return Promise.reject(new Error("Invalid WalletOrSinger object"))
 
         let invalidClaims = []
         let addedClaims = 0
-        while (addedClaims < claimsData.length) {
-            let claims = claimsData.slice(addedClaims, addedClaims + CENSUS_MAX_BULK_SIZE)
+        while (addedClaims < claimList.length) {
+            let claims = claimList.slice(addedClaims, addedClaims + CENSUS_MAX_BULK_SIZE)
             addedClaims += CENSUS_MAX_BULK_SIZE
             const partialInvalidClaims = await CensusOffChainApi.addClaimChunk(censusId, claims, digested, walletOrSigner, gateway)
             invalidClaims = invalidClaims.concat(partialInvalidClaims)
@@ -149,14 +150,17 @@ export class CensusOffChainApi {
         return { merkleRoot, invalidClaims }
     }
 
-    static addClaimChunk(censusId: string, claimsData: string[], digested: boolean, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<any[]> {
-        if (!censusId || !claimsData || claimsData.length > CENSUS_MAX_BULK_SIZE || !gateway) return Promise.reject(new Error("Invalid parameters"))
+    private static addClaimChunk(censusId: string, claimList: { key: string, value?: string }[], digested: boolean, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<any[]> {
+        if (!censusId || !claimList || claimList.length > CENSUS_MAX_BULK_SIZE || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
-        else if (!claimsData.length) return Promise.resolve([])
+        else if (!claimList.length) return Promise.resolve([])
         else if (!walletOrSigner || !walletOrSigner._isSigner) return Promise.reject(new Error("Invalid WalletOrSinger object"))
 
+        const censusKeys = claimList.map(c => c.key)
+        const censusValues = claimList.map(c => c.value || undefined).filter(k => !!k)
+        if (censusValues.length > 0 && censusKeys.length != censusValues.length) throw new Error("Either all claimList.value elements should be set or all be empty, but not both")
 
-        return gateway.sendRequest({ method: "addClaimBulk", censusId, digested, claimsData }, walletOrSigner)
+        return gateway.sendRequest({ method: "addClaimBulk", censusId, digested, censusKeys, censusValues: censusValues.length ? censusValues : undefined }, walletOrSigner)
             .then(response => {
                 const invalidClaims = ("invalidClaims" in response) ? response.invalidClaims : []
                 return invalidClaims
@@ -221,7 +225,7 @@ export class CensusOffChainApi {
 
         return gateway.sendRequest(msg, walletOrSigner)
             .then(response => {
-                return (response.claimsData && response.claimsData.length) ? response.claimsData : []
+                return (response.censusDump && response.censusDump.length) ? response.censusDump : []
             }).catch(error => {
                 const message = (error.message) ? "The census merkle root could not be fetched: " + error.message : "The census merkle root could not be fetched"
                 throw new Error(message)
@@ -235,7 +239,7 @@ export class CensusOffChainApi {
      * @param walletOrSigner
      * @returns Promise resolving with the a raw string dump of the census claims
     */
-    static dumpPlain(censusId: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool, rootHash?: String): Promise<string[]> {
+    static dumpPlain(censusId: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool, rootHash?: String): Promise<{ key: string, value?: string }[]> {
         if (!censusId || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -243,7 +247,18 @@ export class CensusOffChainApi {
 
         return gateway.sendRequest(msg, walletOrSigner)
             .then(response => {
-                return (response.claimsData && response.claimsData.length) ? response.claimsData : []
+                let result: { key: string, value?: string }[]
+                if (response.censusKeys && response.censusKeys.length && response.censusValues && response.censusValues.length) {
+                    if (response.censusKeys.length != response.censusValues.length) throw new Error("The amount of keys and values received doesn't match")
+                    for (let i = 0; i < response.censusKeys.length; i++) {
+                        result.push({ key: response.censusKeys[i], value: response.censusValues[i] })
+                    }
+                    return result
+                }
+                else if (response.censusKeys && response.censusKeys.length) {
+                    return response.censusKeys.map(k => ({ key: k }))
+                }
+                return []
             }).catch(error => {
                 const message = (error.message) ? "The census merkle root could not be fetched: " + error.message : "The census merkle root could not be fetched"
                 throw new Error(message)

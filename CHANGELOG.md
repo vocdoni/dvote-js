@@ -2,10 +2,12 @@
 
 ## 0.19.0
 
-- Upgrading dvote-solidity
+- Upgrading dvote-solidity to `v0.13.0`
 - Adapting the census enum
     - Renaming `OFF_CHAIN` into `OFF_CHAIN_TREE`
     - Adding `OFF_CHAIN_TREE_WEIGHTED` ad `OFF_CHAIN_CA`
+- Updating the Census API to support weighted censuses
+    - `addClaim`, `addClaimBulk`, `dump` and `dumpPlain` now receive/return a `{ key: string, value?: string }[]` instead of a `string[]`
 
 ## 0.18.1
 

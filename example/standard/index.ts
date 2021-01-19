@@ -3,15 +3,15 @@ import { Wallet, utils } from "ethers"
 import * as assert from "assert"
 import { readFileSync, writeFileSync } from "fs"
 import * as YAML from 'yaml'
-import { GatewayPool } from "../src/net/gateway-pool"
-import { EthNetworkID } from "../src/net/gateway-bootnode"
-import { EntityMetadataTemplate } from "../src/models/entity"
-import { EntityApi } from "../src/api/entity"
-import { VotingApi } from "../src/api/voting"
-import { CensusOffChainApi } from "../src/api/census"
-import { ProcessMetadata, ProcessMetadataTemplate } from "../src/models/process"
-import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../src/net/contracts"
-import { VochainWaiter, EthWaiter } from "../src/util/waiters"
+import { GatewayPool } from "../../src/net/gateway-pool"
+import { EthNetworkID } from "../../src/net/gateway-bootnode"
+import { EntityMetadataTemplate } from "../../src/models/entity"
+import { EntityApi } from "../../src/api/entity"
+import { VotingApi } from "../../src/api/voting"
+import { CensusOffChainApi } from "../../src/api/census"
+import { ProcessMetadata, ProcessMetadataTemplate } from "../../src/models/process"
+import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../../src/net/contracts"
+import { VochainWaiter, EthWaiter } from "../../src/util/waiters"
 
 
 const CONFIG_PATH = "./config.yaml"
@@ -168,13 +168,13 @@ async function generatePublicCensusFromAccounts(accounts) {
     console.log("Creating a new census")
 
     const censusIdSuffix = require("crypto").createHash('sha256').update("" + Date.now()).digest().toString("hex")
-    const publicKeyDigests = accounts.map(account => account.publicKeyHash)
+    const claimList: { key: string, value?: string }[] = accounts.map(account => ({ key: account.publicKeyHash, value: "" }))
     const managerPublicKeys = [entityWallet["_signingKey"]().publicKey]
 
     if (config.stopOnError) {
         assert(censusIdSuffix.length == 64)
-        assert(Array.isArray(publicKeyDigests))
-        assert(publicKeyDigests.length == config.numAccounts)
+        assert(Array.isArray(claimList))
+        assert(claimList.length == config.numAccounts)
         assert(Array.isArray(managerPublicKeys))
         assert(managerPublicKeys.length == 1)
     }
@@ -184,8 +184,9 @@ async function generatePublicCensusFromAccounts(accounts) {
 
     const { censusId } = await CensusOffChainApi.addCensus(censusIdSuffix, managerPublicKeys, entityWallet, pool)
 
-    console.log("Adding", publicKeyDigests.length, "claims")
-    const result = await CensusOffChainApi.addClaimBulk(censusId, publicKeyDigests, true, entityWallet, pool)
+    console.log("Adding", claimList.length, "claims")
+    const digested = true
+    const result = await CensusOffChainApi.addClaimBulk(censusId, claimList, digested, entityWallet, pool)
 
     if (result.invalidClaims.length > 0) throw new Error("Census Service invalid claims count is " + result.invalidClaims.length)
 

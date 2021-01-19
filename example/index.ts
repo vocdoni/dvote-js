@@ -230,11 +230,11 @@ async function censusMethods() {
 
     const censusName = "My census name " + Math.random().toString().substr(2)
     const adminPublicKeys = [wallet["_signingKey"]().publicKey]
-    const publicKeyClaims = [
-        Buffer.from("0212d6dc30db7d2a32dddd0ba080d244cc26fcddcc29beb3fcb369564b468b49f1", "hex").toString("base64"),
-        Buffer.from("033980b22e9432aa2884772570c47a6f78a39bcc08b428161a503eeb91f66b1901", "hex").toString("base64"),
-        Buffer.from("03f64bd4dc997f1eed4f20843730c13d926199ff45a9edfad191feff0cea6e3d54", "hex").toString("base64"),
-        Buffer.from("02b9bd5b6f90833586cfcd181d1abe66d14152bb100ed7ec63ff94ecfe48dab187", "hex").toString("base64")
+    const publicKeyClaims: { key: string, value?: string }[] = [
+        { key: Buffer.from("0212d6dc30db7d2a32dddd0ba080d244cc26fcddcc29beb3fcb369564b468b49f1", "hex").toString("base64"), value: "" },
+        { key: Buffer.from("033980b22e9432aa2884772570c47a6f78a39bcc08b428161a503eeb91f66b1901", "hex").toString("base64"), value: "" },
+        { key: Buffer.from("03f64bd4dc997f1eed4f20843730c13d926199ff45a9edfad191feff0cea6e3d54", "hex").toString("base64"), value: "" },
+        { key: Buffer.from("02b9bd5b6f90833586cfcd181d1abe66d14152bb100ed7ec63ff94ecfe48dab187", "hex").toString("base64"), value: "" }
     ]
     console.log(publicKeyClaims);
 
