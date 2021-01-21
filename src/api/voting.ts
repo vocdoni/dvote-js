@@ -928,7 +928,7 @@ export class VotingApi {
         try {
             const proof = new Proof()
 
-            if (params.censusOrigin.isOffChain) {
+            if (params.censusOrigin.isOffChain || params.censusOrigin.isOffChainWeighted || params.censusOrigin) {
                 // Check census proof
                 if (typeof params.censusProof != "string" || !params.censusProof.match(/^(0x)?[0-9a-zA-Z]+$/))
                     throw new Error("Invalid census proof (must be a hex string)")
@@ -936,7 +936,7 @@ export class VotingApi {
                 const gProof = new ProofGraviton()
                 gProof.setSiblings(new Uint8Array(Buffer.from((params.censusProof as string).replace("0x", ""), "hex")))
                 proof.setGraviton(gProof)
-            } else {
+            } else if (params.censusOrigin.isErc20 || params.censusOrigin.isErc721 || params.censusOrigin.isErc1155 || params.censusOrigin.isErc777) {
                 // Check census proof
                 if (typeof params.censusProof == "string") throw new Error("Invalid census proof for an EVM process")
                 else if (typeof params.censusProof.key != "string" ||
@@ -955,6 +955,10 @@ export class VotingApi {
 
                 esProof.setSiblingsList(siblings)
                 proof.setEthereumstorage(esProof)
+            }
+            else { // if (params.censusOrigin.isOffChainCA) {
+                // TODO: Implement
+                throw new Error("This process type is not supported yet")
             }
 
             const nonce = Random.getHex().substr(2)
