@@ -59,10 +59,10 @@ async function main() {
         // Generate and publish the census
         // Get the merkle root and IPFS origin of the Merkle Tree
         console.log("Publishing census")
-        const { merkleRoot, merkleTreeUri } = await generatePublicCensusFromAccounts(accounts)
+        const { censusRoot, censusUri } = await generatePublicCensusFromAccounts(accounts)
 
         // Create a new voting process
-        await launchNewVote(merkleRoot, merkleTreeUri)
+        await launchNewVote(censusRoot, censusUri)
         assert(processId)
         assert(processMetadata)
         writeFileSync(config.processInfoFilePath, JSON.stringify({ processId, processMetadata }, null, 2))
@@ -186,13 +186,13 @@ async function generatePublicCensusFromAccounts(accounts) {
 
     console.log("Adding", claimList.length, "claims")
     const digested = true
-    const result = await CensusOffChainApi.addClaimBulk(censusId, claimList, digested, entityWallet, pool)
+    const { invalidClaims, censusRoot } = await CensusOffChainApi.addClaimBulk(censusId, claimList, digested, entityWallet, pool)
 
-    if (result.invalidClaims.length > 0) throw new Error("Census Service invalid claims count is " + result.invalidClaims.length)
+    if (invalidClaims.length > 0) throw new Error("Census Service invalid claims count is " + invalidClaims.length)
 
     // Publish the census
     console.log("Publishing the new census")
-    const merkleTreeUri = await CensusOffChainApi.publishCensus(censusId, entityWallet, pool)
+    const censusUri = await CensusOffChainApi.publishCensus(censusId, entityWallet, pool)
 
     // Check that the census is published
     const exportedMerkleTree = await CensusOffChainApi.dumpPlain(censusId, entityWallet, pool)
@@ -203,14 +203,14 @@ async function generatePublicCensusFromAccounts(accounts) {
 
     // Return the census ID / Merkle Root
     return {
-        merkleTreeUri,
-        merkleRoot: result.merkleRoot
+        censusUri,
+        censusRoot
     }
 }
 
-async function launchNewVote(merkleRoot, merkleTreeUri) {
-    assert(merkleRoot)
-    assert(merkleTreeUri)
+async function launchNewVote(censusRoot, censusUri) {
+    assert(censusRoot)
+    assert(censusUri)
     console.log("Preparing the new vote metadata")
 
     const processMetadataPre: ProcessMetadata = JSON.parse(JSON.stringify(ProcessMetadataTemplate)) // make a copy of the template
@@ -225,7 +225,7 @@ async function launchNewVote(merkleRoot, merkleTreeUri) {
 
     console.log("Getting the block height")
     const currentBlock = await VotingApi.getBlockHeight(pool)
-    const startBlock = currentBlock + 35
+    const startBlock = currentBlock + 25
     const blockCount = 60480
 
     const processParamsPre = {
@@ -233,7 +233,7 @@ async function launchNewVote(merkleRoot, merkleTreeUri) {
         envelopeType: ProcessEnvelopeType.ENCRYPTED_VOTES, // bit mask
         censusOrigin: ProcessCensusOrigin.OFF_CHAIN_TREE,
         metadata: ProcessMetadataTemplate,
-        censusRoot: merkleRoot,
+        censusRoot: censusRoot,
         censusUri: "ipfs://1234123412341234",
         startBlock,
         blockCount,
@@ -302,7 +302,7 @@ async function launchVotes(accounts) {
         process.stdout.write(`Gen Proof [${idx}] ; `)
         const censusProof = await CensusOffChainApi.generateProof(processParams.censusRoot, account.publicKeyHash, true, pool)
             .catch(err => {
-                console.error("\nCensusApi.generateProof ERR", account, err)
+                console.error("\nCensusOffChainApi.generateProof ERR", account, err)
                 if (config.stopOnError) throw err
                 return null
             })

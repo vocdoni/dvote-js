@@ -24,7 +24,25 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Bridge",
+            "name": "Standard votes",
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register/transpile-only"
+            ],
+            "program": "${workspaceFolder}/example/standard/index.ts",
+            "cwd": "${workspaceFolder}/example/standard",
+            "internalConsoleOptions": "openOnSessionStart",
+            "skipFiles": [
+                "<node_internals>/**",
+                "node_modules/**"
+            ],
+            "preLaunchTask": "npm: build"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Bridge votes",
             "runtimeArgs": [
                 "--nolazy",
                 "-r",
@@ -38,23 +56,6 @@
                 "node_modules/**"
             ],
             "preLaunchTask": "npm: build"
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "Benchmark",
-            "runtimeArgs": [
-                "--nolazy",
-                "-r",
-                "ts-node/register/transpile-only"
-            ],
-            "program": "${workspaceFolder}/benchmark/index.ts",
-            "cwd": "${workspaceFolder}/benchmark",
-            "internalConsoleOptions": "openOnSessionStart",
-            "skipFiles": [
-                "<node_internals>/**",
-                "node_modules/**"
-            ]
         },
         {
             "type": "node",

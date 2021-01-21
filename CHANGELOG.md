@@ -8,6 +8,7 @@
     - Adding `OFF_CHAIN_TREE_WEIGHTED` ad `OFF_CHAIN_CA`
 - Updating the Census API to support weighted censuses
     - `addClaim`, `addClaimBulk`, `dump` and `dumpPlain` now receive/return a `{ key: string, value?: string }[]` instead of a `string[]`
+    - These methods also return `censusRoot` and `censusUri` (where applicable) instead of `merkleRoot` and `merkleTreeUri`
 
 ## 0.18.1
 
