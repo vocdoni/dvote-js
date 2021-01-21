@@ -247,7 +247,7 @@ export class CensusOffChainApi {
 
         return gateway.sendRequest(msg, walletOrSigner)
             .then(response => {
-                let result: { key: string, value?: string }[]
+                let result: { key: string, value?: string }[] = []
                 if (response.censusKeys && response.censusKeys.length && response.censusValues && response.censusValues.length) {
                     if (response.censusKeys.length != response.censusValues.length) throw new Error("The amount of keys and values received doesn't match")
                     for (let i = 0; i < response.censusKeys.length; i++) {
