@@ -529,7 +529,7 @@ async function useVoteApi() {
     console.log("- Block in 200 seconds:", await VotingApi.estimateBlockAtDateTime(new Date(Date.now() + VOCHAIN_BLOCK_TIME * 20), pool))
 
     const publicKeyHash = CensusOffChainApi.digestHexClaim(wallet["_signingKey"]().publicKey)
-    const censusProof = await CensusOffChainApi.generateProof(censusRoot, publicKeyHash, true, pool)
+    const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: publicKeyHash }, true, pool)
     const votes = [1, 2, 1]
 
     // Open vote version:
@@ -587,7 +587,7 @@ async function submitVoteBatch() {
             // const myEntityAddress = await wallet.getAddress()
 
             const publicKeyHash = CensusOffChainApi.digestHexClaim(wallet["_signingKey"]().publicKey)
-            const censusProof = await CensusOffChainApi.generateProof(censusRoot, publicKeyHash, true, pool)
+            const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: publicKeyHash }, true, pool)
             const votes = [1]
             const { envelope, signature } = await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet })
             // Encrypted version:
@@ -681,7 +681,7 @@ async function fetchMerkleProof() {
     console.log("FETCHING CLAIM", process.env.BASE64_CLAIM_DATA)
     console.log("on Merkle Tree", process.env.CENSUS_MERKLE_ROOT)
 
-    const siblings = await CensusOffChainApi.generateProof(process.env.CENSUS_MERKLE_ROOT, process.env.BASE64_CLAIM_DATA, true, pool)
+    const siblings = await CensusOffChainApi.generateProof(process.env.CENSUS_MERKLE_ROOT, { key: process.env.BASE64_CLAIM_DATA }, true, pool)
     console.log("SIBLINGS:", siblings)
 }
 

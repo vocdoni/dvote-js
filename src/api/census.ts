@@ -300,15 +300,16 @@ export class CensusOffChainApi {
      * @param base64Claim Base64-encoded claim of the leaf to request
      * @param gateway
      */
-    static generateProof(censusRoot: string, base64Claim: string, isDigested: boolean, gateway: IGateway | IGatewayPool): Promise<string> {
-        if (!censusRoot || !base64Claim || !gateway) return Promise.reject(new Error("Invalid parameters"))
+    static generateProof(censusRoot: string, { key, value }: { key: string, value?: number }, isDigested: boolean, gateway: IGateway | IGatewayPool): Promise<string> {
+        if (!censusRoot || !key || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({
             method: "genProof",
             censusId: censusRoot,
             digested: isDigested,
-            claimData: base64Claim,
+            censusKey: key,
+            censusValue: value
         }).then(response => {
             if (typeof response.siblings != "string" || !response.siblings.length) throw new Error("The census proof could not be fetched")
             return response.siblings

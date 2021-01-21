@@ -14,6 +14,9 @@
         "src/**/*.ts"
     ],
     "exclude": [
-        "node_modules"
+        "node_modules",
+        "lib/protobuf/src",
+        "lib/protobuf/build/dart",
+        "lib/protobuf/build/go",
     ]
 }

@@ -300,7 +300,7 @@ async function launchVotes(accounts) {
         const wallet = new Wallet(account.privateKey)
 
         process.stdout.write(`Gen Proof [${idx}] ; `)
-        const censusProof = await CensusOffChainApi.generateProof(processParams.censusRoot, account.publicKeyHash, true, pool)
+        const censusProof = await CensusOffChainApi.generateProof(processParams.censusRoot, { key: account.publicKeyHash }, true, pool)
             .catch(err => {
                 console.error("\nCensusOffChainApi.generateProof ERR", account, err)
                 if (config.stopOnError) throw err
