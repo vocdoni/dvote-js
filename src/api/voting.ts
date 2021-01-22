@@ -928,7 +928,7 @@ export class VotingApi {
         try {
             const proof = new Proof()
 
-            if (params.censusOrigin.isOffChain || params.censusOrigin.isOffChainWeighted || params.censusOrigin) {
+            if (params.censusOrigin.isOffChain || params.censusOrigin.isOffChainWeighted) {
                 // Check census proof
                 if (typeof params.censusProof != "string" || !params.censusProof.match(/^(0x)?[0-9a-zA-Z]+$/))
                     throw new Error("Invalid census proof (must be a hex string)")

@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 0.20.1
+
+- Fixing a bug in `packageSignedEnvelope`
+
 ## 0.20.0
 
 - `getRawResults` now returns an array containing numbers as strings, to account for big numbers
