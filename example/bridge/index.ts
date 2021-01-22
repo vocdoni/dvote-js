@@ -159,9 +159,9 @@ async function launchNewVote() {
 
     console.log("Getting the block height")
     const currentBlock = await VotingApi.getBlockHeight(pool)
-    const startBlock = currentBlock + 35
+    const startBlock = currentBlock + 25
     // const blockCount = 6 * 60 * 24 * 10
-    const blockCount = 6 * 20 // 20m
+    const blockCount = 6 * 10 // 10m
     // const blockCount = 15
 
     // TODO: COMPUTE THE PARAMS SIGNATURE
@@ -292,7 +292,7 @@ async function checkVoteResults() {
         await VochainWaiter.waitUntil(processParams.startBlock + processParams.blockCount, pool, { verbose: true })
     }
     console.log("Waiting a bit for the results to be ready", processId)
-    await VochainWaiter.wait(10, pool, { verbose: true })
+    await VochainWaiter.wait(5, pool, { verbose: true })
 
     console.log("Fetching the vote results for", processId)
     const resultsDigest = await VotingApi.getResultsDigest(processId, pool)
@@ -306,7 +306,8 @@ async function checkVoteResults() {
     assert.equal(resultsDigest.questions[0].voteResults[0].votes, config.privKeys.length)
     assert.equal(resultsDigest.questions[0].voteResults[1].votes, 0)
 
-    assert.equal(totalVotes, config.privKeys.length)
+    // assert.equal(totalVotes, config.privKeys.length)
+    assert.equal(totalVotes, 2800000000000000000)
 }
 
 /////////////////////////////////////////////////////////////////////////////
