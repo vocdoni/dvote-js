@@ -1,5 +1,10 @@
 # DVote JS changelog
 
+## 0.20.0
+
+- `getRawResults` now returns an array containing numbers as strings, to account for big numbers
+- `getResultsDigest` now returns numeric values as `BigNumbers`
+
 ## 0.19.0
 
 - Upgrading dvote-solidity to `v0.13.0`

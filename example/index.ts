@@ -431,14 +431,10 @@ async function setProcessStatus() {
 }
 
 async function showProcessResults() {
-    // const wallet = WalletUtil.fromSeededPassphrase(WALLET_PASSPHRASE, WALLET_SEED)
-    const myEntityAddress = await wallet.getAddress()
-
-    console.log("Entity Addr", myEntityAddress)
     const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL_RW })
     await pool.init()
 
-    const processId = "0xc69acd6435f622f5dda70e887cbebe3994b67d68686ca31872cb9b4a64525374"
+    const processId = "0xdefa1f278168180dab72064f00aff28d34c9927b2a744c9395d3c20d0e5f755d"
 
     console.log("getRawResults", await VotingApi.getRawResults(processId, pool))
     console.log("getResultsDigest", JSON.stringify(await VotingApi.getResultsDigest(processId, pool), null, 2))

@@ -1,4 +1,4 @@
-import { Wallet, Signer, utils, ContractTransaction } from "ethers"
+import { Wallet, Signer, utils, ContractTransaction, BigNumber } from "ethers"
 import { Gateway, IGateway } from "../net/gateway"
 import { FileApi } from "./file"
 import { EntityApi } from "./entity"
@@ -734,7 +734,7 @@ export class VotingApi {
      * @param gateway
      * @returns Results, vote process  type, vote process state
      */
-    static getRawResults(processId: string, gateway: IGateway | IGatewayPool): Promise<{ results: number[][], status: ProcessStatus }> {
+    static getRawResults(processId: string, gateway: IGateway | IGatewayPool): Promise<{ results: string[][], status: ProcessStatus }> {
         if (!gateway || !processId)
             return Promise.reject(new Error("No process ID provided"))
         else if (!((gateway instanceof Gateway || gateway instanceof GatewayPool)))
@@ -805,7 +805,7 @@ export class VotingApi {
                     title: zippedEntry.meta.title,
                     voteResults: zippedOptions.map((option) => ({
                         title: option.title,
-                        votes: option.value || 0,
+                        votes: BigNumber.from(option.value || 0),
                     })),
                 }
             })

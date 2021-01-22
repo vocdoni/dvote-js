@@ -11,6 +11,7 @@ import {
 import { object, array, string, number } from "yup"
 import { by639_1 } from 'iso-language-codes'
 import { IProcessCreateParams } from "../net/contracts"
+import { BigNumber } from "ethers"
 
 export { ProcessMetadataTemplate } from "./templates/process"
 
@@ -114,6 +115,6 @@ export interface DigestedProcessResultItem {
     title: MultiLanguage<string>,
     voteResults: {
         title: MultiLanguage<string>,
-        votes: number,
+        votes: BigNumber,
     }[],
 }
