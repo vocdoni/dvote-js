@@ -19,7 +19,7 @@ import {
     ProofEthereumStorage,
     // ProofEthereumAccount
 } from "../../lib/protobuf/build/js/common/vote_pb.js"
-import { DVoteGatewayResponseBody } from "net/gateway-dvote"
+import { DVoteGatewayResponseBody } from "../net/gateway-dvote"
 import { CensusErc20Api } from "./census"
 
 // TYPES

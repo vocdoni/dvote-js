@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 0.20.2
+
+- Ensuring that all imports use relative paths
+
 ## 0.20.1
 
 - Fixing a bug in `packageSignedEnvelope`

@@ -7,7 +7,7 @@ import { hashBuffer } from "../util/hashing"
 import { hexStringToBuffer } from "../util/encoding"
 import { CENSUS_MAX_BULK_SIZE } from "../constants"
 import { ERC20Prover } from "@vocdoni/storage-proofs-eth"
-import { Web3Gateway } from "net/gateway-web3"
+import { Web3Gateway } from "../net/gateway-web3"
 // import { Buffer } from "buffer/"
 // import ContentURI from "../wrappers/content-uri"
 
