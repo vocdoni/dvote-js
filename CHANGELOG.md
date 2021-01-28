@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 0.20.3
+
+- Using INewProcessParams in newProcess
+
 ## 0.20.2
 
 - Ensuring that all imports use relative paths

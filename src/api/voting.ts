@@ -368,14 +368,12 @@ export class VotingApi {
     /**
      * Use the given JSON metadata to create a new voting process from the Entity ID associated to the given wallet account.
      * The Census Merkle Root and Merkle Tree will be published to the blockchain, and the Metadata will be stored on IPFS
-     * @param parameters The details sent to the smart contract, except the metadata origin  https://vocdoni.io/docs/#/architecture/components/process?id=internal-structs
-     * @param metadata The human readable content displayed on the clients https://vocdoni.io/docs/#/architecture/components/process?id=process-metadata-json
+     * @param parameters The details sent to the smart contract, along with the human readable metadata. See https://vocdoni.io/docs/#/architecture/components/process?id=internal-structs
      * @param walletOrSigner
      * @param gateway
      * @returns The process ID
      */
-    static newProcess(processParameters: Omit<Omit<IProcessCreateParams, "metadata">, "questionCount"> & { metadata: ProcessMetadata },
-        walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
+    static newProcess(processParameters: INewProcessParams, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
         if (!processParameters) return Promise.reject(new Error("Invalid process metadata"))
         else if (!processParameters.metadata) return Promise.reject(new Error("Invalid process metadata"))
         else if (!walletOrSigner || !walletOrSigner._isSigner)
