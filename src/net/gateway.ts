@@ -4,7 +4,7 @@
 
 import { Contract, providers, utils, Wallet, Signer } from "ethers"
 import { GatewayInfo } from "../wrappers/gateway-info"
-import { DVoteSupportedApi, DVoteGatewayMethod } from "../models/gateway"
+import { DVoteSupportedApi, DVoteGatewayMethod, RegistryApiMethod } from "../models/gateway"
 import { GatewayBootnode, EthNetworkID } from "./gateway-bootnode"
 import { ContentUri } from "../wrappers/content-uri"
 import { IProcessContract, IEnsPublicResolverContract, INamespaceContract, ITokenStorageProofContract } from "../net/contracts"
@@ -167,7 +167,7 @@ export class Gateway {
         return this.dvote.getGatewayInfo(timeout)
     }
 
-    public supportsMethod(method: DVoteGatewayMethod): boolean {
+    public supportsMethod(method: DVoteGatewayMethod | RegistryApiMethod): boolean {
         return this.dvote.supportsMethod(method)
     }
 

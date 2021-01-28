@@ -2,7 +2,7 @@ import { parseURL } from 'universal-parse-url'
 import { Buffer } from 'buffer/'
 import { Wallet, Signer } from "ethers"
 import { GatewayInfo } from "../wrappers/gateway-info"
-import { DVoteSupportedApi, DVoteGatewayMethod, dvoteGatewayApiMethods, dvoteApis } from "../models/gateway"
+import { DVoteSupportedApi, DVoteGatewayMethod, RegistryApiMethod, dvoteApis, registryApiMethods } from "../models/gateway"
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
 import { JsonSignature, BytesSignature } from "../util/data-signing"
 import axios, { AxiosInstance, AxiosResponse } from "axios"
@@ -23,7 +23,7 @@ export type IDVoteGateway = InstanceType<typeof DVoteGateway>
 /** Parameters sent by the function caller */
 export interface IDvoteRequestParameters {
     // Common
-    method: DVoteGatewayMethod,
+    method: DVoteGatewayMethod | RegistryApiMethod,
     timestamp?: number,
 
     [k: string]: any
@@ -90,7 +90,7 @@ export class DVoteGateway {
             if (!this.supportedApis) return
             else if (!requiredApis.length) return
             const missingApi = requiredApis.find(api => !this.supportedApis.includes(api))
-            
+
             if (missingApi) throw new Error("A required API is not available: " + missingApi)
         })
     }
@@ -118,8 +118,7 @@ export class DVoteGateway {
         else if (typeof wallet != "object") throw new Error("The wallet is required")
 
         // Check API method availability
-        if (!dvoteGatewayApiMethods.includes(requestBody.method)) throw new Error("The method is not valid")
-        else if (!this.supportsMethod(requestBody.method)) throw new Error(`The method is not available in the Gateway's supported API's (${requestBody.method})`)
+        if (!this.supportsMethod(requestBody.method)) throw new Error(`The method is not available in the Gateway's supported API's (${requestBody.method})`)
 
         // Append the current timestamp to the body
         if (typeof requestBody.timestamp == "undefined") {
@@ -299,16 +298,19 @@ export class DVoteGateway {
      * Determines whether the current DVote Gateway supports the API set that includes the given method.
      * NOTE: `updateStatus()` must have been called on the GW instnace previously.
      */
-    public supportsMethod(method: DVoteGatewayMethod): boolean {
-        if (dvoteApis.file.includes(method))
+    public supportsMethod(method: DVoteGatewayMethod | RegistryApiMethod): boolean {
+        if (dvoteApis.file.includes(method as DVoteGatewayMethod))
             return this.supportedApis.includes("file")
-        else if (dvoteApis.census.includes(method))
+        else if (dvoteApis.census.includes(method as DVoteGatewayMethod))
             return this.supportedApis.includes("census")
-        else if (dvoteApis.vote.includes(method))
+        else if (dvoteApis.vote.includes(method as DVoteGatewayMethod))
             return this.supportedApis.includes("vote")
-        else if (dvoteApis.results.includes(method))
+        else if (dvoteApis.results.includes(method as DVoteGatewayMethod))
             return this.supportedApis.includes("results")
-        else if (dvoteApis.info.includes(method)) return true;
-        return false;
+        else if (dvoteApis.info.includes(method as DVoteGatewayMethod)) return true
+
+        // In the case of registry methods, we can't know explicitly => accept
+        else if (registryApiMethods.includes(method as RegistryApiMethod)) return true
+        return false
     }
 }

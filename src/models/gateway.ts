@@ -6,6 +6,7 @@ export type CensusApiMethod = "addCensus" | "addClaim" | "addClaimBulk" | "getRo
 export type ResultsApiMethod = "getProcListResults" | "getProcListLiveResults" | "getResults" | "getScrutinizerEntities"
 export type InfoApiMethod = "getGatewayInfo"
 export type DVoteGatewayMethod = FileApiMethod | VoteApiMethod | CensusApiMethod | ResultsApiMethod | InfoApiMethod
+export type RegistryApiMethod = "signUp" | "getEntity" | "updateEntity" | "countMembers" | "listMembers" | "getMember" | "updateMember" | "deleteMembers" | "generateTokens" | "exportTokens" | "importMembers" | "countTargets" | "listTargets" | "getTarget" | "dumpTarget" | "dumpCensus" | "addCensus" | "updateCensus" | "getCensus" | "countCensus" | "listCensus" | "deleteCensus" | "sendValidationLinks" | "sendVotingLinks" | "createTag" | "listTags" | "deleteTag" | "addTag" | "removeTag"
 
 export const fileApiMethods: FileApiMethod[] = ["fetchFile", "addFile", "pinList", "pinFile", "unpinFile"]
 export const voteApiMethods: VoteApiMethod[] = ["submitEnvelope", "getEnvelopeStatus", "getEnvelope", "getEnvelopeHeight", "getProcessKeys", "getProcessList", "getEnvelopeList", "getBlockHeight", "getBlockStatus", "getResults"]
@@ -20,6 +21,7 @@ export const dvoteApis: { [k in DVoteSupportedApi]: DVoteGatewayMethod[] } = {
     "results": resultsApiMethods,
     "info": infoApiMethods,
 }
+export const registryApiMethods: RegistryApiMethod[] = ["signUp", "getEntity", "updateEntity", "countMembers", "listMembers", "getMember", "updateMember", "deleteMembers", "generateTokens", "exportTokens", "importMembers", "countTargets", "listTargets", "getTarget", "dumpTarget", "dumpCensus", "addCensus", "updateCensus", "getCensus", "countCensus", "listCensus", "deleteCensus", "sendValidationLinks", "sendVotingLinks", "createTag", "listTags", "deleteTag", "addTag", "removeTag"]
 
 export type JsonBootnodeData = {
     [k: string]: {
