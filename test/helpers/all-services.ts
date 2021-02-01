@@ -34,7 +34,7 @@ export default class DevServices {
     }
 
     get gatewayInfo() {
-        return new GatewayInfo(this.dvote.uri, ["file", "vote", "census", "results", "info"], this.web3.uri, this.dvote.publicKey)
+        return new GatewayInfo(this.dvote.uri, ["file", "vote", "census", "results"], this.web3.uri, this.dvote.publicKey)
     }
 
     /** Returns a Gateway client for the dvote and Web3 local services. The Web3 gateway uses the given addresses as the resolved ones for the contracts */

@@ -8,12 +8,13 @@ import { VotingApi } from "../../src/api/voting"
 import { DevGatewayService, MockedInteraction, TestResponse } from "../helpers/dvote-service"
 import { DevWeb3Service } from "../helpers/web3-service"
 import { VOCHAIN_BLOCK_TIME } from "../../src/constants"
+import { BackendApiName, GatewayApiName } from "../../src/models/gateway"
 
 const dvotePort = 8500
 const web3Port = 8600
 const web3DummyService = new DevWeb3Service({ port: web3Port })
 
-const defaultConnectResponse = { timestamp: 123, ok: true, apiList: ["file", "vote", "census", "results", "info"], health: 100 }
+const defaultConnectResponse = { timestamp: 123, ok: true, apiList: ["file", "vote", "census", "results"], health: 100 } as { ok: boolean, apiList: (GatewayApiName | BackendApiName)[], health: number }
 
 addCompletionHooks()
 

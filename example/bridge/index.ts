@@ -84,7 +84,7 @@ async function connectGateways(accounts: Account[]): Promise<GatewayPool | Gatew
     let gw: GatewayPool | Gateway
 
     if (config.dvoteGatewayUri && config.web3Uri) {
-        const info = new GatewayInfo(config.dvoteGatewayUri, ["census", "file", "info", "results", "vote"], config.web3Uri, config.dvoteGatewayPublicKey || "")
+        const info = new GatewayInfo(config.dvoteGatewayUri, ["census", "file", "results", "vote"], config.web3Uri, config.dvoteGatewayPublicKey || "")
         gw = await Gateway.fromInfo(info)
     }
     else {

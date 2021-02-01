@@ -2,7 +2,7 @@ import { parseURL } from 'universal-parse-url'
 import { Buffer } from 'buffer/'
 import { Wallet, Signer } from "ethers"
 import { GatewayInfo } from "../wrappers/gateway-info"
-import { DVoteSupportedApi, DVoteGatewayMethod, dvoteGatewayApiMethods, dvoteApis } from "../models/gateway"
+import { GatewayApiMethod, BackendApiMethod, allApis, registryApiMethods, ApiMethod, GatewayApiName, BackendApiName, InfoApiMethod } from "../models/gateway"
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
 import { JsonSignature, BytesSignature } from "../util/data-signing"
 import axios, { AxiosInstance, AxiosResponse } from "axios"
@@ -21,9 +21,9 @@ export type IDVoteGateway = InstanceType<typeof DVoteGateway>
 
 
 /** Parameters sent by the function caller */
-export interface IDvoteRequestParameters {
+export interface IRequestParameters {
     // Common
-    method: DVoteGatewayMethod,
+    method: ApiMethod,
     timestamp?: number,
 
     [k: string]: any
@@ -32,7 +32,7 @@ export interface IDvoteRequestParameters {
 /** What is actually sent by sendRequest() to the Gateway */
 type MessageRequestContent = {
     id: string,
-    request: IDvoteRequestParameters,
+    request: IRequestParameters,
     signature?: string
 }
 
@@ -57,7 +57,7 @@ type DVoteGatewayResponse = {
  * intended to interact within voting processes
  */
 export class DVoteGateway {
-    private _supportedApis: DVoteSupportedApi[] = []
+    private _supportedApis: (GatewayApiName | BackendApiName)[] = []
     private _pubKey: string = ""
     private _health: number = 0
     private _uri: string
@@ -67,7 +67,7 @@ export class DVoteGateway {
      * Returns a new DVote Gateway web socket client
      * @param gatewayOrParams Either a GatewayInfo instance or a JSON object with the service URI, the supported API's and the public key
      */
-    constructor(gatewayOrParams: GatewayInfo | { uri: string, supportedApis: DVoteSupportedApi[], publicKey?: string }) {
+    constructor(gatewayOrParams: GatewayInfo | { uri: string, supportedApis: (GatewayApiName | BackendApiName)[], publicKey?: string }) {
         if (gatewayOrParams instanceof GatewayInfo) {
             this.client = axios.create({ baseURL: gatewayOrParams.dvote, method: "post" })
             this._uri = gatewayOrParams.dvote
@@ -85,12 +85,12 @@ export class DVoteGateway {
     }
 
     /** Checks the gateway status and updates the currently available API's. Same as calling `isUp()` */
-    public init(requiredApis: DVoteSupportedApi[] = []): Promise<void> {
+    public init(requiredApis: (GatewayApiName | BackendApiName)[] = []): Promise<void> {
         return this.isUp().then(() => {
             if (!this.supportedApis) return
             else if (!requiredApis.length) return
             const missingApi = requiredApis.find(api => !this.supportedApis.includes(api))
-            
+
             if (missingApi) throw new Error("A required API is not available: " + missingApi)
         })
     }
@@ -112,14 +112,13 @@ export class DVoteGateway {
      * @param wallet (optional) The wallet to use for signing (default: null)
      * @param params (optional) Optional parameters. Timeout in milliseconds.
      */
-    public async sendRequest(requestBody: IDvoteRequestParameters, wallet: Wallet | Signer = null, params: { timeout?: number } = { timeout: 15 * 1000 }): Promise<DVoteGatewayResponseBody> {
+    public async sendRequest(requestBody: IRequestParameters, wallet: Wallet | Signer = null, params: { timeout?: number } = { timeout: 15 * 1000 }): Promise<DVoteGatewayResponseBody> {
         if (!this.isReady) throw new Error("Not initialized")
         else if (typeof requestBody != "object") throw new Error("The payload should be a javascript object")
         else if (typeof wallet != "object") throw new Error("The wallet is required")
 
         // Check API method availability
-        if (!dvoteGatewayApiMethods.includes(requestBody.method)) throw new Error("The method is not valid")
-        else if (!this.supportsMethod(requestBody.method)) throw new Error(`The method is not available in the Gateway's supported API's (${requestBody.method})`)
+        if (!this.supportsMethod(requestBody.method)) throw new Error(`The method is not available in the Gateway's supported API's (${requestBody.method})`)
 
         // Append the current timestamp to the body
         if (typeof requestBody.timestamp == "undefined") {
@@ -244,7 +243,7 @@ export class DVoteGateway {
 
     /** Retrieves the status of the gateway and updates the internal status */
     public updateGatewayStatus(timeout?: number): Promise<any> {
-        return this.getGatewayInfo(timeout)
+        return this.getInfo(timeout)
             .then((result) => {
                 if (!result) throw new Error("Could not update")
                 else if (!Array.isArray(result.apiList)) throw new Error("apiList is not an array")
@@ -258,12 +257,12 @@ export class DVoteGateway {
      * Retrieves the status of the given gateway and returns an object indicating the services it provides.
      * If there is no connection open, the method returns null.
      */
-    public async getGatewayInfo(timeout?: number): Promise<{ apiList: DVoteSupportedApi[], health: number }> {
+    public async getInfo(timeout?: number): Promise<{ apiList: (GatewayApiName | BackendApiName)[], health: number }> {
         if (!this.isReady) return null
 
         try {
             const result = await promiseWithTimeout(
-                this.sendRequest({ method: "getGatewayInfo" }, null),
+                this.sendRequest({ method: "getInfo" }, null),
                 timeout || 1000
             )
             if (!Array.isArray(result.apiList)) throw new Error("apiList is not an array")
@@ -299,16 +298,20 @@ export class DVoteGateway {
      * Determines whether the current DVote Gateway supports the API set that includes the given method.
      * NOTE: `updateStatus()` must have been called on the GW instnace previously.
      */
-    public supportsMethod(method: DVoteGatewayMethod): boolean {
-        if (dvoteApis.file.includes(method))
+    public supportsMethod(method: ApiMethod): boolean {
+        if (allApis.info.includes(method as InfoApiMethod)) return true
+        // Gateway
+        else if (allApis.file.includes(method as GatewayApiMethod))
             return this.supportedApis.includes("file")
-        else if (dvoteApis.census.includes(method))
+        else if (allApis.census.includes(method as GatewayApiMethod))
             return this.supportedApis.includes("census")
-        else if (dvoteApis.vote.includes(method))
+        else if (allApis.vote.includes(method as GatewayApiMethod))
             return this.supportedApis.includes("vote")
-        else if (dvoteApis.results.includes(method))
+        else if (allApis.results.includes(method as GatewayApiMethod))
             return this.supportedApis.includes("results")
-        else if (dvoteApis.info.includes(method)) return true;
-        return false;
+        // Registry
+        else if (allApis.registry.includes(method as BackendApiMethod))
+            return this.supportedApis.includes("registry")
+        return false
     }
 }

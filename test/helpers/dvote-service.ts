@@ -7,6 +7,7 @@ import { JsonSignature } from "../../src/util/data-signing"
 import { DVoteGateway } from "../../src/net/gateway-dvote"
 import { GatewayInfo } from "../../src/wrappers/gateway-info"
 import { getWallets } from "./web3-service"
+import { BackendApiName, GatewayApiName } from "../../src/models/gateway";
 
 
 export type TestResponse = {
@@ -26,7 +27,7 @@ export type MockedInteraction = {
 }
 
 const defaultPort = 8500
-const defaultConnectResponse: TestResponseBody = { ok: true, apiList: ["file", "vote", "census", "results", "info"], health: 100 }
+const defaultConnectResponse: TestResponseBody = { ok: true, apiList: ["file", "vote", "census", "results"], health: 100 } as { ok: boolean, apiList: (GatewayApiName | BackendApiName)[], health: number }
 
 // THE GATEWAY SERVER MOCK
 
@@ -117,9 +118,9 @@ export class DevGatewayService {
     get privateKey() { return this.wallet.privateKey }
     get publicKey() { return this.wallet["_signingKey"]().compressedPublicKey }
     get client() {
-        return new DVoteGateway({ uri: this.uri, supportedApis: ["file", "census", "vote", "results", "info"], publicKey: this.publicKey })
+        return new DVoteGateway({ uri: this.uri, supportedApis: ["file", "census", "vote", "results"], publicKey: this.publicKey })
     }
     get gatewayInfo() {
-        return new GatewayInfo(this.uri, ["file", "vote", "census", "results", "info"], "http://dummy", this.publicKey)
+        return new GatewayInfo(this.uri, ["file", "vote", "census", "results"], "http://dummy", this.publicKey)
     }
 }

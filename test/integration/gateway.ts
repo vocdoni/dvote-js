@@ -9,6 +9,7 @@ import { DevGatewayService } from "../helpers/dvote-service"
 import { DevWeb3Service, getWallets } from "../helpers/web3-service"
 import { Buffer } from "buffer/"
 import { GatewayInfo } from "../../src/wrappers/gateway-info"
+import { BackendApiName, GatewayApiName } from "../../src/models/gateway"
 
 // let accounts: TestAccount[]
 let baseAccount = new DevWeb3Service({ port: 80000 }).accounts[0]
@@ -16,7 +17,7 @@ let baseAccount = new DevWeb3Service({ port: 80000 }).accounts[0]
 // let randomAccount: TestAccount
 let port: number = 9100
 
-const defaultConnectResponse = { timestamp: 123, ok: true, apiList: ["file", "vote", "census", "results", "info"], health: 100 }
+const defaultConnectResponse = { timestamp: 123, ok: true, apiList: ["file", "vote", "census", "results"], health: 100 } as { ok: boolean, apiList: (GatewayApiName | BackendApiName)[], health: number }
 const defaultDummyResponse = { ok: true }
 
 addCompletionHooks()
