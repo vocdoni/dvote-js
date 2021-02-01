@@ -8,6 +8,7 @@ import { DVoteGateway } from "../../src/net/gateway-dvote"
 import { GatewayInfo } from "../../src/wrappers/gateway-info"
 import { getWallets } from "./web3-service"
 import { BackendApiName, GatewayApiName } from "../../src/models/gateway";
+import { compressPublicKey } from "../../src/util/elliptic";
 
 
 export type TestResponse = {
@@ -116,7 +117,7 @@ export class DevGatewayService {
     // GETTERS
     get uri() { return `http://localhost:${this.port}/dvote` }
     get privateKey() { return this.wallet.privateKey }
-    get publicKey() { return this.wallet["_signingKey"]().compressedPublicKey }
+    get publicKey() { return compressPublicKey(this.wallet.publicKey) }
     get client() {
         return new DVoteGateway({ uri: this.uri, supportedApis: ["file", "census", "vote", "results"], publicKey: this.publicKey })
     }

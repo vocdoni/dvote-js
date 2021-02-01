@@ -1,9 +1,9 @@
 export type HexString = string
 export type ContractAddress = HexString     // e.g. 0x1234567890123456789012345678901234567890
-export type PublicKey = HexString           // Uncompressed ECDSA public key
+export type PublicKey = HexString           // Compressed ECDSA public key
 export type PrivateKey = HexString
-export type EntityId = HexString            // Hash of the entity's address
-export type ProcessId = HexString           // Hash of the organizer's address and the nonce of the process
+export type EntityId = HexString
+export type ProcessId = HexString
 
 export type MultiLanguage<T> = {
     default: T

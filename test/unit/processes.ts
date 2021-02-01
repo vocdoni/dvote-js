@@ -36,6 +36,7 @@ import ProcessMetadataBuilder from "../builders/process-metadata"
 import NamespaceBuilder from "../builders/namespace"
 import { Web3Gateway } from "../../src/net/gateway-web3"
 import { BytesSignature } from "../../src/util/data-signing"
+import { compressPublicKey } from "../../dist"
 const {
     VoteEnvelope,
     Proof,
@@ -224,7 +225,8 @@ describe("Governance Process", () => {
             const pkg1: IVotePackage = JSON.parse(Buffer.from(envelope1.getVotepackage()).toString())
             expect(pkg1.votes.length).to.eq(3)
             expect(pkg1.votes).to.deep.equal([1, 2, 3])
-            expect(BytesSignature.isValid(signature1, wallet._signingKey().publicKey, e1)).to.eq(true)
+            expect(BytesSignature.isValid(signature1, compressPublicKey(wallet.publicKey), e1)).to.eq(true)
+            expect(BytesSignature.isValid(signature1, wallet.publicKey, e1)).to.eq(true)
 
             processId = "0x36c886bd2e18605bf03a0428be100313a0f6e568c470d135d3cb72e802045faa"
             siblings = "0x0003000000100000000002000000000300000000000400000000000050000006f0d72fbd8b3a637488107b0d8055410180ec017a4d76dbb97bee1c3086a25e25b1a6134dbd323c420d6fc2ac3aaf8fff5f9ac5bc0be5949be64b7cfd1bcc5f1f"
@@ -236,7 +238,8 @@ describe("Governance Process", () => {
             const pkg2: IVotePackage = JSON.parse(Buffer.from(envelope2.getVotepackage()).toString())
             expect(pkg2.votes.length).to.eq(3)
             expect(pkg2.votes).to.deep.equal([5, 6, 7])
-            expect(BytesSignature.isValid(signature2, wallet._signingKey().publicKey, e2)).to.eq(true)
+            expect(BytesSignature.isValid(signature2, compressPublicKey(wallet.publicKey), e2)).to.eq(true)
+            expect(BytesSignature.isValid(signature2, wallet.publicKey, e2)).to.eq(true)
 
             expect(async () => {
                 await VotingApi.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), votes: ["1", "2", "3"], censusProof: siblings, processId, walletOrSigner: wallet } as any)

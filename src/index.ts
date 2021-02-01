@@ -24,6 +24,7 @@ export * from "./net/ipfs"
 
 // UTIL
 export * from "./util/data-signing"
+export * from "./util/elliptic"
 export * from "./util/providers"
 export * from "./util/random"
 export * from "./util/signers"

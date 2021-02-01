@@ -13,7 +13,8 @@ import {
     EntityMetadataTemplate,
     ProcessMetadata, ProcessMetadataTemplate,
     ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin,
-    VochainWaiter, EthWaiter
+    VochainWaiter, EthWaiter,
+    compressPublicKey
 } from "../.."
 // import { Buffer } from "buffer/"
 
@@ -30,8 +31,8 @@ async function main() {
         return {
             idx: i,
             privateKey: key,
-            publicKey: wallet.publicKey,
-            publicKeyHash: CensusOffChainApi.digestHexClaim(wallet.publicKey)
+            publicKey: compressPublicKey(wallet.publicKey),
+            publicKeyHash: CensusOffChainApi.digestPublicKey(wallet.publicKey)
         }
     })
 

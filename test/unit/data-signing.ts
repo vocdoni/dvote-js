@@ -6,6 +6,7 @@ import { TextEncoder, TextDecoder } from "util"
 
 import { JsonSignature, BytesSignature } from "../../src/util/data-signing"
 import { extractUint8ArrayJSONValue } from "../../src/util/uint8array"
+import { compressPublicKey } from "../../dist"
 
 addCompletionHooks()
 
@@ -60,12 +61,15 @@ describe("JSON signing", () => {
         const signature1 = await JsonSignature.sign(jsonBody1, wallet)
         const signature2 = await JsonSignature.sign(jsonBody2, wallet)
 
-        expect(JsonSignature.isValid(signature1, wallet["_signingKey"]().publicKey, jsonBody1)).to.be.true
-        expect(JsonSignature.isValid(signature2, wallet["_signingKey"]().publicKey, jsonBody2)).to.be.true
+        expect(JsonSignature.isValid(signature1, compressPublicKey(wallet.publicKey), jsonBody1)).to.be.true
+        expect(JsonSignature.isValid(signature2, compressPublicKey(wallet.publicKey), jsonBody2)).to.be.true
+        expect(JsonSignature.isValid(signature1, wallet.publicKey, jsonBody1)).to.be.true
+        expect(JsonSignature.isValid(signature2, wallet.publicKey, jsonBody2)).to.be.true
     })
     it("Should produce and recognize valid signatures with UTF-8 data (BytesSignature.isValid)", async () => {
         const wallet = new Wallet("8d7d56a9efa4158d232edbeaae601021eb3477ad77b5f3c720601fd74e8e04bb")
-        const publicKey = wallet["_signingKey"]().publicKey
+        const publicKeyComp = compressPublicKey(wallet.publicKey)
+        const publicKey = wallet.publicKey
 
         const jsonBody1 = '{ "a": "àèìòù", "b": "áéíóú" }'
         const jsonBody2 = '{ "b": "test&", "a": "&test" }'
@@ -79,6 +83,9 @@ describe("JSON signing", () => {
         const signature2 = await BytesSignature.sign(bytesBody2, wallet)
         const signature3 = await BytesSignature.sign(bytesBody3, wallet)
 
+        expect(BytesSignature.isValid(signature1, publicKeyComp, bytesBody1)).to.be.true
+        expect(BytesSignature.isValid(signature2, publicKeyComp, bytesBody2)).to.be.true
+        expect(BytesSignature.isValid(signature3, publicKeyComp, bytesBody3)).to.be.true
         expect(BytesSignature.isValid(signature1, publicKey, bytesBody1)).to.be.true
         expect(BytesSignature.isValid(signature2, publicKey, bytesBody2)).to.be.true
         expect(BytesSignature.isValid(signature3, publicKey, bytesBody3)).to.be.true
@@ -94,8 +101,10 @@ describe("JSON signing", () => {
         const signature1 = await BytesSignature.sign(bytesBody1, wallet)
         const signature2 = await BytesSignature.sign(bytesBody2, wallet)
 
-        expect(BytesSignature.isValid(signature1, wallet["_signingKey"]().publicKey, bytesBody1)).to.be.true
-        expect(BytesSignature.isValid(signature2, wallet["_signingKey"]().publicKey, bytesBody2)).to.be.true
+        expect(BytesSignature.isValid(signature1, compressPublicKey(wallet.publicKey), bytesBody1)).to.be.true
+        expect(BytesSignature.isValid(signature2, compressPublicKey(wallet.publicKey), bytesBody2)).to.be.true
+        expect(BytesSignature.isValid(signature1, wallet.publicKey, bytesBody1)).to.be.true
+        expect(BytesSignature.isValid(signature2, wallet.publicKey, bytesBody2)).to.be.true
     })
     it("Should recover the public key from a JSON and a signature", async () => {
         let wallet = new Wallet("8d7d56a9efa4158d232edbeaae601021eb3477ad77b5f3c720601fd74e8e04bb")
@@ -106,11 +115,17 @@ describe("JSON signing", () => {
         const signature1 = await JsonSignature.sign(jsonBody1, wallet)
         const signature2 = await JsonSignature.sign(jsonBody2, wallet)
 
-        const recoveredPubKey1 = JsonSignature.recoverPublicKey(jsonBody1, signature1)
-        const recoveredPubKey2 = JsonSignature.recoverPublicKey(jsonBody2, signature2)
+        const recoveredPubKeyComp1 = JsonSignature.recoverPublicKey(jsonBody1, signature1)
+        const recoveredPubKeyComp2 = JsonSignature.recoverPublicKey(jsonBody2, signature2)
+        const recoveredPubKey1 = JsonSignature.recoverPublicKey(jsonBody1, signature1, true)
+        const recoveredPubKey2 = JsonSignature.recoverPublicKey(jsonBody2, signature2, true)
+
+        expect(recoveredPubKeyComp1).to.equal(recoveredPubKeyComp2)
+        expect(recoveredPubKeyComp1).to.equal(compressPublicKey(wallet.publicKey))
+        expect(recoveredPubKeyComp1).to.equal("0x02cb3cabb521d84fc998b5649d6b59e27a3e27633d31cc0ca6083a00d68833d5ca")
 
         expect(recoveredPubKey1).to.equal(recoveredPubKey2)
-        expect(recoveredPubKey1).to.equal(wallet["_signingKey"]().publicKey)
+        expect(recoveredPubKey1).to.equal(wallet.publicKey)
         expect(recoveredPubKey1).to.equal("0x04cb3cabb521d84fc998b5649d6b59e27a3e27633d31cc0ca6083a00d68833d5caeaeb67fbce49e44f089a28f46a4d815abd51bc5fc122065518ea4adb199ba780")
     })
     it("Should recover the public key from a JSON with UTF-8 data and a signature", async () => {
@@ -122,14 +137,21 @@ describe("JSON signing", () => {
         const signature1 = await JsonSignature.sign(jsonBody1, wallet)
         const signature2 = await JsonSignature.sign(jsonBody2, wallet)
 
-        const recoveredPubKey1 = JsonSignature.recoverPublicKey(jsonBody1, signature1)
-        const recoveredPubKey2 = JsonSignature.recoverPublicKey(jsonBody2, signature2)
+        const recoveredPubKeyComp1 = JsonSignature.recoverPublicKey(jsonBody1, signature1)
+        const recoveredPubKeyComp2 = JsonSignature.recoverPublicKey(jsonBody2, signature2)
+        const recoveredPubKey1 = JsonSignature.recoverPublicKey(jsonBody1, signature1, true)
+        const recoveredPubKey2 = JsonSignature.recoverPublicKey(jsonBody2, signature2, true)
+
+        expect(recoveredPubKeyComp1).to.equal(recoveredPubKeyComp2)
+        expect(recoveredPubKeyComp1).to.equal(compressPublicKey(wallet.publicKey))
+        expect(recoveredPubKeyComp1).to.equal("0x02cb3cabb521d84fc998b5649d6b59e27a3e27633d31cc0ca6083a00d68833d5ca")
 
         expect(recoveredPubKey1).to.equal(recoveredPubKey2)
-        expect(recoveredPubKey1).to.equal(wallet["_signingKey"]().publicKey)
+        expect(recoveredPubKey1).to.equal(wallet.publicKey)
         expect(recoveredPubKey1).to.equal("0x04cb3cabb521d84fc998b5649d6b59e27a3e27633d31cc0ca6083a00d68833d5caeaeb67fbce49e44f089a28f46a4d815abd51bc5fc122065518ea4adb199ba780")
+
     })
-    it("Should extract correctly  the bytes of the value of a JSON field", () => {
+    it("Should extract correctly the bytes of the value of a JSON field", () => {
         const innerBody = '{ "a":"àèìòù", "b": "áéíóú" }'
         const jsonBody = '{ "response":' + innerBody + '}'
         const bytesBody = new TextEncoder().encode(jsonBody)
