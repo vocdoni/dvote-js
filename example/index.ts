@@ -23,7 +23,7 @@ import { ProcessMetadata, ProcessMetadataTemplate } from "../src/models/process"
 import { GatewayInfo } from "../src/wrappers/gateway-info"
 import { SOKOL_CHAIN_ID, SOKOL_ENS_REGISTRY_ADDRESS, VOCHAIN_BLOCK_TIME } from "../src/constants"
 import { JsonSignature, BytesSignature } from "../src/util/data-signing"
-import { DVoteGatewayMethod, RegistryApiMethod } from "../src/models/gateway"
+import { GatewayApiMethod, BackendApiMethod, ApiMethod } from "../src/models/gateway"
 import { IGatewayDiscoveryParameters } from "../src/net/gateway-discovery"
 import { ProcessEnvelopeType, ProcessMode, ProcessStatus, ProcessCensusOrigin, ensHashAddress } from "../src/net/contracts"
 import { ContentHashedUri } from "../src/wrappers/content-hashed-uri"
@@ -84,7 +84,7 @@ async function checkGatewayStatus() {
         // const gw = await Gateway.randomFromDefault(NETWORK_ID)
         const gw = await Gateway.randomfromUri(NETWORK_ID, BOOTNODES_URL_RO)
 
-        const status = await gw.getGatewayInfo()
+        const status = await gw.getInfo()
         console.log("Gateway status", status)
     }
     catch (err) {
@@ -720,12 +720,12 @@ async function gatewayRawRequest() {
     // SIGNED
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
-    const req = { method: "getGatewayInfo" as DVoteGatewayMethod }  // Low level raw request
+    const req = { method: "getInfo" as ApiMethod }  // Low level raw request
     const timeout = 5 * 1000
     const r = await pool.sendRequest(req, wallet, { timeout })
     console.log("RESPONSE:", r)
 
-    const req2 = { method: "signUp" as RegistryApiMethod }  // Low level raw request
+    const req2 = { method: "signUp" as BackendApiMethod }  // Low level raw request
     const r2 = await pool.sendRequest(req2, wallet, { timeout })
     console.log("RESPONSE:", r)
 

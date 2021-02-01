@@ -1,6 +1,6 @@
 import { Wallet, Signer, providers, BigNumber, ContractReceipt } from "ethers"
 import { Gateway, IGateway } from "../net/gateway"
-import { IDvoteRequestParameters } from "../net/gateway-dvote"
+import { IRequestParameters } from "../net/gateway-dvote"
 import { IGatewayPool, GatewayPool } from "../net/gateway-pool"
 import { sha3_256 } from 'js-sha3'
 import { hashBuffer } from "../util/hashing"
@@ -221,7 +221,7 @@ export class CensusOffChainApi {
         if (!censusId || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
-        const msg: IDvoteRequestParameters = (rootHash) ? { method: "dump", censusId, rootHash } : { method: "dump", censusId }
+        const msg: IRequestParameters = (rootHash) ? { method: "dump", censusId, rootHash } : { method: "dump", censusId }
 
         return gateway.sendRequest(msg, walletOrSigner)
             .then(response => {
@@ -243,7 +243,7 @@ export class CensusOffChainApi {
         if (!censusId || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
-        const msg: IDvoteRequestParameters = (rootHash) ? { method: "dumpPlain", censusId, rootHash } : { method: "dumpPlain", censusId }
+        const msg: IRequestParameters = (rootHash) ? { method: "dumpPlain", censusId, rootHash } : { method: "dumpPlain", censusId }
 
         return gateway.sendRequest(msg, walletOrSigner)
             .then(response => {

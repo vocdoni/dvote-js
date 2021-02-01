@@ -1,7 +1,7 @@
 import { ContentUri } from "../wrappers/content-uri"
 import { ContentHashedUri } from "../wrappers/content-hashed-uri"
 import { Gateway, IGateway } from "../net/gateway"
-import { DVoteGateway, IDVoteGateway, IDvoteRequestParameters } from "../net/gateway-dvote"
+import { DVoteGateway, IDVoteGateway, IRequestParameters } from "../net/gateway-dvote"
 import { IGatewayPool, GatewayPool } from "../net/gateway-pool"
 import { IPFS } from "../net/ipfs"
 import { Buffer } from 'buffer/'
@@ -152,7 +152,7 @@ export class FileApi {
             buffer = new Uint8Array(Buffer.from(buffer))
         }
 
-        const requestBody: IDvoteRequestParameters = {
+        const requestBody: IRequestParameters = {
             method: "addFile",
             type: "ipfs",
             name,

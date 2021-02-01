@@ -1,5 +1,20 @@
 # DVote JS changelog
 
+## 0.21.0
+
+- Gateway API methods have been refactored to accomodate the Registry API
+    - `ApiName` and `ApiMethod` are available
+    - `GatewayApiName` and `GatewayApiMethod` are available
+    - `BackendApiName` and `BackendApiMethod` are available
+    - Renamed types and enum's
+        - `getGatewayInfo` is now `getInfo`
+        - `DVoteGatewayMethod` is now `GatewayApiMethod`
+        - `dvoteGatewayApiMethods` is now `gatewayApiMethods`
+        - New enum `backendApiMethods` (registry)
+        - `dvoteApis` is now `clientApis` (gateway and registry)
+            - `gatewayApis` and `backendApis` are also available
+        - `IDvoteRequestParameters` is now `IRequestParameters`
+
 ## 0.20.3
 
 - Using INewProcessParams in newProcess

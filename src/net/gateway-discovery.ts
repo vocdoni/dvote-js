@@ -59,7 +59,7 @@ export class GatewayDiscovery {
  * basic rounds
  * 1. Check sets of gateways: The retrieved list of gateways is randomized and split in
  *    sets of $ParallelGatewayTests that are pararrely checked (respond in /ping and
- *     getGatewayInfo) with a time limit of $GATEWAY_SELECTION_TIMEOUT
+ *     getInfo) with a time limit of $GATEWAY_SELECTION_TIMEOUT
  * 2. Repeat 1 wiht timeout backtracking: Currently simply using 2*$GATEWAY_SELECTION_TIMEOUT
  * @param networkId The Ethereum network to which the gateway should be associated
  * @param bootnodesContentUri (optional) The Content URI from which the list of gateways will be extracted
@@ -215,7 +215,7 @@ function arrangePairedNodes(dvoteGateways: IDVoteGateway[], web3Gateways: IWeb3G
 
 /**
  * Implements the health check on the gateways pararrely checkig in /ping and
- * getGatewayInfo with a time limit of timeout.
+ * getInfo with a time limit of timeout.
  * Also the Web3Gateways are mapped to coresponding DvoteGateways in case the
  * should be chosen in a coupled manner
  * @param dvoteNodes The set of DvoteGateways to be checked

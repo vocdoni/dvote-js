@@ -4,11 +4,11 @@
 
 import { Contract, providers, utils, Wallet, Signer } from "ethers"
 import { GatewayInfo } from "../wrappers/gateway-info"
-import { DVoteSupportedApi, DVoteGatewayMethod, RegistryApiMethod } from "../models/gateway"
+import { GatewayApiName, BackendApiName, ApiMethod } from "../models/gateway"
 import { GatewayBootnode, EthNetworkID } from "./gateway-bootnode"
 import { ContentUri } from "../wrappers/content-uri"
 import { IProcessContract, IEnsPublicResolverContract, INamespaceContract, ITokenStorageProofContract } from "../net/contracts"
-import { DVoteGateway, IDVoteGateway, IDvoteRequestParameters } from "./gateway-dvote"
+import { DVoteGateway, IDVoteGateway, IRequestParameters } from "./gateway-dvote"
 import { IWeb3Gateway, Web3Gateway } from "./gateway-web3"
 
 
@@ -44,13 +44,14 @@ export class Gateway {
      * @param networkId Either "mainnet" or "goerli" (test)
      * @param requiredApis A list of the required APIs
      */
-    static randomFromDefault(networkId: EthNetworkID, requiredApis: DVoteSupportedApi[] = [], options: { testing: boolean } = { testing: false }): Promise<Gateway> {
+    static randomFromDefault(networkId: EthNetworkID, requiredApis: (GatewayApiName | BackendApiName)[] = [], options: { testing: boolean } = { testing: false }): Promise<Gateway> {
         return GatewayBootnode.getDefaultGateways(networkId)
             .then(async bootNodeData => {
                 if (!bootNodeData[networkId]) throw new Error("The bootnode doesn't define any gateway for " + networkId)
 
                 const gateways = GatewayBootnode.digestNetwork(bootNodeData, networkId, options)
 
+                // TODO: Filter by required API's
                 const [web3, dvote] = await Promise.all([
                     Promise.race(gateways.web3.map(w3 => w3.isUp().then(() => w3))),
                     Promise.race(gateways.dvote.map(dv => dv.isUp().then(() => dv)))
@@ -68,13 +69,14 @@ export class Gateway {
      * @param bootnodesContentUri The uri from which contains the available gateways
      * @param requiredApis A list of the required APIs
      */
-    static randomfromUri(networkId: EthNetworkID, bootnodesContentUri: string | ContentUri, requiredApis: DVoteSupportedApi[] = [], options: { testing: boolean } = { testing: false }): Promise<Gateway> {
+    static randomfromUri(networkId: EthNetworkID, bootnodesContentUri: string | ContentUri, requiredApis: (GatewayApiName | BackendApiName)[] = [], options: { testing: boolean } = { testing: false }): Promise<Gateway> {
         return GatewayBootnode.getGatewaysFromUri(bootnodesContentUri)
             .then(async bootNodeData => {
                 if (!bootNodeData[networkId]) throw new Error("The bootnode doesn't define any gateway for " + networkId)
 
                 const gateways = GatewayBootnode.digestNetwork(bootNodeData, networkId, options)
 
+                // TODO: Filter by required API's
                 const [web3, dvote] = await Promise.all([
                     Promise.race(gateways.web3.map(w3 => w3.isUp().then(() => w3))),
                     Promise.race(gateways.dvote.map(dv => dv.isUp().then(() => dv)))
@@ -90,7 +92,7 @@ export class Gateway {
      * Returns a new *connected* Gateway that is instantiated based on the given parameters
      * @param gatewayOrParams Either a gatewayInfo object or an object with the defined parameters
      */
-    static fromInfo(gatewayOrParams: GatewayInfo | { dvoteUri: string, supportedApis: DVoteSupportedApi[], web3Uri: string, publicKey?: string }, options: { testing: boolean } = { testing: false }): Promise<Gateway> {
+    static fromInfo(gatewayOrParams: GatewayInfo | { dvoteUri: string, supportedApis: GatewayApiName[], web3Uri: string, publicKey?: string }, options: { testing: boolean } = { testing: false }): Promise<Gateway> {
         let dvoteGateway, web3Gateway
         if (gatewayOrParams instanceof GatewayInfo) {
             dvoteGateway = new DVoteGateway(gatewayOrParams)
@@ -119,7 +121,7 @@ export class Gateway {
      * Initializes and checks the connection of the DVote node.
      * @param requiredApis Expected DVote APIs
      */
-    public init(requiredApis: DVoteSupportedApi[] = []): Promise<void> {
+    public init(requiredApis: (GatewayApiName | BackendApiName)[] = []): Promise<void> {
         return this.dvote.init(requiredApis)
     }
 
@@ -134,7 +136,7 @@ export class Gateway {
 
     // DVOTE
 
-    async isDVoteUp(requiredApis: DVoteSupportedApi[] = []): Promise<boolean> {
+    async isDVoteUp(requiredApis: (GatewayApiName | BackendApiName)[] = []): Promise<boolean> {
         return this.dvote.isUp()
             .then(() => {
                 if (!this.dvote.supportedApis) return false
@@ -159,15 +161,15 @@ export class Gateway {
      * @param wallet (optional) The wallet to use for signing (default: null)
      * @param params (optional) Optional parameters. Timeout in milliseconds.
      */
-    public sendRequest(requestBody: IDvoteRequestParameters, wallet: Wallet | Signer = null, params?: { timeout: number }) {
+    public sendRequest(requestBody: IRequestParameters, wallet: Wallet | Signer = null, params?: { timeout: number }) {
         return this.dvote.sendRequest(requestBody, wallet, params)
     }
 
-    public getGatewayInfo(timeout: number = 2 * 1000): Promise<{ apiList: DVoteSupportedApi[], health: number }> {
-        return this.dvote.getGatewayInfo(timeout)
+    public getInfo(timeout: number = 2 * 1000): Promise<{ apiList: (GatewayApiName | BackendApiName)[], health: number }> {
+        return this.dvote.getInfo(timeout)
     }
 
-    public supportsMethod(method: DVoteGatewayMethod | RegistryApiMethod): boolean {
+    public supportsMethod(method: ApiMethod): boolean {
         return this.dvote.supportsMethod(method)
     }
 
