@@ -1,5 +1,5 @@
 import { Wallet, Signer, utils } from "ethers"
-
+import { compressPublicKey } from "./elliptic"
 
 export class JsonSignature {
     /**
@@ -46,7 +46,7 @@ export class JsonSignature {
      * @param signature Hex encoded signature (created with the Ethereum prefix)
      * @param responseBody JSON object of the `response` or `error` fields
      */
-    static recoverPublicKey(responseBody: any, signature: string): string {
+    static recoverPublicKey(responseBody: any, signature: string, expanded: boolean = false): string {
         if (!signature) throw new Error("Invalid signature")
         else if (!responseBody) throw new Error("Invalid body")
 
@@ -55,7 +55,10 @@ export class JsonSignature {
         const bodyBytes = utils.toUtf8Bytes(strBody)
         const msgHash = utils.hashMessage(bodyBytes)
         const msgHashBytes = utils.arrayify(msgHash)
-        return utils.recoverPublicKey(msgHashBytes, signature)
+
+        const expandedPubKey = utils.recoverPublicKey(msgHashBytes, signature)
+        if (expanded) return expandedPubKey
+        return compressPublicKey(expandedPubKey)
     }
 
     /**

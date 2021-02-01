@@ -14,6 +14,10 @@
         - `dvoteApis` is now `clientApis` (gateway and registry)
             - `gatewayApis` and `backendApis` are also available
         - `IDvoteRequestParameters` is now `IRequestParameters`
+- Using compressed keys everywhere
+    - Adding `compressPublicKey` and `expandPublicKey`
+    - `digestHexClaim` is now `digestPublicKey`
+    - `digestPublicKey` compresses all keys
 
 ## 0.20.3
 

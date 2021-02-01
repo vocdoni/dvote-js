@@ -8,6 +8,7 @@ import { hexStringToBuffer } from "../util/encoding"
 import { CENSUS_MAX_BULK_SIZE } from "../constants"
 import { ERC20Prover } from "@vocdoni/storage-proofs-eth"
 import { Web3Gateway } from "../net/gateway-web3"
+import { compressPublicKey } from "../util/elliptic"
 // import { Buffer } from "buffer/"
 // import ContentURI from "../wrappers/content-uri"
 
@@ -34,11 +35,12 @@ export class CensusOffChainApi {
     }
 
     /**
-     * Hashes the given hex string ECDSA public key and returns the
+     * Hashes the given hex string ECDSA public key (compressed) and returns the
      * base 64 litte-endian representation of the Poseidon hash big int
      */
-    static digestHexClaim(publicKey: string): string {
-        const pubKeyBytes = hexStringToBuffer(publicKey)
+    static digestPublicKey(publicKey: string): string {
+        const compPubKey = compressPublicKey(publicKey)
+        const pubKeyBytes = hexStringToBuffer(compPubKey)
         let hashNumHex: string = hashBuffer(pubKeyBytes).toString(16)
         if (hashNumHex.length % 2 != 0) {
             hashNumHex = "0" + hashNumHex

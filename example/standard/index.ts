@@ -12,6 +12,7 @@ import { CensusOffChainApi } from "../../src/api/census"
 import { ProcessMetadata, ProcessMetadataTemplate } from "../../src/models/process"
 import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../../src/net/contracts"
 import { VochainWaiter, EthWaiter } from "../../src/util/waiters"
+import { compressPublicKey } from "../../dist"
 
 
 const CONFIG_PATH = "./config.yaml"
@@ -152,9 +153,9 @@ function createWallets(amount) {
         accounts.push({
             idx: i,
             mnemonic: wallet.mnemonic.phrase,
-            privateKey: wallet["_signingKey"]().privateKey,
-            publicKey: wallet["_signingKey"]().publicKey,
-            publicKeyHash: CensusOffChainApi.digestHexClaim(wallet["_signingKey"]().publicKey)
+            privateKey: wallet.privateKey,
+            publicKey: compressPublicKey(wallet.publicKey),
+            publicKeyHash: CensusOffChainApi.digestPublicKey(wallet.publicKey)
             // address: wallet.address
         })
     }
@@ -169,7 +170,7 @@ async function generatePublicCensusFromAccounts(accounts) {
 
     const censusIdSuffix = require("crypto").createHash('sha256').update("" + Date.now()).digest().toString("hex")
     const claimList: { key: string, value?: string }[] = accounts.map(account => ({ key: account.publicKeyHash, value: "" }))
-    const managerPublicKeys = [entityWallet["_signingKey"]().publicKey]
+    const managerPublicKeys = [compressPublicKey(entityWallet.publicKey)]
 
     if (config.stopOnError) {
         assert(censusIdSuffix.length == 64)

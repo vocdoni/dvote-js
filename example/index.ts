@@ -27,6 +27,7 @@ import { GatewayApiMethod, BackendApiMethod, ApiMethod } from "../src/models/gat
 import { IGatewayDiscoveryParameters } from "../src/net/gateway-discovery"
 import { ProcessEnvelopeType, ProcessMode, ProcessStatus, ProcessCensusOrigin, ensHashAddress } from "../src/net/contracts"
 import { ContentHashedUri } from "../src/wrappers/content-hashed-uri"
+import { compressPublicKey } from "../src/util/elliptic"
 
 const { Buffer } = require("buffer/")
 
@@ -229,7 +230,7 @@ async function censusMethods() {
     await pool.init()
 
     const censusName = "My census name " + Math.random().toString().substr(2)
-    const adminPublicKeys = [wallet["_signingKey"]().publicKey]
+    const adminPublicKeys = [compressPublicKey(wallet.publicKey)]
     const publicKeyClaims: { key: string, value?: string }[] = [
         { key: Buffer.from("0212d6dc30db7d2a32dddd0ba080d244cc26fcddcc29beb3fcb369564b468b49f1", "hex").toString("base64"), value: "" },
         { key: Buffer.from("033980b22e9432aa2884772570c47a6f78a39bcc08b428161a503eeb91f66b1901", "hex").toString("base64"), value: "" },
@@ -524,7 +525,7 @@ async function useVoteApi() {
     console.log("- Date at block 500:", await VotingApi.estimateDateAtBlock(500, pool))
     console.log("- Block in 200 seconds:", await VotingApi.estimateBlockAtDateTime(new Date(Date.now() + VOCHAIN_BLOCK_TIME * 20), pool))
 
-    const publicKeyHash = CensusOffChainApi.digestHexClaim(wallet["_signingKey"]().publicKey)
+    const publicKeyHash = CensusOffChainApi.digestPublicKey(wallet.publicKey)
     const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: publicKeyHash }, true, pool)
     const votes = [1, 2, 1]
 
@@ -582,7 +583,7 @@ async function submitVoteBatch() {
             const wallet = Wallet.fromMnemonic(mnemonic, PATH)
             // const myEntityAddress = await wallet.getAddress()
 
-            const publicKeyHash = CensusOffChainApi.digestHexClaim(wallet["_signingKey"]().publicKey)
+            const publicKeyHash = CensusOffChainApi.digestPublicKey(wallet.publicKey)
             const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: publicKeyHash }, true, pool)
             const votes = [1]
             const { envelope, signature } = await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet })
@@ -609,7 +610,7 @@ async function checkSignature() {
     //const signature = await JsonSignature.sign(body, wallet)
 
     const expectedAddress = await wallet.getAddress()
-    const expectedPublicKey = wallet["_signingKey"]().publicKey
+    const expectedPublicKey = compressPublicKey(wallet.publicKey)
 
     let body = { "actionKey": "register", "dateOfBirth": "1975-01-25T12:00:00.000Z", "email": "john@me.com", "entityId": "0xf6515536038e12212adc96395021ad1f1f089a239f0ba4c139d364ededd00c54", "firstName": "John", "lastName": "Mayer", "method": "register", "phone": "5555555", "timestamp": 1582821257721 }
     let givenSignature = "0x3086bf3de0d22d2d51f274d4618ea963b60b1e590f5ef0b1a2df17447746d4503f595e87330fb9cc9387c321acc9e476baedfd0681d864f68f4f1bc84548725c1b"
