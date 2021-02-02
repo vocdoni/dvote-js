@@ -1,5 +1,13 @@
 # DVote JS changelog
 
+## 0.21.2
+
+- Updating `getProcessList` so that `Key not found` returns an empty list instead of an error
+
+## 0.21.1
+
+- Allowing arbitrary `meta` fields within the Process metadata
+
 ## 0.21.0
 
 - Gateway API methods have been refactored to accomodate the Registry API

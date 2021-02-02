@@ -698,6 +698,7 @@ export class VotingApi {
             return response.processList || []
         }
         catch (err) {
+            if (err?.message?.includes("Key not found")) return []
             throw err
         }
     }
