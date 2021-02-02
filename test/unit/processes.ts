@@ -438,5 +438,28 @@ describe("Governance Process", () => {
             const result = checkValidProcessMetadata(processMetadata)
             expect(result.questions[0].choices.length).to.equal(200)
         }).timeout(4000)
+
+        it("Should allow for arbitrary fields within `meta`", () => {
+            const processMetadata = new ProcessMetadataBuilder().build()
+            processMetadata.meta = undefined
+            expect(() => {
+                checkValidProcessMetadata(processMetadata)
+            }).to.not.throw()
+
+            processMetadata.meta = {}
+            expect(() => {
+                checkValidProcessMetadata(processMetadata)
+            }).to.not.throw()
+
+            processMetadata.meta = { a: "1234", b: 2345 }
+            expect(() => {
+                checkValidProcessMetadata(processMetadata)
+            }).to.not.throw()
+
+            processMetadata.meta = { a: ["a", 3, null, false] }
+            expect(() => {
+                checkValidProcessMetadata(processMetadata)
+            }).to.not.throw()
+        })
     })
 })

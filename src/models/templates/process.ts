@@ -12,6 +12,7 @@ export const ProcessMetadataTemplate: ProcessMetadata = {
         header: "https://source.unsplash.com/random/800x600", // Content URI
         streamUri: "",
     },
+    meta: {},
     questions: [
         {
             title: {

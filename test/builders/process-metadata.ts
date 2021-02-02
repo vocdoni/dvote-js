@@ -30,6 +30,11 @@ export default class ProcessMetadataBuilder {
         return this
     }
 
+    withMeta(meta: any) {
+        this.metadata.meta = meta
+        return this
+    }
+
     withNumberOfQuestions(size: number) {
         const questions = this.metadata.questions
         const questionTemplate = JSON.stringify(questions[0])

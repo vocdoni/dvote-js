@@ -338,6 +338,10 @@ async function createProcessFull() {
             "header": "https://ipfs.io/ipfs/1234...",
             "streamUri": ""
         },
+        "meta": {
+            "my": "custom-field",
+            value: 1234
+        },
         "questions": [
             {
                 "title": { "default": "CEO" },

@@ -8,7 +8,7 @@ import {
     MultiLanguage,
     ContentUriString,
 } from "./common"
-import { object, array, string, number } from "yup"
+import { object, array, string, mixed, number } from "yup"
 import { by639_1 } from 'iso-language-codes'
 import { IProcessCreateParams } from "../net/contracts"
 import { BigNumber } from "ethers"
@@ -63,6 +63,7 @@ const processMetadataSchema = object().shape({
         header: string().required(),
         streamUri: string().optional()
     }),
+    meta: mixed().optional(),
     questions: array().of(
         object().shape({
             title: object().shape(multiLanguageStringKeys).required(),
@@ -95,6 +96,7 @@ export interface ProcessMetadata {
         header: ContentUriString,
         streamUri?: string
     },
+    meta?: any,
     questions: Array<{
         title: MultiLanguage<string>,
         description?: MultiLanguage<string>,
