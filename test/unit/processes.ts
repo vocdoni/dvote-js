@@ -14,7 +14,7 @@ import { Buffer } from "buffer/"
 
 import { VotingApi, IVotePackage } from "../../src/api/voting"
 import { Asymmetric } from "../../src/util/encryption"
-import { checkValidProcessMetadata } from "../../src/models/process"
+import { checkValidProcessMetadata, IProofCA, IProofEVM, ProofCaSignatureTypes } from "../../src/models/process"
 import ProcessBuilder, {
     DEFAULT_PROCESS_MODE,
     DEFAULT_ENVELOPE_TYPE,
@@ -212,7 +212,7 @@ describe("Governance Process", () => {
             it("Should package a signed envelope")
         })
 
-        it("Should bundle a Vote Package into a valid Vote Envelope", async () => {
+        it("Should bundle a Vote Package into a valid Vote Envelope (Graviton)", async () => {
             const wallet = Wallet.fromMnemonic("seven family better journey display approve crack burden run pattern filter topple")
 
             let processId = "0x8b35e10045faa886bd2e18636cd3cb72e80203a04e568c47205bf0313a0f60d1"
@@ -243,6 +243,101 @@ describe("Governance Process", () => {
 
             expect(async () => {
                 await VotingApi.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), votes: ["1", "2", "3"], censusProof: siblings, processId, walletOrSigner: wallet } as any)
+            }).to.throw
+        })
+
+        it("Should bundle a Vote Package into a valid Vote Envelope (CA)", async () => {
+            const wallet = Wallet.fromMnemonic("seven family better journey display approve crack burden run pattern filter topple")
+
+            let processId = "0x8b35e10045faa886bd2e18636cd3cb72e80203a04e568c47205bf0313a0f60d1"
+            let proof: IProofCA = {
+                type: ProofCaSignatureTypes.ECDSA,
+                voterAddress: wallet.address,
+                signature: "0x1234",
+            }
+
+            const { envelope: e1, signature: signature1 } = await VotingApi.packageSignedEnvelope({ censusOrigin: ProcessCensusOrigin.OFF_CHAIN_CA, votes: [1, 2, 3], censusProof: proof, processId, walletOrSigner: wallet })
+            const envelope1 = VoteEnvelope.deserializeBinary(e1)
+            expect(Buffer.from(envelope1.getProcessid()).toString("hex")).to.eq(processId.slice(2))
+            expect(envelope1.getProof().getCa().getType()).to.eq(proof.type)
+            expect(Buffer.from(envelope1.getProof().getCa().getBundle().getProcessid()).toString("hex")).to.eq(processId.slice(2))
+            expect(Buffer.from(envelope1.getProof().getCa().getBundle().getAddress()).toString("hex")).to.eq(proof.voterAddress.toLowerCase().slice(2))
+            expect(Buffer.from(envelope1.getProof().getCa().getSignature()).toString("hex")).to.eq(proof.signature.slice(2))
+            const pkg1: IVotePackage = JSON.parse(Buffer.from(envelope1.getVotepackage()).toString())
+            expect(pkg1.votes.length).to.eq(3)
+            expect(pkg1.votes).to.deep.equal([1, 2, 3])
+            expect(BytesSignature.isValid(signature1, compressPublicKey(wallet.publicKey), e1)).to.eq(true)
+            expect(BytesSignature.isValid(signature1, wallet.publicKey, e1)).to.eq(true)
+
+            processId = "0x36c886bd2e18605bf03a0428be100313a0f6e568c470d135d3cb72e802045faa"
+            proof = {
+                type: ProofCaSignatureTypes.ECDSA_BLIND,
+                voterAddress: wallet.address,
+                signature: "0x1234",
+            }
+
+            const { envelope: e2, signature: signature2 } = await VotingApi.packageSignedEnvelope({ censusOrigin: ProcessCensusOrigin.OFF_CHAIN_CA, votes: [5, 6, 7], censusProof: proof, processId, walletOrSigner: wallet })
+            const envelope2 = VoteEnvelope.deserializeBinary(e2)
+            expect(Buffer.from(envelope2.getProcessid()).toString("hex")).to.eq(processId.slice(2))
+            expect(envelope2.getProof().getCa().getType()).to.eq(proof.type)
+            expect(Buffer.from(envelope2.getProof().getCa().getBundle().getProcessid()).toString("hex")).to.eq(processId.slice(2))
+            expect(Buffer.from(envelope2.getProof().getCa().getBundle().getAddress()).toString("hex")).to.eq(proof.voterAddress.toLowerCase().slice(2))
+            expect(Buffer.from(envelope2.getProof().getCa().getSignature()).toString("hex")).to.eq(proof.signature.slice(2))
+            const pkg2: IVotePackage = JSON.parse(Buffer.from(envelope2.getVotepackage()).toString())
+            expect(pkg2.votes.length).to.eq(3)
+            expect(pkg2.votes).to.deep.equal([5, 6, 7])
+            expect(BytesSignature.isValid(signature2, compressPublicKey(wallet.publicKey), e2)).to.eq(true)
+            expect(BytesSignature.isValid(signature2, wallet.publicKey, e2)).to.eq(true)
+
+            expect(async () => {
+                await VotingApi.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), votes: ["1", "2", "3"], censusProof: proof, processId, walletOrSigner: wallet } as any)
+            }).to.throw
+        })
+        it("Should bundle a Vote Package into a valid Vote Envelope (EVM)", async () => {
+            const wallet = Wallet.fromMnemonic("seven family better journey display approve crack burden run pattern filter topple")
+
+            let processId = "0x8b35e10045faa886bd2e18636cd3cb72e80203a04e568c47205bf0313a0f60d1"
+            let proof: IProofEVM = {
+                key: "0x1234",
+                proof: ["0x10", "0x20", "0x30", "0x40"],
+                value: "0x0000000000000000000000000000000000000000000000000000000000023456"
+            }
+
+            const { envelope: e1, signature: signature1 } = await VotingApi.packageSignedEnvelope({ censusOrigin: ProcessCensusOrigin.ERC20, votes: [1, 2, 3], censusProof: proof, processId, walletOrSigner: wallet })
+            const envelope1 = VoteEnvelope.deserializeBinary(e1)
+            expect(Buffer.from(envelope1.getProcessid()).toString("hex")).to.eq(processId.slice(2))
+            expect(Buffer.from(envelope1.getProof().getEthereumstorage().getKey()).toString("hex")).to.eq(proof.key.slice(2))
+            expect(Buffer.from(envelope1.getProof().getEthereumstorage().getValue()).toString("hex")).to.eq(proof.value.slice(2))
+            let encodedSiblings = envelope1.getProof().getEthereumstorage().getSiblingsList().map(item => "0x" + Buffer.from(item).toString("hex"))
+            expect(encodedSiblings).to.deep.eq(proof.proof)
+            const pkg1: IVotePackage = JSON.parse(Buffer.from(envelope1.getVotepackage()).toString())
+            expect(pkg1.votes.length).to.eq(3)
+            expect(pkg1.votes).to.deep.equal([1, 2, 3])
+            expect(BytesSignature.isValid(signature1, compressPublicKey(wallet.publicKey), e1)).to.eq(true)
+            expect(BytesSignature.isValid(signature1, wallet.publicKey, e1)).to.eq(true)
+
+            processId = "0x36c886bd2e18605bf03a0428be100313a0f6e568c470d135d3cb72e802045faa"
+            proof = {
+                key: "0x5678",
+                proof: ["0x50", "0x60", "0x70", "0x80"],
+                value: "0x0000000000000000000000000000000000000000000000000000000078901234"
+            }
+
+            const { envelope: e2, signature: signature2 } = await VotingApi.packageSignedEnvelope({ censusOrigin: ProcessCensusOrigin.ERC20, votes: [5, 6, 7], censusProof: proof, processId, walletOrSigner: wallet })
+            const envelope2 = VoteEnvelope.deserializeBinary(e2)
+            expect(Buffer.from(envelope2.getProcessid()).toString("hex")).to.eq(processId.slice(2))
+            expect(Buffer.from(envelope2.getProof().getEthereumstorage().getKey()).toString("hex")).to.eq(proof.key.slice(2))
+            expect(Buffer.from(envelope2.getProof().getEthereumstorage().getValue()).toString("hex")).to.eq(proof.value.slice(2))
+            encodedSiblings = envelope2.getProof().getEthereumstorage().getSiblingsList().map(item => "0x" + Buffer.from(item).toString("hex"))
+            expect(encodedSiblings).to.deep.eq(proof.proof)
+            const pkg2: IVotePackage = JSON.parse(Buffer.from(envelope2.getVotepackage()).toString())
+            expect(pkg2.votes.length).to.eq(3)
+            expect(pkg2.votes).to.deep.equal([5, 6, 7])
+            expect(BytesSignature.isValid(signature2, compressPublicKey(wallet.publicKey), e2)).to.eq(true)
+            expect(BytesSignature.isValid(signature2, wallet.publicKey, e2)).to.eq(true)
+
+            expect(async () => {
+                await VotingApi.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), votes: ["1", "2", "3"], censusProof: proof, processId, walletOrSigner: wallet } as any)
             }).to.throw
         })
 

@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 0.21.3
+
+- Adding support for CA voting on `packageSignedEnvelope`
+
 ## 0.21.2
 
 - Updating `getProcessList` so that `Key not found` returns an empty list instead of an error

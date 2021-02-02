@@ -2,6 +2,7 @@
 // - Typescript type definitions for ProcessMetadata objects
 // - Metadata JSON validation checker
 // - A metadata JSON template
+// - Enum's for vote envelopes
 
 import {
     // HexString,
@@ -12,6 +13,7 @@ import { object, array, string, mixed, number } from "yup"
 import { by639_1 } from 'iso-language-codes'
 import { IProcessCreateParams } from "../net/contracts"
 import { BigNumber } from "ethers"
+import { SignatureType as CaSignatureType } from "../../lib/protobuf/build/js/common/vote_pb.js"
 
 export { ProcessMetadataTemplate } from "./templates/process"
 
@@ -120,3 +122,19 @@ export interface DigestedProcessResultItem {
         votes: BigNumber,
     }[],
 }
+
+// Envelope and proofs
+
+export type IProofGraviton = string
+export type IProofCA = { type: number, voterAddress: string, signature: string }
+export type IProofEVM = { key: string, proof: string[], value: string }
+
+type IProofCaSignatureType = {
+    UNKNOWN: number,
+    ECDSA: number,
+    ECDSA_PIDSALTED: number,
+    ECDSA_BLIND: number,
+    ECDSA_BLIND_PIDSALTED: number
+}
+const ProofCaSignatureTypes = CaSignatureType as IProofCaSignatureType
+export { ProofCaSignatureTypes }
