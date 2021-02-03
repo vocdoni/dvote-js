@@ -4,7 +4,7 @@ import { FileApi } from "./file"
 import { EntityApi } from "./entity"
 import { ProcessMetadata, checkValidProcessMetadata, DigestedProcessResults, DigestedProcessResultItem, INewProcessParams, IProofEVM, IProofCA, IProofGraviton } from "../models/process"
 import { VOCHAIN_BLOCK_TIME, XDAI_GAS_PRICE, XDAI_CHAIN_ID, SOKOL_CHAIN_ID, SOKOL_GAS_PRICE } from "../constants"
-import { JsonSignature, BytesSignature } from "../util/data-signing"
+import { BytesSignature } from "../util/data-signing"
 import { Buffer } from "buffer/"  // Previously using "arraybuffer-to-string"
 import { Asymmetric } from "../util/encryption"
 import { GatewayPool, IGatewayPool } from "../net/gateway-pool"
@@ -23,6 +23,8 @@ import {
 } from "../../lib/protobuf/build/js/common/vote_pb.js"
 import { DVoteGatewayResponseBody } from "../net/gateway-dvote"
 import { CensusErc20Api } from "./census"
+
+export const CaBundleProtobuf = CAbundle
 
 // TYPES
 

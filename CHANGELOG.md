@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 0.21.4
+
+- Exporting `CaBundleProtobuf`
+
 ## 0.21.3
 
 - Adding support for CA voting on `packageSignedEnvelope`
