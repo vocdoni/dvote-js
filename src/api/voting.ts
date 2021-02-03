@@ -2,7 +2,7 @@ import { Wallet, Signer, utils, ContractTransaction, BigNumber } from "ethers"
 import { Gateway, IGateway } from "../net/gateway"
 import { FileApi } from "./file"
 import { EntityApi } from "./entity"
-import { ProcessMetadata, checkValidProcessMetadata, DigestedProcessResults, DigestedProcessResultItem, INewProcessParams } from "../models/process"
+import { ProcessMetadata, checkValidProcessMetadata, DigestedProcessResults, DigestedProcessResultItem, INewProcessParams, IProofEVM, IProofCA, IProofGraviton } from "../models/process"
 import { VOCHAIN_BLOCK_TIME, XDAI_GAS_PRICE, XDAI_CHAIN_ID, SOKOL_CHAIN_ID, SOKOL_GAS_PRICE } from "../constants"
 import { JsonSignature, BytesSignature } from "../util/data-signing"
 import { Buffer } from "buffer/"  // Previously using "arraybuffer-to-string"
@@ -10,7 +10,7 @@ import { Asymmetric } from "../util/encryption"
 import { GatewayPool, IGatewayPool } from "../net/gateway-pool"
 import { VochainWaiter } from "../util/waiters"
 import { Random } from "../util/random"
-import { IMethodOverrides, ProcessStatus, ProcessContractParameters, IProcessCreateParams, IProcessStatus, ProcessCensusOrigin } from "../net/contracts"
+import { IMethodOverrides, ProcessStatus, ProcessContractParameters, IProcessCreateParams, IProcessStatus, ProcessCensusOrigin, IProcessCensusOrigin } from "../net/contracts"
 import {
     VoteEnvelope,
     Proof,
@@ -18,6 +18,8 @@ import {
     // ProofIden3,
     ProofEthereumStorage,
     // ProofEthereumAccount
+    ProofCA,
+    CAbundle
 } from "../../lib/protobuf/build/js/common/vote_pb.js"
 import { DVoteGatewayResponseBody } from "../net/gateway-dvote"
 import { CensusErc20Api } from "./census"
@@ -908,9 +910,9 @@ export class VotingApi {
      * @param params
      */
     static async packageSignedEnvelope(params: {
-        censusOrigin: ProcessCensusOrigin,
+        censusOrigin: number | ProcessCensusOrigin,
         votes: number[], processId: string, walletOrSigner: Wallet | Signer,
-        censusProof: string | { key: string, proof: string[], value: string },
+        censusProof: IProofGraviton | IProofCA | IProofEVM,
         processKeys?: IProcessKeys
     }): Promise<{ envelope: Uint8Array, signature: string }> {
         if (!params) throw new Error("Invalid parameters")
@@ -924,10 +926,14 @@ export class VotingApi {
             }
         }
 
+        const censusOrigin = typeof params.censusOrigin == "number" ?
+            new ProcessCensusOrigin(params.censusOrigin as IProcessCensusOrigin) :
+            params.censusOrigin
+
         try {
             const proof = new Proof()
 
-            if (params.censusOrigin.isOffChain || params.censusOrigin.isOffChainWeighted) {
+            if (censusOrigin.isOffChain || censusOrigin.isOffChainWeighted) {
                 // Check census proof
                 if (typeof params.censusProof != "string" || !params.censusProof.match(/^(0x)?[0-9a-zA-Z]+$/))
                     throw new Error("Invalid census proof (must be a hex string)")
@@ -935,28 +941,49 @@ export class VotingApi {
                 const gProof = new ProofGraviton()
                 gProof.setSiblings(new Uint8Array(Buffer.from((params.censusProof as string).replace("0x", ""), "hex")))
                 proof.setGraviton(gProof)
-            } else if (params.censusOrigin.isErc20 || params.censusOrigin.isErc721 || params.censusOrigin.isErc1155 || params.censusOrigin.isErc777) {
+            }
+            else if (censusOrigin.isOffChainCA) {
                 // Check census proof
-                if (typeof params.censusProof == "string") throw new Error("Invalid census proof for an EVM process")
-                else if (typeof params.censusProof.key != "string" ||
-                    !Array.isArray(params.censusProof.proof) || typeof params.censusProof.value != "string")
+                const resolvedProof = VotingApi.resolveCaProof(params.censusProof)
+                if (!resolvedProof) throw new Error("The proof is not valid")
+
+                // Populate the proof
+                const caProof = new ProofCA()
+                caProof.setType(resolvedProof.type)
+                caProof.setSignature(new Uint8Array(Buffer.from((resolvedProof.signature).replace("0x", ""), "hex")))
+
+                // TODO: Rename CA Bundle for clarity
+                const caBundle = new CAbundle()
+                caBundle.setProcessid(new Uint8Array(Buffer.from((params.processId).replace("0x", ""), "hex")))
+                caBundle.setAddress(new Uint8Array(Buffer.from((resolvedProof.voterAddress).replace("0x", ""), "hex")))
+                caProof.setBundle(caBundle)
+
+                proof.setCa(caProof)
+            }
+            else if (censusOrigin.isErc20 || censusOrigin.isErc721 || censusOrigin.isErc1155 || censusOrigin.isErc777) {
+                // Check census proof
+                const resolvedProof = VotingApi.resolveEvmProof(params.censusProof)
+                if (!resolvedProof) throw new Error("The proof is not valid")
+
+                if (typeof resolvedProof == "string") throw new Error("Invalid census proof for an EVM process")
+                else if (typeof resolvedProof.key != "string" ||
+                    !Array.isArray(resolvedProof.proof) || typeof resolvedProof.value != "string")
                     throw new Error("Invalid census proof (must be an object)")
 
                 const esProof = new ProofEthereumStorage()
-                esProof.setKey(new Uint8Array(Buffer.from(params.censusProof.key.replace("0x", ""), "hex")))
-                const siblings = params.censusProof.proof.map(sibling => new Uint8Array(Buffer.from(sibling.replace("0x", ""), "hex")))
+                esProof.setKey(new Uint8Array(Buffer.from(resolvedProof.key.replace("0x", ""), "hex")))
+                const siblings = resolvedProof.proof.map(sibling => new Uint8Array(Buffer.from(sibling.replace("0x", ""), "hex")))
 
-                let hexValue = params.censusProof.value
-                if (params.censusProof.value.length % 2 !== 0) {
-                    hexValue = params.censusProof.value.replace("0x", "0x0")
+                let hexValue = resolvedProof.value
+                if (resolvedProof.value.length % 2 !== 0) {
+                    hexValue = resolvedProof.value.replace("0x", "0x0")
                 }
                 esProof.setValue(utils.zeroPad(hexValue, 32))
 
                 esProof.setSiblingsList(siblings)
                 proof.setEthereumstorage(esProof)
             }
-            else { // if (params.censusOrigin.isOffChainCA) {
-                // TODO: Implement
+            else {
                 throw new Error("This process type is not supported yet")
             }
 
@@ -977,6 +1004,20 @@ export class VotingApi {
         } catch (error) {
             throw new Error("Poll vote Envelope could not be generated")
         }
+    }
+
+    private static resolveCaProof(proof: IProofGraviton | IProofCA | IProofEVM): IProofCA {
+        if (!proof || typeof proof == "string") return null
+        // else if (proof["key"] || proof["proof"] || proof["value"]) return null
+        else if (typeof proof["type"] != "number" || typeof proof["voterAddress"] != "string" || typeof proof["signature"] != "string") return null
+        return proof as IProofCA
+    }
+
+    private static resolveEvmProof(proof: IProofGraviton | IProofCA | IProofEVM): IProofEVM {
+        if (!proof || typeof proof == "string") return null
+        // else if (proof["type"] || proof["voterAddress"] || proof["signature"]) return null
+        else if (typeof proof["key"] != "string" || !Array.isArray(proof["proof"]) || proof["proof"].some(item => typeof item != "string") || typeof proof["value"] != "string") return null
+        return proof as IProofEVM
     }
 
     /**
