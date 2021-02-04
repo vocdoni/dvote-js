@@ -42,6 +42,24 @@
         {
             "type": "node",
             "request": "launch",
+            "name": "CA votes",
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register/transpile-only"
+            ],
+            "program": "${workspaceFolder}/example/ca/index.ts",
+            "cwd": "${workspaceFolder}/example/ca",
+            "internalConsoleOptions": "openOnSessionStart",
+            "skipFiles": [
+                "<node_internals>/**",
+                "node_modules/**"
+            ],
+            "preLaunchTask": "npm: build"
+        },
+        {
+            "type": "node",
+            "request": "launch",
             "name": "Bridge votes",
             "runtimeArgs": [
                 "--nolazy",

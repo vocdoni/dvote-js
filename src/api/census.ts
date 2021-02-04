@@ -9,7 +9,8 @@ import { CENSUS_MAX_BULK_SIZE } from "../constants"
 import { ERC20Prover } from "@vocdoni/storage-proofs-eth"
 import { Web3Gateway } from "../net/gateway-web3"
 import { compressPublicKey } from "../util/elliptic"
-// import { Buffer } from "buffer/"
+import { BigNumber as BN, blind, unblind, verify, newKeyPair, decodePoint, Point, UserSecretData, UnblindedSignature } from "blindsecp256k1"
+import { Buffer } from "buffer"
 // import ContentURI from "../wrappers/content-uri"
 
 
@@ -324,6 +325,32 @@ export class CensusOffChainApi {
     static checkProof() {
         // TODO: Not implemented
         throw new Error("TODO: Unimplemented")
+    }
+}
+
+export class CensusCaApi {
+    /** Decodes the given hex-encoded point */
+    static decodePoint(hexPoint: string) {
+        if (hexPoint.length == 128) return decodePoint("04" + hexPoint)
+        else return decodePoint(hexPoint)
+    }
+
+    /** Blinds the given UTF8 string using the given R point and returns the secret data to unblind an eventual blinded signature */
+    static blind(strMessage: string, signerR: Point): { mBlinded: BN, userSecretData: UserSecretData } {
+        const msg = new BN(Buffer.from(strMessage, 'utf8'))
+        return blind(msg, signerR)
+    }
+
+    /** Unblinds the given blinded signature */
+    static unblind(hexSignBlind: string, userSecretData: UserSecretData) {
+        const sBlind = new BN(Buffer.from(hexSignBlind, "hex"))
+        const { f, s } = unblind(sBlind, userSecretData)
+        return { f: f.encode("hex", false), s: s.toBuffer().toString("hex") }
+    }
+
+    /** Verifies that the given blind signature is valid */
+    static verify(msg: BN, sig: UnblindedSignature, pk: Point) {
+        return verify(msg, sig, pk)
     }
 }
 
