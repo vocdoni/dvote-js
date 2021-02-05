@@ -353,10 +353,9 @@ export class CensusCaApi {
     static verify(hexMsg: string, hexUnblindedSignature: string, pk: Point) {
         const msg = new BN(Buffer.from(hexMsg.substr(2), "hex"))
 
-        const s = new BN(Buffer.from(hexUnblindedSignature.substr(0, 64)).reverse())
-        const f = decodePoint("04" + hexUnblindedSignature.substr(64))
+        const unblindedSignature = signatureFromHex(hexUnblindedSignature)
 
-        return verify(msg, { s, f }, pk)
+        return verify(msg, unblindedSignature, pk)
     }
 
     /** Deserializes the given hex Signature */

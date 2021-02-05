@@ -64,7 +64,8 @@ async function main() {
 
     // Submit votes for every account
     console.time("Voting 📩")
-    await launchVotes()
+    await launchPlainVotes()
+    // await launchBlindedVotes()
     console.timeEnd("Voting 📩")
 
     await checkVoteResults()
@@ -207,16 +208,92 @@ async function waitUntilStarted() {
     assert(processList.some(v => v == trimProcId))
 }
 
-async function launchVotes() {
+async function launchPlainVotes() {
     console.log("Launching votes")
 
     const processKeys = processParams.envelopeType.hasEncryptedVotes ? await VotingApi.getProcessKeys(processId, pool) : null
 
-    // const client = new DVoteGateway({ uri: config.censusUri, supportedApis: [], publicKey: config.censusRoot })
-    // await client.init()
+    const dummyAccounts = new Array(config.numAccounts).fill(0)
+    await Bluebird.map(dummyAccounts, async (_, idx: number) => {
+        process.stdout.write(`Starting [${idx}] ; `)
 
-    const fakeAccounts = new Array(config.numAccounts).fill(0)
-    await Bluebird.map(fakeAccounts, async (_, idx: number) => {
+        const wallet = Wallet.createRandom()
+        const caBundle = new CaBundleProtobuf()
+        caBundle.setProcessid(new Uint8Array(Buffer.from((processId).replace("0x", ""), "hex")))
+        caBundle.setAddress(new Uint8Array(Buffer.from((wallet.address).replace("0x", ""), "hex")))
+
+        const b64CaBundle = Buffer.from(caBundle.serializeBinary()).toString("base64")
+
+        const request1 = {
+            id: Random.getHex().substr(2, 10),
+            request: { method: "auth", signatureType: "ECDSA" },
+            signature: ""
+        }
+        const res1 = await axios.post(config.censusUri, request1)
+        assert(res1.data.response.ok)
+
+        const hexTokenR: string = res1.data?.response?.token
+        assert(hexTokenR)
+
+        process.stdout.write(`Get Proof [${idx}] ; `)
+
+        const request2 = {
+            id: Random.getHex().substr(2, 10),
+            request: { method: "sign", "signatureType": "ECDSA", token: hexTokenR, message: b64CaBundle },
+            signature: ""
+        }
+        const res2 = await axios.post(config.censusUri, request2)
+        assert(res2.data.response.ok)
+        assert(res2.data.response.caSignature)
+
+        const hexCaSignature = res2.data.response.caSignature
+
+        const proof: IProofCA = {
+            type: ProofCaSignatureTypes.ECDSA,
+            signature: hexCaSignature,
+            voterAddress: wallet.address
+        }
+
+        process.stdout.write(`Pkg Envelope [${idx}] ; `)
+        const choices = getChoicesForVoter(idx)
+
+        const { envelope, signature } = processParams.envelopeType.hasEncryptedVotes ?
+            await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof: proof, processId, walletOrSigner: wallet, processKeys }) :
+            await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof: proof, processId, walletOrSigner: wallet })
+
+        process.stdout.write(`Sending [${idx}] ; `)
+        await VotingApi.submitEnvelope(envelope, signature, pool)
+            .catch(err => {
+                console.error("\nsubmitEnvelope ERR", wallet.address, envelope, signature, err)
+                if (config.stopOnError) throw err
+            })
+
+        process.stdout.write(`Waiting [${idx}] ; `)
+        await new Promise(resolve => setTimeout(resolve, 11000))
+
+        process.stdout.write(`Checking [${idx}] ; `)
+        const nullifier = VotingApi.getSignedVoteNullifier(wallet.address, processId)
+        const { registered, date, block } = await VotingApi.getEnvelopeStatus(processId, nullifier, pool)
+            .catch(err => {
+                console.error("\ngetEnvelopeStatus ERR", wallet.address, nullifier, err)
+                if (config.stopOnError) throw err
+            }) as any
+
+        if (config.stopOnError) assert(registered)
+
+        process.stdout.write(`Done [${idx}] ; `)
+    }, { concurrency: config.maxConcurrency })
+
+    console.log() // \n
+}
+
+async function launchBlindedVotes() {
+    console.log("Launching votes")
+
+    const processKeys = processParams.envelopeType.hasEncryptedVotes ? await VotingApi.getProcessKeys(processId, pool) : null
+
+    const dummyAccounts = new Array(config.numAccounts).fill(0)
+    await Bluebird.map(dummyAccounts, async (_, idx: number) => {
         process.stdout.write(`Starting [${idx}] ; `)
 
         const wallet = Wallet.createRandom()
@@ -281,7 +358,7 @@ async function launchVotes() {
         await new Promise(resolve => setTimeout(resolve, 11000))
 
         process.stdout.write(`Checking [${idx}] ; `)
-        const nullifier = await VotingApi.getSignedVoteNullifier(wallet.address, processId)
+        const nullifier = VotingApi.getSignedVoteNullifier(wallet.address, processId)
         const { registered, date, block } = await VotingApi.getEnvelopeStatus(processId, nullifier, pool)
             .catch(err => {
                 console.error("\ngetEnvelopeStatus ERR", wallet.address, nullifier, err)
