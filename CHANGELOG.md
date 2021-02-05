@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 0.22.0
+
+- Avoiding the `/ping` check on initialization
+
 ## 0.21.4
 
 - Exporting `CaBundleProtobuf`
