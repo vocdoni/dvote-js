@@ -222,27 +222,14 @@ export class DVoteGateway {
     }
 
     /**
-     * Checks the health of the current Gateway. Resolves the promise when successful and rejects it otherwise.
+     * Alias of updateGatewayStatus, for convenience purposes.
      */
     public isUp(timeout: number = GATEWAY_SELECTION_TIMEOUT): Promise<void> {
-        if (!this.client) return Promise.reject(new Error("The client is not initialized"))
-        const uri = parseURL(this._uri)
-
-        if (uri.host.length === 0) {
-            return Promise.reject(new Error("Invalid Gateway URL"))
-        }
-        return promiseWithTimeout(
-            this.checkPing()
-                .then((isUp) => {
-                    if (isUp !== true) throw new Error("No ping reply")
-                    return this.updateGatewayStatus(timeout)
-                }),
-            timeout || 4 * 1000,
-            "The DVote Gateway seems to be down")
+        return this.updateGatewayStatus(timeout)
     }
 
     /** Retrieves the status of the gateway and updates the internal status */
-    public updateGatewayStatus(timeout?: number): Promise<any> {
+    public updateGatewayStatus(timeout?: number): Promise<void> {
         return this.getInfo(timeout)
             .then((result) => {
                 if (!result) throw new Error("Could not update")
@@ -277,21 +264,6 @@ export class DVoteGateway {
             message = (error.message) ? message + ": " + error.message : message
             throw new Error(message)
         }
-    }
-
-    /**
-     * Checks the ping response of the gateway
-     * @returns A boolean representing wheter the gateway responded correctly or not
-     */
-    public checkPing(): Promise<boolean> {
-        if (!this.client) return Promise.reject(new Error("The client is not initialized"))
-        const uri = parseURL(this._uri)
-        const pingUrl = `${uri.protocol}//${uri.host}/ping`
-
-        return promiseWithTimeout(axios.get(pingUrl), 4 * 1000)
-            .then((response?: AxiosResponse<any>) => (
-                response != null && response.status === 200 && response.data === "pong"
-            ))
     }
 
     /**

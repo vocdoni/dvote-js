@@ -62,7 +62,6 @@ export class DevGatewayService {
         return this.stop().then(() => {
             const app = express()
             app.use(json())
-            app.get("/ping", (req, res) => res.send("pong"))
             app.post("/dvote", (req, res, next) => this.handleRequest(req, res, next))
 
             return new Promise((resolve) => {
