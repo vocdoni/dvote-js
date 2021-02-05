@@ -56,8 +56,8 @@ async function main() {
     console.log("- Process ID", processId)
     console.log("- Process start block", processParams.startBlock)
     console.log("- Process end block", processParams.startBlock + processParams.blockCount)
-    console.log("- Process merkle root", processParams.censusRoot)
-    console.log("- Process merkle tree", processParams.censusUri)
+    console.log("- Process census root", processParams.censusRoot)
+    console.log("- Process census uri", processParams.censusUri)
 
     // Wait until the current block >= startBlock
     await waitUntilStarted()
@@ -144,7 +144,7 @@ async function launchNewVote() {
     console.log("Getting the block height")
     const currentBlock = await VotingApi.getBlockHeight(pool)
     const startBlock = currentBlock + 25
-    const blockCount = 200
+    const blockCount = 2000
 
     const processParamsPre = {
         mode: ProcessMode.make({ autoStart: true, interruptible: true }), // helper
@@ -224,47 +224,42 @@ async function launchVotes() {
         caBundle.setProcessid(new Uint8Array(Buffer.from((processId).replace("0x", ""), "hex")))
         caBundle.setAddress(new Uint8Array(Buffer.from((wallet.address).replace("0x", ""), "hex")))
 
-        const hexBundle = utils.hexlify(caBundle.serializeBinary())
-        const hexHashedBundle = utils.keccak256(hexBundle)
-
-        let requestId = Random.getHex().substr(2, 10)
+        const hexCaBundle = utils.hexlify(caBundle.serializeBinary())
+        const hexCaHashedBundle = utils.keccak256(hexCaBundle)
 
         const request1 = {
-            id: requestId,
+            id: Random.getHex().substr(2, 10),
             request: { method: "auth", signatureType: "ECDSA_BLIND" },
             signature: ""
         }
-        const res1 = await axios.post(config.censusUri, request1).catch(err => {
-            console.error(err)
-            process.exit(1)
-        })
+        const res1 = await axios.post(config.censusUri, request1)
         assert(res1.data.response.ok)
 
-        const strTokenR: string = res1.data?.response?.token
-        assert(strTokenR)
+        const hexTokenR: string = res1.data?.response?.token
+        assert(hexTokenR)
 
-        const tokenR = CensusCaApi.decodePoint(strTokenR)
-        const { mBlinded, userSecretData } = CensusCaApi.blind(hexHashedBundle, tokenR)
+        const tokenR = CensusCaApi.decodePoint(hexTokenR)
+        const { mBlinded, userSecretData } = CensusCaApi.blind(hexCaHashedBundle, tokenR)
 
         process.stdout.write(`Get Proof [${idx}] ; `)
 
         const request2 = {
-            id: requestId,
-            request: { method: "sign", "signatureType": "ECDSA_BLIND", token: strTokenR, messageHash: mBlinded },
+            id: Random.getHex().substr(2, 10),
+            request: { method: "sign", "signatureType": "ECDSA_BLIND", token: hexTokenR, messageHash: mBlinded },
             signature: ""
         }
         const res2 = await axios.post(config.censusUri, request2)
         assert(res2.data.response.ok)
         assert(res2.data.response.caSignature)
 
-        const blindSignature = res2.data.response.caSignature
+        const hexBlindSignature = res2.data.response.caSignature
 
-        const unblindedSignature = CensusCaApi.unblind(blindSignature, userSecretData)
+        const unblindedSignature = CensusCaApi.unblind(hexBlindSignature, userSecretData)
         assert(unblindedSignature)
 
         const proof: IProofCA = {
             type: ProofCaSignatureTypes.ECDSA_BLIND,
-            signature: unblindedSignature.s,
+            signature: unblindedSignature,
             voterAddress: wallet.address
         }
 

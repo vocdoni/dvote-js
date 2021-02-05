@@ -9,7 +9,7 @@ import { CENSUS_MAX_BULK_SIZE } from "../constants"
 import { ERC20Prover } from "@vocdoni/storage-proofs-eth"
 import { Web3Gateway } from "../net/gateway-web3"
 import { compressPublicKey } from "../util/elliptic"
-import { BigNumber as BN, blind, unblind, verify, newKeyPair, decodePoint, Point, UserSecretData, UnblindedSignature } from "blindsecp256k1"
+import { BigNumber as BN, blind, unblind, verify, signatureFromHex, signatureToHex, decodePoint, Point, UserSecretData, UnblindedSignature } from "blindsecp256k1"
 import { Buffer } from "buffer"
 // import ContentURI from "../wrappers/content-uri"
 
@@ -335,22 +335,38 @@ export class CensusCaApi {
         else return decodePoint(hexPoint)
     }
 
-    /** Blinds the given UTF8 string using the given R point and returns the secret data to unblind an eventual blinded signature */
-    static blind(strMessage: string, signerR: Point): { mBlinded: BN, userSecretData: UserSecretData } {
-        const msg = new BN(Buffer.from(strMessage, 'utf8'))
+    /** Blinds the given hex string using the given R point and returns the secret data to unblind an eventual blinded signature */
+    static blind(hexMessage: string, signerR: Point): { mBlinded: BN, userSecretData: UserSecretData } {
+        const msg = new BN(Buffer.from(hexMessage, 'hex'))
         return blind(msg, signerR)
     }
 
-    /** Unblinds the given blinded signature */
-    static unblind(hexSignBlind: string, userSecretData: UserSecretData) {
-        const sBlind = new BN(Buffer.from(hexSignBlind, "hex"))
-        const { f, s } = unblind(sBlind, userSecretData)
-        return { f: f.encode("hex", false), s: s.toBuffer().toString("hex") }
+    /** Unblinds the given blinded signature and returns it as a hex string */
+    static unblind(hexBlindedSignature: string, userSecretData: UserSecretData): string {
+        const sBlind = new BN(Buffer.from(hexBlindedSignature, "hex"))
+        const unblindedSignature = unblind(sBlind, userSecretData)
+
+        return signatureToHex(unblindedSignature)
     }
 
     /** Verifies that the given blind signature is valid */
-    static verify(msg: BN, sig: UnblindedSignature, pk: Point) {
-        return verify(msg, sig, pk)
+    static verify(hexMsg: string, hexUnblindedSignature: string, pk: Point) {
+        const msg = new BN(Buffer.from(hexMsg.substr(2), "hex"))
+
+        const s = new BN(Buffer.from(hexUnblindedSignature.substr(0, 64)).reverse())
+        const f = decodePoint("04" + hexUnblindedSignature.substr(64))
+
+        return verify(msg, { s, f }, pk)
+    }
+
+    /** Deserializes the given hex Signature */
+    static signatureFromHex(hexSignature: string) {
+        return signatureFromHex(hexSignature)
+    }
+
+    /** Serializes the given signature into a hex string */
+    static signatureToHex(signature: UnblindedSignature) {
+        return signatureToHex(signature)
     }
 }
 
