@@ -64,8 +64,8 @@ async function main() {
 
     // Submit votes for every account
     console.time("Voting 📩")
-    await launchPlainVotes()
-    // await launchBlindedVotes()
+    // await launchPlainVotes()
+    await launchBlindedVotes()
     console.timeEnd("Voting 📩")
 
     await checkVoteResults()
@@ -302,7 +302,7 @@ async function launchBlindedVotes() {
         caBundle.setAddress(new Uint8Array(Buffer.from((wallet.address).replace("0x", ""), "hex")))
 
         const hexCaBundle = utils.hexlify(caBundle.serializeBinary())
-        const hexCaHashedBundle = utils.keccak256(hexCaBundle)
+        const hexCaHashedBundle = utils.keccak256(hexCaBundle).substr(2)
 
         const request1 = {
             id: Random.getHex().substr(2, 10),
@@ -316,13 +316,13 @@ async function launchBlindedVotes() {
         assert(hexTokenR)
 
         const tokenR = CensusCaApi.decodePoint(hexTokenR)
-        const { mBlinded, userSecretData } = CensusCaApi.blind(hexCaHashedBundle, tokenR)
+        const { hexBlinded, userSecretData } = CensusCaApi.blind(hexCaHashedBundle, tokenR)
 
         process.stdout.write(`Get Proof [${idx}] ; `)
 
         const request2 = {
             id: Random.getHex().substr(2, 10),
-            request: { method: "sign", "signatureType": "ECDSA_BLIND", token: hexTokenR, messageHash: mBlinded },
+            request: { method: "sign", "signatureType": "ECDSA_BLIND", token: hexTokenR, messageHash: hexBlinded },
             signature: ""
         }
         const res2 = await axios.post(config.censusUri, request2)

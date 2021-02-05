@@ -9,8 +9,7 @@ import { CENSUS_MAX_BULK_SIZE } from "../constants"
 import { ERC20Prover } from "@vocdoni/storage-proofs-eth"
 import { Web3Gateway } from "../net/gateway-web3"
 import { compressPublicKey } from "../util/elliptic"
-import { BigNumber as BN, blind, unblind, verify, signatureFromHex, signatureToHex, decodePoint, Point, UserSecretData, UnblindedSignature } from "blindsecp256k1"
-import { Buffer } from "buffer"
+import { blind, unblind, verify, signatureFromHex, signatureToHex, pointFromHex, pointToHex, UserSecretData, UnblindedSignature, BigInteger, Point } from "blindsecp256k1"
 // import ContentURI from "../wrappers/content-uri"
 
 
@@ -330,20 +329,21 @@ export class CensusOffChainApi {
 
 export class CensusCaApi {
     /** Decodes the given hex-encoded point */
-    static decodePoint(hexPoint: string) {
-        if (hexPoint.length == 128) return decodePoint("04" + hexPoint)
-        else return decodePoint(hexPoint)
+    static decodePoint(hexPoint: string): Point {
+        return pointFromHex(hexPoint)
     }
 
     /** Blinds the given hex string using the given R point and returns the secret data to unblind an eventual blinded signature */
-    static blind(hexMessage: string, signerR: Point): { mBlinded: BN, userSecretData: UserSecretData } {
-        const msg = new BN(Buffer.from(hexMessage, 'hex'))
-        return blind(msg, signerR)
+    static blind(hexMessage: string, signerR: Point): { hexBlinded: string, userSecretData: UserSecretData } {
+        const msg = BigInteger.fromHex(hexMessage)
+        const { mBlinded, userSecretData } = blind(msg, signerR)
+
+        return { hexBlinded: mBlinded.toString(16), userSecretData }
     }
 
     /** Unblinds the given blinded signature and returns it as a hex string */
     static unblind(hexBlindedSignature: string, userSecretData: UserSecretData): string {
-        const sBlind = new BN(Buffer.from(hexBlindedSignature, "hex"))
+        const sBlind = BigInteger.fromHex(hexBlindedSignature)
         const unblindedSignature = unblind(sBlind, userSecretData)
 
         return signatureToHex(unblindedSignature)
@@ -351,7 +351,7 @@ export class CensusCaApi {
 
     /** Verifies that the given blind signature is valid */
     static verify(hexMsg: string, hexUnblindedSignature: string, pk: Point) {
-        const msg = new BN(Buffer.from(hexMsg.substr(2), "hex"))
+        const msg = BigInteger.fromHex(hexMsg)
 
         const unblindedSignature = signatureFromHex(hexUnblindedSignature)
 
