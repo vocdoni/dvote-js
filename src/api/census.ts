@@ -10,6 +10,7 @@ import { ERC20Prover } from "@vocdoni/storage-proofs-eth"
 import { Web3Gateway } from "../net/gateway-web3"
 import { compressPublicKey } from "../util/elliptic"
 import { blind, unblind, verify, signatureFromHex, signatureToHex, pointFromHex, pointToHex, UserSecretData, UnblindedSignature, BigInteger, Point } from "blindsecp256k1"
+import { hexZeroPad } from "ethers/lib/utils"
 // import ContentURI from "../wrappers/content-uri"
 
 
@@ -338,7 +339,7 @@ export class CensusCaApi {
         const msg = BigInteger.fromHex(hexMessage)
         const { mBlinded, userSecretData } = blind(msg, signerR)
 
-        return { hexBlinded: mBlinded.toString(16), userSecretData }
+        return { hexBlinded: hexZeroPad("0x" + mBlinded.toString(16), 32).slice(2), userSecretData }
     }
 
     /** Unblinds the given blinded signature and returns it as a hex string */
