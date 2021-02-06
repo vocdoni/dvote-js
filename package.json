@@ -23,7 +23,7 @@
   "dependencies": {
     "@vocdoni/storage-proofs-eth": "^0.2.3",
     "axios": "^0.21.1",
-    "blindsecp256k1": "^0.0.3",
+    "blindsecp256k1": "^0.0.5",
     "buffer": "^6.0.3",
     "circomlib": "^0.1.2",
     "dvote-solidity": "^0.13.1",
