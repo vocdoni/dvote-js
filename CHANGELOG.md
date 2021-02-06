@@ -1,5 +1,11 @@
 # DVote JS changelog
 
+
+## 0.23.0
+
+- Adding `CensusCaApi` to allow working with blind signatures
+- Adding a complete example flow
+
 ## 0.22.0
 
 - Avoiding the `/ping` check on initialization

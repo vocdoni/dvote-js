@@ -23,9 +23,10 @@
   "dependencies": {
     "@vocdoni/storage-proofs-eth": "^0.2.3",
     "axios": "^0.21.1",
+    "blindsecp256k1": "^0.0.5",
     "buffer": "^6.0.3",
     "circomlib": "^0.1.2",
-    "dvote-solidity": "^0.13.0",
+    "dvote-solidity": "^0.13.1",
     "ethers": "^5.0.23",
     "google-protobuf": "^3.14.0",
     "iso-language-codes": "^1.0.6",
@@ -38,6 +39,7 @@
   },
   "devDependencies": {
     "@types/chai": "^4.1.7",
+    "@types/elliptic": "^6.4.12",
     "@types/express": "^4.17.9",
     "@types/google-protobuf": "^3.7.4",
     "@types/mocha": "^8.2.0",

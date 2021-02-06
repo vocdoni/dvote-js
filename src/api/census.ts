@@ -9,7 +9,8 @@ import { CENSUS_MAX_BULK_SIZE } from "../constants"
 import { ERC20Prover } from "@vocdoni/storage-proofs-eth"
 import { Web3Gateway } from "../net/gateway-web3"
 import { compressPublicKey } from "../util/elliptic"
-// import { Buffer } from "buffer/"
+import { blind, unblind, verify, signatureFromHex, signatureToHex, pointFromHex, pointToHex, UserSecretData, UnblindedSignature, BigInteger, Point } from "blindsecp256k1"
+import { hexZeroPad } from "ethers/lib/utils"
 // import ContentURI from "../wrappers/content-uri"
 
 
@@ -324,6 +325,48 @@ export class CensusOffChainApi {
     static checkProof() {
         // TODO: Not implemented
         throw new Error("TODO: Unimplemented")
+    }
+}
+
+export class CensusCaApi {
+    /** Decodes the given hex-encoded point */
+    static decodePoint(hexPoint: string): Point {
+        return pointFromHex(hexPoint)
+    }
+
+    /** Blinds the given hex string using the given R point and returns the secret data to unblind an eventual blinded signature */
+    static blind(hexMessage: string, signerR: Point): { hexBlinded: string, userSecretData: UserSecretData } {
+        const msg = BigInteger.fromHex(hexMessage)
+        const { mBlinded, userSecretData } = blind(msg, signerR)
+
+        return { hexBlinded: hexZeroPad("0x" + mBlinded.toString(16), 32).slice(2), userSecretData }
+    }
+
+    /** Unblinds the given blinded signature and returns it as a hex string */
+    static unblind(hexBlindedSignature: string, userSecretData: UserSecretData): string {
+        const sBlind = BigInteger.fromHex(hexBlindedSignature)
+        const unblindedSignature = unblind(sBlind, userSecretData)
+
+        return signatureToHex(unblindedSignature)
+    }
+
+    /** Verifies that the given blind signature is valid */
+    static verify(hexMsg: string, hexUnblindedSignature: string, pk: Point) {
+        const msg = BigInteger.fromHex(hexMsg)
+
+        const unblindedSignature = signatureFromHex(hexUnblindedSignature)
+
+        return verify(msg, unblindedSignature, pk)
+    }
+
+    /** Deserializes the given hex Signature */
+    static signatureFromHex(hexSignature: string) {
+        return signatureFromHex(hexSignature)
+    }
+
+    /** Serializes the given signature into a hex string */
+    static signatureToHex(signature: UnblindedSignature) {
+        return signatureToHex(signature)
     }
 }
 
