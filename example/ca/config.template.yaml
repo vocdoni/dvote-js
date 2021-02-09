@@ -8,7 +8,8 @@ censusUri: https://server/uri
 
 mnemonic: ""                     # The mnemonic of the entity
 ethPath: "m/44'/60'/0'/0/1"
-ethNetworkId: "goerli"
+# ethNetworkId: "goerli"
+ethNetworkId: "xdai"
 
 bootnodesUrlRw: "https://server/gateways.json"     # Bootnode used by default
 dvoteGatewayUri:                                   # If set, overrides bootnodesUrlRw

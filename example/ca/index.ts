@@ -15,6 +15,7 @@ import { VochainWaiter, EthWaiter } from "../../src/util/waiters"
 import axios from "axios"
 import { Random } from "../../src/util/random"
 import { Buffer } from "buffer"
+import { VocdoniEnvironment } from "../../src/models/common"
 // import { DVoteGateway } from "../../src/net/gateway-dvote"
 
 const CONFIG_PATH = "./config.yaml"
@@ -75,6 +76,7 @@ async function connectGateways(): Promise<GatewayPool> {
     console.log("Connecting to the gateways")
     const options = {
         networkId: config.ethNetworkId as EthNetworkID,
+        environment: "stg" as VocdoniEnvironment,
         bootnodesContentUri: config.bootnodesUrlRw,
         numberOfGateways: 2,
         race: false,

@@ -76,11 +76,11 @@ export class VotingApi {
      * @param processCountIndex
      * @param namespace
      */
-    static getProcessId(entityAddress: string, processCountIndex: number, namespace: number): string {
+    static getProcessId(entityAddress: string, processCountIndex: number, namespace: number, chainId: number): string {
         if (!entityAddress) throw new Error("Invalid address")
 
         return utils.keccak256(
-            utils.solidityPack(["address", "uint256", "uint16"], [entityAddress, processCountIndex, namespace])
+            utils.solidityPack(["address", "uint256", "uint16", "uint64"], [entityAddress, processCountIndex, namespace, chainId])
         )
     }
 
@@ -453,7 +453,7 @@ export class VotingApi {
 
             const count = await processInstance.getEntityProcessCount(address)
             if (!count || count.isZero()) return Promise.reject(new Error("The process could not be created"))
-            const processId = await processInstance.getProcessId(address, count.toNumber() - 1, contractParameters.namespace)
+            const processId = await processInstance.getProcessId(address, count.toNumber() - 1, contractParameters.namespace, chainId)
 
             // TODO: This might be simplified in the future (skip the process list updates here)
 
@@ -524,7 +524,7 @@ export class VotingApi {
 
             const count = await processInstance.getEntityProcessCount(processParameters.tokenAddress)
             if (!count || count.isZero()) return Promise.reject(new Error("The process could not be created"))
-            const processId = await processInstance.getProcessId(processParameters.tokenAddress, count.toNumber() - 1, contractParameters.namespace)
+            const processId = await processInstance.getProcessId(processParameters.tokenAddress, count.toNumber() - 1, contractParameters.namespace, chainId)
 
             return processId
         }

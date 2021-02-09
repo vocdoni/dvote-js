@@ -19,8 +19,9 @@ import {
     NamespaceContractMethods,
     TokenStorageProofContractMethods
 } from "./contracts"
-import { publicResolverEnsDomain, processesEnsDomain, namespacesEnsDomain, storageProofsEnsDomain } from "../constants"
+import { productionEnsDomainSuffix, stgingEnsDomainSuffix, developmentEnsDomainSuffix, publicResolverEnsSubdomain, processesEnsSubdomain, namespacesEnsSubdomain, storageProofsEnsSubdomain } from "../constants"
 import { promiseFuncWithTimeout, promiseWithTimeout } from '../util/timeout'
+import { VocdoniEnvironment } from '../models/common'
 
 const { JsonRpcProvider, Web3Provider, IpcProvider, InfuraProvider, FallbackProvider, EtherscanProvider } = providers
 
@@ -32,6 +33,7 @@ export type IWeb3Gateway = InstanceType<typeof Web3Gateway>
  */
 export class Web3Gateway {
     private _provider: providers.BaseProvider
+    private _environment: VocdoniEnvironment
     public ensPublicResolverContractAddress: string
     public namespacesContractAddress: string
     public processesContractAddress: string
@@ -41,19 +43,22 @@ export class Web3Gateway {
      * Returns a wrapped Ethereum Web3 client.
      * @param gatewayOrProvider Can be a string with the host's URI or an Ethers Provider
      */
-    constructor(gatewayOrProvider: string | GatewayInfo | providers.BaseProvider, networkId?: EthNetworkID, options: { testing: boolean } = { testing: false }) {
+    constructor(gatewayOrProvider: string | GatewayInfo | providers.BaseProvider, networkId: EthNetworkID = "xdai", environment: VocdoniEnvironment = "prod") {
+        if (!["prod", "stg", "dev"].includes(environment)) throw new Error("Invalid environment")
+        this._environment = environment
+
         if (!gatewayOrProvider) throw new Error("Invalid GatewayInfo or provider")
         else if (typeof gatewayOrProvider == "string") {
             if (!gatewayOrProvider) throw new Error("Invalid Gateway URI")
 
             const url = parseURL(gatewayOrProvider)
             if (url.protocol != "http:" && url.protocol != "https:") throw new Error("Unsupported gateway protocol: " + url.protocol)
-            this._provider = ProviderUtil.fromUri(gatewayOrProvider, networkId, options)
+            this._provider = ProviderUtil.fromUri(gatewayOrProvider, networkId)
         }
         else if (gatewayOrProvider instanceof GatewayInfo) {
             const url = parseURL(gatewayOrProvider.web3)
             if (url.protocol != "http:" && url.protocol != "https:") throw new Error("Unsupported gateway protocol: " + url.protocol)
-            this._provider = ProviderUtil.fromUri(gatewayOrProvider.web3, networkId, options)
+            this._provider = ProviderUtil.fromUri(gatewayOrProvider.web3, networkId)
         }
         else if (gatewayOrProvider instanceof providers.BaseProvider) { // use as a provider
             this._provider = gatewayOrProvider
@@ -63,9 +68,22 @@ export class Web3Gateway {
 
     /** Initialize the contract addresses */
     public async initEns() {
+        let domainSuffix: string
+        switch (this._environment) {
+            case "prod":
+                domainSuffix = productionEnsDomainSuffix
+                break
+            case "stg":
+                domainSuffix = stgingEnsDomainSuffix
+                break
+            case "dev":
+                domainSuffix = developmentEnsDomainSuffix
+                break
+        }
+
         const [addr1, addr2] = await Promise.all([
-            this._provider.resolveName(publicResolverEnsDomain),
-            this._provider.resolveName(processesEnsDomain)
+            this._provider.resolveName(publicResolverEnsSubdomain + domainSuffix),
+            this._provider.resolveName(processesEnsSubdomain + domainSuffix)
         ])
         if (!addr1) throw new Error("The resolver address could not be fetched")
         else if (!addr2) throw new Error("The process contract address bould not be fetched")

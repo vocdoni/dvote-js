@@ -6,7 +6,7 @@ import { ContentUri } from "../wrappers/content-uri"
 import { FileApi } from "../api/file"
 import {
     vocdoniMainnetEntityId, vocdoniGoerliEntityId, vocdoniXDaiEntityId, vocdoniSokolEntityId, XDAI_ENS_REGISTRY_ADDRESS, XDAI_PROVIDER_URI, XDAI_CHAIN_ID,
-    SOKOL_CHAIN_ID, SOKOL_PROVIDER_URI, SOKOL_ENS_REGISTRY_ADDRESS, XDAI_TEST_ENS_REGISTRY_ADDRESS, vocdoniXDaiTestEntityId
+    SOKOL_CHAIN_ID, SOKOL_PROVIDER_URI, SOKOL_ENS_REGISTRY_ADDRESS
 } from "../constants"
 import { TextRecordKeys } from "../models/entity"
 import { JsonBootnodeData } from "../models/gateway"
@@ -14,6 +14,7 @@ import { JsonBootnodeData } from "../models/gateway"
 import { DVoteGateway, IDVoteGateway } from "./gateway-dvote"
 import { IWeb3Gateway, Web3Gateway } from "./gateway-web3"
 import { getDefaultProvider, providers } from "ethers"
+import { VocdoniEnvironment } from "../models/common"
 
 export type EthNetworkID = "mainnet" | "goerli" | "xdai" | "sokol"
 
@@ -24,8 +25,8 @@ export class GatewayBootnode {
      * @param networkId The Ethereum network to which the gateways should be associated
      * @returns A JsonBootnodeData object that represents the ata derrived from a Bootnode Content URI.
      */
-    static getDefaultGateways(networkId: EthNetworkID, options: { testing: boolean } = { testing: false }): Promise<JsonBootnodeData> {
-        return GatewayBootnode.getDefaultUri(networkId, options)
+    static getDefaultGateways(networkId: EthNetworkID = "xdai", environment: VocdoniEnvironment = "prod"): Promise<JsonBootnodeData> {
+        return GatewayBootnode.getDefaultUri(networkId, environment)
             .then(contentUri => FileApi.fetchString(contentUri))
             .then(strResult => JSON.parse(strResult))
             .catch(err => {
@@ -38,7 +39,7 @@ export class GatewayBootnode {
      * @param networkId Either "mainnet" or "goerli" (test)
      * @returns A ContentURI object
      */
-    static getDefaultUri(networkId: EthNetworkID, options: { testing: boolean } = { testing: false }): Promise<ContentUri> {
+    static getDefaultUri(networkId: EthNetworkID = "xdai", environment: VocdoniEnvironment = "prod"): Promise<ContentUri> {
         let provider: providers.BaseProvider
 
         switch (networkId) {
@@ -47,11 +48,7 @@ export class GatewayBootnode {
                 provider = getDefaultProvider(networkId)
                 break
             case "xdai":
-                if (options.testing) {
-                    provider = new providers.JsonRpcProvider(XDAI_PROVIDER_URI, { chainId: XDAI_CHAIN_ID, name: "xdai", ensAddress: XDAI_TEST_ENS_REGISTRY_ADDRESS })
-                } else {
-                    provider = new providers.JsonRpcProvider(XDAI_PROVIDER_URI, { chainId: XDAI_CHAIN_ID, name: "xdai", ensAddress: XDAI_ENS_REGISTRY_ADDRESS })
-                }
+                provider = new providers.JsonRpcProvider(XDAI_PROVIDER_URI, { chainId: XDAI_CHAIN_ID, name: "xdai", ensAddress: XDAI_ENS_REGISTRY_ADDRESS })
                 break
             case "sokol":
                 provider = new providers.JsonRpcProvider(SOKOL_PROVIDER_URI, { chainId: SOKOL_CHAIN_ID, name: "sokol", ensAddress: SOKOL_ENS_REGISTRY_ADDRESS });
@@ -59,7 +56,7 @@ export class GatewayBootnode {
             default: throw new Error("Invalid Network ID")
         }
 
-        const gw = new Web3Gateway(provider)
+        const gw = new Web3Gateway(provider, networkId, environment)
         return gw.getEnsPublicResolverInstance().then(instance => {
             let entityId: string
             switch (networkId) {
@@ -70,7 +67,7 @@ export class GatewayBootnode {
                     entityId = vocdoniGoerliEntityId
                     break
                 case "xdai":
-                    entityId = options.testing ? vocdoniXDaiTestEntityId : vocdoniXDaiEntityId
+                    entityId = vocdoniXDaiEntityId
                     break
                 case "sokol":
                     entityId = vocdoniSokolEntityId
@@ -105,10 +102,10 @@ export class GatewayBootnode {
      * @param bootnodeData A JsonBootnodeData objects that represents the ata derrived from a Bootnode Content URI.
      * @returns An object with a list of IDVoteGateway(s) and IWeb3Gateway(s)
      */
-    static digest(bootnodeData: JsonBootnodeData, options: { testing: boolean } = { testing: false }): { [networkId: string]: { dvote: IDVoteGateway[], web3: IWeb3Gateway[] } } {
+    static digest(bootnodeData: JsonBootnodeData, environment: VocdoniEnvironment = "prod"): { [networkId: string]: { dvote: IDVoteGateway[], web3: IWeb3Gateway[] } } {
         const result: { [networkId: string]: { dvote: IDVoteGateway[], web3: IWeb3Gateway[] } } = {}
         Object.keys(bootnodeData).forEach(networkId => {
-            result[networkId] = GatewayBootnode.digestNetwork(bootnodeData, networkId, options)
+            result[networkId] = GatewayBootnode.digestNetwork(bootnodeData, networkId, environment)
         })
         return result
     }
@@ -118,7 +115,7 @@ export class GatewayBootnode {
      * @param bootnodeData A JsonBootnodeData objects that represents the ata derrived from a Bootnode Content URI.
      * @returns An object with a list of IDVoteGateway(s) and IWeb3Gateway(s)
      */
-    static digestNetwork(bootnodeData: JsonBootnodeData, networkId: string, options: { testing: boolean } = { testing: false }): { dvote: IDVoteGateway[], web3: IWeb3Gateway[] } {
+    static digestNetwork(bootnodeData: JsonBootnodeData, networkId: string, environment: VocdoniEnvironment = "prod"): { dvote: IDVoteGateway[], web3: IWeb3Gateway[] } {
         if (!bootnodeData || typeof bootnodeData[networkId] != "object") return { dvote: [], web3: [] }
 
         return {
@@ -126,7 +123,7 @@ export class GatewayBootnode {
                 return new DVoteGateway({ uri: item.uri, supportedApis: item.apis, publicKey: item.pubKey })
             }),
             web3: (bootnodeData[networkId].web3 || []).map(item => {
-                return new Web3Gateway(item.uri, networkId as EthNetworkID, options)
+                return new Web3Gateway(item.uri, networkId as EthNetworkID, environment)
             })
         }
     }

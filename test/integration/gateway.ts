@@ -275,7 +275,7 @@ describe("Web3 gateway client", () => {
 
             const addr = getWallets()[0].address
 
-            const gw = new Web3Gateway(web3Server.uri)
+            const gw = new Web3Gateway(web3Server.uri, "goerli", "prod")
             const balance = await gw.provider.getBalance(addr)
 
             expect(balance.toHexString()).to.match(/^0x[0-9a-fA-F]{10,}$/)

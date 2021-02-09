@@ -10,6 +10,7 @@ import { ContentUri } from "../wrappers/content-uri"
 import { IProcessContract, IEnsPublicResolverContract, INamespaceContract, ITokenStorageProofContract } from "../net/contracts"
 import { DVoteGateway, IDVoteGateway, IRequestParameters } from "./gateway-dvote"
 import { IWeb3Gateway, Web3Gateway } from "./gateway-web3"
+import { VocdoniEnvironment } from "../models/common"
 
 
 // Export the class typings as an interface
@@ -44,12 +45,12 @@ export class Gateway {
      * @param networkId Either "mainnet" or "goerli" (test)
      * @param requiredApis A list of the required APIs
      */
-    static randomFromDefault(networkId: EthNetworkID, requiredApis: (GatewayApiName | BackendApiName)[] = [], options: { testing: boolean } = { testing: false }): Promise<Gateway> {
+    static randomFromDefault(networkId: EthNetworkID, requiredApis: (GatewayApiName | BackendApiName)[] = [], environment: VocdoniEnvironment): Promise<Gateway> {
         return GatewayBootnode.getDefaultGateways(networkId)
             .then(async bootNodeData => {
                 if (!bootNodeData[networkId]) throw new Error("The bootnode doesn't define any gateway for " + networkId)
 
-                const gateways = GatewayBootnode.digestNetwork(bootNodeData, networkId, options)
+                const gateways = GatewayBootnode.digestNetwork(bootNodeData, networkId, environment)
 
                 // TODO: Filter by required API's
                 const [web3, dvote] = await Promise.all([
@@ -69,12 +70,12 @@ export class Gateway {
      * @param bootnodesContentUri The uri from which contains the available gateways
      * @param requiredApis A list of the required APIs
      */
-    static randomfromUri(networkId: EthNetworkID, bootnodesContentUri: string | ContentUri, requiredApis: (GatewayApiName | BackendApiName)[] = [], options: { testing: boolean } = { testing: false }): Promise<Gateway> {
+    static randomfromUri(networkId: EthNetworkID, bootnodesContentUri: string | ContentUri, requiredApis: (GatewayApiName | BackendApiName)[] = [], environment: VocdoniEnvironment): Promise<Gateway> {
         return GatewayBootnode.getGatewaysFromUri(bootnodesContentUri)
             .then(async bootNodeData => {
                 if (!bootNodeData[networkId]) throw new Error("The bootnode doesn't define any gateway for " + networkId)
 
-                const gateways = GatewayBootnode.digestNetwork(bootNodeData, networkId, options)
+                const gateways = GatewayBootnode.digestNetwork(bootNodeData, networkId, environment)
 
                 // TODO: Filter by required API's
                 const [web3, dvote] = await Promise.all([
@@ -92,11 +93,11 @@ export class Gateway {
      * Returns a new *connected* Gateway that is instantiated based on the given parameters
      * @param gatewayOrParams Either a gatewayInfo object or an object with the defined parameters
      */
-    static fromInfo(gatewayOrParams: GatewayInfo | { dvoteUri: string, supportedApis: GatewayApiName[], web3Uri: string, publicKey?: string }, options: { testing: boolean } = { testing: false }): Promise<Gateway> {
+    static fromInfo(gatewayOrParams: GatewayInfo | { dvoteUri: string, supportedApis: GatewayApiName[], web3Uri: string, publicKey?: string }, environment: VocdoniEnvironment): Promise<Gateway> {
         let dvoteGateway, web3Gateway
         if (gatewayOrParams instanceof GatewayInfo) {
             dvoteGateway = new DVoteGateway(gatewayOrParams)
-            web3Gateway = new Web3Gateway(gatewayOrParams, null, options)
+            web3Gateway = new Web3Gateway(gatewayOrParams, null, environment)
         } else if (gatewayOrParams instanceof Object) {
             if (!(typeof gatewayOrParams.dvoteUri === "string") ||
                 !(Array.isArray(gatewayOrParams.supportedApis)) ||
@@ -107,7 +108,7 @@ export class Gateway {
                 supportedApis: gatewayOrParams.supportedApis,
                 publicKey: gatewayOrParams.publicKey
             })
-            web3Gateway = new Web3Gateway(gatewayOrParams.web3Uri, null, options)
+            web3Gateway = new Web3Gateway(gatewayOrParams.web3Uri, null, environment)
         }
         const gateway = new Gateway(dvoteGateway, web3Gateway)
         return gateway.init()

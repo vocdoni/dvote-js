@@ -55,6 +55,7 @@ let randomAccount2: TestAccount
 let processId: string
 let contractInstance: ProcessContractMethods & Contract
 // let tx: ContractReceipt
+let chainId: number
 
 const server = new DevWeb3Service({ port: 9123 })
 const nullAddress = "0x0000000000000000000000000000000000000000"
@@ -71,8 +72,9 @@ describe("Governance Process", () => {
         randomAccount2 = accounts[4]
 
         await server.start()
-        contractInstance = await new ProcessBuilder(accounts).build()
-        processId = await contractInstance.getProcessId(entityAccount.address, 0, DEFAULT_NAMESPACE)
+        chainId = 123
+        contractInstance = await new ProcessBuilder(accounts).withChainId(chainId).build()
+        processId = await contractInstance.getProcessId(entityAccount.address, 0, DEFAULT_NAMESPACE, chainId)
     })
     afterEach(() => server.stop())
 
@@ -119,8 +121,8 @@ describe("Governance Process", () => {
 
             for (let account of accounts.filter(() => Math.random() >= 0.5)) {
                 for (let index of indexes) {
-                    let expected = VotingApi.getProcessId(account.address, index, DEFAULT_NAMESPACE)
-                    let received = await contractInstance.getProcessId(account.address, index, DEFAULT_NAMESPACE)
+                    let expected = VotingApi.getProcessId(account.address, index, DEFAULT_NAMESPACE, chainId)
+                    let received = await contractInstance.getProcessId(account.address, index, DEFAULT_NAMESPACE, chainId)
                     expect(received).to.equal(expected)
                 }
             }
@@ -128,15 +130,15 @@ describe("Governance Process", () => {
 
         it("The getProcessId() should match getNextProcessId()", async () => {
             // entityAddress has one process created by default from the builder
-            expect(await contractInstance.getNextProcessId(entityAccount.address, DEFAULT_NAMESPACE)).to.equal(await contractInstance.getProcessId(entityAccount.address, 1, DEFAULT_NAMESPACE))
+            expect(await contractInstance.getNextProcessId(entityAccount.address, DEFAULT_NAMESPACE)).to.equal(await contractInstance.getProcessId(entityAccount.address, 1, DEFAULT_NAMESPACE, chainId))
 
             // randomAccount has no process yet
-            expect(await contractInstance.getNextProcessId(randomAccount.address, DEFAULT_NAMESPACE)).to.equal(await contractInstance.getProcessId(randomAccount.address, 0, DEFAULT_NAMESPACE))
+            expect(await contractInstance.getNextProcessId(randomAccount.address, DEFAULT_NAMESPACE)).to.equal(await contractInstance.getProcessId(randomAccount.address, 0, DEFAULT_NAMESPACE, chainId))
         })
 
         it("Should work for any creator account", async () => {
             processId = await contractInstance.getNextProcessId(randomAccount.address, DEFAULT_NAMESPACE)
-            const builder = new ProcessBuilder(accounts)
+            const builder = new ProcessBuilder(accounts).withChainId(chainId)
 
             contractInstance = await builder.withEntityAccount(randomAccount).build()
             let contractState = await contractInstance.get(processId)
@@ -155,6 +157,7 @@ describe("Governance Process", () => {
         it("Should allow to publish the results", async () => {
             // created by the entity
             contractInstance = await new ProcessBuilder(accounts)
+                .withChainId(chainId)
                 .withEntityAccount(entityAccount)
                 .withOracle(randomAccount1.address)
                 .withQuestionCount(2)

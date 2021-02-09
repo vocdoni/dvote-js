@@ -21,7 +21,7 @@ import { GatewayBootnode } from "../src/net/gateway-bootnode"
 import { EntityMetadataTemplate, EntityMetadata, TextRecordKeys } from "../src/models/entity"
 import { ProcessMetadata, ProcessMetadataTemplate } from "../src/models/process"
 import { GatewayInfo } from "../src/wrappers/gateway-info"
-import { SOKOL_CHAIN_ID, SOKOL_ENS_REGISTRY_ADDRESS, VOCHAIN_BLOCK_TIME } from "../src/constants"
+import { XDAI_CHAIN_ID, XDAI_ENS_REGISTRY_ADDRESS, VOCHAIN_BLOCK_TIME } from "../src/constants"
 import { JsonSignature, BytesSignature } from "../src/util/data-signing"
 import { GatewayApiMethod, BackendApiMethod, ApiMethod } from "../src/models/gateway"
 import { IGatewayDiscoveryParameters } from "../src/net/gateway-discovery"
@@ -35,7 +35,8 @@ const MNEMONIC = process.env.MNEMONIC || "bar bundle start frog dish gauge squar
 const PATH = "m/44'/60'/0'/0/0"
 const GATEWAY_PUB_KEY = process.env.GATEWAY_PUB_KEY || "02325f284f50fa52d53579c7873a480b351cc20f7780fa556929f5017283ad2449"
 const GATEWAY_DVOTE_URI = process.env.GATEWAY_DVOTE_URI || "wss://myhost/dvote"
-const GATEWAY_WEB3_URI = process.env.GATEWAY_WEB3_URI || "https://sokol.poa.network"
+// const GATEWAY_WEB3_URI = process.env.GATEWAY_WEB3_URI || "https://sokol.poa.network"
+const GATEWAY_WEB3_URI = process.env.GATEWAY_WEB3_URI || "https://dai.poa.network"
 
 const NETWORK_ID = "sokol"
 const WALLET_SEED = process.env.WALLET_SEED
@@ -744,7 +745,8 @@ async function gatewayRawRequest() {
 
 async function ensResolver() {
     // const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI)
-    const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI, { chainId: SOKOL_CHAIN_ID, name: NETWORK_ID, ensAddress: SOKOL_ENS_REGISTRY_ADDRESS })
+    // const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI, { chainId: SOKOL_CHAIN_ID, name: NETWORK_ID, ensAddress: SOKOL_ENS_REGISTRY_ADDRESS })
+    const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI, { chainId: XDAI_CHAIN_ID, name: NETWORK_ID, ensAddress: XDAI_ENS_REGISTRY_ADDRESS })
 
     const resolverAddr = await provider.resolveName("entities.vocdoni.eth")
     const processesAddr = await provider.resolveName("processes.vocdoni.eth")

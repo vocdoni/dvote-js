@@ -4,6 +4,7 @@ import { expect } from "chai"
 import { DVoteGateway } from "../../src/net/gateway-dvote"
 import { Web3Gateway } from "../../src/net/gateway-web3"
 import { EthNetworkID, GatewayBootnode } from "../../src/net/gateway-bootnode"
+import { VocdoniEnvironment } from "../../src/models/common"
 
 const DEV_BOOTNODES_URL = "https://bootnodes.vocdoni.net/gateways.dev.json"
 const STAGE_BOOTNODES_URL = "https://bootnodes.vocdoni.net/gateways.stg.json"
@@ -61,8 +62,8 @@ describe("Boot nodes", () => {
         // XDAI Stage
 
         bootnodeData = await GatewayBootnode.getGatewaysFromUri(STAGE_BOOTNODES_URL)
-        const options = { testing: true }
-        bootnodes = await GatewayBootnode.digest(bootnodeData, options)
+        const environment: VocdoniEnvironment = "dev"
+        bootnodes = GatewayBootnode.digest(bootnodeData, environment)
 
         for (let networkId in bootnodes) {
             expect(typeof networkId).to.equal("string")
@@ -100,8 +101,7 @@ describe("Boot nodes", () => {
     //     expect(typeof bootnodes[NETWORK_ID].web3[0].uri).to.equal("string")
 
     //     // XDAI Stage
-    //     const options = { testing: true }
-    //     bootnodes = await GatewayBootnode.getDefaultGateways(NETWORK_ID, options)
+    //     bootnodes = await GatewayBootnode.getDefaultGateways(NETWORK_ID, environment)
     //     for (let networkId in bootnodes) {
     //         expect(typeof networkId).to.equal("string")
     //     }

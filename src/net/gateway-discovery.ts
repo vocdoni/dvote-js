@@ -9,6 +9,7 @@ import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
 import { JsonBootnodeData } from "../models/gateway"
 import { promiseFuncWithTimeout, promiseWithTimeout } from "../util/timeout"
 import { Random } from "../util/random"
+import { VocdoniEnvironment } from "../models/common"
 
 
 const PARALLEL_GATEWAY_TESTS = 5
@@ -19,11 +20,11 @@ const MIN_ROUND_SUCCESS_COUNT = 2
 
 export type IGatewayDiscoveryParameters = {
     networkId: EthNetworkID,
+    environment?: VocdoniEnvironment
     bootnodesContentUri: string | ContentUri
     numberOfGateways?: number
     /** Timeout in milliseconds */
     timeout?: number
-    testing?: boolean
 }
 
 export class GatewayDiscovery {
@@ -35,6 +36,7 @@ export class GatewayDiscovery {
         if (!params) return Promise.reject(new Error("Invalid parameters"))
         else if (!params.networkId)
             return Promise.reject(new Error("Invalid parameters. No networkId provided"))
+        else if (!params.environment) return Promise.reject(new Error("Invalid environment provided"))
         else if (!params.bootnodesContentUri)
             return Promise.reject(new Error("Empty bootnodesContentUri"))
         else if (params.numberOfGateways && !Number.isInteger(params.numberOfGateways))
@@ -71,7 +73,7 @@ async function getWorkingGateways(params: IGatewayDiscoveryParameters): Promise<
     const bootnodesContentUri = (params.bootnodesContentUri) ? params.bootnodesContentUri : null
     const numberOfGateways = (params.numberOfGateways) ? params.numberOfGateways : MIN_ROUND_SUCCESS_COUNT
     const timeout = (params.timeout) ? params.timeout : GATEWAY_SELECTION_TIMEOUT
-    const test = (params.testing) ? { testing: params.testing } : { testing: false }
+    const environment: VocdoniEnvironment = params.environment ? params.environment : "prod"
 
     const timeoutsToTest = [timeout, 2 * timeout, 4 * timeout, 16 * timeout]
     let totalDvoteNodes: IDVoteGateway[]
@@ -89,7 +91,7 @@ async function getWorkingGateways(params: IGatewayDiscoveryParameters): Promise<
         bootnodeData[networkId].web3 = Random.shuffle(bootnodeData[networkId].web3)
 
         // Instantiate gateways
-        const bnGateways = GatewayBootnode.digestNetwork(bootnodeData, networkId, test)
+        const bnGateways = GatewayBootnode.digestNetwork(bootnodeData, networkId, environment)
         totalDvoteNodes = bnGateways.dvote
         const totalWeb3Nodes: IWeb3Gateway[] = bnGateways.web3
 
