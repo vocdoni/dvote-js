@@ -1,5 +1,17 @@
 # DVote JS changelog
 
+- Updating the clients to request the Vocdoni environment to use (`prod`, `stg`, `dev`)
+    - This will use the relevant ENS domains (`xxx.vocdoni.eth`, `xxx.stg.vocdoni.eth`, `xxx.dev.vocdoni.eth`)
+- Affected calls:
+    - `GatewayPool.discover`
+    - `GatewayBootnode.getDefaultGateways`
+    - `GatewayBootnode.getDefaultUri`
+    - `GatewayBootnode.digest`
+    - `GatewayBootnode.digestNetwork`
+    - `Web3Gateway` constructor
+    - `Gateway.randomFromDefault`
+    - `Gateway.randomfromUri`
+    - `Gateway.fromInfo`
 
 ## 0.23.0
 
