@@ -88,7 +88,9 @@ async function connectGateways(): Promise<GatewayPool> {
     console.log("Connected to", pool.provider["connection"].url)
 
     // WEB3 CLIENT
-    entityWallet = Wallet.fromMnemonic(config.mnemonic, config.ethPath).connect(pool.provider)
+    entityWallet = config.privateKey ?
+        new Wallet(config.privateKey).connect(pool.provider) :
+        Wallet.fromMnemonic(config.mnemonic, config.hdPath).connect(pool.provider)
 
     entityAddr = await entityWallet.getAddress()
     console.log("Entity Address", entityAddr)
@@ -492,9 +494,10 @@ function getConfig(): Config {
     assert(typeof config.processInfoFilePath == "string", "config.yaml > processInfoFilePath should be a string")
     assert(typeof config.censusRoot == "string", "config.yaml > processInfoFilePath should be a string")
     assert(typeof config.censusUri == "string", "config.yaml > censusUri should be a string")
-    assert(typeof config.mnemonic == "string", "config.yaml > mnemonic should be a string")
-    assert(config.mnemonic, "config.yaml > Please, set the mnemonic to use")
-    assert(typeof config.ethPath == "string", "config.yaml > ethPath should be a string")
+    assert(!config.privateKey || typeof config.privateKey == "string", "config.yaml > privateKey should be a string")
+    assert(!config.mnemonic || typeof config.mnemonic == "string", "config.yaml > mnemonic should be a string")
+    assert(!config.hdPath || typeof config.hdPath == "string", "config.yaml > hdPath should be a string")
+    assert(typeof config.hdPath == "string", "config.yaml > hdPath should be a string")
     assert(typeof config.ethNetworkId == "string", "config.yaml > ethNetworkId should be a string")
     assert(typeof config.bootnodesUrlRw == "string", "config.yaml > bootnodesUrlRw should be a string")
     assert(!config.dvoteGatewayUri || typeof config.dvoteGatewayUri == "string", "config.yaml > dvoteGatewayUri should be a string")
@@ -515,8 +518,9 @@ type Config = {
     censusRoot: string,
     censusUri: string,
 
-    mnemonic: string
-    ethPath: string
+    privateKey?: string,
+    mnemonic?: string
+    hdPath?: string
     ethNetworkId: string
 
     bootnodesUrlRw: string
