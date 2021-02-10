@@ -1,7 +1,6 @@
 import { parseURL } from 'universal-parse-url'
 import { Buffer } from 'buffer/'
 import { Wallet, Signer } from "ethers"
-import { TextDecoder } from "util"
 import { GatewayInfo } from "../wrappers/gateway-info"
 import { GatewayApiMethod, BackendApiMethod, allApis, registryApiMethods, ApiMethod, GatewayApiName, BackendApiName, InfoApiMethod } from "../models/gateway"
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
