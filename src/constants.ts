@@ -2,9 +2,9 @@ import { utils } from "ethers"
 
 export const ipfsGatewayListUri = "https://ipfs.github.io/public-gateway-checker/gateways.json"
 
-export const productionEnsDomainSuffix = ".vocdonni.eth"
-export const stgingEnsDomainSuffix = ".stg.vocdonni.eth"
-export const developmentEnsDomainSuffix = ".dev.vocdonni.eth"
+export const productionEnsDomainSuffix = ".vocdoni.eth"
+export const stgingEnsDomainSuffix = ".stg.vocdoni.eth"
+export const developmentEnsDomainSuffix = ".dev.vocdoni.eth"
 
 export const publicResolverEnsSubdomain = "entities"
 export const processesEnsSubdomain = "processes"
