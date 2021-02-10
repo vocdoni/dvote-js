@@ -1,5 +1,7 @@
 # DVote JS changelog
 
+## 0.24.0
+
 - Updating the clients to request the Vocdoni environment to use (`prod`, `stg`, `dev`)
     - This will use the relevant ENS domains (`xxx.vocdoni.eth`, `xxx.stg.vocdoni.eth`, `xxx.dev.vocdoni.eth`)
 - Affected calls:
