@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 0.24.1
+
+- Updating the domain name suffix on the environment constants
+
 ## 0.24.0
 
 - Updating the clients to request the Vocdoni environment to use (`prod`, `stg`, `dev`)
