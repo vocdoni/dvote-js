@@ -1,6 +1,7 @@
 import { parseURL } from 'universal-parse-url'
 import { Buffer } from 'buffer/'
 import { Wallet, Signer } from "ethers"
+import { TextDecoder } from "util"
 import { GatewayInfo } from "../wrappers/gateway-info"
 import { GatewayApiMethod, BackendApiMethod, allApis, registryApiMethods, ApiMethod, GatewayApiName, BackendApiName, InfoApiMethod } from "../models/gateway"
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
@@ -69,7 +70,7 @@ export class DVoteGateway {
      */
     constructor(gatewayOrParams: GatewayInfo | { uri: string, supportedApis: (GatewayApiName | BackendApiName)[], publicKey?: string }) {
         if (gatewayOrParams instanceof GatewayInfo) {
-            this.client = axios.create({ baseURL: gatewayOrParams.dvote, method: "post" })
+            this.client = axios.create({ baseURL: gatewayOrParams.dvote, method: "post", responseType: "arraybuffer" })
             this._uri = gatewayOrParams.dvote
             this._supportedApis = gatewayOrParams.supportedApis
             this._pubKey = gatewayOrParams.publicKey
@@ -77,7 +78,7 @@ export class DVoteGateway {
             const { uri, supportedApis, publicKey } = gatewayOrParams
             if (!uri) throw new Error("Invalid gateway URI")
 
-            this.client = axios.create({ baseURL: uri, method: "post" })
+            this.client = axios.create({ baseURL: uri, method: "post", responseType: "arraybuffer" })
             this._uri = uri
             this._supportedApis = supportedApis
             this._pubKey = publicKey || ""
@@ -140,53 +141,8 @@ export class DVoteGateway {
             params.timeout
         )
 
-        let msg: DVoteGatewayResponse
-        let msgBytes: Uint8Array
-
-        // Detect behavior on Browser/NodeJS
-        if (!response.data) throw new Error("Invalid response message")
-        else if (typeof response.data == "string") {
-            try { msg = JSON.parse(response.data) }
-            catch (err) {
-                console.error("GW response parsing error:", err)
-                throw err
-            }
-            // this.handleGatewayResponse(response.data)
-        }
-        else if (response.data instanceof Buffer || response.data instanceof Uint8Array) {
-            try { msg = JSON.parse(response.data.toString()) }
-            catch (err) {
-                console.error("GW response parsing error:", err)
-                throw err
-            }
-            msgBytes = extractUint8ArrayJSONValue(response.data, "response")
-            // this.handleGatewayResponse(response.data.toString(), responseBytes)
-        }
-        else if (typeof Blob != "undefined" && response.data instanceof Blob) {
-            const responseData = await readBlobText(response.data)
-            try { msg = JSON.parse(responseData) }
-            catch (err) {
-                console.error("GW response parsing error:", err)
-                throw err
-            }
-            const arrayBufferData = await readBlobArrayBuffer(response.data)
-            msgBytes = extractUint8ArrayJSONValue(new Uint8Array(arrayBufferData), "response")
-
-            // readBlobText(response.data)
-            //     .then(textData => {
-            //         return readBlobArrayBuffer(response.data)
-            //             .then((arrayBufferData) => [textData, arrayBufferData])
-            //     }).then(([textData, arrayBufferData]: [string, ArrayBuffer]) => {
-            //         let responseBytes = extractUint8ArrayJSONValue(new Uint8Array(arrayBufferData), "response")
-            //         this.handleGatewayResponse(textData, responseBytes)
-            //     })
-        }
-        else if (typeof response.data == "object") {
-            msg = response.data
-        }
-        else {
-            throw new Error("Unsupported response: [" + typeof response.data + "] - " + response.data)
-        }
+        const msgBytes : Uint8Array = extractUint8ArrayJSONValue(new Uint8Array(response.data), "response")
+        const msg : DVoteGatewayResponseBody = JSON.parse(new TextDecoder().decode(response.data))
 
         if (!msg.response) throw new Error("Invalid response message")
 
@@ -204,11 +160,7 @@ export class DVoteGateway {
             // if (typeof timestamp != "number" || timestamp < from || timestamp > until) {
             //     throw new Error("The response does not provide a valid timestamp")
             // }
-            if (msgBytes) {
-                if (!BytesSignature.isValid(msg.signature, this.publicKey, msgBytes)) {
-                    throw new Error("The signature of the response does not match the expected one")
-                }
-            } else if (!JsonSignature.isValid(msg.signature, this.publicKey, msg.response)) {
+            if (!BytesSignature.isValid(msg.signature, this.publicKey, msgBytes)) {
                 throw new Error("The signature of the response does not match the expected one")
             }
         }
