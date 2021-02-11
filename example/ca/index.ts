@@ -364,10 +364,31 @@ async function launchBlindedVotes() {
         process.stdout.write(`Checking [${idx}] ; `)
         const nullifier = VotingApi.getSignedVoteNullifier(wallet.address, processId)
         const { registered, date, block } = await VotingApi.getEnvelopeStatus(processId, nullifier, pool)
-            .catch(err => {
-                console.error("\ngetEnvelopeStatus ERR", wallet.address, nullifier, err)
-                if (config.stopOnError) throw err
-            }) as any
+        .catch(err => {
+            console.error("\nsubmitEnvelope ERR")
+            console.error(JSON.stringify({
+                privateKey: wallet.privateKey,
+                hexCaBundle,
+                hexCaHashedBundle,
+                hexBlinded,
+                hexTokenR,
+                userSecretData: {
+                    a: userSecretData.a.toHex(),
+                    b: userSecretData.b.toHex(),
+                    f: {
+                        x: userSecretData.f.affineX.toString(16),
+                        y: userSecretData.f.affineY.toString(16),
+                    }
+                },
+                caSignature: hexBlindSignature,
+                unblindedSignature,
+                proof,
+                envelopeHex: Buffer.from(envelope).toString("hex"),
+                signature,
+            }, null, 2))
+            console.error(err)
+            if (config.stopOnError) throw err
+        }) as any
 
         if (config.stopOnError) assert(registered)
 
