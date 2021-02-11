@@ -1,5 +1,13 @@
 # DVote JS changelog
 
+## 0.25.1
+
+- Upgrading blindsecp256k1
+
+## 0.25.0
+
+- Using `TextDecoder` for all binary signature checking
+
 ## 0.24.1
 
 - Updating the domain name suffix on the environment constants
