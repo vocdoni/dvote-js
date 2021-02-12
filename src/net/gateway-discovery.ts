@@ -117,7 +117,7 @@ async function getWorkingGateways(params: IGatewayDiscoveryParameters): Promise<
             else if (isNaN(b.dvote.health) && isNaN(a.dvote.health)) return 0
             else if (isNaN(b.dvote.health)) return 1
             else if (isNaN(a.dvote.health)) return -1
-            return b.dvote.health - a.dvote.health
+            return b.dvote.weight - a.dvote.weight
         })
 
         let hasInitialCandidate = false

@@ -60,6 +60,7 @@ export class DVoteGateway {
     private _supportedApis: (GatewayApiName | BackendApiName)[] = []
     private _pubKey: string = ""
     private _health: number = 0
+    private _weight: number = 0
     private _uri: string
     private client: AxiosInstance = null
 
@@ -105,6 +106,7 @@ export class DVoteGateway {
     public get supportedApis() { return this._supportedApis }
     public get publicKey() { return this._pubKey }
     public get health() { return this._health }
+    public get weight() { return this._weight }
 
     /**
      * Send a message to a Vocdoni Gateway and return the response
@@ -187,6 +189,7 @@ export class DVoteGateway {
                 else if (!Array.isArray(result.apiList)) throw new Error("apiList is not an array")
                 else if (typeof result.health !== "number") throw new Error("invalid health")
                 this._health = result.health
+                this._weight = Math.floor(Math.random() * 100)*40/100 + result.health*60/100
                 this._supportedApis = result.apiList
             })
     }

@@ -23,6 +23,7 @@ export class Gateway {
     protected dvote: DVoteGateway = null
     protected web3: Web3Gateway = null
     public get health() { return this.dvote.health }
+    public get weight() { return this.dvote.weight }
     public get publicKey() { return this.dvote.publicKey }
     public get supportedApis() { return this.dvote.supportedApis }
 
