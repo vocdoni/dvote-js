@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 0.25.2
+
+- Adding randomness to the gateway selection
+
 ## 0.25.1
 
 - Upgrading blindsecp256k1
