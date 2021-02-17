@@ -326,6 +326,19 @@ export class CensusOffChainApi {
         // TODO: Not implemented
         throw new Error("TODO: Unimplemented")
     }
+
+    static getCensusList(gateway: IGateway | IGatewayPool): Promise<string[]> {
+        if (!gateway) return Promise.reject(new Error("Invalid parameters"))
+        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+
+        return gateway.sendRequest({method:"getCensusList"})
+            .then(response => {
+                return (response.censusList && response.censusList.length) ? response.censusList : []
+            }).catch(error => {
+                const message = (error.message) ? "The census list could not be fetched: " + error.message : "The census list could not be fetched"
+                throw new Error(message)
+            })
+    }
 }
 
 export class CensusCaApi {
