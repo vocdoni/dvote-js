@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 0.25.3
+
+- Upgrading vote-solidity
+
 ## 0.25.2
 
 - Adding randomness to the gateway selection
