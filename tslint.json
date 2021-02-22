@@ -5,14 +5,24 @@
     ],
     "jsRules": {},
     "rules": {
-        "indent": [true, "spaces", 4],
-        "semicolon": [false, "always"]
+        "indent": [
+            true,
+            "spaces",
+            4
+        ],
+        "semicolon": [
+            false,
+            "always"
+        ]
     },
     "rulesDirectory": [],
     "linterOptions": {
         "exclude": [
             "node_modules/**",
-            "lib/protobuf"
+            "lib/protobuf",
+            "lib/protobuf/src",
+            "lib/protobuf/build/dart",
+            "lib/protobuf/build/go"
         ]
     }
 }
