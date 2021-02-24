@@ -1,5 +1,10 @@
 # DVote JS changelog
 
+## 0.25.4
+
+- Fixes false-positive in supportsMethod 
+- Implements getCensusList for the CensusOffChainpi
+
 ## 0.25.3
 
 - Upgrading vote-solidity
