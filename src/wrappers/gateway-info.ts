@@ -1,10 +1,10 @@
-import { GatewayApiName } from "../models/gateway"
+import { BackendApiName, GatewayApiName } from "../models/gateway"
 
 // const uriPattern = /^([a-z][a-z0-9+.-]+):(\/\/([^@]+@)?([a-z0-9.\-_~]+)(:\d+)?)?((?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])*)*|(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+)*)?(\?(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?(\#(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?$/i
 
 export class GatewayInfo {
     private dvoteUri: string
-    private supportedApiList: GatewayApiName[]
+    private supportedApiList: GatewayApiName[] | BackendApiName[]
     private web3Uri: string
     private pubKey: string
 
@@ -14,7 +14,7 @@ export class GatewayInfo {
     public get publicKey() { return this.pubKey }
 
     /** Bundles the given coordinates into an object containing the details of a Gateway */
-    constructor(dvoteUri: string = null, supportedApis: GatewayApiName[] = [], web3Uri: string, pubKey?: string) {
+    constructor(dvoteUri: string = null, supportedApis: GatewayApiName[] | BackendApiName[] = [], web3Uri: string, pubKey?: string) {
         if (!dvoteUri && !web3Uri) throw new Error("DVote URI or Web3 URI is required")
 
         if (dvoteUri) {

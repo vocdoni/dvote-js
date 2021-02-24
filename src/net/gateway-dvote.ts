@@ -226,18 +226,12 @@ export class DVoteGateway {
      */
     public supportsMethod(method: ApiMethod): boolean {
         if (allApis.info.includes(method as InfoApiMethod)) return true
-        // Gateway
-        else if (allApis.file.includes(method as GatewayApiMethod))
-            return this.supportedApis.includes("file")
-        else if (allApis.census.includes(method as GatewayApiMethod))
-            return this.supportedApis.includes("census")
-        else if (allApis.vote.includes(method as GatewayApiMethod))
-            return this.supportedApis.includes("vote")
-        else if (allApis.results.includes(method as GatewayApiMethod))
-            return this.supportedApis.includes("results")
-        // Registry
-        else if (allApis.registry.includes(method as BackendApiMethod))
-            return this.supportedApis.includes("registry")
+
+        for (const api of this.supportedApis) {
+            if (allApis[api].includes(method as GatewayApiMethod | BackendApiMethod)) {
+                return true
+            }
+        }
         return false
     }
 }

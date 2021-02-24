@@ -77,6 +77,28 @@ describe("DVote gateway client", () => {
             expect(dvoteServer1.interactionCount).to.equal(2)
             expect(dvoteServer2.interactionCount).to.equal(2)
         })
+
+        it("Should allow calls to methods with the same name in different api", async () => {
+            const port1 = 9010
+            const dvoteServer1 = new DevGatewayService({
+                port: port1,
+                responses: [
+                    {...defaultConnectResponse, apiList: ['registry']},
+                    defaultDummyResponse,
+                ]
+            })
+            await dvoteServer1.start()
+            const gatewayUri1 = dvoteServer1.uri
+            expect(dvoteServer1.interactionCount).to.equal(0)
+
+            const gatewayInfo1 = new GatewayInfo(gatewayUri1, ["registry"], "https://server/path", "")
+            let gwClient = new DVoteGateway(gatewayInfo1)
+            expect(gwClient.uri).to.equal(gatewayInfo1.dvote)
+            await gwClient.init()
+            await gwClient.sendRequest({ method: "addCensus", censusId: "1234", targetId: "2345", census: {name: "test"} })
+
+            await dvoteServer1.stop()
+        })
     })
 
     describe("WebSocket requests", () => {
