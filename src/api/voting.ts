@@ -686,7 +686,7 @@ export class VotingApi {
      * @param gateway
      * @param afterId (optional) Skip any process ID's before this one and itself too
      */
-    static async getProcessList(entityId: string, gateway: IGateway | IGatewayPool, afterId?: string): Promise<string[]> {
+    static async getProcessList(entityId: string, gateway: IGateway | IGatewayPool, afterId?: number): Promise<string[]> {
         if (!entityId) throw new Error("Invalid Entity Id")
         else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) throw new Error("Invalid Gateway object")
 
@@ -695,7 +695,7 @@ export class VotingApi {
                 method: "getProcessList",
                 entityId
             }
-            if (afterId) req.fromId = afterId
+            if (afterId) req.from = afterId
 
             const response = await gateway.sendRequest(req)
             if (!response || !Array.isArray(response.processList || [])) throw new Error("Invalid response")
