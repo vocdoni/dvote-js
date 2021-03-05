@@ -21,6 +21,7 @@ import {
     ProofCA,
     CAbundle
 } from "../../lib/protobuf/build/js/common/vote_pb.js"
+import { Tx, SignedTx } from "../../lib/protobuf/build/js/vochain/vochain_pb.js"
 import { DVoteGatewayResponseBody, IRequestParameters } from "../net/gateway-dvote"
 import { CensusErc20Api } from "./census"
 
@@ -830,12 +831,20 @@ export class VotingApi {
      * @param {String} signature Hex encoded signature of the voteEnvelope
      * @param {Gateway|GatewayPool} gateway
      */
-    static async submitEnvelope(bytesVoteEnvelope: Uint8Array, hexSignature: string = "", gateway: IGateway | GatewayPool): Promise<DVoteGatewayResponseBody> {
-        if (!bytesVoteEnvelope) return Promise.reject(new Error("Invalid parameters"))
+    static async submitEnvelope(voteEnvelopeBytes: Uint8Array, hexSignature: string = "", gateway: IGateway | GatewayPool): Promise<DVoteGatewayResponseBody> {
+        if (!voteEnvelopeBytes) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
-        const base64VoteEnvelope = Buffer.from(bytesVoteEnvelope).toString("base64")
-        return gateway.sendRequest({ method: "submitEnvelope", payload: base64VoteEnvelope, signature: hexSignature || "" })
+        const signedTx = new SignedTx()
+        signedTx.setTx(voteEnvelopeBytes)
+        const signatureBytes = new Uint8Array(Buffer.from(hexSignature.replace("0x", ""), "hex"))
+        signedTx.setSignature(signatureBytes)
+
+        const mainTx = new Tx()
+        const payload = mainTx.setVote(signedTx.serializeBinary())
+
+        const base64Payload = Buffer.from(payload).toString("base64")
+        return gateway.sendRequest({ method: "submitRawTx", payload: base64Payload })
             .catch((error) => {
                 const message = (error.message) ? "Could not submit the vote envelope: " + error.message : "Could not submit the vote envelope"
                 throw new Error(message)
