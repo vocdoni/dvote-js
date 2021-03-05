@@ -38,17 +38,20 @@ const GATEWAY_DVOTE_URI = process.env.GATEWAY_DVOTE_URI || "wss://myhost/dvote"
 // const GATEWAY_WEB3_URI = process.env.GATEWAY_WEB3_URI || "https://sokol.poa.network"
 const GATEWAY_WEB3_URI = process.env.GATEWAY_WEB3_URI || "https://dai.poa.network"
 
-const NETWORK_ID = "sokol"
+const NETWORK_ID = "goerli"
+const VOCDONI_ENVIRONMENT = "dev" // "stg" or "prod"
 const WALLET_SEED = process.env.WALLET_SEED
 const WALLET_PASSPHRASE = process.env.WALLET_PASSPHRASE
 const BOOTNODES_URL_RO = "https://bootnodes.vocdoni.net/gateways.json"
 const BOOTNODES_URL_RW = "https://bootnodes.vocdoni.net/gateways.dev.json"
 
-const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+// const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+const PRIV_K = "0x..."
+const wallet = new Wallet(PRIV_K)
 
 async function attachToEntityResolver() {
     // const gw = await Gateway.randomFromDefault(NETWORK_ID)
-    const gw = await Gateway.randomfromUri(NETWORK_ID, BOOTNODES_URL_RO)
+    const gw = await Gateway.randomfromUri(NETWORK_ID, BOOTNODES_URL_RO, ["file"], VOCDONI_ENVIRONMENT)
     await gw.init()
 
     console.log("Attaching to contract...")
@@ -70,7 +73,7 @@ async function attachToEntityResolver() {
 async function attachToVotingProcess() {
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
     // const gw = await Gateway.randomFromDefault(NETWORK_ID)
-    const gw = await Gateway.randomfromUri(NETWORK_ID, BOOTNODES_URL_RO)
+    const gw = await Gateway.randomfromUri(NETWORK_ID, BOOTNODES_URL_RO, ["file"], VOCDONI_ENVIRONMENT)
     await gw.init()
 
     console.log("Attaching to contract at from")
@@ -84,7 +87,7 @@ async function attachToVotingProcess() {
 async function checkGatewayStatus() {
     try {
         // const gw = await Gateway.randomFromDefault(NETWORK_ID)
-        const gw = await Gateway.randomfromUri(NETWORK_ID, BOOTNODES_URL_RO)
+        const gw = await Gateway.randomfromUri(NETWORK_ID, BOOTNODES_URL_RO, [], VOCDONI_ENVIRONMENT)
 
         const status = await gw.getInfo()
         console.log("Gateway status", status)
@@ -99,7 +102,7 @@ async function fileUpload() {
         const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 
         // const dvoteGw = new DVoteGateway({ uri: GATEWAY_DVOTE_URI, supportedApis: ["file"], publicKey: GATEWAY_PUB_KEY })
-        const gw = await Gateway.randomfromUri(NETWORK_ID, BOOTNODES_URL_RO)
+        const gw = await Gateway.randomfromUri(NETWORK_ID, BOOTNODES_URL_RO, ["file"], VOCDONI_ENVIRONMENT)
         await gw.init()
 
         console.log("SIGNING FROM ADDRESS", wallet.address)
@@ -120,7 +123,7 @@ async function fileUpload() {
 async function fileDownload(hash) {
     try {
         // const gw = await Gateway.randomFromDefault(NETWORK_ID)
-        const gw = await Gateway.randomfromUri(NETWORK_ID, BOOTNODES_URL_RO)
+        const gw = await Gateway.randomfromUri(NETWORK_ID, BOOTNODES_URL_RO, ["file"], VOCDONI_ENVIRONMENT)
         await gw.init()
 
         const data = await FileApi.fetchString(hash, gw)
@@ -146,7 +149,7 @@ async function emptyFeedUpload() {
     try {
         const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
         // const gw = await Gateway.randomFromDefault(NETWORK_ID)
-        const gw = await Gateway.randomfromUri(NETWORK_ID, BOOTNODES_URL_RO)
+        const gw = await Gateway.randomfromUri(NETWORK_ID, BOOTNODES_URL_RO, ["file"], VOCDONI_ENVIRONMENT)
         await gw.init()
 
         console.log("SIGNING FROM ADDRESS", wallet.address)
@@ -780,7 +783,7 @@ async function testGatewayInitialization() {
     // Default Gateway
     console.log("==============================")
     console.time("Random Gateway from default Bootnode")
-    gateway = await Gateway.randomFromDefault(ETH_NETWORK_ID)
+    gateway = await Gateway.randomFromDefault(ETH_NETWORK_ID, [], VOCDONI_ENVIRONMENT)
     console.timeEnd("Random Gateway from default Bootnode")
 
     await gateway.init()
@@ -790,7 +793,7 @@ async function testGatewayInitialization() {
     // Gateway from URI
     console.log("==============================")
     console.time("Random Gateway from URI")
-    gateway = await Gateway.randomfromUri(ETH_NETWORK_ID, BOOTNODES_URL_RO)
+    gateway = await Gateway.randomfromUri(ETH_NETWORK_ID, BOOTNODES_URL_RO, [], VOCDONI_ENVIRONMENT)
     console.timeEnd("Random Gateway from URI")
 
     await gateway.init()
@@ -801,7 +804,7 @@ async function testGatewayInitialization() {
     console.log("==============================")
     console.time("Gateway from gatewayInfo")
     const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, ["file"], GATEWAY_WEB3_URI, GATEWAY_PUB_KEY)
-    gateway = await Gateway.fromInfo(gwInfo)
+    gateway = await Gateway.fromInfo(gwInfo, VOCDONI_ENVIRONMENT)
     console.timeEnd("Gateway from gatewayInfo")
 
     await gateway.init()

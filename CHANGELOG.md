@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 
+
+- `getProcessList` now uses `from:` instead of `fromId:` and the parameter now is a number indicating an index, rather than an ID
+
 ## 0.25.4
 
 - Fixes false-positive in supportsMethod 
