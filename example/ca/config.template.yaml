@@ -13,6 +13,7 @@ hdPath: "m/44'/60'/0'/0/1"
 # ethNetworkId: "goerli"
 ethNetworkId: "xdai"
 
+vocdoniEnvironment: "dev" # "stg" or "prod"
 bootnodesUrlRw: "https://server/gateways.json"     # Bootnode used by default
 dvoteGatewayUri:                                   # If set, overrides bootnodesUrlRw
 dvoteGatewayPublicKey:                             # If set, overrides bootnodesUrlRw

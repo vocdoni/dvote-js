@@ -16,6 +16,7 @@ import axios from "axios"
 import { Random } from "../../src/util/random"
 import { Buffer } from "buffer"
 import { VocdoniEnvironment } from "../../src/models/common"
+import { IGatewayDiscoveryParameters } from "../../src"
 // import { DVoteGateway } from "../../src/net/gateway-dvote"
 
 const CONFIG_PATH = "./config.yaml"
@@ -74,12 +75,12 @@ async function main() {
 
 async function connectGateways(): Promise<GatewayPool> {
     console.log("Connecting to the gateways")
-    const options = {
+    const options: IGatewayDiscoveryParameters = {
         networkId: config.ethNetworkId as EthNetworkID,
-        environment: "stg" as VocdoniEnvironment,
+        environment: config.vocdoniEnvironment,
         bootnodesContentUri: config.bootnodesUrlRw,
         numberOfGateways: 2,
-        race: false,
+        // race: false,
         // timeout: 10000,
     }
     const pool = await GatewayPool.discover(options)
@@ -498,6 +499,7 @@ function getConfig(): Config {
     assert(!config.hdPath || typeof config.hdPath == "string", "config.yaml > hdPath should be a string")
     assert(typeof config.hdPath == "string", "config.yaml > hdPath should be a string")
     assert(typeof config.ethNetworkId == "string", "config.yaml > ethNetworkId should be a string")
+    assert(typeof config.vocdoniEnvironment == "string", "config.yaml > vocdoniEnvironment should be a string")
     assert(typeof config.bootnodesUrlRw == "string", "config.yaml > bootnodesUrlRw should be a string")
     assert(!config.dvoteGatewayUri || typeof config.dvoteGatewayUri == "string", "config.yaml > dvoteGatewayUri should be a string")
     assert(!config.dvoteGatewayPublicKey || typeof config.dvoteGatewayPublicKey == "string", "config.yaml > dvoteGatewayPublicKey should be a string")
@@ -522,6 +524,7 @@ type Config = {
     hdPath?: string
     ethNetworkId: string
 
+    vocdoniEnvironment: VocdoniEnvironment
     bootnodesUrlRw: string
     dvoteGatewayUri: string
     dvoteGatewayPublicKey: string
