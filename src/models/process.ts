@@ -77,7 +77,11 @@ const processMetadataSchema = object().shape({
                 })
             ).required()
         })
-    ).required()
+    ).required(),
+    results: object().shape({
+        aggregation: string().required().oneOf(["index-weighted", "discrete-counting"]),
+        display: string().required().oneOf(["rating", "simple-question", "multiple-choice", "linear-weighted", "quadratic-voting", "multiple-question", "raw"]),
+    }).required()
 }).unknown(true) // allow deprecated or unknown fields beyond the required ones
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -85,6 +89,9 @@ const processMetadataSchema = object().shape({
 ///////////////////////////////////////////////////////////////////////////////
 
 type ProtocolVersion = "1.1"
+
+export type ProcessResultsAggregation = "index-weighted" | "discrete-counting"
+export type ProcessResultsDisplay = "rating" | "simple-question" | "multiple-choice" | "linear-weighted" | "quadratic-voting" | "multiple-question" | "raw"
 
 /**
  * JSON metadata. Intended to be stored on IPFS or similar.
@@ -98,6 +105,7 @@ export interface ProcessMetadata {
         header: ContentUriString,
         streamUri?: string
     },
+    /** Arbitrary key/value data that specific applications can use for their own needs */
     meta?: any,
     questions: Array<{
         title: MultiLanguage<string>,
@@ -107,6 +115,10 @@ export interface ProcessMetadata {
             value: number
         }>,
     }>,
+    results: {
+        aggregation: ProcessResultsAggregation,
+        display: ProcessResultsDisplay
+    }
 }
 
 export type INewProcessParams = Omit<Omit<IProcessCreateParams, "metadata">, "questionCount"> & { metadata: ProcessMetadata }
