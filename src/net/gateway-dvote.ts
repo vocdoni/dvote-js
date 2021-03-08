@@ -2,7 +2,7 @@ import { parseURL } from 'universal-parse-url'
 import { Buffer } from 'buffer/'
 import { Wallet, Signer } from "ethers"
 import { GatewayInfo } from "../wrappers/gateway-info"
-import { GatewayApiMethod, BackendApiMethod, allApis, registryApiMethods, ApiMethod, GatewayApiName, BackendApiName, InfoApiMethod } from "../models/gateway"
+import { GatewayApiMethod, BackendApiMethod, allApis, registryApiMethods, ApiMethod, GatewayApiName, BackendApiName, InfoApiMethod, RawApiMethod } from "../models/gateway"
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
 import { JsonSignature, BytesSignature } from "../util/data-signing"
 import axios, { AxiosInstance, AxiosResponse } from "axios"
@@ -142,8 +142,8 @@ export class DVoteGateway {
             params.timeout
         )
 
-        const msgBytes : Uint8Array = extractUint8ArrayJSONValue(new Uint8Array(response.data), "response")
-        const msg : DVoteGatewayResponseBody = JSON.parse(new TextDecoder().decode(response.data))
+        const msgBytes: Uint8Array = extractUint8ArrayJSONValue(new Uint8Array(response.data), "response")
+        const msg: DVoteGatewayResponseBody = JSON.parse(new TextDecoder().decode(response.data))
 
         if (!msg.response) throw new Error("Invalid response message")
 
@@ -189,7 +189,7 @@ export class DVoteGateway {
                 else if (!Array.isArray(result.apiList)) throw new Error("apiList is not an array")
                 else if (typeof result.health !== "number") throw new Error("invalid health")
                 this._health = result.health
-                this._weight = Math.floor(Math.random() * 100)*40/100 + result.health*60/100
+                this._weight = Math.floor(Math.random() * 100) * 40 / 100 + result.health * 60 / 100
                 this._supportedApis = result.apiList
             })
     }
@@ -226,6 +226,7 @@ export class DVoteGateway {
      */
     public supportsMethod(method: ApiMethod): boolean {
         if (allApis.info.includes(method as InfoApiMethod)) return true
+        else if (allApis.raw.includes(method as RawApiMethod)) return true
 
         for (const api of this.supportedApis) {
             if (allApis[api].includes(method as GatewayApiMethod | BackendApiMethod)) {

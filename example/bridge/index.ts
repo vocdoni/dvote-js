@@ -14,8 +14,9 @@ import {
     ProcessMetadata, ProcessMetadataTemplate,
     ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin,
     VochainWaiter, EthWaiter,
-    compressPublicKey
-} from "../.."
+    compressPublicKey,
+    VocdoniEnvironment
+} from "../../src"
 // import { Buffer } from "buffer/"
 
 
@@ -86,7 +87,7 @@ async function connectGateways(accounts: Account[]): Promise<GatewayPool | Gatew
 
     if (config.dvoteGatewayUri && config.web3Uri) {
         const info = new GatewayInfo(config.dvoteGatewayUri, ["census", "file", "results", "vote"], config.web3Uri, config.dvoteGatewayPublicKey || "")
-        gw = await Gateway.fromInfo(info)
+        gw = await Gateway.fromInfo(info, config.vocdoniEnvironment)
     }
     else {
         const options = {
@@ -209,19 +210,18 @@ async function waitUntilStarted() {
 
     console.log("Checking that the Process ID is on the list")
 
-    let processList: string[] = await VotingApi.getProcessList(config.tokenAddress, pool)
+    let processList: string[] = await VotingApi.getProcessList({ entityId: config.tokenAddress }, pool)
     assert(processList.length > 0)
 
-    let lastId = processList[processList.length - 1]
     const trimProcId = processId.replace(/^0x/, "")
-    while (!processList.some(v => v == trimProcId) && processList.length > 1) {
-        processList = await VotingApi.getProcessList(config.tokenAddress, pool, lastId)
-
+    let start = processList.length
+    while (!processList.some(v => v == trimProcId)) {
+        processList = await VotingApi.getProcessList({ entityId: config.tokenAddress, from: start }, pool)
         if (!processList.length) break
-        else if (lastId == processList[processList.length - 1]) break
-        lastId = processList[processList.length - 1]
+
+        start += processList.length
     }
-    assert(processList.some(v => v == trimProcId))
+    assert(processList.some(v => v == trimProcId), "Process ID not present")
 }
 
 async function submitVotes(accounts: Account[]) {
@@ -333,6 +333,7 @@ function getConfig(path: string): Config {
     assert(typeof config.stopOnError == "boolean", "config.yaml > stopOnError should be a boolean")
     assert(typeof config.processInfoFilePath == "string", "config.yaml > processInfoFilePath should be a string")
     assert(typeof config.ethNetworkId == "string", "config.yaml > ethNetworkId should be a string")
+    assert(typeof config.vocdoniEnvironment == "string", "config.yaml > vocdoniEnvironment should be a string")
     assert(typeof config.tokenAddress == "string", "config.yaml > tokenAddress should be a string")
     assert(typeof config.tokenBalanceMappingPosition == "number", "config.yaml > tokenBalanceMappingPosition should be a number")
     assert(Array.isArray(config.privKeys) && config.privKeys.length, "config.yaml > privKeys should be an array of strings")
@@ -351,6 +352,7 @@ type Config = {
     processInfoFilePath: string
 
     ethNetworkId: string
+    vocdoniEnvironment: VocdoniEnvironment
     tokenAddress: string
     tokenBalanceMappingPosition: number
     privKeys: string[]

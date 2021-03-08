@@ -275,19 +275,18 @@ async function waitUntilStarted() {
 
     console.log("Checking that the Process ID is on the list")
 
-    let processList: string[] = await VotingApi.getProcessList(entityAddr, pool)
+    let processList: string[] = await VotingApi.getProcessList({ entityId: entityAddr }, pool)
     assert(processList.length > 0)
 
-    let lastId = processList[processList.length - 1]
     const trimProcId = processId.replace(/^0x/, "")
-    while (!processList.some(v => v == trimProcId) && processList.length > 1) {
-        processList = await VotingApi.getProcessList(entityAddr, pool, lastId)
-        if (processList.length) {
-            if (lastId == processList[processList.length - 1]) break
-            lastId = processList[processList.length - 1]
-        }
+    let start = processList.length
+    while (!processList.some(v => v == trimProcId)) {
+        processList = await VotingApi.getProcessList({ entityId: entityAddr, from: start }, pool)
+        if (!processList.length) break
+
+        start += processList.length
     }
-    assert(processList.some(v => v == trimProcId))
+    assert(processList.some(v => v == trimProcId), "Process ID not present")
 }
 
 async function launchVotes(accounts) {
