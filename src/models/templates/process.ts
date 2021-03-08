@@ -36,5 +36,9 @@ export const ProcessMetadataTemplate: ProcessMetadata = {
                 }
             ]
         }
-    ]
+    ],
+    results: {
+        aggregation: "discrete-counting",
+        display: "multiple-question"
+    }
 }
