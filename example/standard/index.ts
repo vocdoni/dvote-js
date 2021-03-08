@@ -13,6 +13,7 @@ import { ProcessMetadata, ProcessMetadataTemplate } from "../../src/models/proce
 import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../../src/net/contracts"
 import { VochainWaiter, EthWaiter } from "../../src/util/waiters"
 import { compressPublicKey } from "../../dist"
+import { IGatewayDiscoveryParameters, VocdoniEnvironment } from "../../src"
 
 
 const CONFIG_PATH = "./config.yaml"
@@ -94,11 +95,11 @@ async function main() {
 
 async function connectGateways(): Promise<GatewayPool> {
     console.log("Connecting to the gateways")
-    const options = {
+    const options: IGatewayDiscoveryParameters = {
         networkId: config.ethNetworkId as EthNetworkID,
+        environment: config.vocdoniEnvironment,
         bootnodesContentUri: config.bootnodesUrlRw,
         numberOfGateways: 2,
-        race: false,
         // timeout: 10000,
     }
     const pool = await GatewayPool.discover(options)
@@ -462,6 +463,7 @@ function getConfig(): Config {
     assert(config.mnemonic, "config.yaml > Please, set the mnemonic to use")
     assert(typeof config.ethPath == "string", "config.yaml > ethPath should be a string")
     assert(typeof config.ethNetworkId == "string", "config.yaml > ethNetworkId should be a string")
+    assert(typeof config.vocdoniEnvironment == "string", "config.yaml > vocdoniEnvironment should be a string")
     assert(typeof config.bootnodesUrlRw == "string", "config.yaml > bootnodesUrlRw should be a string")
     assert(!config.dvoteGatewayUri || typeof config.dvoteGatewayUri == "string", "config.yaml > dvoteGatewayUri should be a string")
     assert(!config.dvoteGatewayPublicKey || typeof config.dvoteGatewayPublicKey == "string", "config.yaml > dvoteGatewayPublicKey should be a string")
@@ -484,6 +486,7 @@ type Config = {
     ethPath: string
     ethNetworkId: string
 
+    vocdoniEnvironment: VocdoniEnvironment
     bootnodesUrlRw: string
     dvoteGatewayUri: string
     dvoteGatewayPublicKey: string
