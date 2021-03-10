@@ -827,21 +827,23 @@ export class VotingApi {
 
     /**
      * Submit the vote envelope to a Gateway
-     * @param {Uint8Array} voteEnvelope Binary contents of the (protobuf) Vote Envelope
+     * @param {VoteEnvelope} voteEnvelope Instance of the VoteEnvelope protobuf model
      * @param {String} signature Hex encoded signature of the voteEnvelope
      * @param {Gateway|GatewayPool} gateway
      */
-    static async submitEnvelope(voteEnvelopeBytes: Uint8Array, hexSignature: string = "", gateway: IGateway | GatewayPool): Promise<DVoteGatewayResponseBody> {
-        if (!voteEnvelopeBytes) return Promise.reject(new Error("Invalid parameters"))
+    static async submitEnvelope(voteEnvelope: VoteEnvelope, hexSignature: string = "", gateway: IGateway | GatewayPool): Promise<DVoteGatewayResponseBody> {
+        if (!(voteEnvelope instanceof VoteEnvelope)) return Promise.reject(new Error("The vote has to be a VoteEnvelope protobuf instance"))
         else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
+        const mainTx = new Tx()
+        mainTx.setVote(voteEnvelope)
+
         const signedTx = new SignedTx()
-        signedTx.setTx(voteEnvelopeBytes)
+        signedTx.setTx(mainTx.serializeBinary())
         const signatureBytes = new Uint8Array(Buffer.from(hexSignature.replace("0x", ""), "hex"))
         signedTx.setSignature(signatureBytes)
 
-        const mainTx = new Tx()
-        const payload = mainTx.setVote(signedTx.serializeBinary())
+        const payload = signedTx.serializeBinary()
 
         const base64Payload = Buffer.from(payload).toString("base64")
         return gateway.sendRequest({ method: "submitRawTx", payload: base64Payload })
@@ -926,7 +928,7 @@ export class VotingApi {
         votes: number[], processId: string, walletOrSigner: Wallet | Signer,
         censusProof: IProofGraviton | IProofCA | IProofEVM,
         processKeys?: IProcessKeys
-    }): Promise<{ envelope: Uint8Array, signature: string }> {
+    }): Promise<{ envelope: VoteEnvelope, signature: string }> {
         if (!params) throw new Error("Invalid parameters")
         else if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
         else if (typeof params.processId != "string" || !params.processId.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid processId")
@@ -1012,7 +1014,7 @@ export class VotingApi {
             const bytes = new Uint8Array(envelope.serializeBinary())
             const signature = await BytesSignature.sign(bytes, params.walletOrSigner)
 
-            return { envelope: bytes, signature }
+            return { envelope, signature }
         } catch (error) {
             throw new Error("Poll vote Envelope could not be generated")
         }

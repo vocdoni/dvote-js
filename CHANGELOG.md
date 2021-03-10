@@ -12,6 +12,8 @@
     - `from` a number indicating the starting index, rather than an ID
 - Removing GW methods: `getProcListResults` and `getProcListLiveResults`
 - Renaming GW methods: `getScrutinizerEntities` into `getEntityList`
+- Expand the `ProcessMetadata` to allow defining how `results` are aggregated and displayed
+- `submitEnvelope` not expects a protobuf `VoteEnvelope` object as returned by `VotingApi.packageSignedEnvelope`
 
 ## 0.25.4
 
