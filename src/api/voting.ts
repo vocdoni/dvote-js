@@ -427,10 +427,10 @@ export class VotingApi {
             contractParameters.metadata = metadataOrigin
 
             // REGISTER THE NEW PROCESS
-            const chainId = await gateway.chainId
+            const ethChainId = await gateway.chainId
             let options: IMethodOverrides
             let tx: ContractTransaction
-            switch (chainId) {
+            switch (ethChainId) {
                 case XDAI_CHAIN_ID:
                     options = { gasPrice: XDAI_GAS_PRICE }
                     tx = await processInstance.newProcess(...contractParameters.toContractParams(options))
@@ -453,7 +453,9 @@ export class VotingApi {
 
             const count = await processInstance.getEntityProcessCount(address)
             if (!count || count.isZero()) return Promise.reject(new Error("The process could not be created"))
-            const processId = await processInstance.getProcessId(address, count.toNumber() - 1, contractParameters.namespace, chainId)
+
+            const namespaceId = await processInstance.namespaceId()
+            const processId = await processInstance.getProcessId(address, count.toNumber() - 1, namespaceId, ethChainId)
 
             // TODO: This might be simplified in the future (skip the process list updates here)
 
@@ -498,10 +500,10 @@ export class VotingApi {
             contractParameters.metadata = metadataOrigin
 
             // REGISTER THE NEW PROCESS
-            const chainId = await gateway.chainId
+            const ethChainId = await gateway.chainId
             let options: IMethodOverrides
             let tx: ContractTransaction
-            switch (chainId) {
+            switch (ethChainId) {
                 case XDAI_CHAIN_ID:
                     options = { gasPrice: XDAI_GAS_PRICE }
                     tx = await processInstance.newProcess(...contractParameters.toContractParams(options))
@@ -524,7 +526,9 @@ export class VotingApi {
 
             const count = await processInstance.getEntityProcessCount(processParameters.tokenAddress)
             if (!count || count.isZero()) return Promise.reject(new Error("The process could not be created"))
-            const processId = await processInstance.getProcessId(processParameters.tokenAddress, count.toNumber() - 1, contractParameters.namespace, chainId)
+
+            const namespaceId = await processInstance.namespaceId()
+            const processId = await processInstance.getProcessId(processParameters.tokenAddress, count.toNumber() - 1, namespaceId, ethChainId)
 
             return processId
         }

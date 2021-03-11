@@ -1,26 +1,18 @@
 import "mocha" // using @types/mocha
-import { expect } from "chai"
+// import { expect } from "chai"
 import DevServices from "../helpers/all-services"
 import { Gateway } from "../../src/net/gateway"
 import EnsResolverBuilder from "../builders/ens-resolver"
-import NamespaceBuilder, { DEFAULT_NAMESPACE } from "../builders/namespace"
+// import NamespaceBuilder, { DEFAULT_NAMESPACE } from "../builders/namespace"
 import ProcessBuilder, { DEFAULT_PARAMS_SIGNATURE } from "../builders/process"
-// import { ProcessMetadata } from "../../src/models/process"
-// import { VotingApi } from "../../src/api/voting"
 import { Contract, providers, Wallet } from "ethers"
-import { EnsPublicResolverContractMethods, ProcessCensusOrigin, ProcessContractMethods, ProcessContractParameters, ProcessEnvelopeType, ProcessMode } from "../../src/net/contracts"
-import { ProcessMetadata } from "../../src/models/process"
-import { EntityMetadataTemplate } from "../../src/models/entity"
-import { VotingApi } from "../../src/api/voting"
-import { GatewayInfo } from "../../src/wrappers/gateway-info"
-import { DVoteGateway } from "../../src/net/gateway-dvote"
-import { Web3Gateway } from "../../src/net/gateway-web3"
+import { EnsResolverContractMethods, ProcessCensusOrigin, ProcessesContractMethods, ProcessContractParameters, ProcessEnvelopeType, ProcessMode } from "../../src/net/contracts"
 
 let server: DevServices
 let gateway: Gateway
 let entityAccount: Wallet
-let entityInstance: EnsPublicResolverContractMethods & Contract
-let processInstance: Contract & ProcessContractMethods
+let entityInstance: EnsResolverContractMethods & Contract
+let processInstance: Contract & ProcessesContractMethods
 
 // function mockResolveName(input: string) {
 //     switch (input) {

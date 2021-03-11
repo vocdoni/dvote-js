@@ -3,7 +3,7 @@ import { expect } from "chai"
 import { Contract } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
 import DevServices, { TestAccount } from "../helpers/all-services"
-import { EnsPublicResolverContractMethods } from "../../src/net/contracts"
+import { EnsResolverContractMethods } from "../../src/net/contracts"
 
 import { ensHashAddress } from "../../src/net/contracts"
 import { Web3Gateway } from "../../src/net/gateway-web3"
@@ -15,7 +15,7 @@ let baseAccount: TestAccount
 let entityAccount: TestAccount
 let randomAccount: TestAccount
 let entityNode: string
-let contractInstance: EnsPublicResolverContractMethods & Contract
+let contractInstance: EnsResolverContractMethods & Contract
 
 addCompletionHooks()
 
