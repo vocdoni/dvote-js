@@ -21,7 +21,7 @@ import {
     ProofCA,
     CAbundle
 } from "../../lib/protobuf/build/js/common/vote_pb.js"
-import { DVoteGatewayResponseBody } from "../net/gateway-dvote"
+import { DVoteGatewayResponseBody, IRequestParameters } from "../net/gateway-dvote"
 import { CensusErc20Api } from "./census"
 
 export const CaBundleProtobuf = CAbundle
@@ -686,23 +686,21 @@ export class VotingApi {
      * @param gateway
      * @param fromIndex (optional) Can be used to seek specific positions and start from them. So if a call without fromIndex (fromIndex = 0) returns 64 values, a second call with fromIndex = 64 will get the next 64.
      */
-    static async getProcessList(entityId: string, gateway: IGateway | IGatewayPool, fromIndex?: number): Promise<string[]> {
-        if (!entityId) throw new Error("Invalid Entity Id")
-        else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) throw new Error("Invalid Gateway object")
+    static async getProcessList(filters: { entityId?: string, namespace?: number, status?: IProcessStatus, withResults?: boolean, from?: number } = {}, gateway: IGateway | IGatewayPool): Promise<string[]> {
+        if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) throw new Error("Invalid Gateway object")
+        else if (typeof filters != "object") throw new Error("Invalid filters parameter")
 
         try {
-            const req: any = {
+            const req: IRequestParameters = {
                 method: "getProcessList",
-                entityId
+                ...filters
             }
-            if (fromIndex) req.from = fromIndex
-
             const response = await gateway.sendRequest(req)
             if (!response || !Array.isArray(response.processList || [])) throw new Error("Invalid response")
             return response.processList || []
         }
         catch (err) {
-            if (err?.message?.includes("Key not found")) return []
+            if (err?.message?.includes?.("Key not found")) return []
             throw err
         }
     }

@@ -9,7 +9,7 @@ const GET_INFO_METHOD_NAME = "getInfo"
 export type FileApiMethod = "fetchFile" | "addFile" | "pinList" | "pinFile" | "unpinFile"
 export type VoteApiMethod = "submitEnvelope" | "getEnvelopeStatus" | "getEnvelope" | "getEnvelopeHeight" | "getProcessKeys" | "getProcessList" | "getEnvelopeList" | "getBlockHeight" | "getBlockStatus" | "getResults"
 export type CensusApiMethod = "addCensus" | "addClaim" | "addClaimBulk" | "getRoot" | "genProof" | "getSize" | "checkProof" | "dump" | "dumpPlain" | "importDump" | "publish" | "importRemote" | "getCensusList"
-export type ResultsApiMethod = "getProcListResults" | "getProcListLiveResults" | "getResults" | "getScrutinizerEntities"
+export type ResultsApiMethod = "getResults" | "getEntityList"
 
 export type RegistryApiMethod = "signUp" | "getEntity" | "updateEntity" | "countMembers" | "listMembers" | "getMember" | "updateMember" | "deleteMembers" | "generateTokens" | "exportTokens" | "importMembers" | "countTargets" | "listTargets" | "getTarget" | "dumpTarget" | "dumpCensus" | "addCensus" | "updateCensus" | "getCensus" | "countCensus" | "listCensus" | "deleteCensus" | "sendValidationLinks" | "sendVotingLinks" | "createTag" | "listTags" | "deleteTag" | "addTag" | "removeTag"
 
@@ -23,7 +23,7 @@ export type ApiMethod = GatewayApiMethod | BackendApiMethod | InfoApiMethod
 export const fileApiMethods: FileApiMethod[] = ["fetchFile", "addFile", "pinList", "pinFile", "unpinFile"]
 export const voteApiMethods: VoteApiMethod[] = ["submitEnvelope", "getEnvelopeStatus", "getEnvelope", "getEnvelopeHeight", "getProcessKeys", "getProcessList", "getEnvelopeList", "getBlockHeight", "getBlockStatus", "getResults"]
 export const censusApiMethods: CensusApiMethod[] = ["addCensus", "addClaim", "addClaimBulk", "getRoot", "genProof", "getSize", "checkProof", "dump", "dumpPlain", "importDump", "publish", "importRemote", "getCensusList"]
-export const resultsApiMethods: ResultsApiMethod[] = ["getProcListResults", "getProcListLiveResults", "getResults", "getScrutinizerEntities"]
+export const resultsApiMethods: ResultsApiMethod[] = ["getResults", "getEntityList"]
 
 export const registryApiMethods: RegistryApiMethod[] = ["signUp", "getEntity", "updateEntity", "countMembers", "listMembers", "getMember", "updateMember", "deleteMembers", "generateTokens", "exportTokens", "importMembers", "countTargets", "listTargets", "getTarget", "dumpTarget", "dumpCensus", "addCensus", "updateCensus", "getCensus", "countCensus", "listCensus", "deleteCensus", "sendValidationLinks", "sendVotingLinks", "createTag", "listTags", "deleteTag", "addTag", "removeTag"]
 

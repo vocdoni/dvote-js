@@ -2,7 +2,16 @@
 
 ## 
 
-- `getProcessList` now uses `from:` instead of `fromId:` and the parameter now is a number indicating an index, rather than an ID
+- Adding secretbox symmetric encrpytion
+- Adding results interpretation fields to the process metadata
+- `getProcessList` now uses a `filter` parameter, allowing to specify:
+    - `entityId`
+    - `namespace`
+    - `status` (0-4)
+    - `withResults`
+    - `from` a number indicating the starting index, rather than an ID
+- Removing GW methods: `getProcListResults` and `getProcListLiveResults`
+- Renaming GW methods: `getScrutinizerEntities` into `getEntityList`
 
 ## 0.25.4
 
