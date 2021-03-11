@@ -3,7 +3,7 @@ import { DVoteGatewayResponseBody, IRequestParameters } from "./gateway-dvote"
 // import { clientApis, GatewayApiName } from "../models/gateway"
 import { GatewayDiscovery, IGatewayDiscoveryParameters } from "./gateway-discovery"
 import { Wallet, Signer, providers } from "ethers"
-import { IProcessContract, IEnsPublicResolverContract, INamespaceContract, ITokenStorageProofContract } from "./contracts"
+import { IProcessesContract, IEnsPublicResolverContract, INamespacesContract, ITokenStorageProofContract, IGenesisContract, IResultsContract } from "./contracts"
 
 const SEQUENTIAL_METHODS = ['addClaimBulk', 'publishCensus'] //generateProof and vote?
 const ERROR_SKIP_METHODS = ['getRoot']
@@ -145,12 +145,20 @@ export class GatewayPool {
         return this.activeGateway.getEnsPublicResolverInstance(walletOrSigner, customAddress)
     }
 
-    public getProcessesInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IProcessContract> {
+    public getGenesisInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IGenesisContract> {
+        return this.activeGateway.getGenesisInstance(walletOrSigner, customAddress)
+    }
+
+    public getNamespacesInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<INamespacesContract> {
+        return this.activeGateway.getNamespacesInstance(walletOrSigner, customAddress)
+    }
+
+    public getProcessesInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IProcessesContract> {
         return this.activeGateway.getProcessesInstance(walletOrSigner, customAddress)
     }
 
-    public getNamespacesInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<INamespaceContract> {
-        return this.activeGateway.getNamespacesInstance(walletOrSigner, customAddress)
+    public getResultsInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IResultsContract> {
+        return this.activeGateway.getResultsInstance(walletOrSigner, customAddress)
     }
 
     public getTokenStorageProofInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<ITokenStorageProofContract> {

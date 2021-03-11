@@ -7,7 +7,7 @@ import { GatewayInfo } from "../wrappers/gateway-info"
 import { GatewayApiName, BackendApiName, ApiMethod } from "../models/gateway"
 import { GatewayBootnode, EthNetworkID } from "./gateway-bootnode"
 import { ContentUri } from "../wrappers/content-uri"
-import { IProcessContract, IEnsPublicResolverContract, INamespaceContract, ITokenStorageProofContract } from "../net/contracts"
+import { IProcessesContract, IEnsPublicResolverContract, INamespacesContract, ITokenStorageProofContract, IGenesisContract, IResultsContract } from "../net/contracts"
 import { DVoteGateway, IDVoteGateway, IRequestParameters } from "./gateway-dvote"
 import { IWeb3Gateway, Web3Gateway } from "./gateway-web3"
 import { VocdoniEnvironment } from "../models/common"
@@ -205,17 +205,35 @@ export class Gateway {
      * @param walletOrSigner (optional) Either an ethers.js Wallet or a Signer
      * @param customAddress (optional) Overrides the address of the contract instance, instead of the value from `*.vocdoni.eth`
      */
-    public getProcessesInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IProcessContract> {
+    public getProcessesInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IProcessesContract> {
         return this.web3.getProcessesInstance(walletOrSigner, customAddress)
     }
 
     /**
-     * Returns a Namespace contract instance, bound to the current Web3 gateway instance
+     * Returns a Genesis contract instance, bound to the current Web3 gateway instance
      * @param walletOrSigner (optional) Either an ethers.js Wallet or a Signer
      * @param customAddress (optional) Overrides the address of the contract instance, instead of the address defined within `processes.vocdoni.eth`
      */
-    public getNamespacesInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<INamespaceContract> {
+    public getGenesisInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IGenesisContract> {
+        return this.web3.getGenesisInstance(walletOrSigner, customAddress)
+    }
+
+    /**
+     * Returns a Namespaces contract instance, bound to the current Web3 gateway instance
+     * @param walletOrSigner (optional) Either an ethers.js Wallet or a Signer
+     * @param customAddress (optional) Overrides the address of the contract instance, instead of the address defined within `processes.vocdoni.eth`
+     */
+    public getNamespacesInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<INamespacesContract> {
         return this.web3.getNamespacesInstance(walletOrSigner, customAddress)
+    }
+
+    /**
+     * Returns a Results contract instance, bound to the current Web3 gateway instance
+     * @param walletOrSigner (optional) Either an ethers.js Wallet or a Signer
+     * @param customAddress (optional) Overrides the address of the contract instance, instead of the address defined within `processes.vocdoni.eth`
+     */
+    public getResultsInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IResultsContract> {
+        return this.web3.getResultsInstance(walletOrSigner, customAddress)
     }
 
     /**
