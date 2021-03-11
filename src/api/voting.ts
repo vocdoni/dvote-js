@@ -682,9 +682,8 @@ export class VotingApi {
 
     /**
      * Fetches the list of process ID's for a given entity
-     * @param entityId
+     * @param filters Optional criteria to filter the processes ID's given by the gateway
      * @param gateway
-     * @param fromIndex (optional) Can be used to seek specific positions and start from them. So if a call without fromIndex (fromIndex = 0) returns 64 values, a second call with fromIndex = 64 will get the next 64.
      */
     static async getProcessList(filters: { entityId?: string, namespace?: number, status?: IProcessStatus, withResults?: boolean, from?: number } = {}, gateway: IGateway | IGatewayPool): Promise<string[]> {
         if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) throw new Error("Invalid Gateway object")
