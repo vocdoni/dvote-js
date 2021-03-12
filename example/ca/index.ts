@@ -220,11 +220,12 @@ async function launchPlainVotes() {
         process.stdout.write(`Starting [${idx}] ; `)
 
         const wallet = Wallet.createRandom()
-        const caBundle = new CaBundleProtobuf()
-        caBundle.setProcessid(new Uint8Array(Buffer.from((processId).replace("0x", ""), "hex")))
-        caBundle.setAddress(new Uint8Array(Buffer.from((wallet.address).replace("0x", ""), "hex")))
-
-        const b64CaBundle = Buffer.from(caBundle.serializeBinary()).toString("base64")
+        const caBundle = CaBundleProtobuf.fromPartial({
+            processId: new Uint8Array(Buffer.from((processId).replace("0x", ""), "hex")),
+            address: new Uint8Array(Buffer.from((wallet.address).replace("0x", ""), "hex"))
+        })
+        const baCundleBytes = CaBundleProtobuf.encode(caBundle).finish()
+        const b64CaBundle = Buffer.from(baCundleBytes).toString("base64")
 
         const request1 = {
             id: Random.getHex().substr(2, 10),
@@ -299,11 +300,12 @@ async function launchBlindedVotes() {
         process.stdout.write(`Starting [${idx}] ; `)
 
         const wallet = Wallet.createRandom()
-        const caBundle = new CaBundleProtobuf()
-        caBundle.setProcessid(new Uint8Array(Buffer.from((processId).replace("0x", ""), "hex")))
-        caBundle.setAddress(new Uint8Array(Buffer.from((wallet.address).replace("0x", ""), "hex")))
+        const caBundle = CaBundleProtobuf.fromPartial({
+            processId: new Uint8Array(Buffer.from((processId).replace("0x", ""), "hex")),
+            address: new Uint8Array(Buffer.from((wallet.address).replace("0x", ""), "hex")),
+        })
 
-        const hexCaBundle = utils.hexlify(caBundle.serializeBinary())
+        const hexCaBundle = utils.hexlify(CaBundleProtobuf.encode(caBundle).finish())
         const hexCaHashedBundle = utils.keccak256(hexCaBundle).substr(2)
 
         const request1 = {

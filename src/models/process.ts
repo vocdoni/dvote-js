@@ -13,7 +13,7 @@ import { object, array, string, mixed, number } from "yup"
 import { by639_1 } from 'iso-language-codes'
 import { IProcessCreateParams } from "../net/contracts"
 import { BigNumber } from "ethers"
-import { SignatureType as CaSignatureType } from "../../lib/protobuf/build/js/common/vote_pb.js"
+import { SignatureType as CaSignatureType } from "../../lib/protobuf/build/ts/common/vote"
 
 export { ProcessMetadataTemplate } from "./templates/process"
 
