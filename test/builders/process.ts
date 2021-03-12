@@ -23,7 +23,7 @@ import ResultsBuilder from "./results"
 
 // DEFAULT VALUES
 export const DEFAULT_PREDECESSOR_INSTANCE_ADDRESS = "0x0000000000000000000000000000000000000000"
-export const DEFAULT_NAMESPACE = 0
+export const DEFAULT_NAMESPACE = 1
 export const DEFAULT_PROCESS_PRICE = 0
 export const DEFAULT_ETH_CHAIN_ID = 0
 export const DEFAULT_PROCESS_MODE = ProcessMode.make()
