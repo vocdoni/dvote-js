@@ -12,6 +12,7 @@ import { VochainWaiter } from "../util/waiters"
 import { Random } from "../util/random"
 import { IMethodOverrides, ProcessStatus, ProcessContractParameters, IProcessCreateParams, IProcessStatus, ProcessCensusOrigin, IProcessCensusOrigin } from "../net/contracts"
 import {
+    Tx, SignedTx,
     VoteEnvelope,
     Proof,
     ProofGraviton,
@@ -19,9 +20,8 @@ import {
     ProofEthereumStorage,
     // ProofEthereumAccount
     ProofCA,
-    CAbundle
-} from "../../lib/protobuf/build/ts/common/vote"
-import { Tx, SignedTx } from "../../lib/protobuf/build/ts/vochain/vochain"
+    CAbundle,
+} from "../models/protobuf"
 import { DVoteGatewayResponseBody, IRequestParameters } from "../net/gateway-dvote"
 import { CensusErc20Api } from "./census"
 
@@ -1013,9 +1013,10 @@ export class VotingApi {
                 proof,
                 processId: new Uint8Array(Buffer.from(params.processId.replace("0x", ""), "hex")),
                 nonce: new Uint8Array(Buffer.from(nonce, "hex")),
-                votePackage: new Uint8Array(votePackage)
+                votePackage: new Uint8Array(votePackage),
+                encryptionKeyIndexes: keyIndexes ? keyIndexes : [],
+                nullifier: new Uint8Array()
             })
-            if (keyIndexes) envelope.encryptionKeyIndexes = keyIndexes
 
             const bytesToSign = new Uint8Array(VoteEnvelope.encode(envelope).finish())
             const signature = await BytesSignature.sign(bytesToSign, params.walletOrSigner)
