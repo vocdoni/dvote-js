@@ -1,6 +1,6 @@
 # DVote JS changelog
 
-## 
+## 0.26.0
 
 - Adding secretbox symmetric encrpytion
 - Adding results interpretation fields to the process metadata
@@ -17,6 +17,7 @@
     - Now expects a protobuf `VoteEnvelope` object as returned by `VotingApi.packageSignedEnvelope`
     - Now expects a wallet/signer instead of the signature
 - `packageSignedEnvelope` now returns a vote envelope object only (protobuf)
+- Protobuf interfaces are exported directly
 
 ## 0.25.4
 
