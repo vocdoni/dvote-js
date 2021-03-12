@@ -260,14 +260,14 @@ async function launchPlainVotes() {
         process.stdout.write(`Pkg Envelope [${idx}] ; `)
         const choices = getChoicesForVoter(idx)
 
-        const { envelope, signature } = processParams.envelopeType.hasEncryptedVotes ?
+        const envelope = processParams.envelopeType.hasEncryptedVotes ?
             await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof: proof, processId, walletOrSigner: wallet, processKeys }) :
             await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof: proof, processId, walletOrSigner: wallet })
 
         process.stdout.write(`Sending [${idx}] ; `)
-        await VotingApi.submitEnvelope(envelope, signature, pool)
+        await VotingApi.submitEnvelope(envelope, wallet, pool)
             .catch(err => {
-                console.error("\nsubmitEnvelope ERR", wallet.address, envelope, signature, err)
+                console.error("\nsubmitEnvelope ERR", wallet.address, envelope, err)
                 if (config.stopOnError) throw err
             })
 
@@ -347,14 +347,14 @@ async function launchBlindedVotes() {
         process.stdout.write(`Pkg Envelope [${idx}] ; `)
         const choices = getChoicesForVoter(idx)
 
-        const { envelope, signature } = processParams.envelopeType.hasEncryptedVotes ?
+        const envelope = processParams.envelopeType.hasEncryptedVotes ?
             await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof: proof, processId, walletOrSigner: wallet, processKeys }) :
             await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof: proof, processId, walletOrSigner: wallet })
 
         process.stdout.write(`Sending [${idx}] ; `)
-        await VotingApi.submitEnvelope(envelope, signature, pool)
+        await VotingApi.submitEnvelope(envelope, wallet, pool)
             .catch(err => {
-                console.error("\nsubmitEnvelope ERR", wallet.address, envelope, signature, err)
+                console.error("\nsubmitEnvelope ERR", wallet.address, envelope, err)
                 if (config.stopOnError) throw err
             })
 

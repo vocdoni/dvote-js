@@ -314,7 +314,7 @@ describe("Genesis", () => {
             expect(await contractInstance.isOracle(DEFAULT_CHAIN_ID, address2)).to.eq(false)
         })
 
-        it("Should notify about oracles removed on a Namespace", async () => {
+        it("Should notify about oracles removed on a Chain", async () => {
             const address1 = "0x1234567890123456789012345678901234567890"
 
             await contractInstance.addOracle(DEFAULT_CHAIN_ID, address1)

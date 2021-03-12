@@ -19,7 +19,7 @@ import { Web3Gateway } from "../src/net/gateway-web3"
 import { GatewayPool } from "../src/net/gateway-pool"
 import { GatewayBootnode } from "../src/net/gateway-bootnode"
 import { EntityMetadataTemplate, EntityMetadata, TextRecordKeys } from "../src/models/entity"
-import { ProcessMetadata, ProcessMetadataTemplate } from "../src/models/process"
+import { INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "../src/models/process"
 import { GatewayInfo } from "../src/wrappers/gateway-info"
 import { XDAI_CHAIN_ID, XDAI_ENS_REGISTRY_ADDRESS, VOCHAIN_BLOCK_TIME } from "../src/constants"
 import { JsonSignature, BytesSignature } from "../src/util/data-signing"
@@ -314,7 +314,6 @@ async function createProcessRaw() {
         maxTotalCost: 0,
         costExponent: 10000,
         maxVoteOverwrites: 1,
-        namespace: 0,
         paramsSignature: "0x0000000000000000000000000000000000000000000000000000000000000000"
     })
     const tx = await processesInstance.newProcess(...params.toContractParams())
@@ -345,6 +344,10 @@ async function createProcessFull() {
         "meta": {
             "my": "custom-field",
             value: 1234
+        },
+        "results": {
+            aggregation: "discrete-counting",
+            display: "multiple-question"
         },
         "questions": [
             {
@@ -465,7 +468,7 @@ async function cloneVotingProcess() {
     const NEW_MERKLE_ROOT = "0xbae0912183e55c3173bad6eeb4408bfe4de6892f82123562475aca66b109ba13"
     const NEW_MERKLE_TREE_ORIGIN = "ipfs://QmUC4NokWrykhZwY9CNGPz7KS8AvHWD3M4SLk5doMRMCmA"
 
-    const params = {
+    const params: INewProcessParams = {
         mode: currentParameters.mode,
         envelopeType: currentParameters.envelopeType,
         censusOrigin: currentParameters.censusOrigin,
@@ -475,13 +478,11 @@ async function cloneVotingProcess() {
         censusRoot: NEW_MERKLE_ROOT,
         censusUri: NEW_MERKLE_TREE_ORIGIN,
         maxCount: currentParameters.maxCount,
-        questionCount: currentParameters.questionCount,
         costExponent: currentParameters.costExponent,
-        namespace: currentParameters.namespace,
-        paramsSignature: "0x0000000000000000000000000000000000000000000000000000000000000000",
         maxValue: currentParameters.maxCount,
         maxTotalCost: currentParameters.maxTotalCost,
-        maxVoteOverwrites: currentParameters.maxVoteOverwrites
+        maxVoteOverwrites: currentParameters.maxVoteOverwrites,
+        paramsSignature: "0x0000000000000000000000000000000000000000000000000000000000000000",
     }
     const processId = await VotingApi.newProcess(params, wallet, pool)
 
@@ -538,16 +539,15 @@ async function useVoteApi() {
     const votes = [1, 2, 1]
 
     // Open vote version:
-    const { envelope, signature } = await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet })
+    const envelope = await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet })
 
     // Encrypted vote version:
     // const voteEnvelope = await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
 
     console.log("- Poll Envelope:", envelope)
-    console.log("- Poll Signature:", signature)
 
     console.log("- Submitting vote envelope")
-    await VotingApi.submitEnvelope(envelope, signature, pool)
+    await VotingApi.submitEnvelope(envelope, wallet, pool)
 
     const envelopeList = await VotingApi.getEnvelopeList(processId, 0, 100, pool)
     console.log("- Envelope list:", envelopeList)
@@ -594,12 +594,12 @@ async function submitVoteBatch() {
             const publicKeyHash = CensusOffChainApi.digestPublicKey(wallet.publicKey)
             const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: publicKeyHash }, true, pool)
             const votes = [1]
-            const { envelope, signature } = await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet })
+            const envelope = await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet })
             // Encrypted version:
             // const voteEnvelope = await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
 
             console.log("- Submitting vote envelope")
-            await VotingApi.submitEnvelope(envelope, signature, pool)
+            await VotingApi.submitEnvelope(envelope, wallet, pool)
 
             console.log("- Envelope height is now:", await VotingApi.getEnvelopeHeight(processId, pool))
         } catch (err) {

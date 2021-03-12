@@ -244,12 +244,12 @@ async function submitVotes(accounts: Account[]) {
         const choices = [0]
         const censusProof = result.proof.storageProof[0]
 
-        const { envelope, signature } = processParams.envelopeType.hasEncryptedVotes ?
+        const envelope = processParams.envelopeType.hasEncryptedVotes ?
             await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet, processKeys }) :
             await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet })
 
         process.stdout.write(`Sending [${idx}] ; `)
-        await VotingApi.submitEnvelope(envelope, signature, pool)
+        await VotingApi.submitEnvelope(envelope, wallet, pool)
             .catch(err => {
                 console.error("\nsubmitEnvelope ERR", account.publicKey, err)
                 if (config.stopOnError) throw err

@@ -552,7 +552,12 @@ export class VotingApi {
         else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) throw new Error("Invalid Gateway object")
 
         try {
-            const processInstance = await gateway.getProcessesInstance(walletOrSigner)
+            let processInstance = await gateway.getProcessesInstance(walletOrSigner)
+            const creationInstanceAddr = await processInstance.getCreationInstance(processId)
+
+            if (creationInstanceAddr != processInstance.address) {
+                processInstance = await gateway.getProcessesInstance(walletOrSigner, creationInstanceAddr)
+            }
 
             const tx = await processInstance.setStatus(processId, newStatus)
             if (!tx) throw new Error("Could not start the blockchain transaction")
@@ -577,7 +582,12 @@ export class VotingApi {
         else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) throw new Error("Invalid Gateway object")
 
         try {
-            const processInstance = await gateway.getProcessesInstance(walletOrSigner)
+            let processInstance = await gateway.getProcessesInstance(walletOrSigner)
+            const creationInstanceAddr = await processInstance.getCreationInstance(processId)
+
+            if (creationInstanceAddr != processInstance.address) {
+                processInstance = await gateway.getProcessesInstance(walletOrSigner, creationInstanceAddr)
+            }
 
             const tx = await processInstance.incrementQuestionIndex(processId)
             if (!tx) throw new Error("Could not start the blockchain transaction")
@@ -602,7 +612,12 @@ export class VotingApi {
         else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) throw new Error("Invalid Gateway object")
 
         try {
-            const processInstance = await gateway.getProcessesInstance(walletOrSigner)
+            let processInstance = await gateway.getProcessesInstance(walletOrSigner)
+            const creationInstanceAddr = await processInstance.getCreationInstance(processId)
+
+            if (creationInstanceAddr != processInstance.address) {
+                processInstance = await gateway.getProcessesInstance(walletOrSigner, creationInstanceAddr)
+            }
 
             const tx = await processInstance.setCensus(processId, censusRoot, censusUri)
             if (!tx) throw new Error("Could not start the blockchain transaction")
@@ -621,15 +636,15 @@ export class VotingApi {
      * @param walletOrSigner
      * @param web3Gateway
      */
-    static async setResults(processId: string, results: number[][], envelopeCount: number, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<void> {
+    static async setResults(processId: string, results: number[][], envelopeCount: number, vochainId: number, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<void> {
         if (!processId) throw new Error("Invalid process ID")
         else if (!walletOrSigner) throw new Error("Invalid Wallet or Signer")
         else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) throw new Error("Invalid Gateway object")
 
         try {
-            const processInstance = await gateway.getProcessesInstance(walletOrSigner)
+            const resultsInstance = await gateway.getResultsInstance(walletOrSigner)
 
-            const tx = await processInstance.setResults(processId, results, envelopeCount)
+            const tx = await resultsInstance.setResults(processId, results, envelopeCount, vochainId)
             if (!tx) throw new Error("Could not start the blockchain transaction")
             await tx.wait()
         }
@@ -831,20 +846,18 @@ export class VotingApi {
      * @param {String} signature Hex encoded signature of the voteEnvelope
      * @param {Gateway|GatewayPool} gateway
      */
-    static async submitEnvelope(voteEnvelope: VoteEnvelope, hexSignature: string = "", gateway: IGateway | GatewayPool): Promise<DVoteGatewayResponseBody> {
+    static async submitEnvelope(voteEnvelope: VoteEnvelope, walletOrSigner: Wallet | Signer, gateway: IGateway | GatewayPool): Promise<DVoteGatewayResponseBody> {
         if (typeof voteEnvelope != "object") return Promise.reject(new Error("The vote has to be a VoteEnvelope object"))
         else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
-        const tx = Tx.fromPartial({
-            payload: { $case: "vote", vote: voteEnvelope }
-        })
+        const tx = Tx.encode({ payload: { $case: "vote", vote: voteEnvelope } })
+        const txBytes = tx.finish()
 
-        const signedTx = SignedTx.fromPartial({
-            tx: Tx.encode(tx).finish(),
-            signature: new Uint8Array(Buffer.from(hexSignature.replace("0x", ""), "hex"))
-        })
+        const hexSignature = await BytesSignature.sign(txBytes, walletOrSigner)
+        const signature = new Uint8Array(Buffer.from(hexSignature.replace("0x", ""), "hex"))
 
-        const signedTxBytes = SignedTx.encode(signedTx).finish()
+        const signedTx = SignedTx.encode({ tx: txBytes, signature })
+        const signedTxBytes = signedTx.finish()
 
         const base64Payload = Buffer.from(signedTxBytes).toString("base64")
         return gateway.sendRequest({ method: "submitRawTx", payload: base64Payload })
@@ -898,7 +911,7 @@ export class VotingApi {
     static packageAnonymousEnvelope(params: {
         votes: number[], censusProof: string, processId: string, privateKey: string,
         processKeys?: IProcessKeys
-    }): Uint8Array {
+    }): Promise<VoteEnvelope> {
         if (!params) throw new Error("Invalid parameters");
         if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
         else if (typeof params.censusProof != "string" || !params.censusProof.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid Merkle Proof")
@@ -929,7 +942,7 @@ export class VotingApi {
         votes: number[], processId: string, walletOrSigner: Wallet | Signer,
         censusProof: IProofGraviton | IProofCA | IProofEVM,
         processKeys?: IProcessKeys
-    }): Promise<{ envelope: VoteEnvelope, signature: string }> {
+    }): Promise<VoteEnvelope> {
         if (!params) throw new Error("Invalid parameters")
         else if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
         else if (typeof params.processId != "string" || !params.processId.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid processId")
@@ -1009,7 +1022,7 @@ export class VotingApi {
             const nonce = Random.getHex().substr(2)
             const { votePackage, keyIndexes } = VotingApi.packageVoteContent(params.votes, params.processKeys)
 
-            const envelope = VoteEnvelope.fromPartial({
+            return VoteEnvelope.fromPartial({
                 proof,
                 processId: new Uint8Array(Buffer.from(params.processId.replace("0x", ""), "hex")),
                 nonce: new Uint8Array(Buffer.from(nonce, "hex")),
@@ -1017,11 +1030,6 @@ export class VotingApi {
                 encryptionKeyIndexes: keyIndexes ? keyIndexes : [],
                 nullifier: new Uint8Array()
             })
-
-            const bytesToSign = new Uint8Array(VoteEnvelope.encode(envelope).finish())
-            const signature = await BytesSignature.sign(bytesToSign, params.walletOrSigner)
-
-            return { envelope, signature }
         } catch (error) {
             throw new Error("Poll vote Envelope could not be generated")
         }

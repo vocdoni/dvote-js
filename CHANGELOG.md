@@ -13,7 +13,10 @@
 - Removing GW methods: `getProcListResults` and `getProcListLiveResults`
 - Renaming GW methods: `getScrutinizerEntities` into `getEntityList`
 - Expand the `ProcessMetadata` to allow defining how `results` are aggregated and displayed
-- `submitEnvelope` not expects a protobuf `VoteEnvelope` object as returned by `VotingApi.packageSignedEnvelope`
+- `submitEnvelope`
+    - Now expects a protobuf `VoteEnvelope` object as returned by `VotingApi.packageSignedEnvelope`
+    - Now expects a wallet/signer instead of the signature
+- `packageSignedEnvelope` now returns a vote envelope object only (protobuf)
 
 ## 0.25.4
 

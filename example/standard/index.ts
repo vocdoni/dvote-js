@@ -136,11 +136,11 @@ async function setEntityMetadata() {
     // Read back
     const entityMetaPost = await EntityApi.getMetadata(await entityWallet.getAddress(), pool)
     assert(entityMetaPost)
-    assert.equal(entityMetaPost.name.default, metadata.name.default)
-    assert.equal(entityMetaPost.description.default, metadata.description.default)
-    assert.equal(entityMetaPost.actions.length, 1)
-    assert.equal(entityMetaPost.votingProcesses.active.length, 0)
-    assert.equal(entityMetaPost.votingProcesses.ended.length, 0)
+    assert.strictEqual(entityMetaPost.name.default, metadata.name.default)
+    assert.strictEqual(entityMetaPost.description.default, metadata.description.default)
+    assert.strictEqual(entityMetaPost.actions.length, 1)
+    assert.strictEqual(entityMetaPost.votingProcesses.active.length, 0)
+    assert.strictEqual(entityMetaPost.votingProcesses.ended.length, 0)
 
     return entityMetaPost
 }
@@ -258,11 +258,11 @@ async function launchNewVote(censusRoot, censusUri) {
     // Reading back
     processParams = await VotingApi.getProcessParameters(processId, pool)
     processMetadata = await VotingApi.getProcessMetadata(processId, pool)
-    assert.equal(processParams.entityAddress, entityAddr)
-    assert.equal(processParams.startBlock, processParamsPre.startBlock, "SENT " + JSON.stringify(processParamsPre) + " GOT " + JSON.stringify(processParams))
-    assert.equal(processParams.blockCount, processParamsPre.blockCount)
-    assert.equal(processParams.censusRoot, processParamsPre.censusRoot)
-    assert.equal(processParams.censusUri, processParamsPre.censusUri)
+    assert.strictEqual(processParams.entityAddress, entityAddr)
+    assert.strictEqual(processParams.startBlock, processParamsPre.startBlock, "SENT " + JSON.stringify(processParamsPre) + " GOT " + JSON.stringify(processParams))
+    assert.strictEqual(processParams.blockCount, processParamsPre.blockCount)
+    assert.strictEqual(processParams.censusRoot, processParamsPre.censusRoot)
+    assert.strictEqual(processParams.censusUri, processParamsPre.censusUri)
 }
 
 async function waitUntilStarted() {
@@ -310,14 +310,14 @@ async function launchVotes(accounts) {
         process.stdout.write(`Pkg Envelope [${idx}] ; `)
         const choices = getChoicesForVoter(idx)
 
-        const { envelope, signature } = processParams.envelopeType.hasEncryptedVotes ?
+        const envelope = processParams.envelopeType.hasEncryptedVotes ?
             await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet, processKeys }) :
             await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet })
 
         process.stdout.write(`Sending [${idx}] ; `)
-        await VotingApi.submitEnvelope(envelope, signature, pool)
+        await VotingApi.submitEnvelope(envelope, wallet, pool)
             .catch(err => {
-                console.error("\nsubmitEnvelope ERR", account.publicKey, envelope, signature, err)
+                console.error("\nsubmitEnvelope ERR", account.publicKey, envelope, err)
                 if (config.stopOnError) throw err
             })
 
@@ -325,7 +325,7 @@ async function launchVotes(accounts) {
         await new Promise(resolve => setTimeout(resolve, 11000))
 
         process.stdout.write(`Checking [${idx}] ; `)
-        const nullifier = await VotingApi.getSignedVoteNullifier(wallet.address, processId)
+        const nullifier = VotingApi.getSignedVoteNullifier(wallet.address, processId)
         const { registered, date, block } = await VotingApi.getEnvelopeStatus(processId, nullifier, pool)
             .catch(err => {
                 console.error("\ngetEnvelopeStatus ERR", account.publicKey, nullifier, err)
@@ -341,7 +341,7 @@ async function launchVotes(accounts) {
 }
 
 async function checkVoteResults() {
-    assert.equal(typeof processId, "string")
+    assert.strictEqual(typeof processId, "string")
 
     if (config.encryptedVote) {
         console.log("Waiting a bit for the votes to be received", processId)
@@ -350,7 +350,7 @@ async function checkVoteResults() {
 
         console.log("Fetching the number of votes for", processId)
         const envelopeHeight = await VotingApi.getEnvelopeHeight(processId, pool)
-        assert.equal(envelopeHeight, config.numAccounts)
+        assert.strictEqual(envelopeHeight, config.numAccounts)
 
         processParams = await VotingApi.getProcessParameters(processId, pool)
 
@@ -370,43 +370,43 @@ async function checkVoteResults() {
     const resultsDigest = await VotingApi.getResultsDigest(processId, pool)
     const totalVotes = await VotingApi.getEnvelopeHeight(processId, pool)
 
-    assert.equal(resultsDigest.questions.length, 1)
+    assert.strictEqual(resultsDigest.questions.length, 1)
     assert(resultsDigest.questions[0].voteResults)
 
     switch (config.votesPattern) {
         case "all-0":
             assert(resultsDigest.questions[0].voteResults.length >= 2)
-            assert.equal(resultsDigest.questions[0].voteResults[0].votes, config.numAccounts)
-            assert.equal(resultsDigest.questions[0].voteResults[1].votes, 0)
+            assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes, config.numAccounts)
+            assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes, 0)
             break
         case "all-1":
             assert(resultsDigest.questions[0].voteResults.length >= 2)
-            assert.equal(resultsDigest.questions[0].voteResults[0].votes, 0)
-            assert.equal(resultsDigest.questions[0].voteResults[1].votes, config.numAccounts)
+            assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes, 0)
+            assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes, config.numAccounts)
             break
         case "all-2":
             assert(resultsDigest.questions[0].voteResults.length >= 3)
-            assert.equal(resultsDigest.questions[0].voteResults[0].votes, 0)
-            assert.equal(resultsDigest.questions[0].voteResults[1].votes, 0)
-            assert.equal(resultsDigest.questions[0].voteResults[2].votes, config.numAccounts)
+            assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes, 0)
+            assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes, 0)
+            assert.strictEqual(resultsDigest.questions[0].voteResults[2].votes, config.numAccounts)
             break
         case "all-even":
             assert(resultsDigest.questions[0].voteResults.length >= 2)
             if (config.numAccounts % 2 == 0) {
-                assert.equal(resultsDigest.questions[0].voteResults[0].votes, config.numAccounts / 2)
-                assert.equal(resultsDigest.questions[0].voteResults[1].votes, config.numAccounts / 2)
+                assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes, config.numAccounts / 2)
+                assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes, config.numAccounts / 2)
             }
             else {
-                assert.equal(resultsDigest.questions[0].voteResults[0].votes, Math.ceil(config.numAccounts / 2))
-                assert.equal(resultsDigest.questions[0].voteResults[1].votes, Math.floor(config.numAccounts / 2))
+                assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes, Math.ceil(config.numAccounts / 2))
+                assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes, Math.floor(config.numAccounts / 2))
             }
             break
         case "incremental":
-            assert.equal(resultsDigest.questions[0].voteResults.length, 2)
+            assert.strictEqual(resultsDigest.questions[0].voteResults.length, 2)
             resultsDigest.questions.forEach((question, i) => {
                 for (let j = 0; j < question.voteResults.length; j++) {
-                    if (i == j) assert.equal(question.voteResults[j].votes, config.numAccounts)
-                    else assert.equal(question.voteResults[j].votes, 0)
+                    if (i == j) assert.strictEqual(question.voteResults[j].votes, config.numAccounts)
+                    else assert.strictEqual(question.voteResults[j].votes, 0)
                 }
             })
             break
@@ -414,7 +414,7 @@ async function checkVoteResults() {
             throw new Error("The type of votes is unknown")
     }
 
-    assert.equal(totalVotes, config.numAccounts)
+    assert.strictEqual(totalVotes, config.numAccounts)
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -433,7 +433,7 @@ main()
 /////////////////////////////////////////////////////////////////////////////
 
 function getChoicesForVoter(voterIdx) {
-    assert.equal(typeof voterIdx, "number")
+    assert.strictEqual(typeof voterIdx, "number")
     assert(processMetadata)
     assert(processMetadata.questions)
 
