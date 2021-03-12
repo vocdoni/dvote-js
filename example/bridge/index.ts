@@ -184,7 +184,6 @@ async function launchNewVote() {
         maxVoteOverwrites: 1,
         evmBlockHeight: blockNumber,
         tokenAddress: config.tokenAddress,
-        namespace: 0,
         paramsSignature: "0x0000000000000000000000000000000000000000000000000000000000000000"
     }
 

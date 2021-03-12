@@ -9,7 +9,7 @@ import { EntityMetadataTemplate } from "../../src/models/entity"
 import { EntityApi } from "../../src/api/entity"
 import { VotingApi } from "../../src/api/voting"
 import { CensusOffChainApi } from "../../src/api/census"
-import { ProcessMetadata, ProcessMetadataTemplate } from "../../src/models/process"
+import { INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "../../src/models/process"
 import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../../src/net/contracts"
 import { VochainWaiter, EthWaiter } from "../../src/util/waiters"
 import { compressPublicKey } from "../../dist"
@@ -230,7 +230,7 @@ async function launchNewVote(censusRoot, censusUri) {
     const startBlock = currentBlock + 25
     const blockCount = 60480
 
-    const processParamsPre = {
+    const processParamsPre: INewProcessParams = {
         mode: ProcessMode.make({ autoStart: true, interruptible: true }), // helper
         envelopeType: ProcessEnvelopeType.ENCRYPTED_VOTES, // bit mask
         censusOrigin: ProcessCensusOrigin.OFF_CHAIN_TREE,
@@ -242,10 +242,8 @@ async function launchNewVote(censusRoot, censusUri) {
         maxCount: 1,
         maxValue: 3,
         maxTotalCost: 0,
-        uniqueValues: false,
         costExponent: 10000,
         maxVoteOverwrites: 1,
-        namespace: 0,
         paramsSignature: "0x0000000000000000000000000000000000000000000000000000000000000000"
     }
 
