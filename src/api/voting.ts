@@ -80,7 +80,7 @@ export class VotingApi {
         if (!entityAddress) throw new Error("Invalid address")
 
         return utils.keccak256(
-            utils.solidityPack(["address", "uint256", "uint16", "uint64"], [entityAddress, processCountIndex, namespace, chainId])
+            utils.solidityPack(["address", "uint256", "uint32", "uint32"], [entityAddress, processCountIndex, namespace, chainId])
         )
     }
 

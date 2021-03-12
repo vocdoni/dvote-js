@@ -9,7 +9,7 @@ import { expect } from "chai"
 import { Contract, Wallet } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
 import { DevWeb3Service, TestAccount } from "../helpers/web3-service"
-import { ProcessCensusOrigin, ProcessContractMethods, ProcessContractParameters, ProcessStatus } from "../../src/net/contracts"
+import { GenesisContractMethods, ProcessCensusOrigin, ProcessesContractMethods, ProcessContractParameters, ProcessStatus } from "../../src/net/contracts"
 import { Buffer } from "buffer/"
 
 import { VotingApi, IVotePackage } from "../../src/api/voting"
@@ -20,8 +20,8 @@ import ProcessBuilder, {
     DEFAULT_ENVELOPE_TYPE,
     DEFAULT_CENSUS_ORIGIN,
     DEFAULT_METADATA_CONTENT_HASHED_URI,
-    DEFAULT_MERKLE_ROOT,
-    DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI,
+    DEFAULT_CENSUS_ROOT,
+    DEFAULT_CENSUS_TREE_CONTENT_HASHED_URI,
     DEFAULT_BLOCK_COUNT,
     DEFAULT_START_BLOCK,
     DEFAULT_NAMESPACE,
@@ -37,6 +37,8 @@ import NamespaceBuilder from "../builders/namespace"
 import { Web3Gateway } from "../../src/net/gateway-web3"
 import { BytesSignature } from "../../src/util/data-signing"
 import { compressPublicKey } from "../../dist"
+import GenesisBuilder, { DEFAULT_CHAIN_ID } from "../builders/genesis"
+import ResultsBuilder from "../builders/results"
 const {
     VoteEnvelope,
     Proof,
@@ -53,7 +55,7 @@ let randomAccount: TestAccount
 let randomAccount1: TestAccount
 let randomAccount2: TestAccount
 let processId: string
-let contractInstance: ProcessContractMethods & Contract
+let contractInstance: ProcessesContractMethods & Contract
 // let tx: ContractReceipt
 let chainId: number
 
@@ -72,7 +74,7 @@ describe("Governance Process", () => {
         randomAccount2 = accounts[4]
 
         await server.start()
-        chainId = 123
+        chainId = DEFAULT_CHAIN_ID
         contractInstance = await new ProcessBuilder(accounts).withChainId(chainId).build()
         processId = await contractInstance.getProcessId(entityAccount.address, 0, DEFAULT_NAMESPACE, chainId)
     })
@@ -83,7 +85,7 @@ describe("Governance Process", () => {
         it("Should attach to a given instance and deal with the same data", async () => {
             // set custom data on a deployed instance
             expect(contractInstance.address).to.be.ok
-            const newProcessId = await contractInstance.getNextProcessId(entityAccount.address, DEFAULT_NAMESPACE)
+            const newProcessId = await contractInstance.getNextProcessId(entityAccount.address)
 
             const namespaceInstance = await new NamespaceBuilder(accounts).build()
             await ProcessBuilder.createDefaultProcess(contractInstance)
@@ -100,8 +102,8 @@ describe("Governance Process", () => {
             expect(data.envelopeType.value).to.equal(DEFAULT_PROCESS_MODE)
             expect(data.censusOrigin.value).to.eq(DEFAULT_CENSUS_ORIGIN)
             expect(data.metadata.toLowerCase()).to.equal(DEFAULT_METADATA_CONTENT_HASHED_URI)
-            expect(data.censusRoot).to.equal(DEFAULT_MERKLE_ROOT)
-            expect(data.censusUri).to.equal(DEFAULT_MERKLE_TREE_CONTENT_HASHED_URI)
+            expect(data.censusRoot).to.equal(DEFAULT_CENSUS_ROOT)
+            expect(data.censusUri).to.equal(DEFAULT_CENSUS_TREE_CONTENT_HASHED_URI)
             expect(data.entityAddress).to.equal(entityAccount.address)
             expect(data.status.isPaused).to.eq(true)
             expect(data.maxCount).to.eq(DEFAULT_MAX_COUNT)
@@ -109,7 +111,6 @@ describe("Governance Process", () => {
             expect(data.maxTotalCost).to.eq(DEFAULT_MAX_TOTAL_COST)
             expect(data.costExponent).to.eq(DEFAULT_COST_EXPONENT)
             expect(data.maxVoteOverwrites).to.eq(DEFAULT_MAX_VOTE_OVERWRITES)
-            expect(data.namespace).to.eq(DEFAULT_NAMESPACE)
             expect(data.paramsSignature).to.eq(null)  // Not retrieved by contract.get(...)
         })
 
@@ -130,14 +131,18 @@ describe("Governance Process", () => {
 
         it("The getProcessId() should match getNextProcessId()", async () => {
             // entityAddress has one process created by default from the builder
-            expect(await contractInstance.getNextProcessId(entityAccount.address, DEFAULT_NAMESPACE)).to.equal(await contractInstance.getProcessId(entityAccount.address, 1, DEFAULT_NAMESPACE, chainId))
+            let namespaceId = await contractInstance.namespaceId()
+            expect((await contractInstance.getEntityProcessCount(entityAccount.address)).toNumber()).to.eq(1)
+            expect(await contractInstance.getNextProcessId(entityAccount.address)).to.equal(await contractInstance.getProcessId(entityAccount.address, 1, namespaceId, DEFAULT_CHAIN_ID))
 
             // randomAccount has no process yet
-            expect(await contractInstance.getNextProcessId(randomAccount.address, DEFAULT_NAMESPACE)).to.equal(await contractInstance.getProcessId(randomAccount.address, 0, DEFAULT_NAMESPACE, chainId))
+            namespaceId = await contractInstance.namespaceId()
+            expect((await contractInstance.getEntityProcessCount(randomAccount1.address)).toNumber()).to.eq(0)
+            expect(await contractInstance.getNextProcessId(randomAccount.address)).to.equal(await contractInstance.getProcessId(randomAccount.address, 0, namespaceId, DEFAULT_CHAIN_ID))
         })
 
         it("Should work for any creator account", async () => {
-            processId = await contractInstance.getNextProcessId(randomAccount.address, DEFAULT_NAMESPACE)
+            processId = await contractInstance.getNextProcessId(randomAccount.address)
             const builder = new ProcessBuilder(accounts).withChainId(chainId)
 
             contractInstance = await builder.withEntityAccount(randomAccount).build()
@@ -145,7 +150,7 @@ describe("Governance Process", () => {
             let params = ProcessContractParameters.fromContract(contractState)
             expect(params.entityAddress).to.eq(randomAccount.address)
 
-            processId = await contractInstance.getNextProcessId(randomAccount2.address, DEFAULT_NAMESPACE)
+            processId = await contractInstance.getNextProcessId(randomAccount2.address)
             contractInstance = await builder.withEntityAccount(randomAccount2).build()
             contractState = await contractInstance.get(processId)
             params = ProcessContractParameters.fromContract(contractState)
@@ -155,24 +160,27 @@ describe("Governance Process", () => {
 
     describe("Results publishing", () => {
         it("Should allow to publish the results", async () => {
+            const genesisInstance = (await new GenesisBuilder(accounts).withOracles([randomAccount1.address]).build())
+            const resultsInstance = await new ResultsBuilder(accounts).withGenesisAddress(genesisInstance.address).build()
+
             // created by the entity
             contractInstance = await new ProcessBuilder(accounts)
                 .withChainId(chainId)
                 .withEntityAccount(entityAccount)
-                .withOracle(randomAccount1.address)
+                .withResultsAddress(resultsInstance.address)
                 .withQuestionCount(2)
                 .build()
 
-            const result1 = await contractInstance.getResults(processId)
-            expect(result1.tally).to.deep.equal([])
-            expect(result1.height).to.equal(0)
+            await resultsInstance.connect(baseAccount.wallet).setProcessesAddress(contractInstance.address)
 
-            const tx1 = await contractInstance.connect(randomAccount1.wallet).setResults(processId, [[1, 5, 4], [4, 1, 5]], 10)
+            expect(resultsInstance.getResults(processId)).to.throw
+
+            const tx1 = await resultsInstance.connect(randomAccount1.wallet).setResults(processId, [[1, 5, 4], [4, 1, 5]], 10, DEFAULT_CHAIN_ID)
             expect(tx1).to.be.ok
-            expect(tx1.to).to.equal(contractInstance.address)
+            expect(tx1.to).to.equal(resultsInstance.address)
             await tx1.wait()
 
-            const result2 = await contractInstance.getResults(processId)
+            const result2 = await resultsInstance.getResults(processId)
             expect(result2.tally).to.deep.equal([[1, 5, 4], [4, 1, 5]])
             expect(result2.height).to.eq(10)
         })
