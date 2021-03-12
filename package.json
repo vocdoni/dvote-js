@@ -31,6 +31,8 @@
     "google-protobuf": "^3.14.0",
     "iso-language-codes": "^1.0.6",
     "js-sha3": "^0.8.0",
+    "long": "^4.0.0",
+    "protobufjs": "^6.10.2",
     "tweetnacl": "^1.0.3",
     "tweetnacl-sealedbox-js": "^1.2.0",
     "universal-parse-url": "^1.0.2",

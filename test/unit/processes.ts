@@ -39,14 +39,16 @@ import { BytesSignature } from "../../src/util/data-signing"
 import { compressPublicKey } from "../../dist"
 import GenesisBuilder, { DEFAULT_CHAIN_ID } from "../builders/genesis"
 import ResultsBuilder from "../builders/results"
-const {
+import {
     VoteEnvelope,
     Proof,
     ProofGraviton,
+    ProofCA,
+    ProofEthereumStorage,
     // ProofIden3,
     // ProofEthereumStorage,
     // ProofEthereumAccount
-} = require("../../lib/protobuf/build/js/common/vote_pb.js")
+} from "../../lib/protobuf/build/ts/common/vote"
 
 let accounts: TestAccount[]
 let baseAccount: TestAccount
@@ -58,6 +60,10 @@ let processId: string
 let contractInstance: ProcessesContractMethods & Contract
 // let tx: ContractReceipt
 let chainId: number
+
+type ProofWithGraviton = { $case: "graviton"; graviton: ProofGraviton }
+type ProofWithCa = { $case: "ca"; ca: ProofCA }
+type ProofWithEthereumStorage = { $case: "ethereumStorage"; ethereumStorage: ProofEthereumStorage }
 
 const server = new DevWeb3Service({ port: 9123 })
 const nullAddress = "0x0000000000000000000000000000000000000000"
@@ -230,25 +236,25 @@ describe("Governance Process", () => {
             let siblings = "0x0003000000000000000000000000000000000000000000000000000000000006f0d72fbd8b3a637488107b0d8055410180ec017a4d76dbb97bee1c3086a25e25b1a6134dbd323c420d6fc2ac3aaf8fff5f9ac5bc0be5949be64b7cfd1bcc5f1f"
 
             const { envelope: envelope1, signature: signature1 } = await VotingApi.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), votes: [1, 2, 3], censusProof: siblings, processId, walletOrSigner: wallet })
-            expect(Buffer.from(envelope1.getProcessid()).toString("hex")).to.eq(processId.slice(2))
-            expect(Buffer.from(envelope1.getProof().getGraviton().getSiblings()).toString("hex")).to.eq(siblings.slice(2))
-            const pkg1: IVotePackage = JSON.parse(Buffer.from(envelope1.getVotepackage()).toString())
+            expect(Buffer.from(envelope1.processId).toString("hex")).to.eq(processId.slice(2))
+            expect(Buffer.from((envelope1.proof as ProofWithGraviton).graviton.siblings).toString("hex")).to.eq(siblings.slice(2))
+            const pkg1: IVotePackage = JSON.parse(Buffer.from(envelope1.votePackage).toString())
             expect(pkg1.votes.length).to.eq(3)
             expect(pkg1.votes).to.deep.equal([1, 2, 3])
-            expect(BytesSignature.isValid(signature1, compressPublicKey(wallet.publicKey), envelope1.serializeBinary())).to.eq(true)
-            expect(BytesSignature.isValid(signature1, wallet.publicKey, envelope1.serializeBinary())).to.eq(true)
+            expect(BytesSignature.isValid(signature1, compressPublicKey(wallet.publicKey), VoteEnvelope.encode(envelope1).finish())).to.eq(true)
+            expect(BytesSignature.isValid(signature1, wallet.publicKey, VoteEnvelope.encode(envelope1).finish())).to.eq(true)
 
             processId = "0x36c886bd2e18605bf03a0428be100313a0f6e568c470d135d3cb72e802045faa"
             siblings = "0x0003000000100000000002000000000300000000000400000000000050000006f0d72fbd8b3a637488107b0d8055410180ec017a4d76dbb97bee1c3086a25e25b1a6134dbd323c420d6fc2ac3aaf8fff5f9ac5bc0be5949be64b7cfd1bcc5f1f"
 
             const { envelope: envelope2, signature: signature2 } = await VotingApi.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), votes: [5, 6, 7], censusProof: siblings, processId, walletOrSigner: wallet })
-            expect(Buffer.from(envelope2.getProcessid()).toString("hex")).to.eq(processId.slice(2))
-            expect(Buffer.from(envelope2.getProof().getGraviton().getSiblings()).toString("hex")).to.eq(siblings.slice(2))
-            const pkg2: IVotePackage = JSON.parse(Buffer.from(envelope2.getVotepackage()).toString())
+            expect(Buffer.from(envelope2.processId).toString("hex")).to.eq(processId.slice(2))
+            expect(Buffer.from((envelope2.proof as ProofWithGraviton).graviton.siblings).toString("hex")).to.eq(siblings.slice(2))
+            const pkg2: IVotePackage = JSON.parse(Buffer.from(envelope2.votePackage).toString())
             expect(pkg2.votes.length).to.eq(3)
             expect(pkg2.votes).to.deep.equal([5, 6, 7])
-            expect(BytesSignature.isValid(signature2, compressPublicKey(wallet.publicKey), envelope2.serializeBinary())).to.eq(true)
-            expect(BytesSignature.isValid(signature2, wallet.publicKey, envelope2.serializeBinary())).to.eq(true)
+            expect(BytesSignature.isValid(signature2, compressPublicKey(wallet.publicKey), VoteEnvelope.encode(envelope2).finish())).to.eq(true)
+            expect(BytesSignature.isValid(signature2, wallet.publicKey, VoteEnvelope.encode(envelope2).finish())).to.eq(true)
 
             expect(async () => {
                 await VotingApi.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), votes: ["1", "2", "3"], censusProof: siblings, processId, walletOrSigner: wallet } as any)
@@ -266,16 +272,16 @@ describe("Governance Process", () => {
             }
 
             const { envelope: envelope1, signature: signature1 } = await VotingApi.packageSignedEnvelope({ censusOrigin: ProcessCensusOrigin.OFF_CHAIN_CA, votes: [1, 2, 3], censusProof: proof, processId, walletOrSigner: wallet })
-            expect(Buffer.from(envelope1.getProcessid()).toString("hex")).to.eq(processId.slice(2))
-            expect(envelope1.getProof().getCa().getType()).to.eq(proof.type)
-            expect(Buffer.from(envelope1.getProof().getCa().getBundle().getProcessid()).toString("hex")).to.eq(processId.slice(2))
-            expect(Buffer.from(envelope1.getProof().getCa().getBundle().getAddress()).toString("hex")).to.eq(proof.voterAddress.toLowerCase().slice(2))
-            expect(Buffer.from(envelope1.getProof().getCa().getSignature()).toString("hex")).to.eq(proof.signature.slice(2))
-            const pkg1: IVotePackage = JSON.parse(Buffer.from(envelope1.getVotepackage()).toString())
+            expect(Buffer.from(envelope1.processId).toString("hex")).to.eq(processId.slice(2))
+            expect((envelope1.proof as ProofWithCa).ca.type).to.eq(proof.type)
+            expect(Buffer.from((envelope1.proof as ProofWithCa).ca.bundle.processId).toString("hex")).to.eq(processId.slice(2))
+            expect(Buffer.from((envelope1.proof as ProofWithCa).ca.bundle.address).toString("hex")).to.eq(proof.voterAddress.toLowerCase().slice(2))
+            expect(Buffer.from((envelope1.proof as ProofWithCa).ca.signature).toString("hex")).to.eq(proof.signature.slice(2))
+            const pkg1: IVotePackage = JSON.parse(Buffer.from(envelope1.votePackage).toString())
             expect(pkg1.votes.length).to.eq(3)
             expect(pkg1.votes).to.deep.equal([1, 2, 3])
-            expect(BytesSignature.isValid(signature1, compressPublicKey(wallet.publicKey), envelope1.serializeBinary())).to.eq(true)
-            expect(BytesSignature.isValid(signature1, wallet.publicKey, envelope1.serializeBinary())).to.eq(true)
+            expect(BytesSignature.isValid(signature1, compressPublicKey(wallet.publicKey), VoteEnvelope.encode(envelope1).finish())).to.eq(true)
+            expect(BytesSignature.isValid(signature1, wallet.publicKey, VoteEnvelope.encode(envelope1).finish())).to.eq(true)
 
             processId = "0x36c886bd2e18605bf03a0428be100313a0f6e568c470d135d3cb72e802045faa"
             proof = {
@@ -285,16 +291,16 @@ describe("Governance Process", () => {
             }
 
             const { envelope: envelope2, signature: signature2 } = await VotingApi.packageSignedEnvelope({ censusOrigin: ProcessCensusOrigin.OFF_CHAIN_CA, votes: [5, 6, 7], censusProof: proof, processId, walletOrSigner: wallet })
-            expect(Buffer.from(envelope2.getProcessid()).toString("hex")).to.eq(processId.slice(2))
-            expect(envelope2.getProof().getCa().getType()).to.eq(proof.type)
-            expect(Buffer.from(envelope2.getProof().getCa().getBundle().getProcessid()).toString("hex")).to.eq(processId.slice(2))
-            expect(Buffer.from(envelope2.getProof().getCa().getBundle().getAddress()).toString("hex")).to.eq(proof.voterAddress.toLowerCase().slice(2))
-            expect(Buffer.from(envelope2.getProof().getCa().getSignature()).toString("hex")).to.eq(proof.signature.slice(2))
-            const pkg2: IVotePackage = JSON.parse(Buffer.from(envelope2.getVotepackage()).toString())
+            expect(Buffer.from(envelope2.processId).toString("hex")).to.eq(processId.slice(2))
+            expect((envelope2.proof as ProofWithCa).ca.type).to.eq(proof.type)
+            expect(Buffer.from((envelope2.proof as ProofWithCa).ca.bundle.processId).toString("hex")).to.eq(processId.slice(2))
+            expect(Buffer.from((envelope2.proof as ProofWithCa).ca.bundle.address).toString("hex")).to.eq(proof.voterAddress.toLowerCase().slice(2))
+            expect(Buffer.from((envelope2.proof as ProofWithCa).ca.signature).toString("hex")).to.eq(proof.signature.slice(2))
+            const pkg2: IVotePackage = JSON.parse(Buffer.from(envelope2.votePackage).toString())
             expect(pkg2.votes.length).to.eq(3)
             expect(pkg2.votes).to.deep.equal([5, 6, 7])
-            expect(BytesSignature.isValid(signature2, compressPublicKey(wallet.publicKey), envelope2.serializeBinary())).to.eq(true)
-            expect(BytesSignature.isValid(signature2, wallet.publicKey, envelope2.serializeBinary())).to.eq(true)
+            expect(BytesSignature.isValid(signature2, compressPublicKey(wallet.publicKey), VoteEnvelope.encode(envelope2).finish())).to.eq(true)
+            expect(BytesSignature.isValid(signature2, wallet.publicKey, VoteEnvelope.encode(envelope2).finish())).to.eq(true)
 
             expect(async () => {
                 await VotingApi.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), votes: ["1", "2", "3"], censusProof: proof, processId, walletOrSigner: wallet } as any)
@@ -311,16 +317,16 @@ describe("Governance Process", () => {
             }
 
             const { envelope: envelope1, signature: signature1 } = await VotingApi.packageSignedEnvelope({ censusOrigin: ProcessCensusOrigin.ERC20, votes: [1, 2, 3], censusProof: proof, processId, walletOrSigner: wallet })
-            expect(Buffer.from(envelope1.getProcessid()).toString("hex")).to.eq(processId.slice(2))
-            expect(Buffer.from(envelope1.getProof().getEthereumstorage().getKey()).toString("hex")).to.eq(proof.key.slice(2))
-            expect(Buffer.from(envelope1.getProof().getEthereumstorage().getValue()).toString("hex")).to.eq(proof.value.slice(2))
-            let encodedSiblings = envelope1.getProof().getEthereumstorage().getSiblingsList().map(item => "0x" + Buffer.from(item).toString("hex"))
+            expect(Buffer.from(envelope1.processId).toString("hex")).to.eq(processId.slice(2))
+            expect(Buffer.from((envelope1.proof as ProofWithEthereumStorage).ethereumStorage.key).toString("hex")).to.eq(proof.key.slice(2))
+            expect(Buffer.from((envelope1.proof as ProofWithEthereumStorage).ethereumStorage.value).toString("hex")).to.eq(proof.value.slice(2))
+            let encodedSiblings = (envelope1.proof as ProofWithEthereumStorage).ethereumStorage.siblings.map(item => "0x" + Buffer.from(item).toString("hex"))
             expect(encodedSiblings).to.deep.eq(proof.proof)
-            const pkg1: IVotePackage = JSON.parse(Buffer.from(envelope1.getVotepackage()).toString())
+            const pkg1: IVotePackage = JSON.parse(Buffer.from(envelope1.votePackage).toString())
             expect(pkg1.votes.length).to.eq(3)
             expect(pkg1.votes).to.deep.equal([1, 2, 3])
-            expect(BytesSignature.isValid(signature1, compressPublicKey(wallet.publicKey), envelope1.serializeBinary())).to.eq(true)
-            expect(BytesSignature.isValid(signature1, wallet.publicKey, envelope1.serializeBinary())).to.eq(true)
+            expect(BytesSignature.isValid(signature1, compressPublicKey(wallet.publicKey), VoteEnvelope.encode(envelope1).finish())).to.eq(true)
+            expect(BytesSignature.isValid(signature1, wallet.publicKey, VoteEnvelope.encode(envelope1).finish())).to.eq(true)
 
             processId = "0x36c886bd2e18605bf03a0428be100313a0f6e568c470d135d3cb72e802045faa"
             proof = {
@@ -330,16 +336,16 @@ describe("Governance Process", () => {
             }
 
             const { envelope: envelope2, signature: signature2 } = await VotingApi.packageSignedEnvelope({ censusOrigin: ProcessCensusOrigin.ERC20, votes: [5, 6, 7], censusProof: proof, processId, walletOrSigner: wallet })
-            expect(Buffer.from(envelope2.getProcessid()).toString("hex")).to.eq(processId.slice(2))
-            expect(Buffer.from(envelope2.getProof().getEthereumstorage().getKey()).toString("hex")).to.eq(proof.key.slice(2))
-            expect(Buffer.from(envelope2.getProof().getEthereumstorage().getValue()).toString("hex")).to.eq(proof.value.slice(2))
-            encodedSiblings = envelope2.getProof().getEthereumstorage().getSiblingsList().map(item => "0x" + Buffer.from(item).toString("hex"))
+            expect(Buffer.from(envelope2.processId).toString("hex")).to.eq(processId.slice(2))
+            expect(Buffer.from((envelope2.proof as ProofWithEthereumStorage).ethereumStorage.key).toString("hex")).to.eq(proof.key.slice(2))
+            expect(Buffer.from((envelope2.proof as ProofWithEthereumStorage).ethereumStorage.value).toString("hex")).to.eq(proof.value.slice(2))
+            encodedSiblings = (envelope2.proof as ProofWithEthereumStorage).ethereumStorage.siblings.map(item => "0x" + Buffer.from(item).toString("hex"))
             expect(encodedSiblings).to.deep.eq(proof.proof)
-            const pkg2: IVotePackage = JSON.parse(Buffer.from(envelope2.getVotepackage()).toString())
+            const pkg2: IVotePackage = JSON.parse(Buffer.from(envelope2.votePackage).toString())
             expect(pkg2.votes.length).to.eq(3)
             expect(pkg2.votes).to.deep.equal([5, 6, 7])
-            expect(BytesSignature.isValid(signature2, compressPublicKey(wallet.publicKey), envelope2.serializeBinary())).to.eq(true)
-            expect(BytesSignature.isValid(signature2, wallet.publicKey, envelope2.serializeBinary())).to.eq(true)
+            expect(BytesSignature.isValid(signature2, compressPublicKey(wallet.publicKey), VoteEnvelope.encode(envelope2).finish())).to.eq(true)
+            expect(BytesSignature.isValid(signature2, wallet.publicKey, VoteEnvelope.encode(envelope2).finish())).to.eq(true)
 
             expect(async () => {
                 await VotingApi.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), votes: ["1", "2", "3"], censusProof: proof, processId, walletOrSigner: wallet } as any)
@@ -375,11 +381,11 @@ describe("Governance Process", () => {
                 const processKeys = { encryptionPubKeys: [{ idx: 1, key: votePublicKey }] }
                 const { envelope, signature } = await VotingApi.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), votes: item.votes, censusProof: item.siblings, processId: item.processId, walletOrSigner: wallet, processKeys })
 
-                expect(Buffer.from(envelope.getProcessid()).toString("hex")).to.eq(item.processId.slice(2))
-                expect(Buffer.from(envelope.getProof().getGraviton().getSiblings()).toString("hex")).to.eq(item.siblings.slice(2))
+                expect(Buffer.from(envelope.processId).toString("hex")).to.eq(item.processId.slice(2))
+                expect(Buffer.from((envelope.proof as ProofWithGraviton).graviton.siblings).toString("hex")).to.eq(item.siblings.slice(2))
 
-                expect(envelope.getEncryptionkeyindexesList()).to.be.deep.equal([1])
-                const pkgBytes = Buffer.from(envelope.getVotepackage())
+                expect(envelope.encryptionKeyIndexes).to.be.deep.equal([1])
+                const pkgBytes = Buffer.from(envelope.votePackage)
                 expect(pkgBytes.length).to.be.greaterThan(0)
 
                 const pkg: IVotePackage = JSON.parse(Asymmetric.decryptRaw(pkgBytes, votePrivateKey).toString())
@@ -440,11 +446,11 @@ describe("Governance Process", () => {
                     processKeys
                 })
 
-                expect(Buffer.from(envelope.getProcessid()).toString("hex")).to.eq(item.processId.slice(2))
-                expect(Buffer.from(envelope.getProof().getGraviton().getSiblings()).toString("hex")).to.eq(item.siblings.slice(2))
+                expect(Buffer.from(envelope.processId).toString("hex")).to.eq(item.processId.slice(2))
+                expect(Buffer.from((envelope.proof as ProofWithGraviton).graviton.siblings).toString("hex")).to.eq(item.siblings.slice(2))
 
-                expect(envelope.getEncryptionkeyindexesList()).to.be.deep.equal([0, 1, 2, 3])
-                const pkgBytes = Buffer.from(envelope.getVotepackage())
+                expect(envelope.encryptionKeyIndexes).to.be.deep.equal([0, 1, 2, 3])
+                const pkgBytes = Buffer.from(envelope.votePackage)
                 expect(pkgBytes.length).to.be.greaterThan(0)
 
                 let decryptedBuff: Buffer

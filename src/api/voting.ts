@@ -20,8 +20,8 @@ import {
     // ProofEthereumAccount
     ProofCA,
     CAbundle
-} from "../../lib/protobuf/build/js/common/vote_pb.js"
-import { Tx, SignedTx } from "../../lib/protobuf/build/js/vochain/vochain_pb.js"
+} from "../../lib/protobuf/build/ts/common/vote"
+import { Tx, SignedTx } from "../../lib/protobuf/build/ts/vochain/vochain"
 import { DVoteGatewayResponseBody, IRequestParameters } from "../net/gateway-dvote"
 import { CensusErc20Api } from "./census"
 
@@ -832,20 +832,21 @@ export class VotingApi {
      * @param {Gateway|GatewayPool} gateway
      */
     static async submitEnvelope(voteEnvelope: VoteEnvelope, hexSignature: string = "", gateway: IGateway | GatewayPool): Promise<DVoteGatewayResponseBody> {
-        if (!(voteEnvelope instanceof VoteEnvelope)) return Promise.reject(new Error("The vote has to be a VoteEnvelope protobuf instance"))
+        if (typeof voteEnvelope != "object") return Promise.reject(new Error("The vote has to be a VoteEnvelope object"))
         else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
-        const mainTx = new Tx()
-        mainTx.setVote(voteEnvelope)
+        const tx = Tx.fromPartial({
+            payload: { $case: "vote", vote: voteEnvelope }
+        })
 
-        const signedTx = new SignedTx()
-        signedTx.setTx(mainTx.serializeBinary())
-        const signatureBytes = new Uint8Array(Buffer.from(hexSignature.replace("0x", ""), "hex"))
-        signedTx.setSignature(signatureBytes)
+        const signedTx = SignedTx.fromPartial({
+            tx: Tx.encode(tx).finish(),
+            signature: new Uint8Array(Buffer.from(hexSignature.replace("0x", ""), "hex"))
+        })
 
-        const payload = signedTx.serializeBinary()
+        const signedTxBytes = SignedTx.encode(signedTx).finish()
 
-        const base64Payload = Buffer.from(payload).toString("base64")
+        const base64Payload = Buffer.from(signedTxBytes).toString("base64")
         return gateway.sendRequest({ method: "submitRawTx", payload: base64Payload })
             .catch((error) => {
                 const message = (error.message) ? "Could not submit the vote envelope: " + error.message : "Could not submit the vote envelope"
@@ -945,34 +946,36 @@ export class VotingApi {
             params.censusOrigin
 
         try {
-            const proof = new Proof()
+            const proof = Proof.fromPartial({})
 
             if (censusOrigin.isOffChain || censusOrigin.isOffChainWeighted) {
                 // Check census proof
                 if (typeof params.censusProof != "string" || !params.censusProof.match(/^(0x)?[0-9a-zA-Z]+$/))
                     throw new Error("Invalid census proof (must be a hex string)")
 
-                const gProof = new ProofGraviton()
-                gProof.setSiblings(new Uint8Array(Buffer.from((params.censusProof as string).replace("0x", ""), "hex")))
-                proof.setGraviton(gProof)
+                const gProof = ProofGraviton.fromPartial({
+                    siblings: new Uint8Array(Buffer.from((params.censusProof as string).replace("0x", ""), "hex"))
+                })
+                proof.payload = { $case: "graviton", graviton: gProof }
             }
             else if (censusOrigin.isOffChainCA) {
                 // Check census proof
                 const resolvedProof = VotingApi.resolveCaProof(params.censusProof)
                 if (!resolvedProof) throw new Error("The proof is not valid")
 
+                const caBundle = CAbundle.fromPartial({
+                    processId: new Uint8Array(Buffer.from((params.processId).replace("0x", ""), "hex")),
+                    address: new Uint8Array(Buffer.from((resolvedProof.voterAddress).replace("0x", ""), "hex")),
+                })
+
                 // Populate the proof
-                const caProof = new ProofCA()
-                caProof.setType(resolvedProof.type)
-                caProof.setSignature(new Uint8Array(Buffer.from((resolvedProof.signature).replace("0x", ""), "hex")))
+                const caProof = ProofCA.fromPartial({
+                    type: resolvedProof.type,
+                    signature: new Uint8Array(Buffer.from((resolvedProof.signature).replace("0x", ""), "hex")),
+                    bundle: caBundle
+                })
 
-                // TODO: Rename CA Bundle for clarity
-                const caBundle = new CAbundle()
-                caBundle.setProcessid(new Uint8Array(Buffer.from((params.processId).replace("0x", ""), "hex")))
-                caBundle.setAddress(new Uint8Array(Buffer.from((resolvedProof.voterAddress).replace("0x", ""), "hex")))
-                caProof.setBundle(caBundle)
-
-                proof.setCa(caProof)
+                proof.payload = { $case: "ca", ca: caProof }
             }
             else if (censusOrigin.isErc20 || censusOrigin.isErc721 || censusOrigin.isErc1155 || censusOrigin.isErc777) {
                 // Check census proof
@@ -984,35 +987,38 @@ export class VotingApi {
                     !Array.isArray(resolvedProof.proof) || typeof resolvedProof.value != "string")
                     throw new Error("Invalid census proof (must be an object)")
 
-                const esProof = new ProofEthereumStorage()
-                esProof.setKey(new Uint8Array(Buffer.from(resolvedProof.key.replace("0x", ""), "hex")))
-                const siblings = resolvedProof.proof.map(sibling => new Uint8Array(Buffer.from(sibling.replace("0x", ""), "hex")))
-
                 let hexValue = resolvedProof.value
                 if (resolvedProof.value.length % 2 !== 0) {
                     hexValue = resolvedProof.value.replace("0x", "0x0")
                 }
-                esProof.setValue(utils.zeroPad(hexValue, 32))
 
-                esProof.setSiblingsList(siblings)
-                proof.setEthereumstorage(esProof)
+                const siblings = resolvedProof.proof.map(sibling => new Uint8Array(Buffer.from(sibling.replace("0x", ""), "hex")))
+
+                const esProof = ProofEthereumStorage.fromPartial({
+                    key: new Uint8Array(Buffer.from(resolvedProof.key.replace("0x", ""), "hex")),
+                    value: utils.zeroPad(hexValue, 32),
+                    siblings: siblings
+                })
+
+                proof.payload = { $case: "ethereumStorage", ethereumStorage: esProof }
             }
             else {
                 throw new Error("This process type is not supported yet")
             }
 
             const nonce = Random.getHex().substr(2)
-            const envelope = new VoteEnvelope()
-            envelope.setProof(proof)
-            envelope.setProcessid(new Uint8Array(Buffer.from(params.processId.replace("0x", ""), "hex")))
-            envelope.setNonce(new Uint8Array(Buffer.from(nonce, "hex")))
-
             const { votePackage, keyIndexes } = VotingApi.packageVoteContent(params.votes, params.processKeys)
-            envelope.setVotepackage(new Uint8Array(votePackage))
-            if (keyIndexes) envelope.setEncryptionkeyindexesList(keyIndexes)
 
-            const bytes = new Uint8Array(envelope.serializeBinary())
-            const signature = await BytesSignature.sign(bytes, params.walletOrSigner)
+            const envelope = VoteEnvelope.fromPartial({
+                proof,
+                processId: new Uint8Array(Buffer.from(params.processId.replace("0x", ""), "hex")),
+                nonce: new Uint8Array(Buffer.from(nonce, "hex")),
+                votePackage: new Uint8Array(votePackage)
+            })
+            if (keyIndexes) envelope.encryptionKeyIndexes = keyIndexes
+
+            const bytesToSign = new Uint8Array(VoteEnvelope.encode(envelope).finish())
+            const signature = await BytesSignature.sign(bytesToSign, params.walletOrSigner)
 
             return { envelope, signature }
         } catch (error) {
