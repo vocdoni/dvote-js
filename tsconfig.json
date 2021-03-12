@@ -15,8 +15,8 @@
     ],
     "exclude": [
         "node_modules",
-        "lib/protobuf/src",
-        "lib/protobuf/build/dart",
-        "lib/protobuf/build/go",
+        "src/protobuf/src",
+        "src/protobuf/build/dart",
+        "src/protobuf/build/go"
     ]
 }

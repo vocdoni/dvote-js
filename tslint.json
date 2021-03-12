@@ -19,10 +19,10 @@
     "linterOptions": {
         "exclude": [
             "node_modules/**",
-            "lib/protobuf",
-            "lib/protobuf/src",
-            "lib/protobuf/build/dart",
-            "lib/protobuf/build/go"
+            "src/protobuf",
+            "src/protobuf/src",
+            "src/protobuf/build/dart",
+            "src/protobuf/build/go"
         ]
     }
 }

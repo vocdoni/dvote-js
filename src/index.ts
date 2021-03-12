@@ -11,6 +11,7 @@ export * from "./models/entity"
 export * from "./models/gateway"
 export * from "./models/json-feed"
 export * from "./models/process"
+export * from "./models/protobuf"
 
 // NETWORK
 export * from "./net/contracts"
