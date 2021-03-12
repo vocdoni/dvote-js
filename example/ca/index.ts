@@ -9,7 +9,7 @@ import { EntityMetadata, EntityMetadataTemplate } from "../../src/models/entity"
 import { EntityApi } from "../../src/api/entity"
 import { CaBundleProtobuf, VotingApi } from "../../src/api/voting"
 import { CensusCaApi } from "../../src/api/census"
-import { IProofCA, ProcessMetadata, ProcessMetadataTemplate, ProofCaSignatureTypes } from "../../src/models/process"
+import { INewProcessParams, IProofCA, ProcessMetadata, ProcessMetadataTemplate, ProofCaSignatureTypes } from "../../src/models/process"
 import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../../src/net/contracts"
 import { VochainWaiter, EthWaiter } from "../../src/util/waiters"
 import axios from "axios"
@@ -152,7 +152,7 @@ async function launchNewVote() {
     const startBlock = currentBlock + 25
     const blockCount = 2000
 
-    const processParamsPre = {
+    const processParamsPre: INewProcessParams = {
         mode: ProcessMode.make({ autoStart: true, interruptible: true }), // helper
         envelopeType: ProcessEnvelopeType.ENCRYPTED_VOTES, // bit mask
         censusOrigin: ProcessCensusOrigin.OFF_CHAIN_CA,
@@ -164,10 +164,8 @@ async function launchNewVote() {
         maxCount: 1,
         maxValue: 3,
         maxTotalCost: 0,
-        uniqueValues: false,
         costExponent: 10000,
         maxVoteOverwrites: 1,
-        namespace: 0,
         paramsSignature: "0x0000000000000000000000000000000000000000000000000000000000000000"
     }
 
