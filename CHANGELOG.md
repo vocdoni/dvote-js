@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 0.26.2
+
+- Adding `Erc20TokensApi.getTokenList` to list all the available tokens on the contract
+
 ## 0.26.1
 
 - Adding support for payable processes

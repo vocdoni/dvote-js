@@ -5,14 +5,13 @@ import { TextRecordKeys } from "../models/entity"
 import { FileApi } from "./file"
 import { IGatewayPool, GatewayPool } from "../net/gateway-pool"
 import { XDAI_CHAIN_ID, XDAI_GAS_PRICE, SOKOL_CHAIN_ID, SOKOL_GAS_PRICE } from "../constants"
-import { IMethodOverrides, ensHashAddress } from "../net/contracts"
+import { IMethodOverrides, ensHashAddress, ITokenStorageProofContract } from "../net/contracts"
 
 export class EntityApi {
     /**
      * Fetch the JSON metadata file for the given entity ID using the given gateway instances
      * @param address
-     * @param web3Gateway Web3Gateway instance already connected
-     * @param dvoteGateway Gateway instance already connected to an active service
+     * @param gateway Gateway or Gateway pool instance
      */
     static async getMetadata(address: string, gateway: Gateway | IGatewayPool): Promise<EntityMetadata> {
         if (!address) return Promise.reject(new Error("Invalid address"))
@@ -79,5 +78,25 @@ export class EntityApi {
 
         await tx.wait()
         return ipfsUri
+    }
+}
+
+export class Erc20TokensApi {
+    /**
+     * Retrieve the addresses of all the ERC20 tokens registered on the contract.
+     * @param gateway Gateway or GatewayPool instance
+     */
+    static async getTokenList(gateway: Gateway | IGatewayPool): Promise<string[]> {
+        let tokenInstance: ITokenStorageProofContract
+        return gateway.getTokenStorageProofInstance()
+            .then(instance => {
+                tokenInstance = instance
+
+                return tokenInstance.tokenCount()
+            }).then(count => {
+                const indexes = new Array(count).fill(0).map((_, i) => i)
+
+                return Promise.all(indexes.map(idx => tokenInstance.tokenAddresses(idx)))
+            })
     }
 }

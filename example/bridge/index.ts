@@ -15,7 +15,9 @@ import {
     ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin,
     VochainWaiter, EthWaiter,
     compressPublicKey,
-    VocdoniEnvironment
+    VocdoniEnvironment,
+    Erc20TokensApi,
+    IGatewayDiscoveryParameters
 } from "../../src"
 // import { Buffer } from "buffer/"
 
@@ -90,11 +92,11 @@ async function connectGateways(accounts: Account[]): Promise<GatewayPool | Gatew
         gw = await Gateway.fromInfo(info, config.vocdoniEnvironment)
     }
     else {
-        const options = {
+        const options: IGatewayDiscoveryParameters = {
             networkId: config.ethNetworkId as EthNetworkID,
             bootnodesContentUri: config.bootnodesUrlRw,
             numberOfGateways: 2,
-            race: false,
+            environment: config.vocdoniEnvironment,
             // timeout: 10000,
         }
         gw = await GatewayPool.discover(options)
@@ -111,6 +113,9 @@ async function connectGateways(accounts: Account[]): Promise<GatewayPool | Gatew
     if (balance.isZero()) throw new Error("The first account of the list has no ether balance\n" + creatorWallet.address)
 
     console.log("Token Address", config.tokenAddress)
+
+    const registeredTokens = await Erc20TokensApi.getTokenList(gw)
+    assert(registeredTokens.includes(config.tokenAddress), "The token address is not registered on the contract")
 
     return gw
 }
