@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 0.26.1
+
+- Adding support for payable processes
+
 ## 0.26.0
 
 - Adding secretbox symmetric encrpytion
