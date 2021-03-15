@@ -194,10 +194,10 @@ async function launchNewVote() {
     // Reading back
     processParams = await VotingApi.getProcessParameters(processId, pool)
     processMetadata = await VotingApi.getProcessMetadata(processId, pool)
-    assert.equal(processParams.entityAddress, config.tokenAddress)
-    assert.equal(processParams.startBlock, processParamsPre.startBlock, "SENT " + JSON.stringify(processParamsPre) + " GOT " + JSON.stringify(processParams))
-    assert.equal(processParams.blockCount, processParamsPre.blockCount)
-    assert.equal(processParams.censusRoot, processParamsPre.censusRoot)
+    assert.strictEqual(processParams.entityAddress, config.tokenAddress)
+    assert.strictEqual(processParams.startBlock, processParamsPre.startBlock, "SENT " + JSON.stringify(processParamsPre) + " GOT " + JSON.stringify(processParams))
+    assert.strictEqual(processParams.blockCount, processParamsPre.blockCount)
+    assert.strictEqual(processParams.censusRoot, processParamsPre.censusRoot)
 }
 
 async function waitUntilStarted() {
@@ -275,7 +275,7 @@ async function submitVotes(accounts: Account[]) {
 }
 
 async function checkVoteResults() {
-    assert.equal(typeof processId, "string")
+    assert.strictEqual(typeof processId, "string")
 
     if (config.encryptedVote) {
         console.log("Waiting a bit for the votes to be received", processId)
@@ -284,7 +284,7 @@ async function checkVoteResults() {
 
         console.log("Fetching the number of votes for", processId)
         const envelopeHeight = await VotingApi.getEnvelopeHeight(processId, pool)
-        assert.equal(envelopeHeight, config.privKeys.length)
+        assert.strictEqual(envelopeHeight, config.privKeys.length)
 
         processParams = await VotingApi.getProcessParameters(processId, pool)
 
@@ -298,16 +298,16 @@ async function checkVoteResults() {
     const resultsDigest = await VotingApi.getResultsDigest(processId, pool)
     const totalVotes = await VotingApi.getEnvelopeHeight(processId, pool)
 
-    assert.equal(resultsDigest.questions.length, 1)
+    assert.strictEqual(resultsDigest.questions.length, 1)
     assert(resultsDigest.questions[0].voteResults)
 
     // all-0
     assert(resultsDigest.questions[0].voteResults.length >= 2)
-    assert.equal(resultsDigest.questions[0].voteResults[0].votes, config.privKeys.length)
-    assert.equal(resultsDigest.questions[0].voteResults[1].votes, 0)
+    assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes.toNumber(), config.privKeys.length)
+    assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes.toNumber(), 0)
 
-    // assert.equal(totalVotes, config.privKeys.length)
-    assert.equal(totalVotes, 2800000000000000000)
+    // assert.strictEqual(totalVotes, config.privKeys.length)
+    assert.strictEqual(totalVotes, 2800000000000000000)
 }
 
 /////////////////////////////////////////////////////////////////////////////

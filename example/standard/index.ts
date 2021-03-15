@@ -376,37 +376,37 @@ async function checkVoteResults() {
     switch (config.votesPattern) {
         case "all-0":
             assert(resultsDigest.questions[0].voteResults.length >= 2)
-            assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes, config.numAccounts)
-            assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes, 0)
+            assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes.toNumber(), config.numAccounts)
+            assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes.toNumber(), 0)
             break
         case "all-1":
             assert(resultsDigest.questions[0].voteResults.length >= 2)
-            assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes, 0)
-            assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes, config.numAccounts)
+            assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes.toNumber(), 0)
+            assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes.toNumber(), config.numAccounts)
             break
         case "all-2":
             assert(resultsDigest.questions[0].voteResults.length >= 3)
-            assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes, 0)
-            assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes, 0)
-            assert.strictEqual(resultsDigest.questions[0].voteResults[2].votes, config.numAccounts)
+            assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes.toNumber(), 0)
+            assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes.toNumber(), 0)
+            assert.strictEqual(resultsDigest.questions[0].voteResults[2].votes.toNumber(), config.numAccounts)
             break
         case "all-even":
             assert(resultsDigest.questions[0].voteResults.length >= 2)
             if (config.numAccounts % 2 == 0) {
-                assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes, config.numAccounts / 2)
-                assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes, config.numAccounts / 2)
+                assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes.toNumber(), config.numAccounts / 2)
+                assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes.toNumber(), config.numAccounts / 2)
             }
             else {
-                assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes, Math.ceil(config.numAccounts / 2))
-                assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes, Math.floor(config.numAccounts / 2))
+                assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes.toNumber(), Math.ceil(config.numAccounts / 2))
+                assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes.toNumber(), Math.floor(config.numAccounts / 2))
             }
             break
         case "incremental":
             assert.strictEqual(resultsDigest.questions[0].voteResults.length, 2)
             resultsDigest.questions.forEach((question, i) => {
                 for (let j = 0; j < question.voteResults.length; j++) {
-                    if (i == j) assert.strictEqual(question.voteResults[j].votes, config.numAccounts)
-                    else assert.strictEqual(question.voteResults[j].votes, 0)
+                    if (i == j) assert.strictEqual(question.voteResults[j].votes.toNumber(), config.numAccounts)
+                    else assert.strictEqual(question.voteResults[j].votes.toNumber(), 0)
                 }
             })
             break
