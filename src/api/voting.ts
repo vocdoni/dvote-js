@@ -339,6 +339,17 @@ export class VotingApi {
     }
 
     /**
+     * Retrieves the current price of process creation
+     * @param gateway
+     */
+    static getProcessPrice(gateway: IGateway | IGatewayPool): Promise<BigNumber> {
+        if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+
+        return gateway.getProcessesInstance()
+            .then(procInstance => procInstance.processPrice())
+    }
+
+    /**
      * Retrieves the encryption public keys of the given process
      * @param processId
      * @param gateway
@@ -429,24 +440,23 @@ export class VotingApi {
 
             // REGISTER THE NEW PROCESS
             const ethChainId = await gateway.chainId
-            let options: IMethodOverrides
+            let options: IMethodOverrides = {
+                value: await VotingApi.getProcessPrice(gateway)
+            }
             let tx: ContractTransaction
             switch (ethChainId) {
                 case XDAI_CHAIN_ID:
-                    options = { gasPrice: XDAI_GAS_PRICE }
+                    options.gasPrice = XDAI_GAS_PRICE
                     tx = await processInstance.newProcess(...contractParameters.toContractParams(options))
                     break
                 case SOKOL_CHAIN_ID:
                     const addr = await walletOrSigner.getAddress()
-                    const nonce = await walletOrSigner.connect(gateway.provider).provider.getTransactionCount(addr)
-                    options = {
-                        gasPrice: SOKOL_GAS_PRICE,
-                        nonce,
-                    }
+                    options.nonce = await walletOrSigner.connect(gateway.provider).provider.getTransactionCount(addr)
+                    options.gasPrice = SOKOL_GAS_PRICE
                     tx = await processInstance.newProcess(...contractParameters.toContractParams(options))
                     break
                 default:
-                    tx = await processInstance.newProcess(...contractParameters.toContractParams())
+                    tx = await processInstance.newProcess(...contractParameters.toContractParams(options))
             }
 
             if (!tx) throw new Error("Could not start the blockchain transaction")
@@ -502,24 +512,23 @@ export class VotingApi {
 
             // REGISTER THE NEW PROCESS
             const ethChainId = await gateway.chainId
-            let options: IMethodOverrides
+            let options: IMethodOverrides = {
+                value: await VotingApi.getProcessPrice(gateway)
+            }
             let tx: ContractTransaction
             switch (ethChainId) {
                 case XDAI_CHAIN_ID:
-                    options = { gasPrice: XDAI_GAS_PRICE }
+                    options.gasPrice = XDAI_GAS_PRICE
                     tx = await processInstance.newProcess(...contractParameters.toContractParams(options))
                     break
                 case SOKOL_CHAIN_ID:
                     const addr = await walletOrSigner.getAddress()
-                    const nonce = await walletOrSigner.connect(gateway.provider).provider.getTransactionCount(addr)
-                    options = {
-                        gasPrice: SOKOL_GAS_PRICE,
-                        nonce,
-                    }
+                    options.nonce = await walletOrSigner.connect(gateway.provider).provider.getTransactionCount(addr)
+                    options.gasPrice = SOKOL_GAS_PRICE
                     tx = await processInstance.newProcess(...contractParameters.toContractParams(options))
                     break
                 default:
-                    tx = await processInstance.newProcess(...contractParameters.toContractParams())
+                    tx = await processInstance.newProcess(...contractParameters.toContractParams(options))
             }
 
             if (!tx) throw new Error("Could not start the blockchain transaction")
