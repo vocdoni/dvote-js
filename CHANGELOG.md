@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.0.0
+
+- Bumping to version 1!
+
 ## 0.26.2
 
 - Adding `Erc20TokensApi.getTokenList` to list all the available tokens on the contract
