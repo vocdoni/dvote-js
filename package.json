@@ -1,6 +1,6 @@
 {
   "name": "dvote-js",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Javascript/Typescript library to interact with Vocdoni voting processes",
   "main": "dist/index",
   "types": "dist/index",
@@ -26,7 +26,7 @@
     "blindsecp256k1": "0.0.6",
     "buffer": "^6.0.3",
     "circomlib": "^0.1.2",
-    "dvote-solidity": "^0.16.1",
+    "dvote-solidity": "^1.0.0",
     "ethers": "^5.0.23",
     "google-protobuf": "^3.14.0",
     "iso-language-codes": "^1.0.6",
