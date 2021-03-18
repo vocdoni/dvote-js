@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.0.2
+
+- Adding `BackupLink` wrappers for the protobuf model
+
 ## 1.0.1
 
 - Removing unused types (`IAnonymousVoteEnvelope` and `ISignedVoteEnvelope`)
@@ -37,7 +41,7 @@
 
 ## 0.25.4
 
-- Fixes false-positive in supportsMethod 
+- Fixes false-positive in supportsMethod
 - Implements getCensusList for the CensusOffChainpi
 
 ## 0.25.3

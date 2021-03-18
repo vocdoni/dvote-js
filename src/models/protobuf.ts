@@ -7,8 +7,12 @@ export {
     ProofEthereumStorage,
     ProofEthereumAccount,
     CAbundle,
-    SignatureType
+    SignatureType,
 } from "./protobuf/build/ts/common/vote"
+
+export {
+    BackupLink
+} from "./protobuf/build/ts/client-store/backup"
 
 export {
     Tx,
