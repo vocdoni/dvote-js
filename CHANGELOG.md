@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.0.3
+
+- Exporting the backup helper functions
+
 ## 1.0.2
 
 - Adding `BackupLink` wrappers for the protobuf model
