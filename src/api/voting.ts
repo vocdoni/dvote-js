@@ -29,24 +29,6 @@ export const CaBundleProtobuf = CAbundle
 
 // TYPES
 
-export type IAnonymousVoteEnvelope = {
-    processId: string,
-    proof: string,  // ZK Proof
-    nonce: string,  // Unique number per vote attempt, so that replay attacks can't reuse this payload
-    nullifier: string,   // Hash of the private key
-    encryptionKeyIndexes?: number[],   // The index of the keys used to encrypt the votePackage (only for encrypted processes)
-    votePackage: string  // base64(jsonString) is encrypted
-}
-
-export type ISignedVoteEnvelope = {
-    processId: string,
-    proof: string,  // Merkle Proof
-    nonce: string,  // Unique number per vote attempt, so that replay attacks can't reuse this payload
-    encryptionKeyIndexes?: number[],   // The index of the keys used to encrypt the votePackage (only for encrypted processes)
-    votePackage: string,  // base64(json(votePackage))
-    signature?: string //  Signature including all the rest of the envelope (processId, proof, nonce, votePackage)
-}
-
 export type IVotePackage = {
     nonce: string, // (optional) random number to prevent guessing the encrypted payload before the key is revealed
     votes: number[]  // Directly mapped to the `questions` field of the metadata
@@ -1059,10 +1041,9 @@ export class VotingApi {
     }
 
     /**
-     * Packages the given votes into a base64 string. If encryptionPubKeys is defined, the base64 payload
-     * will be encrypted with it.
+     * Packages the given votes into a buffer. If encryptionPubKeys is defined, the resulting buffer is encrypted with them.
      * @param votes An array of numbers with the choices
-     * @param encryptionPubKeys An ed25519 public key (https://ed25519.cr.yp.to/)
+     * @param encryptionPubKeys An array of ed25519 public keys (https://ed25519.cr.yp.to/)
      */
     static packageVoteContent(votes: number[], processKeys?: IProcessKeys): { votePackage: Buffer, keyIndexes?: number[] } {
         if (!Array.isArray(votes)) throw new Error("Invalid votes")

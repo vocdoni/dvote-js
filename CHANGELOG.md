@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.0.1
+
+- Removing unused types (`IAnonymousVoteEnvelope` and `ISignedVoteEnvelope`)
+
 ## 1.0.0
 
 - Bumping to version 1!
