@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.0.4
+
+- Exposing missing encryption utils
+
 ## 1.0.3
 
 - Exporting the backup helper functions
