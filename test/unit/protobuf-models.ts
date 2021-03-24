@@ -2,30 +2,46 @@ import "mocha" // using @types/mocha
 import { expect, } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
 
-import { serializeBackupLink, deserializeBackupLink } from "../../src/models/backup"
-import { BackupLink } from "../../src/models/protobuf"
+import { AccountBackup } from "../../src/models/backup"
+import { AccountBackupModel } from "../../src/models/protobuf"
 
 addCompletionHooks()
 
 describe("Protobuf models", () => {
     it("Should serialize and deserialize Backup Links", () => {
-        const items: BackupLink[] = [
-            { auth: "12345678", key: "23456789", questions: ["a", "b", "c"], version: "1.0" },
-            { auth: "012345678", key: "234567890", questions: ["aa", "bb", "cc"], version: "1.0.0" },
-            { auth: "0012345678", key: "2345678900", questions: ["aaa", "bbb", "ccc"], version: "1.0.1" },
-            { auth: "00012345678", key: "23456789000", questions: ["aaaa", "bbbb", "cccc"], version: "1.0.2" },
-            { auth: "000012345678", key: "234567890000", questions: ["aaaaa", "bbbbb", "ccccc"], version: "1.0.3" },
+        const key = Buffer.from("0x23231213123123", "ascii")
+        const items: AccountBackupModel[] = [
+            { auth: 1, key, questions: [0, 1, 2], alias: "test" },
+            { auth: 2, key, questions: [2, 3, 4], alias: "tests" },
         ]
 
         items.forEach(item => {
-            const serialized = serializeBackupLink(item)
+            const serialized = AccountBackup.serialize(item)
             expect(serialized instanceof Uint8Array).to.be.true
-            const deserialized = deserializeBackupLink(serialized)
+            const deserialized = AccountBackup.deserialize(serialized)
 
             expect(deserialized.auth).to.eq(item.auth)
-            expect(deserialized.key).to.eq(item.key)
+            expect(Buffer.from(deserialized.key).toString("hex")).to.eq(Buffer.from(item.key).toString("hex"))
             expect(deserialized.questions).to.deep.eq(item.questions)
-            expect(deserialized.version).to.eq(item.version)
+            expect(deserialized.alias).to.deep.eq(item.alias)
         })
+    })
+
+    it("Creates and decrypts backups from questions, answers and password", () => {
+        const secret = "0x23231213123123"
+        const key = Buffer.from(secret, "ascii")
+
+        const password = "a strong password"
+        const answers = ["test1", "test 3"]
+
+        // Create a backup
+        const contents = AccountBackup.create("testing", password, key, [1, 3], answers)
+
+        // Deserialize its contents
+        const result = AccountBackup.deserialize(contents)
+        // Decrypt the key
+        const decoded = AccountBackup.decryptKey(result.key, password, answers)
+
+        expect(Buffer.from(decoded).toString("ascii")).to.be.eq(secret)
     })
 })
