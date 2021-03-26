@@ -151,6 +151,28 @@ export class VotingApi {
     }
 
     /**
+     * Retrieves the cumulative weight that has been casted in votes for the given process ID.
+     * @param processId
+     * @param gateway
+     */
+    static getResultsWeight(processId: string, gateway: IGateway | IGatewayPool): Promise<BigNumber> {
+        if (!processId) return Promise.reject(new Error("Empty process ID"))
+        else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+
+        return gateway.sendRequest({ method: "getResultsWeight" })
+            .then((response) => {
+                if (response.weight < 0) throw new Error("The retrieved weight is not valid")
+                else if (typeof response.weight !== 'number' && !BigNumber.isBigNumber(response.weight)) throw new Error("The block height is not valid")
+
+                return BigNumber.from(response.weight)
+            })
+            .catch((error) => {
+                const message = error.message ? "Could not retrieve the results weight: " + error.message : "Could not retrieve the results weight"
+                throw new Error(message)
+            })
+    }
+
+    /**
      * Returns the block number that is expected to be current at the given date and time
      * @param dateTime
      * @param gateway

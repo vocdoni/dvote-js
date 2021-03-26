@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.1.0
+
+- Adding `VotingApi.getResultsWeight`
+
 ## 1.0.4
 
 - Exposing missing encryption utils
