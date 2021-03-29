@@ -159,7 +159,7 @@ export class VotingApi {
         if (!processId) return Promise.reject(new Error("Empty process ID"))
         else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
-        return gateway.sendRequest({ method: "getResultsWeight" })
+        return gateway.sendRequest({ method: "getResultsWeight", processId })
             .then((response) => {
                 if (response.weight < 0) throw new Error("The retrieved weight is not valid")
                 else if (typeof response.weight !== 'number' && !BigNumber.isBigNumber(response.weight)) throw new Error("The block height is not valid")
