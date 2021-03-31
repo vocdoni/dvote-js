@@ -1,8 +1,11 @@
 # DVote JS changelog
 
+## 1.1.3
 ## 1.1.2
+## 1.1.1
 
 - Fix an issue with `VotingApi.getResultsWeight`
+- Make it expect string values
 
 ## 1.1.0
 

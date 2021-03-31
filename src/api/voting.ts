@@ -161,8 +161,8 @@ export class VotingApi {
 
         return gateway.sendRequest({ method: "getResultsWeight", processId })
             .then((response) => {
-                if (response.weight < 0) throw new Error("The retrieved weight is not valid")
-                else if (typeof response.weight !== 'number' && !BigNumber.isBigNumber(response.weight)) throw new Error("The block height is not valid")
+                if (response.weight < 0) throw new Error("The weight value is not valid")
+                else if (typeof response.weight !== 'string' && !BigNumber.isBigNumber(response.weight)) throw new Error("The weight value is not valid")
 
                 return BigNumber.from(response.weight)
             })
