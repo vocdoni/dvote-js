@@ -1,6 +1,6 @@
 # DVote JS changelog
 
-## 1.1.1
+## 1.1.2
 
 - Fix an issue with `VotingApi.getResultsWeight`
 
