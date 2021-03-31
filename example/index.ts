@@ -46,6 +46,7 @@ const BOOTNODES_URL_RO = "https://bootnodes.vocdoni.net/gateways.json"
 const BOOTNODES_URL_RW = "https://bootnodes.vocdoni.net/gateways.dev.json"
 
 // const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
+console.log("CHANGE ME PRIV_K")
 const PRIV_K = "0x..."
 const wallet = new Wallet(PRIV_K)
 
@@ -443,13 +444,14 @@ async function setProcessStatus() {
 }
 
 async function showProcessResults() {
-    const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL_RW })
+    const pool = await GatewayPool.discover({ networkId: NETWORK_ID, environment: VOCDONI_ENVIRONMENT, bootnodesContentUri: BOOTNODES_URL_RW })
     await pool.init()
 
-    const processId = "0xdefa1f278168180dab72064f00aff28d34c9927b2a744c9395d3c20d0e5f755d"
+    const processId = "0x75599e74bcbf7f3ad16ac8a256861ca36e9d1338726ac2612e1b5e259e7c025e"
 
     console.log("getRawResults", await VotingApi.getRawResults(processId, pool))
     console.log("getResultsDigest", JSON.stringify(await VotingApi.getResultsDigest(processId, pool), null, 2))
+    console.log("getResultsWeight", await VotingApi.getResultsWeight(processId, pool))
 }
 
 async function cloneVotingProcess() {
@@ -833,7 +835,7 @@ async function main() {
     // await createProcessRaw()
     // await createProcessFull()
     // await setProcessStatus()
-    // await showProcessResults()
+    await showProcessResults()
     // await cloneVotingProcess()
     // await useVoteApi()
     // await submitVoteBatch()
@@ -843,7 +845,7 @@ async function main() {
     // await testGatewayInitialization()
 
     // await gatewayHealthCheck()
-    await ensResolver()
+    // await ensResolver()
 }
 
 main()
