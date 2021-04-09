@@ -25,7 +25,7 @@ import {
 import { DVoteGatewayResponseBody, IRequestParameters } from "../net/gateway-dvote"
 import { CensusErc20Api } from "./census"
 
-export const CaBundleProtobuf = CAbundle
+export const CaBundleProtobuf : any = CAbundle
 
 // TYPES
 

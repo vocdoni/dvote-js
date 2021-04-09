@@ -1,31 +1,36 @@
 import "mocha" // using @types/mocha
-import { expect, } from "chai"
+import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
 
-import { serializeBackupLink, deserializeBackupLink } from "../../src/models/backup"
-import { BackupLink } from "../../src/models/protobuf"
+import { deserializeWalletBackup, serializeWalletBackup } from "../../src/models/backup"
+import { Wallet, WalletBackup } from "../../src/models/protobuf"
 
 addCompletionHooks()
 
 describe("Protobuf models", () => {
     it("Should serialize and deserialize Backup Links", () => {
-        const items: BackupLink[] = [
-            { auth: "12345678", key: "23456789", questions: ["a", "b", "c"], version: "1.0" },
-            { auth: "012345678", key: "234567890", questions: ["aa", "bb", "cc"], version: "1.0.0" },
-            { auth: "0012345678", key: "2345678900", questions: ["aaa", "bbb", "ccc"], version: "1.0.1" },
-            { auth: "00012345678", key: "23456789000", questions: ["aaaa", "bbbb", "cccc"], version: "1.0.2" },
-            { auth: "000012345678", key: "234567890000", questions: ["aaaaa", "bbbbb", "ccccc"], version: "1.0.3" },
+        const wallets: Wallet[] = [
+            { encryptedMnemonic: Buffer.from("random mnemonic"), hdPath: "m/44'/60'/0'/0/1", locale: "en", authMethod: 0 },
+        ]
+        const backups: WalletBackup[] = [
+            {
+                name: "name1", timestamp: Date.now(), wallet: wallets[0],
+                passphraseRecovery: { questionIds: [0, 1], encryptedPassphrase: Buffer.from("passphrase") }
+            },
         ]
 
-        items.forEach(item => {
-            const serialized = serializeBackupLink(item)
+        wallets.forEach(wallet => {
+            const serialized = Wallet.encode(wallet).finish()
             expect(serialized instanceof Uint8Array).to.be.true
-            const deserialized = deserializeBackupLink(serialized)
+            const deserialized = Wallet.decode(serialized)
+            expect(deserialized).to.eql(wallet)
+        })
 
-            expect(deserialized.auth).to.eq(item.auth)
-            expect(deserialized.key).to.eq(item.key)
-            expect(deserialized.questions).to.deep.eq(item.questions)
-            expect(deserialized.version).to.eq(item.version)
+        backups.forEach(backup => {
+            const serialized = serializeWalletBackup(backup)
+            expect(serialized instanceof Uint8Array).to.be.true
+            const deserialized = deserializeWalletBackup(serialized)
+            expect(deserialized).to.eql(backup)
         })
     })
 })

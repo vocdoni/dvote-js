@@ -1,4 +1,8 @@
 # DVote JS changelog
+## 1.1.4
+
+- Updates to latest protobuf version with new models for Wallet, Account, Backup
+- Changes serializeBackupLink to serializeWalletBackup and deserializeBackupLink to deserializWalletBackup
 
 ## 1.1.3
 ## 1.1.2

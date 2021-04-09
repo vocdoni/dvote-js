@@ -8,13 +8,22 @@ export {
     ProofEthereumAccount,
     CAbundle,
     SignatureType,
-} from "./protobuf/build/ts/common/vote"
+    Tx,
+    SignedTx,
+} from "./protobuf/build/ts/vochain/vochain"
 
 export {
-    BackupLink
+    Wallet,
+    Wallet_AuthMethod,
+} from "./protobuf/build/ts/client-store/wallet"
+
+export {
+    WalletBackup,
+    WalletBackup_Recovery,
+    WalletBackup_Recovery_QuestionEnum,
 } from "./protobuf/build/ts/client-store/backup"
 
 export {
-    Tx,
-    SignedTx
-} from "./protobuf/build/ts/vochain/vochain"
+    Account,
+    AccountsStore,
+} from "./protobuf/build/ts/client-store/account"

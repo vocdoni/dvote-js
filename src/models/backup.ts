@@ -1,9 +1,9 @@
-import { BackupLink } from "../models/protobuf"
+import { WalletBackup } from "../models/protobuf"
 
-export function serializeBackupLink(data: BackupLink): Uint8Array {
-    return BackupLink.encode(data).finish()
+export function serializeWalletBackup(data: WalletBackup): Uint8Array {
+    return WalletBackup.encode(data).finish()
 }
 
-export function deserializeBackupLink(bytes: Uint8Array): BackupLink {
-    return BackupLink.decode(bytes)
+export function deserializeWalletBackup(bytes: Uint8Array): WalletBackup {
+    return WalletBackup.decode(bytes)
 }
