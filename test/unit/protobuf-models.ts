@@ -8,7 +8,7 @@ import { Wallet, WalletBackup } from "../../src/models/protobuf"
 addCompletionHooks()
 
 describe("Protobuf models", () => {
-    it("Should serialize and deserialize Backup Links", () => {
+    it("Should serialize and deserialize Wallet backups", () => {
         const wallets: Wallet[] = [
             { encryptedMnemonic: Buffer.from("random mnemonic"), hdPath: "m/44'/60'/0'/0/1", locale: "en", authMethod: 0 },
         ]
