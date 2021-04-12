@@ -7,7 +7,7 @@ config({ path: __dirname + "/.env" })
 
 import * as fs from "fs"
 import { utils, providers, Wallet } from "ethers"
-import { WalletUtil } from "../src/util/signers"
+// import { WalletUtil } from "../src/util/signers"
 import { FileApi } from "../src/api/file"
 import { EntityApi } from "../src/api/entity"
 import { VotingApi } from "../src/api/voting"
@@ -40,8 +40,6 @@ const GATEWAY_WEB3_URI = process.env.GATEWAY_WEB3_URI || "https://dai.poa.networ
 
 const NETWORK_ID = "goerli"
 const VOCDONI_ENVIRONMENT = "dev" // "stg" or "prod"
-const WALLET_SEED = process.env.WALLET_SEED
-const WALLET_PASSPHRASE = process.env.WALLET_PASSPHRASE
 const BOOTNODES_URL_RO = "https://bootnodes.vocdoni.net/gateways.json"
 const BOOTNODES_URL_RW = "https://bootnodes.vocdoni.net/gateways.dev.json"
 

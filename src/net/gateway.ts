@@ -43,7 +43,7 @@ export class Gateway {
 
     /**
      * Returns a new random Gateway that is attached to the required network
-     * @param networkId Either "mainnet" or "goerli" (test)
+     * @param networkId Either "mainnet", "rinkeby" or "goerli" (test)
      * @param requiredApis A list of the required APIs
      */
     static randomFromDefault(networkId: EthNetworkID, requiredApis: (GatewayApiName | BackendApiName)[] = [], environment: VocdoniEnvironment): Promise<Gateway> {
@@ -67,7 +67,7 @@ export class Gateway {
 
     /**
      * Returns a new random Gateway that is attached to the required network
-     * @param networkId Either "mainnet" or "goerli" (test)
+     * @param networkId Either "mainnet", "rinkeby" or "goerli" (test)
      * @param bootnodesContentUri The uri from which contains the available gateways
      * @param requiredApis A list of the required APIs
      */

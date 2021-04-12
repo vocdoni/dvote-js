@@ -15,6 +15,7 @@ export const erc20StorageProofsEnsSubdomain = "erc20.proofs"
 
 export const vocdoniMainnetEntityId = "0x0"
 export const vocdoniGoerliEntityId = "0x180dd5765d9f7ecef810b565a2e5bd14a3ccd536c442b3de74867df552855e85"
+export const vocdoniRinkebyEntityId = "0x0"
 export const vocdoniXDaiEntityId = "0x8469d886788116e18b82d6566d951c77bc0b19ef7b6b837b725b667addeef6b5"
 export const vocdoniSokolEntityId = "0xe00f56aac24b5b78b94c38f511631b8b09a5c5a9ee49978dbe57f28135695e1a"
 

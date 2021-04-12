@@ -5,7 +5,7 @@
 import { ContentUri } from "../wrappers/content-uri"
 import { FileApi } from "../api/file"
 import {
-    vocdoniMainnetEntityId, vocdoniGoerliEntityId, vocdoniXDaiEntityId, vocdoniSokolEntityId, XDAI_ENS_REGISTRY_ADDRESS, XDAI_PROVIDER_URI, XDAI_CHAIN_ID,
+    vocdoniMainnetEntityId, vocdoniRinkebyEntityId, vocdoniGoerliEntityId, vocdoniXDaiEntityId, vocdoniSokolEntityId, XDAI_ENS_REGISTRY_ADDRESS, XDAI_PROVIDER_URI, XDAI_CHAIN_ID,
     SOKOL_CHAIN_ID, SOKOL_PROVIDER_URI, SOKOL_ENS_REGISTRY_ADDRESS
 } from "../constants"
 import { TextRecordKeys } from "../models/entity"
@@ -16,7 +16,7 @@ import { IWeb3Gateway, Web3Gateway } from "./gateway-web3"
 import { getDefaultProvider, providers } from "ethers"
 import { VocdoniEnvironment } from "../models/common"
 
-export type EthNetworkID = "mainnet" | "goerli" | "xdai" | "sokol"
+export type EthNetworkID = "mainnet" | "rinkeby" | "goerli" | "xdai" | "sokol"
 
 
 export class GatewayBootnode {
@@ -36,7 +36,7 @@ export class GatewayBootnode {
 
     /**
      * Retrieve the Content URI of the boot nodes Content URI provided by Vocdoni
-     * @param networkId Either "mainnet" or "goerli" (test)
+     * @param networkId Either "mainnet", "rinkeby" or "goerli" (test)
      * @returns A ContentURI object
      */
     static getDefaultUri(networkId: EthNetworkID = "xdai", environment: VocdoniEnvironment = "prod"): Promise<ContentUri> {
@@ -45,6 +45,7 @@ export class GatewayBootnode {
         switch (networkId) {
             case "mainnet":
             case "goerli":
+            case "rinkeby":
                 provider = getDefaultProvider(networkId)
                 break
             case "xdai":
@@ -65,6 +66,9 @@ export class GatewayBootnode {
                     break
                 case "goerli":
                     entityId = vocdoniGoerliEntityId
+                    break
+                case "rinkeby":
+                    entityId = vocdoniRinkebyEntityId
                     break
                 case "xdai":
                     entityId = vocdoniXDaiEntityId

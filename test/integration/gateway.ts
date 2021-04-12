@@ -83,7 +83,7 @@ describe("DVote gateway client", () => {
             const dvoteServer1 = new DevGatewayService({
                 port: port1,
                 responses: [
-                    {...defaultConnectResponse, apiList: ['registry']},
+                    { ...defaultConnectResponse, apiList: ['registry'] },
                     defaultDummyResponse,
                 ]
             })
@@ -95,7 +95,7 @@ describe("DVote gateway client", () => {
             let gwClient = new DVoteGateway(gatewayInfo1)
             expect(gwClient.uri).to.equal(gatewayInfo1.dvote)
             await gwClient.init()
-            await gwClient.sendRequest({ method: "addCensus", censusId: "1234", targetId: "2345", census: {name: "test"} })
+            await gwClient.sendRequest({ method: "addCensus", censusId: "1234", targetId: "2345", census: { name: "test" } })
 
             await dvoteServer1.stop()
         })
