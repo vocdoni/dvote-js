@@ -39,6 +39,8 @@ export type IWeb3Gateway = InstanceType<typeof Web3Gateway>
 export class Web3Gateway {
     private _provider: providers.BaseProvider
     private _environment: VocdoniEnvironment
+    public peerCount: number
+    public lastBlockNumber: number
     public ensPublicResolverContractAddress: string
     public genesisContractAddress: string
     public namespacesContractAddress: string
@@ -173,9 +175,13 @@ export class Web3Gateway {
 
     public isUp(timeout: number = GATEWAY_SELECTION_TIMEOUT, checkEns?: boolean): Promise<any> {
         return promiseFuncWithTimeout(() => {
-            return this.getPeers()
-                .then(peersNumber => {
-                    if (peersNumber <= 0) throw new Error("The Web3 gateway has no peers")
+            return this._provider.getBlockNumber()
+                .then(blockNumber => {
+                    this.lastBlockNumber = blockNumber
+                    return this.getPeers()
+                })
+                .then(peerCount => {
+                    this.peerCount = peerCount
                     return this.isSyncing()
                 })
                 .then(syncing => {
@@ -216,9 +222,14 @@ export class Web3Gateway {
             return Promise.resolve(0)
         }
 
-        return this._provider.send("net_peerCount", []).then(result => {
-            if (!result) return -1
+        return this._provider.send("net_peerCount", [])
+        .then(result => {
+            if (!result) throw new Error('peersCount not available for web3 gateway')
             return BigNumber.from(result).toNumber()
+        })
+        .catch(err => {
+            console.warn(err)
+            return 0
         })
     }
 
