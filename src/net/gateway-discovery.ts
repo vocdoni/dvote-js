@@ -95,9 +95,6 @@ async function getWorkingGateways(params: IGatewayDiscoveryParameters): Promise<
         totalDvoteNodes = bnGateways.dvote
         const totalWeb3Nodes: IWeb3Gateway[] = bnGateways.web3
 
-        // Create mapping of colocated web3/dvote services
-        const gatewayPairs = mapWeb3DvoteGateways(bootnodeData[networkId], totalDvoteNodes, totalWeb3Nodes)
-
         if (!totalDvoteNodes.length)
             throw new Error(`The Dvote gateway list is empty of ${networkId}`)
 
@@ -105,21 +102,35 @@ async function getWorkingGateways(params: IGatewayDiscoveryParameters): Promise<
         if (!healthyNodes) throw new Error("Empty response after filterHealthyNodes")
 
         // Arrange, sort and check connectivity
-        const gwNodePairs = arrangePairedNodes(healthyNodes.dvote, healthyNodes.web3, gatewayPairs)
-
-        gwNodePairs.sort((a, b) => {
+        healthyNodes.dvote.sort((a,b) => {
             if (!b && !a) return 0
             else if (!b) return 1
             else if (!a) return -1
-            else if (!b.dvote && !a.dvote) return 0
-            else if (!b.dvote) return 1
-            else if (!a.dvote) return -1
-            else if (isNaN(b.dvote.health) && isNaN(a.dvote.health)) return 0
-            else if (isNaN(b.dvote.health)) return 1
-            else if (isNaN(a.dvote.health)) return -1
-            return b.dvote.weight - a.dvote.weight
+            else if (!b && !a) return 0
+            else if (!b) return 1
+            else if (!a) return -1
+            else if (isNaN(b.health) && isNaN(a.health)) return 0
+            else if (isNaN(b.health)) return 1
+            else if (isNaN(a.health)) return -1
+            return b.weight - a.weight
         })
 
+        healthyNodes.web3.sort((a,b) => {
+            if (!b && !a) return 0
+            else if (!b) return 1
+            else if (!a) return -1
+            else if (!b && !a) return 0
+            else if (!b) return 1
+            else if (!a) return -1
+            else if (isNaN(b.peerCount) && isNaN(a.peerCount))  return 0
+            else if (isNaN(b.peerCount)) return 1
+            else if (isNaN(a.peerCount)) return -1
+            // in case of equal peercount consider diference of blocks (if higher than 3)
+            else if (a.peerCount == b.peerCount && (Math.abs(b.lastBlockNumber - a.lastBlockNumber) > 3 )) return b.lastBlockNumber - a.lastBlockNumber
+            return b.peerCount - a.peerCount
+        })
+
+        const gwNodePairs = createNodePairs(healthyNodes.dvote,healthyNodes.web3)
         let hasInitialCandidate = false
         for (let gw of gwNodePairs) {
             if (gw.dvote.isReady) {
@@ -188,28 +199,16 @@ async function filterHealthyNodes(discoveredDvoteNodes: IDVoteGateway[], discove
     throw new Error("No working gateways found out of " + discoveredDvoteNodes.length + " and " + discoveredWeb3Nodes.length)
 }
 
-function mapWeb3DvoteGateways(networkBootnodeData: JsonBootnodeData[EthNetworkID], dvoteGateways: IDVoteGateway[], web3Gateways: IWeb3Gateway[]) {
-    let pairs: Map<IDVoteGateway, IWeb3Gateway> = new Map()
-    for (let gateway of networkBootnodeData.dvote) {
-        const dvoteIndex = networkBootnodeData.dvote.indexOf(gateway)
-        // -1 if non existing
-        const web3PairIndex = networkBootnodeData.web3.findIndex(web3 => parseURL(web3.uri).host === parseURL(gateway.uri).host)
-        const web3Pair = (web3PairIndex > -1) ? web3Gateways[web3PairIndex] : undefined
-        pairs.set(dvoteGateways[dvoteIndex], web3Pair)
-    }
-    return pairs
-}
-
-function arrangePairedNodes(dvoteGateways: IDVoteGateway[], web3Gateways: IWeb3Gateway[], gatewayPairs: Map<IDVoteGateway, IWeb3Gateway>): { dvote: IDVoteGateway, web3: IWeb3Gateway }[] {
-    let gatewayList: { dvote: IDVoteGateway, web3: IWeb3Gateway }[] = []
-    for (const gw of dvoteGateways) {
-        const web3Paired = gatewayPairs.get(gw)
-        if (web3Paired && web3Gateways.includes(web3Paired)) {
-            gatewayList.push({ dvote: gw, web3: web3Paired })
-        }
-        else {
-            const idx = Math.floor(Math.random() * web3Gateways.length)
-            gatewayList.push({ dvote: gw, web3: web3Gateways[idx] })
+/**
+ * Helper functions that returns an array of dvote/web3 pairs merging the two input arrays in order
+ */
+function createNodePairs(dvoteGateways: IDVoteGateway[], web3Gateways: IWeb3Gateway[]): { dvote: IDVoteGateway, web3: IWeb3Gateway }[] {
+    let length = (dvoteGateways.length > web3Gateways.length) ? dvoteGateways.length : web3Gateways.length
+    let gatewayList: { dvote: IDVoteGateway, web3: IWeb3Gateway }[] = Array(length)
+    for (let idx = 0; idx < gatewayList.length; idx++) {
+        gatewayList[idx] = {
+            web3 : (idx < web3Gateways.length) ? web3Gateways[idx] : web3Gateways[Math.floor(Math.random() * web3Gateways.length)],
+            dvote : (idx < dvoteGateways.length) ? dvoteGateways[idx] : dvoteGateways[Math.floor(Math.random() * dvoteGateways.length)]
         }
     }
     return gatewayList
