@@ -1,4 +1,9 @@
 # DVote JS changelog
+
+## 1.1.6
+
+- Decouples dvote and web3 gateways selection and uses new web3 metrics to prioritize web3 gateways
+- Makes net_peercount value not obligatory for web3 gateways
 ## 1.1.5
 
 - Adding support for Rinkeby
