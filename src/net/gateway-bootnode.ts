@@ -5,7 +5,7 @@
 import { ContentUri } from "../wrappers/content-uri"
 import { FileApi } from "../api/file"
 import {
-    vocdoniMainnetEntityId, vocdoniRinkebyEntityId, vocdoniGoerliEntityId, vocdoniXDaiEntityId, vocdoniSokolEntityId, XDAI_ENS_REGISTRY_ADDRESS, XDAI_PROVIDER_URI, XDAI_CHAIN_ID,
+    vocdoniMainnetEntityAddressHash, vocdoniRinkebyEntityAddressHash, vocdoniGoerliEntityAddressHash, vocdoniXDaiEntityAddressHash, vocdoniSokolEntityAddressHash, XDAI_ENS_REGISTRY_ADDRESS, XDAI_PROVIDER_URI, XDAI_CHAIN_ID,
     SOKOL_CHAIN_ID, SOKOL_PROVIDER_URI, SOKOL_ENS_REGISTRY_ADDRESS
 } from "../constants"
 import { TextRecordKeys } from "../models/entity"
@@ -59,25 +59,25 @@ export class GatewayBootnode {
 
         const gw = new Web3Gateway(provider, networkId, environment)
         return gw.getEnsPublicResolverInstance().then(instance => {
-            let entityId: string
+            let entityEnsNode: string
             switch (networkId) {
                 case "mainnet":
-                    entityId = vocdoniMainnetEntityId
+                    entityEnsNode = vocdoniMainnetEntityAddressHash
                     break
                 case "goerli":
-                    entityId = vocdoniGoerliEntityId
+                    entityEnsNode = vocdoniGoerliEntityAddressHash
                     break
                 case "rinkeby":
-                    entityId = vocdoniRinkebyEntityId
+                    entityEnsNode = vocdoniRinkebyEntityAddressHash
                     break
                 case "xdai":
-                    entityId = vocdoniXDaiEntityId
+                    entityEnsNode = vocdoniXDaiEntityAddressHash
                     break
                 case "sokol":
-                    entityId = vocdoniSokolEntityId
+                    entityEnsNode = vocdoniSokolEntityAddressHash
                     break
             }
-            return instance.text(entityId, TextRecordKeys.VOCDONI_BOOT_NODES)
+            return instance.text(entityEnsNode, TextRecordKeys.VOCDONI_BOOT_NODES)
         }).then(uri => {
             if (!uri) throw new Error("The boot nodes Content URI is not defined on " + networkId)
             else return new ContentUri(uri)
