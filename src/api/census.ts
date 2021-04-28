@@ -13,7 +13,7 @@ import { blind, unblind, verify, signatureFromHex, signatureToHex, pointFromHex,
 import { hexZeroPad } from "ethers/lib/utils"
 // import ContentURI from "../wrappers/content-uri"
 
-export enum CensusOffchainKeyType {
+export enum CensusOffchainDigestType {
     RAW_PUBKEY,
     POSEIDON
 }
@@ -43,11 +43,12 @@ export class CensusOffChainApi {
      * Given an hex string ECDSA public key (compressed), returns either its
      * base 64 representation or the (litte-endian) Poseidon hash big int
      */
-    static digestPublicKey(publicKey: string, type: CensusOffchainKeyType): string {
+    static digestPublicKey(publicKey: string, type: CensusOffchainDigestType): string {
         const compPubKey = compressPublicKey(publicKey)
         const pubKeyBytes = hexStringToBuffer(compPubKey)
 
-        if (type == CensusOffchainKeyType.RAW_PUBKEY) {
+        // Raw base64?
+        if (type == CensusOffchainDigestType.RAW_PUBKEY) {
             return pubKeyBytes.toString("base64")
         }
 
