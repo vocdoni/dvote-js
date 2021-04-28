@@ -170,7 +170,8 @@ async function generatePublicCensusFromAccounts(accounts) {
     console.log("Creating a new census")
 
     const censusIdSuffix = require("crypto").createHash('sha256').update("" + Date.now()).digest().toString("hex")
-    const claimList: { key: string, value?: string }[] = accounts.map(account => ({ key: account.publicKeyHash, value: "" }))
+    // const claimList: { key: string, value?: string }[] = accounts.map(account => ({ key: account.publicKeyHash, value: "" }))
+    const claimList: { key: string, value?: string }[] = accounts.map(account => ({ key: account.publicKey, value: "" }))
     const managerPublicKeys = [compressPublicKey(entityWallet.publicKey)]
 
     if (config.stopOnError) {
@@ -187,7 +188,7 @@ async function generatePublicCensusFromAccounts(accounts) {
     const { censusId } = await CensusOffChainApi.addCensus(censusIdSuffix, managerPublicKeys, entityWallet, pool)
 
     console.log("Adding", claimList.length, "claims")
-    const digested = true
+    const digested = false
     const { invalidClaims, censusRoot } = await CensusOffChainApi.addClaimBulk(censusId, claimList, digested, entityWallet, pool)
 
     if (invalidClaims.length > 0) throw new Error("Census Service invalid claims count is " + invalidClaims.length)
