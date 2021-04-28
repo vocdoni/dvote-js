@@ -400,8 +400,8 @@ export class VotingApi {
             return Promise.reject(new Error("Invalid Wallet or Signer"))
         else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool))
             return Promise.reject(new Error("Invalid Gateway object"))
-
-        switch (processParameters.censusOrigin) {
+        const censusOrigin = ((typeof processParameters.censusOrigin) === "number") ? processParameters.censusOrigin : (processParameters.censusOrigin as ProcessCensusOrigin).value
+        switch (censusOrigin) {
             case ProcessCensusOrigin.OFF_CHAIN_TREE:
             case ProcessCensusOrigin.OFF_CHAIN_TREE_WEIGHTED:
             case ProcessCensusOrigin.OFF_CHAIN_CA:
