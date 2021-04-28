@@ -15,7 +15,7 @@ export const erc20StorageProofsEnsSubdomain = "erc20.proofs"
 
 // Used for ENS text records => keccak256(address)
 export const vocdoniMainnetEntityAddressHash = "0x0"
-export const vocdoniGoerliEntityAddressHash = "0x42333b9b7095c2a76a3335f582fb6f4f1ac7591044745109b55bc2224b599480"
+export const vocdoniGoerliEntityAddressHash = "0x39897ca26cc12e6b97b3d11a93fa16ada4dad3f029bfe256246988450e98998e"
 export const vocdoniRinkebyEntityAddressHash = "0x39897ca26cc12e6b97b3d11a93fa16ada4dad3f029bfe256246988450e98998e"
 export const vocdoniXDaiEntityAddressHash = "0x8469d886788116e18b82d6566d951c77bc0b19ef7b6b837b725b667addeef6b5"
 export const vocdoniSokolEntityAddressHash = "0xe00f56aac24b5b78b94c38f511631b8b09a5c5a9ee49978dbe57f28135695e1a"
