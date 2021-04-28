@@ -47,7 +47,7 @@ export class Gateway {
      * @param requiredApis A list of the required APIs
      */
     static randomFromDefault(networkId: EthNetworkID, requiredApis: (GatewayApiName | BackendApiName)[] = [], environment: VocdoniEnvironment): Promise<Gateway> {
-        return GatewayBootnode.getDefaultGateways(networkId)
+        return GatewayBootnode.getDefaultGateways(networkId, environment)
             .then(async bootNodeData => {
                 if (!bootNodeData[networkId]) throw new Error("The bootnode doesn't define any gateway for " + networkId)
 
