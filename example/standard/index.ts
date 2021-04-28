@@ -8,7 +8,7 @@ import { EthNetworkID } from "../../src/net/gateway-bootnode"
 import { EntityMetadataTemplate } from "../../src/models/entity"
 import { EntityApi } from "../../src/api/entity"
 import { VotingApi } from "../../src/api/voting"
-import { CensusOffChainApi } from "../../src/api/census"
+import { CensusOffChainApi, CensusOffchainDigestType } from "../../src/api/census"
 import { INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "../../src/models/process"
 import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../../src/net/contracts"
 import { VochainWaiter, EthWaiter } from "../../src/util/waiters"
@@ -156,7 +156,7 @@ function createWallets(amount) {
             mnemonic: wallet.mnemonic.phrase,
             privateKey: wallet.privateKey,
             publicKey: compressPublicKey(wallet.publicKey),
-            publicKeyHash: CensusOffChainApi.digestPublicKey(wallet.publicKey)
+            publicKeyDigested: CensusOffChainApi.digestPublicKey(wallet.publicKey, CensusOffchainDigestType.RAW_PUBKEY)
             // address: wallet.address
         })
     }
@@ -170,8 +170,7 @@ async function generatePublicCensusFromAccounts(accounts) {
     console.log("Creating a new census")
 
     const censusIdSuffix = require("crypto").createHash('sha256').update("" + Date.now()).digest().toString("hex")
-    // const claimList: { key: string, value?: string }[] = accounts.map(account => ({ key: account.publicKeyHash, value: "" }))
-    const claimList: { key: string, value?: string }[] = accounts.map(account => ({ key: account.publicKey, value: "" }))
+    const claimList: { key: string, value?: string }[] = accounts.map(account => ({ key: account.publicKeyDigested, value: "" }))
     const managerPublicKeys = [compressPublicKey(entityWallet.publicKey)]
 
     if (config.stopOnError) {
@@ -188,8 +187,7 @@ async function generatePublicCensusFromAccounts(accounts) {
     const { censusId } = await CensusOffChainApi.addCensus(censusIdSuffix, managerPublicKeys, entityWallet, pool)
 
     console.log("Adding", claimList.length, "claims")
-    const digested = false
-    const { invalidClaims, censusRoot } = await CensusOffChainApi.addClaimBulk(censusId, claimList, digested, entityWallet, pool)
+    const { invalidClaims, censusRoot } = await CensusOffChainApi.addClaimBulk(censusId, claimList, false, entityWallet, pool)
 
     if (invalidClaims.length > 0) throw new Error("Census Service invalid claims count is " + invalidClaims.length)
 
@@ -300,7 +298,7 @@ async function launchVotes(accounts) {
         const wallet = new Wallet(account.privateKey)
 
         process.stdout.write(`Gen Proof [${idx}] ; `)
-        const censusProof = await CensusOffChainApi.generateProof(processParams.censusRoot, { key: account.publicKeyHash }, true, pool)
+        const censusProof = await CensusOffChainApi.generateProof(processParams.censusRoot, { key: account.publicKeyDigested }, true, pool)
             .catch(err => {
                 console.error("\nCensusOffChainApi.generateProof ERR", account, err)
                 if (config.stopOnError) throw err
@@ -502,5 +500,5 @@ type Account = {
     mnemonic: string
     privateKey: string
     publicKey: string
-    publicKeyHash: string
+    publicKeyDigested: string
 }

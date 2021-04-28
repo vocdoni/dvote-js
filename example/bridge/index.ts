@@ -34,8 +34,7 @@ async function main() {
         return {
             idx: i,
             privateKey: key,
-            publicKey: compressPublicKey(wallet.publicKey),
-            publicKeyHash: CensusOffChainApi.digestPublicKey(wallet.publicKey)
+            publicKey: compressPublicKey(wallet.publicKey)
         }
     })
 
@@ -373,5 +372,4 @@ type Account = {
     idx: number,
     privateKey: string
     publicKey: string
-    publicKeyHash: string
 }

@@ -11,7 +11,7 @@ import { utils, providers, Wallet } from "ethers"
 import { FileApi } from "../src/api/file"
 import { EntityApi } from "../src/api/entity"
 import { VotingApi } from "../src/api/voting"
-import { CensusOffChainApi } from "../src/api/census"
+import { CensusOffChainApi, CensusOffchainDigestType } from "../src/api/census"
 import { ProcessContractParameters } from "../src/net/contracts"
 import { Gateway } from "../src/net/gateway"
 import { DVoteGateway } from "../src/net/gateway-dvote"
@@ -534,8 +534,8 @@ async function useVoteApi() {
     console.log("- Date at block 500:", await VotingApi.estimateDateAtBlock(500, pool))
     console.log("- Block in 200 seconds:", await VotingApi.estimateBlockAtDateTime(new Date(Date.now() + VOCHAIN_BLOCK_TIME * 20), pool))
 
-    const publicKeyHash = CensusOffChainApi.digestPublicKey(wallet.publicKey)
-    const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: publicKeyHash }, true, pool)
+    const publicKeyDigest = CensusOffChainApi.digestPublicKey(wallet.publicKey, CensusOffchainDigestType.RAW_PUBKEY)
+    const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: publicKeyDigest }, true, pool)
     const votes = [1, 2, 1]
 
     // Open vote version:
@@ -591,8 +591,8 @@ async function submitVoteBatch() {
             const wallet = Wallet.fromMnemonic(mnemonic, PATH)
             // const myEntityAddress = await wallet.getAddress()
 
-            const publicKeyHash = CensusOffChainApi.digestPublicKey(wallet.publicKey)
-            const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: publicKeyHash }, true, pool)
+            const publicKeyDigest = CensusOffChainApi.digestPublicKey(wallet.publicKey, CensusOffchainDigestType.RAW_PUBKEY)
+            const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: publicKeyDigest }, true, pool)
             const votes = [1]
             const envelope = await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet })
             // Encrypted version:
