@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.1.8
+- Fixing a mismatch between entity address and ENS address hash
+- `digestPublicKey` now supports different digest types (raw and poseidon)
+
 ## 1.1.6
 
 - Decouples dvote and web3 gateways selection and uses new web3 metrics to prioritize web3 gateways
