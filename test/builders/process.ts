@@ -130,9 +130,9 @@ export default class ProcessBuilder {
                 maxTotalCost: this.maxTotalCost,
                 costExponent: this.costExponent,
                 paramsSignature: this.paramsSignature
-            }).toContractParams(extraParams)
+            }).toContractParamsStd(extraParams)
 
-            await contractInstance.newProcess(...params)
+            await contractInstance.newProcessStd(...params)
         }
 
         return contractInstance as Contract & ProcessesContractMethods
@@ -254,7 +254,7 @@ export default class ProcessBuilder {
             maxTotalCost: DEFAULT_MAX_TOTAL_COST,
             costExponent: DEFAULT_COST_EXPONENT,
             paramsSignature: DEFAULT_PARAMS_SIGNATURE
-        }).toContractParams()
-        return contractInstance.newProcess(...params).then(tx => tx.wait())
+        }).toContractParamsStd()
+        return contractInstance.newProcessStd(...params).then(tx => tx.wait())
     }
 }

@@ -1,8 +1,13 @@
 # DVote JS changelog
 
-## 1.1.8
+
+## 1.2.0
 - Fixing a mismatch between entity address and ENS address hash
 - `digestPublicKey` now supports different digest types (raw and poseidon)
+- Updates `dvote-solidity` to 1.1.0
+- Replaces `getBalanceMappingPosition` with `getTokenInfo`
+- `evmBlockHeight` now is `sourceBlockHeight`
+- Updates newProcess wrappers
 
 ## 1.1.6
 

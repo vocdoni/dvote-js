@@ -6,6 +6,7 @@ import { FileApi } from "./file"
 import { IGatewayPool, GatewayPool } from "../net/gateway-pool"
 import { XDAI_CHAIN_ID, XDAI_GAS_PRICE, SOKOL_CHAIN_ID, SOKOL_GAS_PRICE } from "../constants"
 import { IMethodOverrides, ensHashAddress, ITokenStorageProofContract } from "../net/contracts"
+import { CensusErc20Api } from "./census"
 
 export class EntityApi {
     /**
@@ -96,7 +97,7 @@ export class Erc20TokensApi {
             }).then(count => {
                 const indexes = new Array(count).fill(0).map((_, i) => i)
 
-                return Promise.all(indexes.map(idx => tokenInstance.tokenAddresses(idx)))
+                return Promise.all(indexes.map(idx => CensusErc20Api.getTokenAddressAt(idx, gateway)))
             })
     }
 }

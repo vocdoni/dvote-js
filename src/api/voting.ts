@@ -25,7 +25,7 @@ import {
 import { DVoteGatewayResponseBody, IRequestParameters } from "../net/gateway-dvote"
 import { CensusErc20Api } from "./census"
 
-export const CaBundleProtobuf : any = CAbundle
+export const CaBundleProtobuf: any = CAbundle
 
 // TYPES
 
@@ -416,6 +416,14 @@ export class VotingApi {
         }
     }
 
+    /**
+     * Use the given JSON metadata to create a new voting process from the Entity ID associated to the given wallet account.
+     * The Census Merkle Root and Merkle Tree will be published to the blockchain, and the Metadata will be stored on IPFS
+     * @param processParameters The details sent to the smart contract, along with the human readable metadata. See https://vocdoni.io/docs/#/architecture/components/process?id=internal-structs
+     * @param walletOrSigner
+     * @param gateway
+     * @returns The process ID
+     */
     private static async newProcessOffchainCensus(processParameters: Omit<Omit<IProcessCreateParams, "metadata">, "questionCount"> & { metadata: ProcessMetadata },
         walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
         try {
@@ -451,16 +459,16 @@ export class VotingApi {
             switch (ethChainId) {
                 case XDAI_CHAIN_ID:
                     options.gasPrice = XDAI_GAS_PRICE
-                    tx = await processInstance.newProcess(...contractParameters.toContractParams(options))
+                    tx = await processInstance.newProcessStd(...contractParameters.toContractParamsStd(options))
                     break
                 case SOKOL_CHAIN_ID:
                     const addr = await walletOrSigner.getAddress()
                     options.nonce = await walletOrSigner.connect(gateway.provider).provider.getTransactionCount(addr)
                     options.gasPrice = SOKOL_GAS_PRICE
-                    tx = await processInstance.newProcess(...contractParameters.toContractParams(options))
+                    tx = await processInstance.newProcessStd(...contractParameters.toContractParamsStd(options))
                     break
                 default:
-                    tx = await processInstance.newProcess(...contractParameters.toContractParams(options))
+                    tx = await processInstance.newProcessStd(...contractParameters.toContractParamsStd(options))
             }
 
             if (!tx) throw new Error("Could not start the blockchain transaction")
@@ -488,6 +496,14 @@ export class VotingApi {
         }
     }
 
+    /**
+    * Use the given JSON metadata to create a new voting process using an EVM-based census from the given token address.
+    * The given Metadata will be stored on IPFS
+    * @param processParameters The details sent to the smart contract, along with the human readable metadata. See https://vocdoni.io/docs/#/architecture/components/process?id=internal-structs
+    * @param walletOrSigner
+    * @param gateway
+    * @returns The process ID
+    */
     private static async newProcessEvmCensus(processParameters: Omit<Omit<IProcessCreateParams, "metadata">, "questionCount"> & { metadata: ProcessMetadata },
         walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
         try {
@@ -523,16 +539,16 @@ export class VotingApi {
             switch (ethChainId) {
                 case XDAI_CHAIN_ID:
                     options.gasPrice = XDAI_GAS_PRICE
-                    tx = await processInstance.newProcess(...contractParameters.toContractParams(options))
+                    tx = await processInstance.newProcessEvm(...contractParameters.toContractParamsEvm(options))
                     break
                 case SOKOL_CHAIN_ID:
                     const addr = await walletOrSigner.getAddress()
                     options.nonce = await walletOrSigner.connect(gateway.provider).provider.getTransactionCount(addr)
                     options.gasPrice = SOKOL_GAS_PRICE
-                    tx = await processInstance.newProcess(...contractParameters.toContractParams(options))
+                    tx = await processInstance.newProcessEvm(...contractParameters.toContractParamsEvm(options))
                     break
                 default:
-                    tx = await processInstance.newProcess(...contractParameters.toContractParams(options))
+                    tx = await processInstance.newProcessEvm(...contractParameters.toContractParamsEvm(options))
             }
 
             if (!tx) throw new Error("Could not start the blockchain transaction")
