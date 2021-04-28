@@ -13,6 +13,10 @@ import { blind, unblind, verify, signatureFromHex, signatureToHex, pointFromHex,
 import { hexZeroPad } from "ethers/lib/utils"
 // import ContentURI from "../wrappers/content-uri"
 
+export enum CensusOffchainKeyType {
+    RAW_PUBKEY,
+    POSEIDON
+}
 
 export class CensusOffChainApi {
     /**
@@ -36,12 +40,18 @@ export class CensusOffChainApi {
     }
 
     /**
-     * Hashes the given hex string ECDSA public key (compressed) and returns the
-     * base 64 litte-endian representation of the Poseidon hash big int
+     * Given an hex string ECDSA public key (compressed), returns either its
+     * base 64 representation or the (litte-endian) Poseidon hash big int
      */
-    static digestPublicKey(publicKey: string): string {
+    static digestPublicKey(publicKey: string, type: CensusOffchainKeyType): string {
         const compPubKey = compressPublicKey(publicKey)
         const pubKeyBytes = hexStringToBuffer(compPubKey)
+
+        if (type == CensusOffchainKeyType.RAW_PUBKEY) {
+            return pubKeyBytes.toString("base64")
+        }
+
+        // Poseidon
         let hashNumHex: string = hashBuffer(pubKeyBytes).toString(16)
         if (hashNumHex.length % 2 != 0) {
             hashNumHex = "0" + hashNumHex
@@ -331,7 +341,7 @@ export class CensusOffChainApi {
         if (!gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
-        return gateway.sendRequest({method:"getCensusList"})
+        return gateway.sendRequest({ method: "getCensusList" })
             .then(response => {
                 return (response.censusList && response.censusList.length) ? response.censusList : []
             }).catch(error => {

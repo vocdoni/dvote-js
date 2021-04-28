@@ -1,6 +1,4 @@
 import { Buffer } from "buffer/"
-// import * from "../util/hashing"
-// const { Buffer } = require("buffer/")
 
 export function hexStringToBuffer(hexString: string): Buffer {
     if (!/^(0x)?[0-9a-fA-F]+$/.test(hexString)) throw new Error("Invalid hex string")
