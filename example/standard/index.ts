@@ -257,7 +257,7 @@ async function launchNewVote(censusRoot, censusUri) {
     // Reading back
     processParams = await VotingApi.getProcessParameters(processId, pool)
     processMetadata = await VotingApi.getProcessMetadata(processId, pool)
-    assert.strictEqual(processParams.entityAddress, entityAddr)
+    assert.strictEqual(processParams.entityAddress.toLowerCase(), entityAddr.toLowerCase())
     assert.strictEqual(processParams.startBlock, processParamsPre.startBlock, "SENT " + JSON.stringify(processParamsPre) + " GOT " + JSON.stringify(processParams))
     assert.strictEqual(processParams.blockCount, processParamsPre.blockCount)
     assert.strictEqual(processParams.censusRoot, processParamsPre.censusRoot)

@@ -410,10 +410,20 @@ export class CensusErc20Api {
         return ERC20Prover.getHolderBalanceSlot(holderAddress, balanceMappingSlot)
     }
 
-    static registerToken(tokenAddress: string, balanceMappingPosition: number | BigNumber, blockNumber: number | BigNumber, blockHeaderRLP: Buffer, accountStateProof: Buffer, storageProof: Buffer, walletOrSigner: Wallet | Signer, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string): Promise<ContractReceipt> {
+    static registerToken(tokenAddress: string, balanceMappingPosition: number | BigNumber, walletOrSigner: Wallet | Signer, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string): Promise<ContractReceipt> {
         return gw.getTokenStorageProofInstance(walletOrSigner, customContractAddress)
             .then((contractInstance) =>
                 contractInstance.registerToken(tokenAddress,
+                    balanceMappingPosition
+                )
+            )
+            .then(tx => tx.wait())
+    }
+
+    static setVerifiedBalanceMappingPosition(tokenAddress: string, balanceMappingPosition: number | BigNumber, blockNumber: number | BigNumber, blockHeaderRLP: Buffer, accountStateProof: Buffer, storageProof: Buffer, walletOrSigner: Wallet | Signer, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string): Promise<ContractReceipt> {
+        return gw.getTokenStorageProofInstance(walletOrSigner, customContractAddress)
+            .then((contractInstance) =>
+                contractInstance.setVerifiedBalanceMappingPosition(tokenAddress,
                     balanceMappingPosition,
                     blockNumber,
                     blockHeaderRLP,
@@ -424,13 +434,28 @@ export class CensusErc20Api {
             .then(tx => tx.wait())
     }
 
-    static getBalanceMappingPosition(tokenAddress: string, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string): Promise<BigNumber> {
+    static getTokenInfo(tokenAddress: string, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string): Promise<{ isRegistered: boolean, isVerified: boolean, balanceMappingPosition: number }> {
         return gw.getTokenStorageProofInstance(null, customContractAddress)
-            .then((contractInstance) => contractInstance.getBalanceMappingPosition(tokenAddress))
+            .then((contractInstance) => contractInstance.tokens(tokenAddress))
+            .then((tokenDataTuple) => ({
+                isRegistered: tokenDataTuple[0],
+                isVerified: tokenDataTuple[1],
+                balanceMappingPosition: tokenDataTuple[2]
+            }))
     }
 
     static isRegistered(tokenAddress: string, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string) {
         return gw.getTokenStorageProofInstance(null, customContractAddress)
             .then((contractInstance) => contractInstance.isRegistered(tokenAddress))
+    }
+
+    static getTokenAddressAt(index: number, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string): Promise<string> {
+        return gw.getTokenStorageProofInstance(null, customContractAddress)
+            .then((contractInstance) => contractInstance.tokenAddresses(index))
+    }
+
+    static getTokenCount(gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string): Promise<number> {
+        return gw.getTokenStorageProofInstance(null, customContractAddress)
+            .then((contractInstance) => contractInstance.tokenCount())
     }
 }

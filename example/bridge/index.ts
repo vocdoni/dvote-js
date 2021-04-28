@@ -1,11 +1,10 @@
 import * as Bluebird from "bluebird"
-import { Wallet, utils, providers } from "ethers"
+import { Wallet, utils, providers, BigNumber } from "ethers"
 import * as assert from "assert"
 import { readFileSync, writeFileSync } from "fs"
 import * as YAML from 'yaml'
 import {
     VotingApi,
-    CensusOffChainApi,
     CensusErc20Api,
     GatewayPool,
     Gateway, GatewayInfo,
@@ -113,16 +112,13 @@ async function connectGateways(accounts: Account[]): Promise<GatewayPool | Gatew
 
     console.log("Token Address", config.tokenAddress)
 
-    const registeredTokens = await Erc20TokensApi.getTokenList(gw)
-    assert(registeredTokens.includes(config.tokenAddress), "The token address is not registered on the contract")
-
     return gw
 }
 
 async function launchNewVote() {
     console.log("Computing the storage proof of creator the account")
 
-    const blockNumber = await pool.provider.getBlockNumber()
+    const blockNumber = (await pool.provider.getBlockNumber()) - 1
     const balanceSlot = CensusErc20Api.getHolderBalanceSlot(creatorWallet.address, config.tokenBalanceMappingPosition)
     const result = await CensusErc20Api.generateProof(config.tokenAddress, [balanceSlot], blockNumber, pool.provider as providers.JsonRpcProvider)
     const { proof, block, blockHeaderRLP, accountProofRLP, storageProofsRLP } = result
@@ -136,6 +132,13 @@ async function launchNewVote() {
         await CensusErc20Api.registerToken(
             config.tokenAddress,
             config.tokenBalanceMappingPosition,
+            creatorWallet,
+            pool
+        )
+
+        await CensusErc20Api.setVerifiedBalanceMappingPosition(
+            config.tokenAddress,
+            config.tokenBalanceMappingPosition,
             blockNumber,
             Buffer.from(blockHeaderRLP.replace("0x", ""), "hex"),
             Buffer.from(accountProofRLP.replace("0x", ""), "hex"),
@@ -144,8 +147,12 @@ async function launchNewVote() {
             pool
         )
 
-        assert(await CensusErc20Api.isRegistered(config.tokenAddress, pool))
+        assert((await CensusErc20Api.getTokenInfo(config.tokenAddress, pool)).isRegistered)
     }
+
+    const registeredTokens = await Erc20TokensApi.getTokenList(pool)
+
+    assert(registeredTokens.some(address => address.toLowerCase() == config.tokenAddress.toLowerCase()), "The token address is not registered on the contract")
 
     console.log("Preparing the new vote metadata")
 
@@ -186,7 +193,7 @@ async function launchNewVote() {
         maxTotalCost: 0,
         costExponent: 10000,
         maxVoteOverwrites: 1,
-        evmBlockHeight: blockNumber,
+        sourceBlockHeight: blockNumber,
         tokenAddress: config.tokenAddress,
         paramsSignature: "0x0000000000000000000000000000000000000000000000000000000000000000"
     }
@@ -198,7 +205,7 @@ async function launchNewVote() {
     // Reading back
     processParams = await VotingApi.getProcessParameters(processId, pool)
     processMetadata = await VotingApi.getProcessMetadata(processId, pool)
-    assert.strictEqual(processParams.entityAddress, config.tokenAddress)
+    assert.strictEqual(processParams.entityAddress.toLowerCase(), config.tokenAddress.toLowerCase())
     assert.strictEqual(processParams.startBlock, processParamsPre.startBlock, "SENT " + JSON.stringify(processParamsPre) + " GOT " + JSON.stringify(processParams))
     assert.strictEqual(processParams.blockCount, processParamsPre.blockCount)
     assert.strictEqual(processParams.censusRoot, processParamsPre.censusRoot)
@@ -231,7 +238,7 @@ async function submitVotes(accounts: Account[]) {
     console.log("Launching votes")
 
     const processKeys = processParams.envelopeType.hasEncryptedVotes ? await VotingApi.getProcessKeys(processId, pool) : null
-    const balanceMappingPosition = await CensusErc20Api.getBalanceMappingPosition(config.tokenAddress, pool)
+    const balanceMappingPosition = (await CensusErc20Api.getTokenInfo(config.tokenAddress, pool)).balanceMappingPosition
 
     await Bluebird.map(accounts, async (account: Account, idx: number) => {
         process.stdout.write(`Starting [${idx}] ; `)
@@ -240,8 +247,8 @@ async function submitVotes(accounts: Account[]) {
 
         process.stdout.write(`Gen Proof [${idx}] ; `)
 
-        const balanceSlot = CensusErc20Api.getHolderBalanceSlot(wallet.address, balanceMappingPosition.toNumber())
-        const result = await CensusErc20Api.generateProof(config.tokenAddress, [balanceSlot], processParams.evmBlockHeight, pool.provider as providers.JsonRpcProvider)
+        const balanceSlot = CensusErc20Api.getHolderBalanceSlot(wallet.address, balanceMappingPosition)
+        const result = await CensusErc20Api.generateProof(config.tokenAddress, [balanceSlot], processParams.sourceBlockHeight, pool.provider as providers.JsonRpcProvider)
 
         process.stdout.write(`Pkg Envelope [${idx}] ; `)
 
@@ -307,11 +314,10 @@ async function checkVoteResults() {
 
     // all-0
     assert(resultsDigest.questions[0].voteResults.length >= 2)
-    assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes.toNumber(), config.privKeys.length)
-    assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes.toNumber(), 0)
+    assert(resultsDigest.questions[0].voteResults[0].votes.eq(BigNumber.from("2800000000000000000")))
+    assert(resultsDigest.questions[0].voteResults[1].votes.eq(0))
 
-    // assert.strictEqual(totalVotes, config.privKeys.length)
-    assert.strictEqual(totalVotes, 2800000000000000000)
+    assert.strictEqual(totalVotes, config.privKeys.length)
 }
 
 /////////////////////////////////////////////////////////////////////////////

@@ -22,7 +22,7 @@ export class VochainWaiter {
                         lastBlock = currentBlock
                     }
                     if (currentBlock >= targetBlock) {
-                        resolve()
+                        resolve(null)
                         clearInterval(interval)
                     }
                 }).catch(err => reject(err))
@@ -61,7 +61,7 @@ export class EthWaiter {
                         lastBlock = currentBlock
                     }
                     if (currentBlock >= targetBlock) {
-                        resolve()
+                        resolve(null)
                         clearInterval(interval)
                     }
                 }).catch(err => reject(err))

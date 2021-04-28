@@ -315,7 +315,7 @@ async function createProcessRaw() {
         maxVoteOverwrites: 1,
         paramsSignature: "0x0000000000000000000000000000000000000000000000000000000000000000"
     })
-    const tx = await processesInstance.newProcess(...params.toContractParams())
+    const tx = await processesInstance.newProcessStd(...params.toContractParamsStd())
     const result = await tx.wait()
     console.log("RESULT", result)
 }
