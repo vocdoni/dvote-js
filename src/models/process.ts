@@ -124,6 +124,7 @@ export interface ProcessMetadata {
 export type INewProcessParams = Omit<Omit<IProcessCreateParams, "metadata">, "questionCount"> & { metadata: ProcessMetadata }
 
 export interface DigestedProcessResults {
+    totalVotes: number,
     questions: DigestedProcessResultItem[],
 }
 

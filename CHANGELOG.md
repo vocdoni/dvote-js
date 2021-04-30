@@ -1,5 +1,8 @@
 # DVote JS changelog
 
+## 1.2.1
+- Modifies `getRawResults` to return the provided `envelopeHeight`
+- Adds `totalVotes` number attribute to `DigestedProcessResults`
 
 ## 1.2.0
 - Fixing a mismatch between entity address and ENS address hash

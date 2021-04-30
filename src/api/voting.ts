@@ -783,7 +783,7 @@ export class VotingApi {
      * @param gateway
      * @returns Results, vote process  type, vote process state
      */
-    static getRawResults(processId: string, gateway: IGateway | IGatewayPool): Promise<{ results: string[][], status: ProcessStatus }> {
+    static getRawResults(processId: string, gateway: IGateway | IGatewayPool): Promise<{ results: string[][], status: ProcessStatus, envelopHeight: number  }> {
         if (!gateway || !processId)
             return Promise.reject(new Error("No process ID provided"))
         else if (!((gateway instanceof Gateway || gateway instanceof GatewayPool)))
@@ -794,7 +794,8 @@ export class VotingApi {
                 if (response.results && !Array.isArray(response.results)) throw new Error("The gateway response is not valid")
                 const results = (Array.isArray(response.results) && response.results.length) ? response.results : []
                 const status = response.state || ""
-                return { results, status }
+                const envelopHeight = response.height || 0
+                return { results, status, envelopHeight }
             })
             .catch((error) => {
                 const message = (error.message) ? "Could not fetch the process results: " + error.message : "Could not fetch the process results"
@@ -815,21 +816,23 @@ export class VotingApi {
             throw new Error("Invalid Gateway object")
 
         processId = processId.startsWith("0x") ? processId : "0x" + processId
+        let emptyResults = { totalVotes:0, questions: [] }
+
         try {
             const processState = await VotingApi.getProcessParameters(processId, gateway)
-            if (processState.status.isCanceled) return { questions: [] }
+            if (processState.status.isCanceled) return emptyResults
 
             // Encrypted?
             let procKeys: IProcessKeys, retries: number
             const currentBlock = await VotingApi.getBlockHeight(gateway)
             if (processState.envelopeType.hasEncryptedVotes) {
-                if (currentBlock < processState.startBlock) return { questions: [] } // not started
+                if (currentBlock < processState.startBlock) return emptyResults // not started
                 else if (processState.mode.isInterruptible) {
                     if (!processState.status.hasResults && !processState.status.isEnded &&
-                        (currentBlock < (processState.startBlock + processState.blockCount))) return { questions: [] } // not ended
+                        (currentBlock < (processState.startBlock + processState.blockCount))) return emptyResults // not ended
                 } else {
                     if (!processState.status.hasResults &&
-                        (currentBlock < (processState.startBlock + processState.blockCount))) return { questions: [] } // not ended
+                        (currentBlock < (processState.startBlock + processState.blockCount))) return emptyResults // not ended
                 }
 
                 retries = 3
@@ -840,13 +843,13 @@ export class VotingApi {
                     await VochainWaiter.wait(2, gateway)
                     retries--
                 } while (retries >= 0)
-                if (!procKeys || !procKeys.encryptionPrivKeys || !procKeys.encryptionPrivKeys.length) return { questions: [] }
+                if (!procKeys || !procKeys.encryptionPrivKeys || !procKeys.encryptionPrivKeys.length) return emptyResults
             }
 
-            const { results, status } = await VotingApi.getRawResults(processId, gateway)
+            const { results, status, envelopHeight } = await VotingApi.getRawResults(processId, gateway)
             const metadata = await VotingApi.getProcessMetadata(processId, gateway)
 
-            const resultsDigest: DigestedProcessResults = { questions: [] }
+            const resultsDigest: DigestedProcessResults = {totalVotes: envelopHeight, questions:[]}
             const zippedQuestions = metadata.questions.map((e, i) => ({ meta: e, result: results[i] }))
             resultsDigest.questions = zippedQuestions.map((zippedEntry, idx): DigestedProcessResultItem => {
                 const zippedOptions = zippedEntry.meta.choices.map((e, i) => ({ title: e.title, value: zippedEntry.result[i] }))
