@@ -42,10 +42,10 @@ let chainId: number
 
 // function mockResolveName(input: string) {
 //     switch (input) {
-//         case "entities.vocdoni.eth": return Promise.resolve(entityInstance.address)
-//         case "namespaces.vocdoni.eth": return processInstance.namespaceAddress()
-//         case "erc20.proofs.vocdoni.eth": return processInstance.tokenStorageProofAddress()
-//         case "processes.vocdoni.eth": return Promise.resolve(processInstance.address)
+//         case "entities.voc.eth": return Promise.resolve(entityInstance.address)
+//         case "namespaces.voc.eth": return processInstance.namespaceAddress()
+//         case "erc20.proofs.voc.eth": return processInstance.tokenStorageProofAddress()
+//         case "processes.voc.eth": return Promise.resolve(processInstance.address)
 //     }
 //     if (input.startsWith("0x")) return Promise.resolve(input)
 //     return Promise.reject(new Error("Unrecognized input: " + input))

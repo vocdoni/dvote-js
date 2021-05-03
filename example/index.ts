@@ -751,10 +751,10 @@ async function ensResolver() {
     // const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI, { chainId: SOKOL_CHAIN_ID, name: NETWORK_ID, ensAddress: SOKOL_ENS_REGISTRY_ADDRESS })
     const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI, { chainId: XDAI_CHAIN_ID, name: NETWORK_ID, ensAddress: XDAI_ENS_REGISTRY_ADDRESS })
 
-    const resolverAddr = await provider.resolveName("entities.vocdoni.eth")
-    const processesAddr = await provider.resolveName("processes.vocdoni.eth")
-    const namespacesAddr = await provider.resolveName("namespaces.vocdoni.eth")
-    const storageProofsAddr = await provider.resolveName("erc20.proofs.vocdoni.eth")
+    const resolverAddr = await provider.resolveName("entities.voc.eth")
+    const processesAddr = await provider.resolveName("processes.voc.eth")
+    const namespacesAddr = await provider.resolveName("namespaces.voc.eth")
+    const storageProofsAddr = await provider.resolveName("erc20.proofs.voc.eth")
 
     console.log("Entity Resolver contract address", resolverAddr)
     console.log("Processes contract address", processesAddr)

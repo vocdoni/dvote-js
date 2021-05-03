@@ -1,24 +1,24 @@
 import { utils } from "ethers"
 
-export const ipfsGatewayListUri = "https://ipfs.github.io/public-gateway-checker/gateways.json"
+export const IPFS_GATEWAY_LIST_URI = "https://ipfs.github.io/public-gateway-checker/gateways.json"
 
-export const productionEnsDomainSuffix = ".vocdoni.eth"
-export const stagingEnsDomainSuffix = ".stg.vocdoni.eth"
-export const developmentEnsDomainSuffix = ".dev.vocdoni.eth"
+export const VOCDONI_ENS_ROOT = "voc.eth"
+export const VOCDONI_ENS_ROOT_STAGING = "stg." + VOCDONI_ENS_ROOT
+export const VOCDONI_ENS_ROOT_DEV = "dev." + VOCDONI_ENS_ROOT
 
-export const publicResolverEnsSubdomain = "entities"
-export const genesisEnsSubdomain = "genesis"
-export const namespacesEnsSubdomain = "namespaces"
-export const processesEnsSubdomain = "processes"
-export const resultsEnsSubdomain = "results"
-export const erc20StorageProofsEnsSubdomain = "erc20.proofs"
+export const ENTITY_RESOLVER_ENS_SUBDOMAIN = "entities"
+export const GENESIS_ENS_SUBDOMAIN = "genesis"
+export const NAMESPACES_ENS_SUBDOMAIN = "namespaces"
+export const PROCESSES_ENS_SUBDOMAIN = "processes"
+export const RESULTS_ENS_SUBDOMAIN = "results"
+export const ERC20_STORAGE_PROOFS_ENS_SUBDOMAIN = "erc20.proofs"
 
 // Used for ENS text records => keccak256(address)
-export const vocdoniMainnetEntityAddressHash = "0x0"
-export const vocdoniGoerliEntityAddressHash = "0x39897ca26cc12e6b97b3d11a93fa16ada4dad3f029bfe256246988450e98998e"
-export const vocdoniRinkebyEntityAddressHash = "0x39897ca26cc12e6b97b3d11a93fa16ada4dad3f029bfe256246988450e98998e"
-export const vocdoniXDaiEntityAddressHash = "0x8469d886788116e18b82d6566d951c77bc0b19ef7b6b837b725b667addeef6b5"
-export const vocdoniSokolEntityAddressHash = "0xe00f56aac24b5b78b94c38f511631b8b09a5c5a9ee49978dbe57f28135695e1a"
+export const VOCDONI_MAINNET_ENTITY_ADDRESS_HASH = "0x0"
+export const VOCDONI_GOERLI_ENTITY_ADDRESS_HASH = "0x39897ca26cc12e6b97b3d11a93fa16ada4dad3f029bfe256246988450e98998e"
+export const VOCDONI_RINKEBY_ENTITY_ADDRESS_HASH = "0x39897ca26cc12e6b97b3d11a93fa16ada4dad3f029bfe256246988450e98998e"
+export const VOCDONI_XDAI_ENTITY_ADDRESS_HASH = "0x8469d886788116e18b82d6566d951c77bc0b19ef7b6b837b725b667addeef6b5"
+export const VOCDONI_SOKOL_ENTITY_ADDRESS_HASH = "0xe00f56aac24b5b78b94c38f511631b8b09a5c5a9ee49978dbe57f28135695e1a"
 
 export const XDAI_CHAIN_ID = 100
 export const XDAI_PROVIDER_URI = "https://dai.poa.network"

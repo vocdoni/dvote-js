@@ -6,7 +6,18 @@ import { parseURL } from 'universal-parse-url'
 import { Contract, ContractFactory, providers, Wallet, Signer, ContractInterface, BigNumber } from "ethers"
 import { ProviderUtil } from "../util/providers"
 import { GatewayInfo } from "../wrappers/gateway-info"
-import { GATEWAY_SELECTION_TIMEOUT, genesisEnsSubdomain, resultsEnsSubdomain } from "../constants"
+import {
+    GATEWAY_SELECTION_TIMEOUT,
+    GENESIS_ENS_SUBDOMAIN,
+    RESULTS_ENS_SUBDOMAIN,
+    VOCDONI_ENS_ROOT,
+    VOCDONI_ENS_ROOT_STAGING,
+    VOCDONI_ENS_ROOT_DEV,
+    ENTITY_RESOLVER_ENS_SUBDOMAIN,
+    PROCESSES_ENS_SUBDOMAIN,
+    NAMESPACES_ENS_SUBDOMAIN,
+    ERC20_STORAGE_PROOFS_ENS_SUBDOMAIN
+} from "../constants"
 import { EthNetworkID } from "./gateway-bootnode"
 import { IProcessesContract, IEnsPublicResolverContract, INamespacesContract, ITokenStorageProofContract, IGenesisContract, IResultsContract } from "../net/contracts"
 import {
@@ -24,7 +35,6 @@ import {
     ResultsContractMethods,
     Erc20StorageProofContractMethods
 } from "./contracts"
-import { productionEnsDomainSuffix, stagingEnsDomainSuffix, developmentEnsDomainSuffix, publicResolverEnsSubdomain, processesEnsSubdomain, namespacesEnsSubdomain, erc20StorageProofsEnsSubdomain } from "../constants"
 import { promiseFuncWithTimeout, promiseWithTimeout } from '../util/timeout'
 import { VocdoniEnvironment } from '../models/common'
 
@@ -77,26 +87,28 @@ export class Web3Gateway {
 
     /** Initialize the contract addresses */
     public async initEns() {
-        let domainSuffix: string
+        let rootDomain: string
         switch (this._environment) {
             case "prod":
-                domainSuffix = productionEnsDomainSuffix
+                rootDomain = VOCDONI_ENS_ROOT
                 break
             case "stg":
-                domainSuffix = stagingEnsDomainSuffix
+                rootDomain = VOCDONI_ENS_ROOT_STAGING
                 break
             case "dev":
-                domainSuffix = developmentEnsDomainSuffix
+                rootDomain = VOCDONI_ENS_ROOT_DEV
                 break
+            default:
+                throw new Error("Invalid environment")
         }
 
         const addresses = await Promise.all([
-            this._provider.resolveName(publicResolverEnsSubdomain + domainSuffix),
-            this._provider.resolveName(genesisEnsSubdomain + domainSuffix),
-            this._provider.resolveName(namespacesEnsSubdomain + domainSuffix),
-            this._provider.resolveName(processesEnsSubdomain + domainSuffix),
-            this._provider.resolveName(resultsEnsSubdomain + domainSuffix),
-            this._provider.resolveName(erc20StorageProofsEnsSubdomain + domainSuffix),
+            this._provider.resolveName(ENTITY_RESOLVER_ENS_SUBDOMAIN + "." + rootDomain),
+            this._provider.resolveName(GENESIS_ENS_SUBDOMAIN + "." + rootDomain),
+            this._provider.resolveName(NAMESPACES_ENS_SUBDOMAIN + "." + rootDomain),
+            this._provider.resolveName(PROCESSES_ENS_SUBDOMAIN + "." + rootDomain),
+            this._provider.resolveName(RESULTS_ENS_SUBDOMAIN + "." + rootDomain),
+            this._provider.resolveName(ERC20_STORAGE_PROOFS_ENS_SUBDOMAIN + "." + rootDomain),
         ])
         if (!addresses[0]) throw new Error("The ENS resolver address could not be fetched")
         else if (!addresses[1]) throw new Error("The genesis contract address could not be fetched")
@@ -240,7 +252,7 @@ export class Web3Gateway {
     /**
      * Returns an ENS Public Resolver contract instance, bound to the current Web3 gateway client
      * @param walletOrSigner (optional) Either an ethers.js Wallet or a Signer
-     * @param customAddress (optional) Overrides the address of the contract instance, instead of the value from `*.vocdoni.eth`
+     * @param customAddress (optional) Overrides the address of the contract instance, instead of the value from `*.voc.eth`
      */
     public async getEnsPublicResolverInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IEnsPublicResolverContract> {
         const contractAbi = PublicResolverContractDefinition.abi as ContractInterface
@@ -266,7 +278,7 @@ export class Web3Gateway {
     /**
      * Returns a Genesis contract instance, bound to the current Web3 gateway client
      * @param walletOrSigner (optional) Either an ethers.js Wallet or a Signer
-     * @param customAddress (optional) Overrides the address of the contract instance, instead of the address defined within `processes.vocdoni.eth`
+     * @param customAddress (optional) Overrides the address of the contract instance, instead of the address defined within `processes.voc.eth`
      */
     public async getGenesisInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IGenesisContract> {
         const contractAbi = GenesisContractDefinition.abi as ContractInterface
@@ -292,7 +304,7 @@ export class Web3Gateway {
     /**
      * Returns a Namespace contract instance, bound to the current Web3 gateway client
      * @param walletOrSigner (optional) Either an ethers.js Wallet or a Signer
-     * @param customAddress (optional) Overrides the address of the contract instance, instead of the address defined within `processes.vocdoni.eth`
+     * @param customAddress (optional) Overrides the address of the contract instance, instead of the address defined within `processes.voc.eth`
      */
     public async getNamespacesInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<INamespacesContract> {
         const contractAbi = NamespacesContractDefinition.abi as ContractInterface
@@ -318,7 +330,7 @@ export class Web3Gateway {
     /**
      * Returns a Process contract instance, bound to the current Web3 gateway client
      * @param walletOrSigner (optional) Either an ethers.js Wallet or a Signer
-     * @param customAddress (optional) Overrides the address of the contract instance, instead of the value from `*.vocdoni.eth`
+     * @param customAddress (optional) Overrides the address of the contract instance, instead of the value from `*.voc.eth`
      */
     public async getProcessesInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IProcessesContract> {
         const contractAbi = ProcessesContractDefinition.abi as ContractInterface
@@ -344,7 +356,7 @@ export class Web3Gateway {
     /**
      * Returns a Results contract instance, bound to the current Web3 gateway client
      * @param walletOrSigner (optional) Either an ethers.js Wallet or a Signer
-     * @param customAddress (optional) Overrides the address of the contract instance, instead of the address defined within `processes.vocdoni.eth`
+     * @param customAddress (optional) Overrides the address of the contract instance, instead of the address defined within `processes.voc.eth`
      */
     public async getResultsInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IResultsContract> {
         const contractAbi = ResultsContractDefinition.abi as ContractInterface
@@ -370,7 +382,7 @@ export class Web3Gateway {
     /**
      * Returns a Token Storage Proof contract instance, bound to the current Web3 gateway client
      * @param walletOrSigner (optional) Either an ethers.js Wallet or a Signer
-     * @param customAddress (optional) Overrides the address of the contract instance, instead of the address defined within `processes.vocdoni.eth`
+     * @param customAddress (optional) Overrides the address of the contract instance, instead of the address defined within `processes.voc.eth`
      */
     public async getTokenStorageProofInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<ITokenStorageProofContract> {
         const contractAbi = Erc20StorageProofContractDefinition.abi as ContractInterface

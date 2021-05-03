@@ -5,7 +5,7 @@
 import { ContentUri } from "../wrappers/content-uri"
 import { FileApi } from "../api/file"
 import {
-    vocdoniMainnetEntityAddressHash, vocdoniRinkebyEntityAddressHash, vocdoniGoerliEntityAddressHash, vocdoniXDaiEntityAddressHash, vocdoniSokolEntityAddressHash, XDAI_ENS_REGISTRY_ADDRESS, XDAI_PROVIDER_URI, XDAI_CHAIN_ID,
+    VOCDONI_MAINNET_ENTITY_ADDRESS_HASH, VOCDONI_RINKEBY_ENTITY_ADDRESS_HASH, VOCDONI_GOERLI_ENTITY_ADDRESS_HASH, VOCDONI_XDAI_ENTITY_ADDRESS_HASH, VOCDONI_SOKOL_ENTITY_ADDRESS_HASH, XDAI_ENS_REGISTRY_ADDRESS, XDAI_PROVIDER_URI, XDAI_CHAIN_ID,
     SOKOL_CHAIN_ID, SOKOL_PROVIDER_URI, SOKOL_ENS_REGISTRY_ADDRESS
 } from "../constants"
 import { TextRecordKeys } from "../models/entity"
@@ -62,19 +62,19 @@ export class GatewayBootnode {
             let entityEnsNode: string
             switch (networkId) {
                 case "mainnet":
-                    entityEnsNode = vocdoniMainnetEntityAddressHash
+                    entityEnsNode = VOCDONI_MAINNET_ENTITY_ADDRESS_HASH
                     break
                 case "goerli":
-                    entityEnsNode = vocdoniGoerliEntityAddressHash
+                    entityEnsNode = VOCDONI_GOERLI_ENTITY_ADDRESS_HASH
                     break
                 case "rinkeby":
-                    entityEnsNode = vocdoniRinkebyEntityAddressHash
+                    entityEnsNode = VOCDONI_RINKEBY_ENTITY_ADDRESS_HASH
                     break
                 case "xdai":
-                    entityEnsNode = vocdoniXDaiEntityAddressHash
+                    entityEnsNode = VOCDONI_XDAI_ENTITY_ADDRESS_HASH
                     break
                 case "sokol":
-                    entityEnsNode = vocdoniSokolEntityAddressHash
+                    entityEnsNode = VOCDONI_SOKOL_ENTITY_ADDRESS_HASH
                     break
             }
             return instance.text(entityEnsNode, TextRecordKeys.VOCDONI_BOOT_NODES)

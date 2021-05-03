@@ -1,4 +1,4 @@
-import { ipfsGatewayListUri } from "../constants"
+import { IPFS_GATEWAY_LIST_URI } from "../constants"
 import axios from "axios"
 import { Buffer } from 'buffer/'
 
@@ -8,7 +8,7 @@ export class IPFS {
      * @param hash IPFS raw hash (no leading protocol)
      */
     static async fetchHash(hash: string): Promise<Buffer> {
-        const response = await axios.get(ipfsGatewayListUri)
+        const response = await axios.get(IPFS_GATEWAY_LIST_URI)
 
         if (!Array.isArray(response.data)) throw new Error("Could not fetch the IPFS gateway list")
 

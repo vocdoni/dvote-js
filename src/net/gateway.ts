@@ -198,7 +198,7 @@ export class Gateway {
     /**
      * Returns an ENS Public Resolver contract instance, bound to the current Web3 gateway instance
      * @param walletOrSigner (optional) Either an ethers.js Wallet or a Signer
-     * @param customAddress (optional) Overrides the address of the contract instance, instead of the value from `*.vocdoni.eth`
+     * @param customAddress (optional) Overrides the address of the contract instance, instead of the value from `*.voc.eth`
      */
     public getEnsPublicResolverInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IEnsPublicResolverContract> {
         return this.web3.getEnsPublicResolverInstance(walletOrSigner, customAddress)
@@ -207,7 +207,7 @@ export class Gateway {
     /**
      * Returns a Process contract instance, bound to the current Web3 gateway instance
      * @param walletOrSigner (optional) Either an ethers.js Wallet or a Signer
-     * @param customAddress (optional) Overrides the address of the contract instance, instead of the value from `*.vocdoni.eth`
+     * @param customAddress (optional) Overrides the address of the contract instance, instead of the value from `*.voc.eth`
      */
     public getProcessesInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IProcessesContract> {
         return this.web3.getProcessesInstance(walletOrSigner, customAddress)
@@ -216,7 +216,7 @@ export class Gateway {
     /**
      * Returns a Genesis contract instance, bound to the current Web3 gateway instance
      * @param walletOrSigner (optional) Either an ethers.js Wallet or a Signer
-     * @param customAddress (optional) Overrides the address of the contract instance, instead of the address defined within `processes.vocdoni.eth`
+     * @param customAddress (optional) Overrides the address of the contract instance, instead of the address defined within `processes.voc.eth`
      */
     public getGenesisInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IGenesisContract> {
         return this.web3.getGenesisInstance(walletOrSigner, customAddress)
@@ -225,7 +225,7 @@ export class Gateway {
     /**
      * Returns a Namespaces contract instance, bound to the current Web3 gateway instance
      * @param walletOrSigner (optional) Either an ethers.js Wallet or a Signer
-     * @param customAddress (optional) Overrides the address of the contract instance, instead of the address defined within `processes.vocdoni.eth`
+     * @param customAddress (optional) Overrides the address of the contract instance, instead of the address defined within `processes.voc.eth`
      */
     public getNamespacesInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<INamespacesContract> {
         return this.web3.getNamespacesInstance(walletOrSigner, customAddress)
@@ -234,7 +234,7 @@ export class Gateway {
     /**
      * Returns a Results contract instance, bound to the current Web3 gateway instance
      * @param walletOrSigner (optional) Either an ethers.js Wallet or a Signer
-     * @param customAddress (optional) Overrides the address of the contract instance, instead of the address defined within `processes.vocdoni.eth`
+     * @param customAddress (optional) Overrides the address of the contract instance, instead of the address defined within `processes.voc.eth`
      */
     public getResultsInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IResultsContract> {
         return this.web3.getResultsInstance(walletOrSigner, customAddress)
@@ -243,7 +243,7 @@ export class Gateway {
     /**
      * Returns a Token Storage Proof contract instance, bound to the current Web3 gateway instance
      * @param walletOrSigner (optional) Either an ethers.js Wallet or a Signer
-     * @param customAddress (optional) Overrides the address of the contract instance, instead of the address defined within `processes.vocdoni.eth`
+     * @param customAddress (optional) Overrides the address of the contract instance, instead of the address defined within `processes.voc.eth`
      */
     public getTokenStorageProofInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<ITokenStorageProofContract> {
         return this.web3.getTokenStorageProofInstance(walletOrSigner, customAddress)
