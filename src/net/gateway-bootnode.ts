@@ -5,7 +5,7 @@
 import { ContentUri } from "../wrappers/content-uri"
 import { FileApi } from "../api/file"
 import {
-    VOCDONI_MAINNET_ENTITY_ADDRESS_HASH, VOCDONI_RINKEBY_ENTITY_ADDRESS_HASH, VOCDONI_GOERLI_ENTITY_ADDRESS_HASH, VOCDONI_XDAI_ENTITY_ADDRESS_HASH, VOCDONI_SOKOL_ENTITY_ADDRESS_HASH, XDAI_ENS_REGISTRY_ADDRESS, XDAI_PROVIDER_URI, XDAI_CHAIN_ID,
+    VOCDONI_MAINNET_ENTITY_ID, VOCDONI_RINKEBY_ENTITY_ID, VOCDONI_GOERLI_ENTITY_ID, VOCDONI_XDAI_ENTITY_ID, VOCDONI_SOKOL_ENTITY_ID, XDAI_ENS_REGISTRY_ADDRESS, XDAI_PROVIDER_URI, XDAI_CHAIN_ID,
     SOKOL_CHAIN_ID, SOKOL_PROVIDER_URI, SOKOL_ENS_REGISTRY_ADDRESS
 } from "../constants"
 import { TextRecordKeys } from "../models/entity"
@@ -15,6 +15,7 @@ import { DVoteGateway, IDVoteGateway } from "./gateway-dvote"
 import { IWeb3Gateway, Web3Gateway } from "./gateway-web3"
 import { getDefaultProvider, providers } from "ethers"
 import { VocdoniEnvironment } from "../models/common"
+import { keccak256 } from "@ethersproject/keccak256"
 
 export type EthNetworkID = "mainnet" | "rinkeby" | "goerli" | "xdai" | "sokol"
 
@@ -62,19 +63,19 @@ export class GatewayBootnode {
             let entityEnsNode: string
             switch (networkId) {
                 case "mainnet":
-                    entityEnsNode = VOCDONI_MAINNET_ENTITY_ADDRESS_HASH
+                    entityEnsNode = keccak256(VOCDONI_MAINNET_ENTITY_ID)
                     break
                 case "goerli":
-                    entityEnsNode = VOCDONI_GOERLI_ENTITY_ADDRESS_HASH
+                    entityEnsNode = keccak256(VOCDONI_GOERLI_ENTITY_ID)
                     break
                 case "rinkeby":
-                    entityEnsNode = VOCDONI_RINKEBY_ENTITY_ADDRESS_HASH
+                    entityEnsNode = keccak256(VOCDONI_RINKEBY_ENTITY_ID)
                     break
                 case "xdai":
-                    entityEnsNode = VOCDONI_XDAI_ENTITY_ADDRESS_HASH
+                    entityEnsNode = keccak256(VOCDONI_XDAI_ENTITY_ID)
                     break
                 case "sokol":
-                    entityEnsNode = VOCDONI_SOKOL_ENTITY_ADDRESS_HASH
+                    entityEnsNode = keccak256(VOCDONI_SOKOL_ENTITY_ID)
                     break
             }
             return instance.text(entityEnsNode, TextRecordKeys.VOCDONI_BOOT_NODES)
