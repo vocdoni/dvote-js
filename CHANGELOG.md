@@ -2,6 +2,7 @@
 
 ## 1.3.0
 
+- Adding `CensusErc20Api.registerTokenAuto` and `CensusErc20Api.findBalanceMappingPosition` to allow registering tokens with an unknown balances position
 - Using `voc.eth` as the base ENS domain
 
 ## 1.2.1
