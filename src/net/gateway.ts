@@ -2,7 +2,7 @@
 // This component is meant to be a simple communication wrapper.
 // It provides a wrapper to use a Vocdoni Gateway, as well as a wrapper a Web3 one
 
-import { Contract, providers, utils, Wallet, Signer } from "ethers"
+import { Contract, providers, utils, Wallet, Signer, ContractInterface } from "ethers"
 import { GatewayInfo } from "../wrappers/gateway-info"
 import { GatewayApiName, BackendApiName, ApiMethod } from "../models/gateway"
 import { GatewayBootnode, EthNetworkID } from "./gateway-bootnode"
@@ -189,6 +189,10 @@ export class Gateway {
         signParams: { signer?: Signer, wallet?: Wallet } = {}, deployArguments: any[] = []): Promise<(Contract & CustomContractMethods)> {
 
         return this.web3.deploy<CustomContractMethods>(abi, bytecode, signParams, deployArguments)
+    }
+
+    public attach<CustomContractMethods>(address: string, abi: ContractInterface): (Contract & CustomContractMethods) {
+        return this.web3.attach<CustomContractMethods>(address, abi)
     }
 
     /**

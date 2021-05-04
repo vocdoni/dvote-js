@@ -129,9 +129,15 @@ async function launchNewVote() {
 
         // const storageProof = await this.verifyProof(storageRoot, Buffer.from(path, 'hex'), storageProof.proof)
 
-        await CensusErc20Api.registerToken(
+        // await CensusErc20Api.registerToken(
+        //     config.tokenAddress,
+        //     config.tokenBalanceMappingPosition,
+        //     creatorWallet,
+        //     pool
+        // )
+
+        await CensusErc20Api.registerTokenAuto(
             config.tokenAddress,
-            config.tokenBalanceMappingPosition,
             creatorWallet,
             pool
         )

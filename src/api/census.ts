@@ -1,4 +1,4 @@
-import { Wallet, Signer, providers, BigNumber, ContractReceipt } from "ethers"
+import { Wallet, Signer, providers, BigNumber, ContractReceipt, Contract } from "ethers"
 import { Gateway, IGateway } from "../net/gateway"
 import { IRequestParameters } from "../net/gateway-dvote"
 import { IGatewayPool, GatewayPool } from "../net/gateway-pool"
@@ -11,6 +11,7 @@ import { Web3Gateway } from "../net/gateway-web3"
 import { compressPublicKey } from "../util/elliptic"
 import { blind, unblind, verify, signatureFromHex, signatureToHex, pointFromHex, pointToHex, UserSecretData, UnblindedSignature, BigInteger, Point } from "blindsecp256k1"
 import { hexZeroPad } from "ethers/lib/utils"
+import { ERC20_ABI } from "../util/erc"
 // import ContentURI from "../wrappers/content-uri"
 
 export enum CensusOffchainDigestType {
@@ -406,10 +407,22 @@ export class CensusErc20Api {
         return prover.verify(stateRoot, address, proof)
     }
 
-    static getHolderBalanceSlot(holderAddress: string, balanceMappingSlot: number) {
-        return ERC20Prover.getHolderBalanceSlot(holderAddress, balanceMappingSlot)
+    /** Computes the balance slot that the given holder address has, given the balance mapping position within the contract */
+    static getHolderBalanceSlot(holderAddress: string, balanceMappingPosition: number) {
+        return ERC20Prover.getHolderBalanceSlot(holderAddress, balanceMappingPosition)
     }
 
+    /** Finds the balance mapping position of the given ERC20 token address and attempts to register it on the blockchain */
+    static async registerTokenAuto(tokenAddress: string, walletOrSigner: Wallet | Signer, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string): Promise<ContractReceipt> {
+        const contractInstance = await gw.getTokenStorageProofInstance(walletOrSigner, customContractAddress)
+
+        const balanceMappingPosition = await CensusErc20Api.findBalanceMappingPosition(tokenAddress, await walletOrSigner.getAddress(), gw.provider as providers.JsonRpcProvider)
+
+        const tx = await contractInstance.registerToken(tokenAddress, balanceMappingPosition)
+        return tx.wait()
+    }
+
+    /** Associates the given balance mapping position to the given ERC20 token address  */
     static registerToken(tokenAddress: string, balanceMappingPosition: number | BigNumber, walletOrSigner: Wallet | Signer, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string): Promise<ContractReceipt> {
         return gw.getTokenStorageProofInstance(walletOrSigner, customContractAddress)
             .then((contractInstance) =>
@@ -420,6 +433,7 @@ export class CensusErc20Api {
             .then(tx => tx.wait())
     }
 
+    /** Overwrites the token's balance mapping position as long as the provided proof is valid */
     static setVerifiedBalanceMappingPosition(tokenAddress: string, balanceMappingPosition: number | BigNumber, blockNumber: number | BigNumber, blockHeaderRLP: Buffer, accountStateProof: Buffer, storageProof: Buffer, walletOrSigner: Wallet | Signer, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string): Promise<ContractReceipt> {
         return gw.getTokenStorageProofInstance(walletOrSigner, customContractAddress)
             .then((contractInstance) =>
@@ -457,5 +471,52 @@ export class CensusErc20Api {
     static getTokenCount(gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string): Promise<number> {
         return gw.getTokenStorageProofInstance(null, customContractAddress)
             .then((contractInstance) => contractInstance.tokenCount())
+    }
+
+    // Helpers
+
+    /**
+     * Attempts to find the index at which the holder balances are stored within the token contract.
+     * If the position cannot be found among the 50 first ones, `null` is returned.
+     */
+    static async findBalanceMappingPosition(tokenAddress: string, holderAddress: string, provider: providers.JsonRpcProvider) {
+        const verify = true
+        try {
+            const blockNumber = await provider.getBlockNumber()
+            const tokenInstance = new Contract(tokenAddress, ERC20_ABI, provider)
+            const balance = await tokenInstance.balanceOf(holderAddress) as BigNumber
+            if (balance.isZero()) throw new Error("The holder has a zero balance")
+
+            for (let i = 0; i < 50; i++) {
+                const tokenBalanceMappingPosition = i
+
+                const balanceSlot = CensusErc20Api.getHolderBalanceSlot(
+                    holderAddress,
+                    tokenBalanceMappingPosition
+                )
+
+                const result = await CensusErc20Api.generateProof(
+                    tokenAddress,
+                    [balanceSlot],
+                    blockNumber,
+                    provider,
+                    { verify }
+                ).catch(() => null) // Failed => ignore
+
+                if (result == null || !result.proof) continue
+
+                const onChainBalance = BigNumber.from(result.proof.storageProof[0].value)
+                if (!onChainBalance.eq(balance)) {
+                    // keep searching
+                    continue
+                }
+
+                // FOUND
+                return tokenBalanceMappingPosition
+            }
+            return null
+        } catch (err) {
+            throw err
+        }
     }
 }
