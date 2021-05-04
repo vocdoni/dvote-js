@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.3.0
+
+- Using `voc.eth` as the base ENS domain
+
 ## 1.2.1
 - Modifies `getRawResults` to return the provided `envelopeHeight`
 - Adds `totalVotes` number attribute to `DigestedProcessResults`
