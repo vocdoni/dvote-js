@@ -125,7 +125,7 @@ async function launchNewVote() {
 
     if (!await CensusErc20Api.isRegistered(config.tokenAddress, pool)) {
         // TODO: Check the conversion of storageProofsRLP into storageProof as a buffer
-        const storageProof = Buffer.from(storageProofsRLP[0].replace("0x", ""), "hex")
+        // const storageProof = Buffer.from(storageProofsRLP[0].replace("0x", ""), "hex")
 
         // const storageProof = await this.verifyProof(storageRoot, Buffer.from(path, 'hex'), storageProof.proof)
 
@@ -136,19 +136,19 @@ async function launchNewVote() {
         //     pool
         // )
 
+        // await CensusErc20Api.setVerifiedBalanceMappingPosition(
+        //     config.tokenAddress,
+        //     config.tokenBalanceMappingPosition,
+        //     blockNumber,
+        //     Buffer.from(blockHeaderRLP.replace("0x", ""), "hex"),
+        //     Buffer.from(accountProofRLP.replace("0x", ""), "hex"),
+        //     storageProof, // flatten
+        //     creatorWallet,
+        //     pool
+        // )
+
         await CensusErc20Api.registerTokenAuto(
             config.tokenAddress,
-            creatorWallet,
-            pool
-        )
-
-        await CensusErc20Api.setVerifiedBalanceMappingPosition(
-            config.tokenAddress,
-            config.tokenBalanceMappingPosition,
-            blockNumber,
-            Buffer.from(blockHeaderRLP.replace("0x", ""), "hex"),
-            Buffer.from(accountProofRLP.replace("0x", ""), "hex"),
-            storageProof, // flatten
             creatorWallet,
             pool
         )
