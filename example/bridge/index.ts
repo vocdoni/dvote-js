@@ -118,35 +118,7 @@ async function connectGateways(accounts: Account[]): Promise<GatewayPool | Gatew
 async function launchNewVote() {
     console.log("Computing the storage proof of creator the account")
 
-    const blockNumber = (await pool.provider.getBlockNumber()) - 1
-    const balanceSlot = CensusErc20Api.getHolderBalanceSlot(creatorWallet.address, config.tokenBalanceMappingPosition)
-    const result = await CensusErc20Api.generateProof(config.tokenAddress, [balanceSlot], blockNumber, pool.provider as providers.JsonRpcProvider)
-    const { proof, block, blockHeaderRLP, accountProofRLP, storageProofsRLP } = result
-
     if (!await CensusErc20Api.isRegistered(config.tokenAddress, pool)) {
-        // TODO: Check the conversion of storageProofsRLP into storageProof as a buffer
-        // const storageProof = Buffer.from(storageProofsRLP[0].replace("0x", ""), "hex")
-
-        // const storageProof = await this.verifyProof(storageRoot, Buffer.from(path, 'hex'), storageProof.proof)
-
-        // await CensusErc20Api.registerToken(
-        //     config.tokenAddress,
-        //     config.tokenBalanceMappingPosition,
-        //     creatorWallet,
-        //     pool
-        // )
-
-        // await CensusErc20Api.setVerifiedBalanceMappingPosition(
-        //     config.tokenAddress,
-        //     config.tokenBalanceMappingPosition,
-        //     blockNumber,
-        //     Buffer.from(blockHeaderRLP.replace("0x", ""), "hex"),
-        //     Buffer.from(accountProofRLP.replace("0x", ""), "hex"),
-        //     storageProof, // flatten
-        //     creatorWallet,
-        //     pool
-        // )
-
         await CensusErc20Api.registerTokenAuto(
             config.tokenAddress,
             creatorWallet,
@@ -155,6 +127,13 @@ async function launchNewVote() {
 
         assert((await CensusErc20Api.getTokenInfo(config.tokenAddress, pool)).isRegistered)
     }
+
+    const tokenInfo = await CensusErc20Api.getTokenInfo(config.tokenAddress, pool)
+
+    const blockNumber = (await pool.provider.getBlockNumber()) - 1
+    const balanceSlot = CensusErc20Api.getHolderBalanceSlot(creatorWallet.address, tokenInfo.balanceMappingPosition)
+    const result = await CensusErc20Api.generateProof(config.tokenAddress, [balanceSlot], blockNumber, pool.provider as providers.JsonRpcProvider)
+    const { proof, block, blockHeaderRLP, accountProofRLP, storageProofsRLP } = result
 
     const registeredTokens = await Erc20TokensApi.getTokenList(pool)
 
@@ -320,7 +299,7 @@ async function checkVoteResults() {
 
     // all-0
     assert(resultsDigest.questions[0].voteResults.length >= 2)
-    assert(resultsDigest.questions[0].voteResults[0].votes.eq(BigNumber.from("2800000000000000000")))
+    assert(resultsDigest.questions[0].voteResults[0].votes.gt(0))
     assert(resultsDigest.questions[0].voteResults[1].votes.eq(0))
 
     assert.strictEqual(totalVotes, config.privKeys.length)
@@ -350,7 +329,7 @@ function getConfig(path: string): Config {
     assert(typeof config.ethNetworkId == "string", "config.yaml > ethNetworkId should be a string")
     assert(typeof config.vocdoniEnvironment == "string", "config.yaml > vocdoniEnvironment should be a string")
     assert(typeof config.tokenAddress == "string", "config.yaml > tokenAddress should be a string")
-    assert(typeof config.tokenBalanceMappingPosition == "number", "config.yaml > tokenBalanceMappingPosition should be a number")
+    // assert(typeof config.tokenBalanceMappingPosition == "number", "config.yaml > tokenBalanceMappingPosition should be a number")
     assert(Array.isArray(config.privKeys) && config.privKeys.length, "config.yaml > privKeys should be an array of strings")
     assert(typeof config.bootnodesUrlRw == "string", "config.yaml > bootnodesUrlRw should be a string")
     assert(!config.dvoteGatewayUri || typeof config.dvoteGatewayUri == "string", "config.yaml > dvoteGatewayUri should be a string")
@@ -369,7 +348,7 @@ type Config = {
     ethNetworkId: string
     vocdoniEnvironment: VocdoniEnvironment
     tokenAddress: string
-    tokenBalanceMappingPosition: number
+    tokenBalanceMappingPosition?: number
     privKeys: string[]
 
     bootnodesUrlRw: string
