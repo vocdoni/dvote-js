@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.3.1
+
+- Adding the well-known Mainnet entity address for Vocdoni (to provide a default bootnode)
+
 ## 1.3.0
 
 - Adding `CensusErc20Api.registerTokenAuto` and `CensusErc20Api.findBalanceMappingPosition` to allow registering tokens with an unknown balances position
