@@ -14,9 +14,9 @@ export class Asymmetric {
      * @param messageBytes The payload to encrypt
      * @param hexPublicKey 32 byte public key in hex format
      */
-    static encryptRaw(messageBytes: Buffer, hexPublicKey: string): Buffer {
-        if (!(messageBytes instanceof Buffer))
-            throw new Error("Please, use a Buffer instance from require('buffer/') to pass the messageBytes")
+    static encryptRaw(messageBytes: Uint8Array | Buffer, hexPublicKey: string): Buffer {
+        if (!(messageBytes instanceof Uint8Array))
+            throw new Error("Please, use a Uint8Array or Buffer instance from require('buffer/') to pass the messageBytes")
         else if (typeof hexPublicKey != "string")
             throw new Error("Invalid public key")
 
@@ -32,9 +32,9 @@ export class Asymmetric {
      * @param messageBytes The payload to encrypt
      * @param hexPublicKey 32 byte public key in hex format
      */
-    static encryptBytes(messageBytes: Buffer, hexPublicKey: string): string {
-        if (!(messageBytes instanceof Buffer))
-            throw new Error("Please, use a Buffer instance from require('buffer/') to pass the messageBytes")
+    static encryptBytes(messageBytes: Uint8Array | Buffer, hexPublicKey: string): string {
+        if (!(messageBytes instanceof Uint8Array))
+            throw new Error("Please, use a Uint8Array or Buffer instance from require('buffer/') to pass the messageBytes")
         else if (typeof hexPublicKey != "string")
             throw new Error("Invalid public key")
 
@@ -67,9 +67,9 @@ export class Asymmetric {
      * @param encryptedBytes The payload to decrypt
      * @param hexPrivateKey 32 byte public key in hex format
      */
-    static decryptRaw(encryptedBytes: Buffer, hexPrivateKey: string): Buffer {
-        if (!(encryptedBytes instanceof Buffer))
-            throw new Error("Please, use a Buffer instance from require('buffer/') to pass the encryptedBytes")
+    static decryptRaw(encryptedBytes: Uint8Array | Buffer, hexPrivateKey: string): Buffer {
+        if (!(encryptedBytes instanceof Uint8Array))
+            throw new Error("Please, use a Uint8Array or Buffer instance from require('buffer/') to pass the encryptedBytes")
         else if (typeof hexPrivateKey != "string")
             throw new Error("Invalid private key")
 
@@ -129,9 +129,9 @@ export class Symmetric {
      * @param messageBytes The payload to encrypt
      * @param passphrase The secret key in string format
      */
-    static encryptRaw(messageBytes: Buffer, passphrase: string): Buffer {
-        if (!(messageBytes instanceof Buffer))
-            throw new Error("Please, use a Buffer instance from require('buffer/') to pass the messageBytes")
+    static encryptRaw(messageBytes: Uint8Array | Buffer, passphrase: string): Buffer {
+        if (!(messageBytes instanceof Uint8Array))
+            throw new Error("Please, provide a Uint8Array or a Buffer instance from require('buffer/') to pass the messageBytes")
         else if (typeof passphrase != "string")
             throw new Error("Invalid passphrase")
 
@@ -154,9 +154,9 @@ export class Symmetric {
      * @param messageBytes The payload to encrypt
      * @param passphrase The secret key in string format
      */
-    static encryptBytes(messageBytes: Buffer, passphrase: string): string {
-        if (!(messageBytes instanceof Buffer))
-            throw new Error("Please, use a Buffer instance from require('buffer/') to pass the messageBytes")
+    static encryptBytes(messageBytes: Uint8Array | Buffer, passphrase: string): string {
+        if (!(messageBytes instanceof Uint8Array))
+            throw new Error("Please, use a Uint8Array or Buffer instance from require('buffer/') to pass the messageBytes")
         else if (typeof passphrase != "string")
             throw new Error("Invalid passphrase")
 
@@ -175,10 +175,10 @@ export class Symmetric {
         if (typeof message != "string" || typeof passphrase != "string")
             throw new Error("Invalid parameters")
 
-        const messageBytes = Buffer.from(message)
-        const encryptedMessage = this.encryptRaw(messageBytes, passphrase)
+        const messageBytes = Buffer.from(message, "utf-8")
+        const encryptedMessageBytes = this.encryptRaw(messageBytes, passphrase)
 
-        return Buffer.from(encryptedMessage).toString("base64")
+        return Buffer.from(encryptedMessageBytes).toString("base64")
     }
 
     /**
@@ -187,9 +187,9 @@ export class Symmetric {
      * @param encryptedBytes The payload to decrypt
      * @param passphrase The secret key in string format
      */
-    static decryptRaw(encryptedBytes: Buffer, passphrase: string): Buffer {
-        if (!(encryptedBytes instanceof Buffer))
-            throw new Error("Please, use a Buffer instance from require('buffer/') to pass the encryptedBytes")
+    static decryptRaw(encryptedBytes: Uint8Array | Buffer, passphrase: string): Buffer {
+        if (!(encryptedBytes instanceof Uint8Array))
+            throw new Error("Please, use a Uint8Array or Buffer instance from require('buffer/') to pass the encryptedBytes")
         else if (typeof passphrase != "string")
             throw new Error("Invalid passaphrase")
 
@@ -202,7 +202,6 @@ export class Symmetric {
             tweetnacl.secretbox.nonceLength,
             encryptedBytes.length
         )
-        
 
         const decrypted = tweetnacl.secretbox.open(message, nonce, keyDigestBytes);
 
@@ -240,7 +239,7 @@ export class Symmetric {
 
 
         const encryptedBytes = Buffer.from(encryptedBase64, "base64")
-        const decryptedBytes = this.decryptRaw(encryptedBytes,passphrase)
+        const decryptedBytes = this.decryptRaw(encryptedBytes, passphrase)
 
         if (!decryptedBytes) throw new Error("The message can't be decrypted with the given passphrase")
         return new Buffer(decryptedBytes).toString()
