@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.4.0
+
+- Adding `AccountBackup` to allow exporting and recovering backup credentials protected by recovery questions
+
 ## 1.3.2
 
 Update dvote-solidity to 1.3.1

@@ -15,7 +15,7 @@ describe("Account backups", () => {
       const originalPassphrase = Math.random().toString()
       const encryptedMnemonic = AccountBackup.encryptPayload(wallet.mnemonic.phrase, originalPassphrase)
 
-      const backup = AccountBackup.create({
+      const backupBytes = AccountBackup.create({
         backupName: "Hello " + i,
         questionIds: [1, 2, 3],
         answers: ["Answer 1" + i, "Answer 2" + i, "Answer 3" + i],
@@ -27,10 +27,15 @@ describe("Account backups", () => {
         },
         currentPassphrase: originalPassphrase
       })
-      expect(backup).to.be.ok
+      expect(backupBytes).to.be.ok
 
-      const decryptedPassphrase = AccountBackup.recoverPassphrase(backup, ["Answer 1" + i, "Answer 2" + i, "Answer 3" + i])
+      const decryptedPassphrase = AccountBackup.recoverPassphrase(backupBytes, ["Answer 1" + i, "Answer 2" + i, "Answer 3" + i])
       expect(decryptedPassphrase).to.eq(originalPassphrase)
+
+      const parsedBackup = AccountBackup.parse(backupBytes)
+      expect(parsedBackup.name).to.eq("Hello " + i)
+      expect(parsedBackup.passphraseRecovery.questionIds).to.deep.eq([1, 2, 3])
+      expect(parsedBackup.wallet.encryptedMnemonic.join(",")).to.eq(encryptedMnemonic.join(","))
     }
   })
 
