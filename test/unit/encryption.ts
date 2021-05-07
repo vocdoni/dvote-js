@@ -37,11 +37,21 @@ describe("Asymmetric encryption", () => {
             const decrypted = Asymmetric.decryptBytes(encrypted, privateKey)
             expect(decrypted.join(",")).to.eq(buffers[i].join(","))
         }
+        for (let i = 0; i < buffers.length; i++) {
+            const encrypted = Asymmetric.encryptBytes(new Uint8Array(buffers[i]), publicKey)
+            const decrypted = Asymmetric.decryptBytes(encrypted, privateKey)
+            expect(decrypted.join(",")).to.eq(buffers[i].join(","))
+        }
     })
 
     it("Should encrypt and recover byte arrays", () => {
         for (let i = 0; i < buffers.length; i++) {
             const encrypted = Asymmetric.encryptRaw(buffers[i], publicKey)
+            const decrypted = Asymmetric.decryptRaw(encrypted, privateKey)
+            expect(decrypted.join(",")).to.eq(buffers[i].join(","))
+        }
+        for (let i = 0; i < buffers.length; i++) {
+            const encrypted = Asymmetric.encryptRaw(new Uint8Array(buffers[i]), publicKey)
             const decrypted = Asymmetric.decryptRaw(encrypted, privateKey)
             expect(decrypted.join(",")).to.eq(buffers[i].join(","))
         }
@@ -150,8 +160,13 @@ describe("Symmetric encryption", () => {
 
     it("Should encrypt and recover byte arrays from base64", () => {
         for (let i = 0; i < buffers.length; i++) {
-            const encrypted = Symmetric.encryptBytes(buffers[i], messages[messages.length-1-i])
-            const decrypted = Symmetric.decryptBytes(encrypted, messages[messages.length-1-i])
+            const encrypted = Symmetric.encryptBytes(buffers[i], messages[messages.length - 1 - i])
+            const decrypted = Symmetric.decryptBytes(encrypted, messages[messages.length - 1 - i])
+            expect(decrypted.join(",")).to.eq(buffers[i].join(","))
+        }
+        for (let i = 0; i < buffers.length; i++) {
+            const encrypted = Symmetric.encryptBytes(new Uint8Array(buffers[i]), messages[messages.length - 1 - i])
+            const decrypted = Symmetric.decryptBytes(encrypted, messages[messages.length - 1 - i])
             expect(decrypted.join(",")).to.eq(buffers[i].join(","))
         }
     })
@@ -159,6 +174,11 @@ describe("Symmetric encryption", () => {
     it("Should encrypt and recover byte arrays", () => {
         for (let i = 0; i < buffers.length; i++) {
             const encrypted = Symmetric.encryptRaw(buffers[i], messages[i])
+            const decrypted = Symmetric.decryptRaw(encrypted, messages[i])
+            expect(decrypted.join(",")).to.eq(buffers[i].join(","))
+        }
+        for (let i = 0; i < buffers.length; i++) {
+            const encrypted = Symmetric.encryptRaw(new Uint8Array(buffers[i]), messages[i])
             const decrypted = Symmetric.decryptRaw(encrypted, messages[i])
             expect(decrypted.join(",")).to.eq(buffers[i].join(","))
         }

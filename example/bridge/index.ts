@@ -158,9 +158,8 @@ async function launchNewVote() {
     console.log("Getting the block height")
     const currentBlock = await VotingApi.getBlockHeight(pool)
     const startBlock = currentBlock + 25
-    // const blockCount = 6 * 60 * 24 * 10
-    const blockCount = 6 * 10 // 10m
-    // const blockCount = 15
+    // const blockCount = 6 * 10 // 10m
+    const blockCount = 6 * 4 // 4m
 
     // TODO: COMPUTE THE PARAMS SIGNATURE
     // TODO: INCLUDE THE BALANCE SLOT IN SUCH SIGNATURE

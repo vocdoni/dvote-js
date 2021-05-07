@@ -1,87 +1,92 @@
 import { Symmetric } from "../util/encryption"
-import { Wallet, WalletBackup, Account } from "../models/protobuf"
+import { Wallet as PbWallet, WalletBackup, Account as PbAccount } from "../models/protobuf"
 import {
-    walletBackup_Recovery_QuestionEnumToJSON,
     walletBackup_Recovery_QuestionEnumFromJSON,
     WalletBackup_Recovery_QuestionEnum,
 } from "./protobuf/build/ts/client-store/backup"
 import { Buffer } from "buffer/"
-import { date } from "yup"
 
-const normalizeAnswer = (answer: string): string => answer.replace(/\s+/g, '').toLowerCase()
+const normalizeAnswer = (answer: string) => answer.trim().replace(/\s+/g, ' ').toLowerCase()
 
-const normalizeKey = (password: string, answers: string[]): string => {
-    const normalized = answers.map(normalizeAnswer).join('')
-    return `${password}${normalized}`
+type AccountBackupCreateParams = {
+    /** An arbitrary name given to identify the account when restoring */
+    backupName: string,
+    /** The fields typically stored on the local storage of a browser/app */
+    accountWallet: PbWallet,
+    /** The passphrase currently used to encrypt the accountWallet's mnemonic */
+    currentPassphrase: string,
+    /** The index of questions used (in order of usage) */
+    questionIds: number[],
+    /** The strings given as answer for the corresponding questions */
+    answers: string[]
 }
 
 export class AccountBackup {
-    static create(name: string, questionIds: number[], answers: string[], encryptedPassphrase: Uint8Array, wallet: Wallet) {
-        if (!AccountBackup.areValidQuestions(questionIds)) {
-            throw new Error('Invalid questions provided')
-        }
-        // if (accountBackup_AuthFromJSON(encryptedPassphrase) === AccountBackup_Auth.UNRECOGNIZED) {
-        //     throw new Error('Unrecognized auth type')
-        // }
-        if (questionIds.length !== answers.length) {
-            throw new Error('The number of answers and questions does not match')
-        }
+    static create(params: AccountBackupCreateParams): Uint8Array {
+        if (!params) throw new Error("Empty parameters")
+        const { backupName, accountWallet, currentPassphrase, questionIds, answers } = params
 
-        const backup: WalletBackup = {
-            name,
+        if (!AccountBackup.areValidQuestions(questionIds))
+            throw new Error('Some question id\'s are not valid')
+        else if (!questionIds.length || questionIds.length < 2)
+            throw new Error('At least two questions should be used')
+        else if (questionIds.length !== answers.length)
+            throw new Error('The number of answers and questions does not match')
+
+        // Check that the currentPassphrase is correct (throws if incorrect)
+        AccountBackup.decryptPayload(accountWallet.encryptedMnemonic, currentPassphrase)
+
+        // Digested answers as key
+        const digestedAnswers = AccountBackup.digestAnswers(answers)
+
+        // Encrypt the current passphrase with the digested answers
+        const encryptedPassphraseBk = AccountBackup.encryptPayload(currentPassphrase, digestedAnswers)
+
+        const payload: WalletBackup = {
+            name: backupName,
             timestamp: Date.now(),
-            wallet,
+            wallet: accountWallet,
             passphraseRecovery: {
                 questionIds,
-                encryptedPassphrase
+                encryptedPassphrase: encryptedPassphraseBk
             }
         }
-
-        return AccountBackup.serialize(backup)
-    }
-
-    static restore(backup: WalletBackup) : Account {
-
-    }
-
-    static decryptKey(backup: Uint8Array, password: string, answers: string[]): Uint8Array {
-        return Symmetric.decryptRaw(Buffer.from(backup), normalizeKey(password, answers))
+        return WalletBackup.encode(payload).finish()
     }
 
     /**
-     * Retrieve a set of question texts.
-     * If the questionIds parameter is empty then all the available questions are returned
-     *
-     * @param questionIds An array with the requested ID
-     * @returns Object containing the id of the questions as keys and their varname as value
+     * Uses the given backup bytes and the given answers to decrypt the original passphrase used to 
+     * secure the encryptedMnemonic on the account wallet
      */
-    static getQuestionsText(questionIds: WalletBackup_Recovery_QuestionEnum[]): { [key: number]: string } {
-        if (!questionIds.length) {
-            //TODO get all questions
-        }
-        const questions = {}
+    static recoverPassphrase(backupBytes: Uint8Array, answers: string[]): string {
+        const backup = AccountBackup.parse(backupBytes)
 
-        questionIds.forEach(q => {
-            if (q === WalletBackup_Recovery_QuestionEnum.UNRECOGNIZED)
-                throw new Error('Invalid question found')
-            questions[q] = walletBackup_Recovery_QuestionEnumToJSON(q)
-        })
+        // Digested answers as key
+        const digestedAnswers = AccountBackup.digestAnswers(answers)
 
-        return questions
+        return AccountBackup.decryptPayload(backup.passphraseRecovery.encryptedPassphrase, digestedAnswers)
     }
 
-    static areValidQuestions(questions: number[]) {
-        if (questions.some(q => walletBackup_Recovery_QuestionEnumFromJSON(q) === WalletBackup_Recovery_QuestionEnum.UNRECOGNIZED))
-            return false
-
-        return true
+    /** Used to encrypt either a mnemonic or a passphrase */
+    static encryptPayload(payload: string, key: string): Uint8Array {
+        const payloadBytes = Buffer.from(payload, "utf-8")
+        return Symmetric.encryptRaw(payloadBytes, key)
     }
 
-    static serialize(data: WalletBackup): Uint8Array {
-        return WalletBackup.encode(data).finish()
+    /** Used to encrypt either a mnemonic or a passphrase */
+    static decryptPayload(payloadBytes: Uint8Array, key: string): string {
+        return Symmetric.decryptRaw(payloadBytes, key).toString()
     }
 
-    static deserialize(bytes: Uint8Array): WalletBackup {
-        return WalletBackup.decode(bytes)
+    static digestAnswers(answers: string[]): string {
+        return answers.map(normalizeAnswer).join("//")
+    }
+
+    static areValidQuestions(questions: WalletBackup_Recovery_QuestionEnum[]) {
+        return questions.every(q => walletBackup_Recovery_QuestionEnumFromJSON(q) !== WalletBackup_Recovery_QuestionEnum.UNRECOGNIZED)
+    }
+
+    static parse(backupBytes: Uint8Array) {
+        return WalletBackup.decode(backupBytes)
     }
 }
