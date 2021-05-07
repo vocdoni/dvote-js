@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.3.2
+
+Update dvote-solidity to 1.3.1
+
 ## 1.3.1
 
 - Adding the well-known Mainnet entity address for Vocdoni (to provide a default bootnode)
