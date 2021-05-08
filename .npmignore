@@ -1,0 +1,5 @@
+node_modules
+dist
+.env
+src/models/protobuf/build/dart
+src/models/protobuf/build/go
