@@ -5,7 +5,7 @@ export class Random {
      * Generates a random seed and returns a 32 byte keccak256 hash of it (starting with "0x")
      */
     static getHex(): string {
-        if (typeof window != "undefined") { // Browser
+        if (typeof window != "undefined" && window?.crypto?.getRandomValues) { // Browser
             const bytes = new Uint8Array(32)
             window.crypto.getRandomValues(bytes)
 
