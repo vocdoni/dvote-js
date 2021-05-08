@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.5.0
+
+- Allowing to provide an already fetched block status on `estimateBlockAtDateTime` and `estimateDateAtBlock`
+
 ## 1.4.0
 
 - Adding `AccountBackup` to allow exporting and recovering backup credentials protected by recovery questions

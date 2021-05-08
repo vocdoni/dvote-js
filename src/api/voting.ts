@@ -34,6 +34,22 @@ export type IVotePackage = {
     votes: number[]  // Directly mapped to the `questions` field of the metadata
 }
 
+export type BlockStatus = {
+    /** The current block height */
+    blockNumber: number,
+    /** The timestamp at which the block was mined */
+    blockTimestamp: number,
+    /** The average block times during the last minute, 10m, 1h, 6h and 24h */
+    blockTimes: number[]
+}
+
+export type SignedEnvelopeParams = {
+    censusOrigin: number | ProcessCensusOrigin,
+    votes: number[], processId: string, walletOrSigner: Wallet | Signer,
+    censusProof: IProofGraviton | IProofCA | IProofEVM,
+    processKeys?: IProcessKeys
+}
+
 export type IProcessKeys = {
     encryptionPubKeys: { idx: number, key: string }[],
     encryptionPrivKeys?: { idx: number, key: string }[],
@@ -129,7 +145,7 @@ export class VotingApi {
      * @see estimateBlockAtDateTime (date, gateway)
      * @see estimateDateAtBlock (blockNumber, gateway)
      */
-    static getBlockStatus(gateway: IGateway | IGatewayPool): Promise<{ blockNumber: number, blockTimestamp: number, blockTimes: number[] }> {
+    static getBlockStatus(gateway: IGateway | IGatewayPool): Promise<BlockStatus> {
         if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getBlockStatus" })
@@ -176,12 +192,17 @@ export class VotingApi {
      * Returns the block number that is expected to be current at the given date and time
      * @param dateTime
      * @param gateway
+     * @param blockStatus (optional) The block status to use for the estimation
      */
-    static estimateBlockAtDateTime(dateTime: Date, gateway: IGateway | IGatewayPool): Promise<number> {
+    static estimateBlockAtDateTime(dateTime: Date, gateway: IGateway | IGatewayPool, blockStatus?: BlockStatus): Promise<number> {
         if (typeof dateTime == "number") dateTime = new Date(dateTime)
-        if (!(dateTime instanceof Date)) return null
+        else if (!(dateTime instanceof Date)) return null
 
-        return VotingApi.getBlockStatus(gateway).then(status => {
+        const statusProm = blockStatus ?
+            Promise.resolve(blockStatus) :
+            VotingApi.getBlockStatus(gateway)
+
+        return statusProm.then(status => {
             let averageBlockTime = VOCHAIN_BLOCK_TIME * 1000
             let weightA: number, weightB: number
 
@@ -265,11 +286,16 @@ export class VotingApi {
      * Returns the DateTime at which the given block number is expected to be mined
      * @param blockNumber
      * @param gateway
+     * @param blockStatus (optional) The block status to use for the estimation
      */
-    static estimateDateAtBlock(blockNumber: number, gateway: IGateway | IGatewayPool): Promise<Date> {
+    static estimateDateAtBlock(blockNumber: number, gateway: IGateway | IGatewayPool, blockStatus?: BlockStatus): Promise<Date> {
         if (!blockNumber) return null
 
-        return VotingApi.getBlockStatus(gateway).then(status => {
+        const statusProm = blockStatus ?
+            Promise.resolve(blockStatus) :
+            VotingApi.getBlockStatus(gateway)
+
+        return statusProm.then(status => {
             // Diff between the last mined block and the given one
             const blockDiff = Math.abs(blockNumber - status.blockNumber)
             let averageBlockTime = VOCHAIN_BLOCK_TIME * 1000
@@ -783,7 +809,7 @@ export class VotingApi {
      * @param gateway
      * @returns Results, vote process  type, vote process state
      */
-    static getRawResults(processId: string, gateway: IGateway | IGatewayPool): Promise<{ results: string[][], status: ProcessStatus, envelopHeight: number  }> {
+    static getRawResults(processId: string, gateway: IGateway | IGatewayPool): Promise<{ results: string[][], status: ProcessStatus, envelopHeight: number }> {
         if (!gateway || !processId)
             return Promise.reject(new Error("No process ID provided"))
         else if (!((gateway instanceof Gateway || gateway instanceof GatewayPool)))
@@ -816,7 +842,7 @@ export class VotingApi {
             throw new Error("Invalid Gateway object")
 
         processId = processId.startsWith("0x") ? processId : "0x" + processId
-        let emptyResults = { totalVotes:0, questions: [] }
+        let emptyResults = { totalVotes: 0, questions: [] }
 
         try {
             const processState = await VotingApi.getProcessParameters(processId, gateway)
@@ -849,7 +875,7 @@ export class VotingApi {
             const { results, status, envelopHeight } = await VotingApi.getRawResults(processId, gateway)
             const metadata = await VotingApi.getProcessMetadata(processId, gateway)
 
-            const resultsDigest: DigestedProcessResults = {totalVotes: envelopHeight, questions:[]}
+            const resultsDigest: DigestedProcessResults = { totalVotes: envelopHeight, questions: [] }
             const zippedQuestions = metadata.questions.map((e, i) => ({ meta: e, result: results[i] }))
             resultsDigest.questions = zippedQuestions.map((zippedEntry, idx): DigestedProcessResultItem => {
                 const zippedOptions = zippedEntry.meta.choices.map((e, i) => ({ title: e.title, value: zippedEntry.result[i] }))
@@ -969,12 +995,7 @@ export class VotingApi {
      * If `encryptionPublicKey` is defined, it will be used to encrypt the vote package.
      * @param params
      */
-    static async packageSignedEnvelope(params: {
-        censusOrigin: number | ProcessCensusOrigin,
-        votes: number[], processId: string, walletOrSigner: Wallet | Signer,
-        censusProof: IProofGraviton | IProofCA | IProofEVM,
-        processKeys?: IProcessKeys
-    }): Promise<VoteEnvelope> {
+    static async packageSignedEnvelope(params: SignedEnvelopeParams): Promise<VoteEnvelope> {
         if (!params) throw new Error("Invalid parameters")
         else if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
         else if (typeof params.processId != "string" || !params.processId.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid processId")
