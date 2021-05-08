@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.5.1
+
+- Allowing to estimate dates and blocks synchronously
+
 ## 1.5.0
 
 - Allowing to provide an already fetched block status on `estimateBlockAtDateTime` and `estimateDateAtBlock`

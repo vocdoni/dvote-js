@@ -191,181 +191,192 @@ export class VotingApi {
     /**
      * Returns the block number that is expected to be current at the given date and time
      * @param dateTime
-     * @param gateway
-     * @param blockStatus (optional) The block status to use for the estimation
+     * @param gatewayClient
      */
-    static estimateBlockAtDateTime(dateTime: Date, gateway: IGateway | IGatewayPool, blockStatus?: BlockStatus): Promise<number> {
+    static estimateBlockAtDateTime(dateTime: Date, gateway: IGateway | IGatewayPool): Promise<number> {
         if (typeof dateTime == "number") dateTime = new Date(dateTime)
         else if (!(dateTime instanceof Date)) return null
 
-        const statusProm = blockStatus ?
-            Promise.resolve(blockStatus) :
-            VotingApi.getBlockStatus(gateway)
+        return VotingApi.getBlockStatus(gateway)
+            .then(status => VotingApi.estimateBlockAtDateTimeSync(dateTime, status))
+    }
 
-        return statusProm.then(status => {
-            let averageBlockTime = VOCHAIN_BLOCK_TIME * 1000
-            let weightA: number, weightB: number
+    /**
+     * Returns the block number that is expected to be current at the given date and time
+     * @param dateTime
+     * @param blockStatus The block status to use for the estimation (reported by gateways)
+     */
+    static estimateBlockAtDateTimeSync(dateTime: Date, blockStatus: BlockStatus): number {
+        if (typeof dateTime == "number") dateTime = new Date(dateTime)
+        else if (!(dateTime instanceof Date)) return null
 
-            // Diff between the last mined block and the given date
-            const dateDiff = Math.abs(dateTime.getTime() - status.blockTimestamp)
+        let averageBlockTime = VOCHAIN_BLOCK_TIME * 1000
+        let weightA: number, weightB: number
 
-            // status.blockTime => [1m, 10m, 1h, 6h, 24h]
+        // Diff between the last mined block and the given date
+        const dateDiff = Math.abs(dateTime.getTime() - blockStatus.blockTimestamp)
 
-            if (dateDiff >= 1000 * 60 * 60 * 24) {
-                if (status.blockTimes[4] > 0) averageBlockTime = status.blockTimes[4]
-                else if (status.blockTimes[3] > 0) averageBlockTime = status.blockTimes[3]
-                else if (status.blockTimes[2] > 0) averageBlockTime = status.blockTimes[2]
-                else if (status.blockTimes[1] > 0) averageBlockTime = status.blockTimes[1]
-                else if (status.blockTimes[0] > 0) averageBlockTime = status.blockTimes[0]
-            }
-            else if (dateDiff >= 1000 * 60 * 60 * 6) {
-                // 1000 * 60 * 60 * 6 <= dateDiff < 1000 * 60 * 60 * 24
-                if (status.blockTimes[4] > 0 && status.blockTimes[3] > 0) {
-                    const pivot = (dateDiff - 1000 * 60 * 60 * 6) / (1000 * 60 * 60)
-                    weightB = pivot / (24 - 6) // 0..1
-                    weightA = 1 - weightB
+        // blockStatus.blockTime => [1m, 10m, 1h, 6h, 24h]
 
-                    averageBlockTime = weightA * status.blockTimes[3] + weightB * status.blockTimes[4]
-                }
-                else if (status.blockTimes[3] > 0) averageBlockTime = status.blockTimes[3]
-                else if (status.blockTimes[2] > 0) averageBlockTime = status.blockTimes[2]
-                else if (status.blockTimes[1] > 0) averageBlockTime = status.blockTimes[1]
-                else if (status.blockTimes[0] > 0) averageBlockTime = status.blockTimes[0]
-            }
-            else if (dateDiff >= 1000 * 60 * 60) {
-                // 1000 * 60 * 60 <= dateDiff < 1000 * 60 * 60 * 6
-                if (status.blockTimes[3] > 0 && status.blockTimes[2] > 0) {
-                    const pivot = (dateDiff - 1000 * 60 * 60) / (1000 * 60 * 60)
-                    weightB = pivot / (6 - 1) // 0..1
-                    weightA = 1 - weightB
-
-                    averageBlockTime = weightA * status.blockTimes[2] + weightB * status.blockTimes[3]
-                }
-                else if (status.blockTimes[2] > 0) averageBlockTime = status.blockTimes[2]
-                else if (status.blockTimes[1] > 0) averageBlockTime = status.blockTimes[1]
-                else if (status.blockTimes[0] > 0) averageBlockTime = status.blockTimes[0]
-            }
-            else if (dateDiff >= 1000 * 60 * 10) {
-                // 1000 * 60 * 10 <= dateDiff < 1000 * 60 * 60
-                if (status.blockTimes[2] > 0 && status.blockTimes[1] > 0) {
-                    const pivot = (dateDiff - 1000 * 60 * 10) / (1000 * 60)
-                    weightB = pivot / (60 - 10) // 0..1
-                    weightA = 1 - weightB
-
-                    averageBlockTime = weightA * status.blockTimes[1] + weightB * status.blockTimes[2]
-                }
-                else if (status.blockTimes[1] > 0) averageBlockTime = status.blockTimes[1]
-                else if (status.blockTimes[0] > 0) averageBlockTime = status.blockTimes[0]
-            }
-            else if (dateDiff >= 1000 * 60) {
-                // 1000 * 60 <= dateDiff < 1000 * 60 * 6
-                const pivot = (dateDiff - 1000 * 60) / (1000 * 60)
-                weightB = pivot / (10 - 1) // 0..1
+        if (dateDiff >= 1000 * 60 * 60 * 24) {
+            if (blockStatus.blockTimes[4] > 0) averageBlockTime = blockStatus.blockTimes[4]
+            else if (blockStatus.blockTimes[3] > 0) averageBlockTime = blockStatus.blockTimes[3]
+            else if (blockStatus.blockTimes[2] > 0) averageBlockTime = blockStatus.blockTimes[2]
+            else if (blockStatus.blockTimes[1] > 0) averageBlockTime = blockStatus.blockTimes[1]
+            else if (blockStatus.blockTimes[0] > 0) averageBlockTime = blockStatus.blockTimes[0]
+        }
+        else if (dateDiff >= 1000 * 60 * 60 * 6) {
+            // 1000 * 60 * 60 * 6 <= dateDiff < 1000 * 60 * 60 * 24
+            if (blockStatus.blockTimes[4] > 0 && blockStatus.blockTimes[3] > 0) {
+                const pivot = (dateDiff - 1000 * 60 * 60 * 6) / (1000 * 60 * 60)
+                weightB = pivot / (24 - 6) // 0..1
                 weightA = 1 - weightB
 
-                if (status.blockTimes[1] > 0 && status.blockTimes[0] > 0) {
-                    averageBlockTime = weightA * status.blockTimes[0] + weightB * status.blockTimes[1]
-                }
-                else if (status.blockTimes[0] > 0) averageBlockTime = status.blockTimes[0]
+                averageBlockTime = weightA * blockStatus.blockTimes[3] + weightB * blockStatus.blockTimes[4]
             }
-            else {
-                if (status.blockTimes[0] > 0) averageBlockTime = status.blockTimes[0]
+            else if (blockStatus.blockTimes[3] > 0) averageBlockTime = blockStatus.blockTimes[3]
+            else if (blockStatus.blockTimes[2] > 0) averageBlockTime = blockStatus.blockTimes[2]
+            else if (blockStatus.blockTimes[1] > 0) averageBlockTime = blockStatus.blockTimes[1]
+            else if (blockStatus.blockTimes[0] > 0) averageBlockTime = blockStatus.blockTimes[0]
+        }
+        else if (dateDiff >= 1000 * 60 * 60) {
+            // 1000 * 60 * 60 <= dateDiff < 1000 * 60 * 60 * 6
+            if (blockStatus.blockTimes[3] > 0 && blockStatus.blockTimes[2] > 0) {
+                const pivot = (dateDiff - 1000 * 60 * 60) / (1000 * 60 * 60)
+                weightB = pivot / (6 - 1) // 0..1
+                weightA = 1 - weightB
+
+                averageBlockTime = weightA * blockStatus.blockTimes[2] + weightB * blockStatus.blockTimes[3]
             }
+            else if (blockStatus.blockTimes[2] > 0) averageBlockTime = blockStatus.blockTimes[2]
+            else if (blockStatus.blockTimes[1] > 0) averageBlockTime = blockStatus.blockTimes[1]
+            else if (blockStatus.blockTimes[0] > 0) averageBlockTime = blockStatus.blockTimes[0]
+        }
+        else if (dateDiff >= 1000 * 60 * 10) {
+            // 1000 * 60 * 10 <= dateDiff < 1000 * 60 * 60
+            if (blockStatus.blockTimes[2] > 0 && blockStatus.blockTimes[1] > 0) {
+                const pivot = (dateDiff - 1000 * 60 * 10) / (1000 * 60)
+                weightB = pivot / (60 - 10) // 0..1
+                weightA = 1 - weightB
 
-            const estimatedBlockDiff = dateDiff / averageBlockTime
-            const estimatedBlock = dateTime.getTime() < status.blockTimestamp ?
-                status.blockNumber - Math.ceil(estimatedBlockDiff) :
-                status.blockNumber + Math.floor(estimatedBlockDiff)
+                averageBlockTime = weightA * blockStatus.blockTimes[1] + weightB * blockStatus.blockTimes[2]
+            }
+            else if (blockStatus.blockTimes[1] > 0) averageBlockTime = blockStatus.blockTimes[1]
+            else if (blockStatus.blockTimes[0] > 0) averageBlockTime = blockStatus.blockTimes[0]
+        }
+        else if (dateDiff >= 1000 * 60) {
+            // 1000 * 60 <= dateDiff < 1000 * 60 * 6
+            const pivot = (dateDiff - 1000 * 60) / (1000 * 60)
+            weightB = pivot / (10 - 1) // 0..1
+            weightA = 1 - weightB
 
-            if (estimatedBlock < 0) return 0
-            return estimatedBlock
-        })
+            if (blockStatus.blockTimes[1] > 0 && blockStatus.blockTimes[0] > 0) {
+                averageBlockTime = weightA * blockStatus.blockTimes[0] + weightB * blockStatus.blockTimes[1]
+            }
+            else if (blockStatus.blockTimes[0] > 0) averageBlockTime = blockStatus.blockTimes[0]
+        }
+        else {
+            if (blockStatus.blockTimes[0] > 0) averageBlockTime = blockStatus.blockTimes[0]
+        }
+
+        const estimatedBlockDiff = dateDiff / averageBlockTime
+        const estimatedBlock = dateTime.getTime() < blockStatus.blockTimestamp ?
+            blockStatus.blockNumber - Math.ceil(estimatedBlockDiff) :
+            blockStatus.blockNumber + Math.floor(estimatedBlockDiff)
+
+        if (estimatedBlock < 0) return 0
+        return estimatedBlock
     }
 
     /**
      * Returns the DateTime at which the given block number is expected to be mined
      * @param blockNumber
-     * @param gateway
-     * @param blockStatus (optional) The block status to use for the estimation
+     * @param gatewayClient
      */
-    static estimateDateAtBlock(blockNumber: number, gateway: IGateway | IGatewayPool, blockStatus?: BlockStatus): Promise<Date> {
+    static estimateDateAtBlock(blockNumber: number, gateway: IGateway | IGatewayPool): Promise<Date> {
+        if (!blockNumber || blockNumber < 0) return null
+
+        return VotingApi.getBlockStatus(gateway)
+            .then(status => VotingApi.estimateDateAtBlockSync(blockNumber, status))
+    }
+
+    /**
+     * Returns the DateTime at which the given block number is expected to be mined
+     * @param blockNumber
+     * @param blockStatus The block status to use for the estimation (reported by gateways)
+     */
+    static estimateDateAtBlockSync(blockNumber: number, blockStatus?: BlockStatus): Date {
         if (!blockNumber) return null
 
-        const statusProm = blockStatus ?
-            Promise.resolve(blockStatus) :
-            VotingApi.getBlockStatus(gateway)
+        // Diff between the last mined block and the given one
+        const blockDiff = Math.abs(blockNumber - blockStatus.blockNumber)
+        let averageBlockTime = VOCHAIN_BLOCK_TIME * 1000
+        let weightA: number, weightB: number
 
-        return statusProm.then(status => {
-            // Diff between the last mined block and the given one
-            const blockDiff = Math.abs(blockNumber - status.blockNumber)
-            let averageBlockTime = VOCHAIN_BLOCK_TIME * 1000
-            let weightA: number, weightB: number
+        // blockStatus.blockTime => [1m, 10m, 1h, 6h, 24h]
+        if (blockDiff > blocksPerDay) {
+            if (blockStatus.blockTimes[4] > 0) averageBlockTime = blockStatus.blockTimes[4]
+            else if (blockStatus.blockTimes[3] > 0) averageBlockTime = blockStatus.blockTimes[3]
+            else if (blockStatus.blockTimes[2] > 0) averageBlockTime = blockStatus.blockTimes[2]
+            else if (blockStatus.blockTimes[1] > 0) averageBlockTime = blockStatus.blockTimes[1]
+            else if (blockStatus.blockTimes[0] > 0) averageBlockTime = blockStatus.blockTimes[0]
+        }
+        else if (blockDiff > blocksPer6h) {
+            // blocksPer6h <= blockDiff < blocksPerDay
+            const pivot = (blockDiff - blocksPer6h) / (blocksPerH)
+            weightB = pivot / (24 - 6) // 0..1
+            weightA = 1 - weightB
 
-            // status.blockTime => [1m, 10m, 1h, 6h, 24h]
-            if (blockDiff > blocksPerDay) {
-                if (status.blockTimes[4] > 0) averageBlockTime = status.blockTimes[4]
-                else if (status.blockTimes[3] > 0) averageBlockTime = status.blockTimes[3]
-                else if (status.blockTimes[2] > 0) averageBlockTime = status.blockTimes[2]
-                else if (status.blockTimes[1] > 0) averageBlockTime = status.blockTimes[1]
-                else if (status.blockTimes[0] > 0) averageBlockTime = status.blockTimes[0]
+            if (blockStatus.blockTimes[4] > 0 && blockStatus.blockTimes[3] > 0) {
+                averageBlockTime = weightA * blockStatus.blockTimes[3] + weightB * blockStatus.blockTimes[4]
             }
-            else if (blockDiff > blocksPer6h) {
-                // blocksPer6h <= blockDiff < blocksPerDay
-                const pivot = (blockDiff - blocksPer6h) / (blocksPerH)
-                weightB = pivot / (24 - 6) // 0..1
-                weightA = 1 - weightB
+            else if (blockStatus.blockTimes[3] > 0) averageBlockTime = blockStatus.blockTimes[3]
+            else if (blockStatus.blockTimes[2] > 0) averageBlockTime = blockStatus.blockTimes[2]
+            else if (blockStatus.blockTimes[1] > 0) averageBlockTime = blockStatus.blockTimes[1]
+            else if (blockStatus.blockTimes[0] > 0) averageBlockTime = blockStatus.blockTimes[0]
+        }
+        else if (blockDiff > blocksPerH) {
+            // blocksPerH <= blockDiff < blocksPer6h
+            const pivot = (blockDiff - blocksPerH) / (blocksPerH)
+            weightB = pivot / (6 - 1) // 0..1
+            weightA = 1 - weightB
 
-                if (status.blockTimes[4] > 0 && status.blockTimes[3] > 0) {
-                    averageBlockTime = weightA * status.blockTimes[3] + weightB * status.blockTimes[4]
-                }
-                else if (status.blockTimes[3] > 0) averageBlockTime = status.blockTimes[3]
-                else if (status.blockTimes[2] > 0) averageBlockTime = status.blockTimes[2]
-                else if (status.blockTimes[1] > 0) averageBlockTime = status.blockTimes[1]
-                else if (status.blockTimes[0] > 0) averageBlockTime = status.blockTimes[0]
+            if (blockStatus.blockTimes[3] > 0 && blockStatus.blockTimes[2] > 0) {
+                averageBlockTime = weightA * blockStatus.blockTimes[2] + weightB * blockStatus.blockTimes[3]
             }
-            else if (blockDiff > blocksPerH) {
-                // blocksPerH <= blockDiff < blocksPer6h
-                const pivot = (blockDiff - blocksPerH) / (blocksPerH)
-                weightB = pivot / (6 - 1) // 0..1
-                weightA = 1 - weightB
+            else if (blockStatus.blockTimes[2] > 0) averageBlockTime = blockStatus.blockTimes[2]
+            else if (blockStatus.blockTimes[1] > 0) averageBlockTime = blockStatus.blockTimes[1]
+            else if (blockStatus.blockTimes[0] > 0) averageBlockTime = blockStatus.blockTimes[0]
+        }
+        else if (blockDiff > blocksPer10m) {
+            // blocksPer10m <= blockDiff < blocksPerH
+            const pivot = (blockDiff - blocksPer10m) / (blocksPerM)
+            weightB = pivot / (60 - 10) // 0..1
+            weightA = 1 - weightB
 
-                if (status.blockTimes[3] > 0 && status.blockTimes[2] > 0) {
-                    averageBlockTime = weightA * status.blockTimes[2] + weightB * status.blockTimes[3]
-                }
-                else if (status.blockTimes[2] > 0) averageBlockTime = status.blockTimes[2]
-                else if (status.blockTimes[1] > 0) averageBlockTime = status.blockTimes[1]
-                else if (status.blockTimes[0] > 0) averageBlockTime = status.blockTimes[0]
+            if (blockStatus.blockTimes[2] > 0 && blockStatus.blockTimes[1] > 0) {
+                averageBlockTime = weightA * blockStatus.blockTimes[1] + weightB * blockStatus.blockTimes[2]
             }
-            else if (blockDiff > blocksPer10m) {
-                // blocksPer10m <= blockDiff < blocksPerH
-                const pivot = (blockDiff - blocksPer10m) / (blocksPerM)
-                weightB = pivot / (60 - 10) // 0..1
-                weightA = 1 - weightB
+            else if (blockStatus.blockTimes[1] > 0) averageBlockTime = blockStatus.blockTimes[1]
+            else if (blockStatus.blockTimes[0] > 0) averageBlockTime = blockStatus.blockTimes[0]
+        }
+        else if (blockDiff > blocksPerM) {
+            // blocksPerM <= blockDiff < blocksPer10m
+            const pivot = (blockDiff - blocksPerM) / (blocksPerM)
+            weightB = pivot / (10 - 1) // 0..1
+            weightA = 1 - weightB
 
-                if (status.blockTimes[2] > 0 && status.blockTimes[1] > 0) {
-                    averageBlockTime = weightA * status.blockTimes[1] + weightB * status.blockTimes[2]
-                }
-                else if (status.blockTimes[1] > 0) averageBlockTime = status.blockTimes[1]
-                else if (status.blockTimes[0] > 0) averageBlockTime = status.blockTimes[0]
+            if (blockStatus.blockTimes[1] > 0 && blockStatus.blockTimes[0] > 0) {
+                averageBlockTime = weightA * blockStatus.blockTimes[0] + weightB * blockStatus.blockTimes[1]
             }
-            else if (blockDiff > blocksPerM) {
-                // blocksPerM <= blockDiff < blocksPer10m
-                const pivot = (blockDiff - blocksPerM) / (blocksPerM)
-                weightB = pivot / (10 - 1) // 0..1
-                weightA = 1 - weightB
+            else if (blockStatus.blockTimes[0] > 0) averageBlockTime = blockStatus.blockTimes[0]
+        }
+        else {
+            if (blockStatus.blockTimes[0] > 0) averageBlockTime = blockStatus.blockTimes[0]
+        }
 
-                if (status.blockTimes[1] > 0 && status.blockTimes[0] > 0) {
-                    averageBlockTime = weightA * status.blockTimes[0] + weightB * status.blockTimes[1]
-                }
-                else if (status.blockTimes[0] > 0) averageBlockTime = status.blockTimes[0]
-            }
-            else {
-                if (status.blockTimes[0] > 0) averageBlockTime = status.blockTimes[0]
-            }
-
-            const targetTimestamp = status.blockTimestamp + (blockNumber - status.blockNumber) * averageBlockTime
-            return new Date(targetTimestamp)
-        })
+        const targetTimestamp = blockStatus.blockTimestamp + (blockNumber - blockStatus.blockNumber) * averageBlockTime
+        return new Date(targetTimestamp)
     }
 
     /**
