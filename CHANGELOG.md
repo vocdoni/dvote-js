@@ -1,8 +1,12 @@
 # DVote JS changelog
 
-## 1.5.2
+## 1.5.3
 
 - Adding `getProcess` to allow for more efficient queries on the frontend
+
+## 1.5.2
+
+- Minor change to support frontend React renders
 
 ## 1.5.1
 
