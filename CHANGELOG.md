@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.5.4
+
+- Reusing the `initEns` existing flow to save connections
+
 ## 1.5.3
 
 - Adding `getProcess` to allow for more efficient queries on the frontend

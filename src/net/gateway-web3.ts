@@ -49,6 +49,7 @@ export type IWeb3Gateway = InstanceType<typeof Web3Gateway>
 export class Web3Gateway {
     private _provider: providers.BaseProvider
     private _environment: VocdoniEnvironment
+    private _initializingEns: Promise<any>
     public peerCount: number
     public lastBlockNumber: number
     public ensPublicResolverContractAddress: string
@@ -86,7 +87,9 @@ export class Web3Gateway {
     }
 
     /** Initialize the contract addresses */
-    public async initEns() {
+    public initEns() {
+        if (this._initializingEns) return this._initializingEns
+
         let rootDomain: string
         switch (this._environment) {
             case "prod":
@@ -102,27 +105,36 @@ export class Web3Gateway {
                 throw new Error("Invalid environment")
         }
 
-        const addresses = await Promise.all([
+        this._initializingEns = Promise.all([
             this._provider.resolveName(ENTITY_RESOLVER_ENS_SUBDOMAIN + "." + rootDomain),
             this._provider.resolveName(GENESIS_ENS_SUBDOMAIN + "." + rootDomain),
             this._provider.resolveName(NAMESPACES_ENS_SUBDOMAIN + "." + rootDomain),
             this._provider.resolveName(PROCESSES_ENS_SUBDOMAIN + "." + rootDomain),
             this._provider.resolveName(RESULTS_ENS_SUBDOMAIN + "." + rootDomain),
             this._provider.resolveName(ERC20_STORAGE_PROOFS_ENS_SUBDOMAIN + "." + rootDomain),
-        ])
-        if (!addresses[0]) throw new Error("The ENS resolver address could not be fetched")
-        else if (!addresses[1]) throw new Error("The genesis contract address could not be fetched")
-        else if (!addresses[2]) throw new Error("The namespaces contract address could not be fetched")
-        else if (!addresses[3]) throw new Error("The processes contract address could not be fetched")
-        else if (!addresses[4]) throw new Error("The results contract address could not be fetched")
-        else if (!addresses[5]) throw new Error("The ERC20 proofs contract address could not be fetched")
+        ]).then(addresses => {
+            if (!addresses[0]) throw new Error("The ENS resolver address could not be fetched")
+            else if (!addresses[1]) throw new Error("The genesis contract address could not be fetched")
+            else if (!addresses[2]) throw new Error("The namespaces contract address could not be fetched")
+            else if (!addresses[3]) throw new Error("The processes contract address could not be fetched")
+            else if (!addresses[4]) throw new Error("The results contract address could not be fetched")
+            else if (!addresses[5]) throw new Error("The ERC20 proofs contract address could not be fetched")
 
-        this.ensPublicResolverContractAddress = addresses[0]
-        this.genesisContractAddress = addresses[1]
-        this.namespacesContractAddress = addresses[2]
-        this.processesContractAddress = addresses[3]
-        this.resultsContractAddress = addresses[4]
-        this.tokenStorageProofContractAddress = addresses[5]
+            this.ensPublicResolverContractAddress = addresses[0]
+            this.genesisContractAddress = addresses[1]
+            this.namespacesContractAddress = addresses[2]
+            this.processesContractAddress = addresses[3]
+            this.resultsContractAddress = addresses[4]
+            this.tokenStorageProofContractAddress = addresses[5]
+
+            this._initializingEns = null
+        }).catch(err => {
+            this._initializingEns = null
+
+            throw err
+        })
+
+        return this._initializingEns
     }
 
     /** Sets the polling flag to false */
@@ -235,13 +247,13 @@ export class Web3Gateway {
         }
 
         return this._provider.send("net_peerCount", [])
-        .then(result => {
-            if (!result) throw new Error('peersCount not available for web3 gateway')
-            return BigNumber.from(result).toNumber()
-        })
-        .catch(err => {
-            return 0
-        })
+            .then(result => {
+                if (!result) throw new Error('peersCount not available for web3 gateway')
+                return BigNumber.from(result).toNumber()
+            })
+            .catch(err => {
+                return 0
+            })
     }
 
     ///////////////////////////////////////////////////////////////////////////
