@@ -255,8 +255,9 @@ async function launchNewVote(censusRoot, censusUri) {
     assert(entityMetaPost)
 
     // Reading back
-    processParams = await VotingApi.getProcessParameters(processId, pool)
-    processMetadata = await VotingApi.getProcessMetadata(processId, pool)
+    const procInfo = await VotingApi.getProcess(processId, pool)
+    processParams = procInfo.parameters
+    processMetadata = procInfo.metadata
     assert.strictEqual(processParams.entityAddress.toLowerCase(), entityAddr.toLowerCase())
     assert.strictEqual(processParams.startBlock, processParamsPre.startBlock, "SENT " + JSON.stringify(processParamsPre) + " GOT " + JSON.stringify(processParams))
     assert.strictEqual(processParams.blockCount, processParamsPre.blockCount)

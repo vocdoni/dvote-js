@@ -50,6 +50,13 @@ export type SignedEnvelopeParams = {
     processKeys?: IProcessKeys
 }
 
+export type IProcessInfo = {
+    id: string
+    metadata: ProcessMetadata
+    parameters: ProcessContractParameters
+    entity: string
+}
+
 export type IProcessKeys = {
     encryptionPubKeys: { idx: number, key: string }[],
     encryptionPrivKeys?: { idx: number, key: string }[],
@@ -84,6 +91,37 @@ export class VotingApi {
     }
 
     /**
+     * Fetch the parameters and metadata for the given processId using the given gateway
+     * @param processId
+     * @param gateway
+     */
+    static getProcess(processId: string, gateway: IGateway | IGatewayPool): Promise<IProcessInfo> {
+        if (!processId) throw new Error("Invalid processId")
+        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+
+        let parameters: ProcessContractParameters
+        return VotingApi.getProcessParameters(processId, gateway)
+            .then(params => {
+                if (!params.metadata) throw new Error("The given voting process has no metadata")
+
+                parameters = params
+                return FileApi.fetchString(params.metadata, gateway)
+            })
+            .then(strMetadata => {
+                return {
+                    id: processId,
+                    entity: parameters.entityAddress.toLowerCase(),
+                    metadata: JSON.parse(strMetadata),
+                    parameters
+                }
+            })
+            .catch(error => {
+                const message = (error.message) ? "Could not fetch the process data: " + error.message : "Could not fetch the process data"
+                throw new Error(message)
+            })
+    }
+
+    /**
      * Fetch the raw parameters for the given processId using the given gateway
      * @param processId
      * @param gateway
@@ -110,17 +148,8 @@ export class VotingApi {
         if (!processId) throw new Error("Invalid processId")
         else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
-        try {
-            const processParams = await VotingApi.getProcessParameters(processId, gateway)
-            if (!processParams.metadata) throw new Error("The given voting process has no metadata")
-
-            const jsonData = await FileApi.fetchString(processParams.metadata, gateway)
-
-            return JSON.parse(jsonData)
-        } catch (error) {
-            const message = (error.message) ? "Could not fetch the process data: " + error.message : "Could not fetch the process data"
-            throw new Error(message)
-        }
+        return VotingApi.getProcess(processId, gateway)
+            .then(processInfo => processInfo.metadata)
     }
 
     /**

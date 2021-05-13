@@ -187,8 +187,9 @@ async function launchNewVote() {
     assert(processId)
 
     // Reading back
-    processParams = await VotingApi.getProcessParameters(processId, pool)
-    processMetadata = await VotingApi.getProcessMetadata(processId, pool)
+    const processInfo = await VotingApi.getProcess(processId, pool)
+    processParams = processInfo.parameters
+    processMetadata = processInfo.metadata
     assert.strictEqual(processParams.entityAddress.toLowerCase(), config.tokenAddress.toLowerCase())
     assert.strictEqual(processParams.startBlock, processParamsPre.startBlock, "SENT " + JSON.stringify(processParamsPre) + " GOT " + JSON.stringify(processParams))
     assert.strictEqual(processParams.blockCount, processParamsPre.blockCount)

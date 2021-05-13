@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.5.2
+
+- Adding `getProcess` to allow for more efficient queries on the frontend
+
 ## 1.5.1
 
 - Allowing to estimate dates and blocks synchronously

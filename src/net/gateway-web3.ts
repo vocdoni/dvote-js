@@ -240,7 +240,6 @@ export class Web3Gateway {
             return BigNumber.from(result).toNumber()
         })
         .catch(err => {
-            console.warn(err)
             return 0
         })
     }

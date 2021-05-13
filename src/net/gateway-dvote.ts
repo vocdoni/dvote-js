@@ -213,7 +213,6 @@ export class DVoteGateway {
         }
         catch (error) {
             if (error && error.message == "Time out") throw error
-            console.error("FAILED", error)
             let message = "The status of the gateway could not be retrieved"
             message = (error.message) ? message + ": " + error.message : message
             throw new Error(message)

@@ -47,14 +47,14 @@ export function extractUint8ArrayJSONValue(array: Uint8Array, field: string): Ui
                         // Found closed sub-JSON
                         countEmbJSON--
                     } else {
-                        console.error("unexpected character")
+                        // console.error("unexpected character")
                         return new Uint8Array()
                     }
                     break;
             }
         }
-        if (responseStartByte == 0 && out.lastIndexOf(responseStart) > -1 ) {
-            responseStartByte = i-1
+        if (responseStartByte == 0 && out.lastIndexOf(responseStart) > -1) {
+            responseStartByte = i - 1
         }
 
         out += lastChar

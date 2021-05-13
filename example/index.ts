@@ -459,8 +459,9 @@ async function cloneVotingProcess() {
 
     console.log("Updating...")
     const PROCESS_ID_CURRENT = "0xe0b52bee5470b195b7633d007b587fbfa74653c8cac31ba260ddbc22b7d1d6eb"
-    const currentMetadata = await VotingApi.getProcessMetadata(PROCESS_ID_CURRENT, pool)
-    const currentParameters = await VotingApi.getProcessParameters(PROCESS_ID_CURRENT, pool)
+    const currentProcessInfo = await VotingApi.getProcess(PROCESS_ID_CURRENT, pool)
+    const currentMetadata = currentProcessInfo.metadata
+    const currentParameters = currentProcessInfo.parameters
     const currentBlock = await VotingApi.getBlockHeight(pool)
     const startBlock = currentBlock + 100
     const blockCount = 2000
@@ -571,8 +572,9 @@ async function submitVoteBatch() {
     const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL_RW })
     await pool.init()
 
-    const processParams = await VotingApi.getProcessParameters(processId, pool)
-    const processMeta = await VotingApi.getProcessMetadata(processId, pool)
+    const processInfo = await VotingApi.getProcess(processId, pool)
+    const processParams = processInfo.parameters
+    // const processMeta = processInfo.metadata
     const censusRoot = processParams.censusRoot
 
     console.log("On Process", processId)

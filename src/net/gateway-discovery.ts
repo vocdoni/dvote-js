@@ -68,7 +68,6 @@ export class GatewayDiscovery {
  * @returns A Gateway Object
  */
 async function getWorkingGateways(params: IGatewayDiscoveryParameters): Promise<{ dvote: IDVoteGateway, web3: IWeb3Gateway }[]> {
-    // TODO: Handle duplicates?
     const networkId = params.networkId
     const bootnodesContentUri = (params.bootnodesContentUri) ? params.bootnodesContentUri : null
     const numberOfGateways = (params.numberOfGateways) ? params.numberOfGateways : MIN_ROUND_SUCCESS_COUNT
@@ -102,7 +101,7 @@ async function getWorkingGateways(params: IGatewayDiscoveryParameters): Promise<
         if (!healthyNodes) throw new Error("Empty response after filterHealthyNodes")
 
         // Arrange, sort and check connectivity
-        healthyNodes.dvote.sort((a,b) => {
+        healthyNodes.dvote.sort((a, b) => {
             if (!b && !a) return 0
             else if (!b) return 1
             else if (!a) return -1
@@ -115,22 +114,22 @@ async function getWorkingGateways(params: IGatewayDiscoveryParameters): Promise<
             return b.weight - a.weight
         })
 
-        healthyNodes.web3.sort((a,b) => {
+        healthyNodes.web3.sort((a, b) => {
             if (!b && !a) return 0
             else if (!b) return 1
             else if (!a) return -1
             else if (!b && !a) return 0
             else if (!b) return 1
             else if (!a) return -1
-            else if (isNaN(b.peerCount) && isNaN(a.peerCount))  return 0
+            else if (isNaN(b.peerCount) && isNaN(a.peerCount)) return 0
             else if (isNaN(b.peerCount)) return 1
             else if (isNaN(a.peerCount)) return -1
             // in case of equal peercount consider diference of blocks (if higher than 3)
-            else if (a.peerCount == b.peerCount && (Math.abs(b.lastBlockNumber - a.lastBlockNumber) > 3 )) return b.lastBlockNumber - a.lastBlockNumber
+            else if (a.peerCount == b.peerCount && (Math.abs(b.lastBlockNumber - a.lastBlockNumber) > 3)) return b.lastBlockNumber - a.lastBlockNumber
             return b.peerCount - a.peerCount
         })
 
-        const gwNodePairs = createNodePairs(healthyNodes.dvote,healthyNodes.web3)
+        const gwNodePairs = createNodePairs(healthyNodes.dvote, healthyNodes.web3)
         let hasInitialCandidate = false
         for (let gw of gwNodePairs) {
             if (gw.dvote.isReady) {
@@ -143,8 +142,6 @@ async function getWorkingGateways(params: IGatewayDiscoveryParameters): Promise<
         return gwNodePairs
     }
     catch (err) {
-        console.error(err)
-
         if (err.message == "Could not fetch the bootnode details") throw err
         else if (err.message == "None of the candidates is ready") throw err
         throw new Error("No working gateway found")
@@ -192,10 +189,6 @@ async function filterHealthyNodes(discoveredDvoteNodes: IDVoteGateway[], discove
     // Less gateways than requested
     if (dvoteGateways.length && web3Gateways.length) return { dvote: dvoteGateways, web3: web3Gateways }
 
-    // TODO: Clean console.logs
-    console.error("Could not find any active gateways")
-    console.error({ dvoteGateways, web3Gateways })
-
     throw new Error("No working gateways found out of " + discoveredDvoteNodes.length + " and " + discoveredWeb3Nodes.length)
 }
 
@@ -207,8 +200,8 @@ function createNodePairs(dvoteGateways: IDVoteGateway[], web3Gateways: IWeb3Gate
     let gatewayList: { dvote: IDVoteGateway, web3: IWeb3Gateway }[] = Array(length)
     for (let idx = 0; idx < gatewayList.length; idx++) {
         gatewayList[idx] = {
-            web3 : (idx < web3Gateways.length) ? web3Gateways[idx] : web3Gateways[Math.floor(Math.random() * web3Gateways.length)],
-            dvote : (idx < dvoteGateways.length) ? dvoteGateways[idx] : dvoteGateways[Math.floor(Math.random() * dvoteGateways.length)]
+            web3: (idx < web3Gateways.length) ? web3Gateways[idx] : web3Gateways[Math.floor(Math.random() * web3Gateways.length)],
+            dvote: (idx < dvoteGateways.length) ? dvoteGateways[idx] : dvoteGateways[Math.floor(Math.random() * dvoteGateways.length)]
         }
     }
     return gatewayList
@@ -235,7 +228,7 @@ function selectActiveNodes(dvoteNodes: IDVoteGateway[], web3Nodes: IWeb3Gateway[
         let prom = dvoteGw.isUp(timeout)
             .then(() => { result.dvote.push(dvoteGw) })
             .catch(error => {
-                console.error("Health check failed:", dvoteGw.uri, error)
+                // console.error("Health check failed:", dvoteGw.uri, error)
                 // Skip adding tot the list
             })
         checks.push(prom)
@@ -245,7 +238,7 @@ function selectActiveNodes(dvoteNodes: IDVoteGateway[], web3Nodes: IWeb3Gateway[
         let prom = web3Gw.isUp(timeout)
             .then(() => { result.web3.push(web3Gw) })
             .catch(error => {
-                console.error("Health check failed:", web3Gw.provider["connection"].url, error)
+                // console.error("Health check failed:", web3Gw.provider["connection"].url, error)
                 // Skip adding tot the list
             })
         checks.push(prom)
