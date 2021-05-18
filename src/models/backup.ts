@@ -5,8 +5,7 @@ import {
     WalletBackup_Recovery_QuestionEnum,
 } from "./protobuf/build/ts/client-store/backup"
 import { Buffer } from "buffer/"
-
-const normalizeAnswer = (answer: string) => answer.trim().replace(/\s+/g, ' ').toLowerCase()
+import { normalizeText } from "../util/normalization"
 
 type AccountBackupCreateParams = {
     /** An arbitrary name given to identify the account when restoring */
@@ -79,7 +78,7 @@ export class AccountBackup {
     }
 
     static digestAnswers(answers: string[]): string {
-        return answers.map(normalizeAnswer).join("//")
+        return answers.map(normalizeText).join("//")
     }
 
     static areValidQuestions(questions: WalletBackup_Recovery_QuestionEnum[]) {

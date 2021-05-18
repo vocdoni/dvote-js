@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.5.5
+
+- Improved string normalization, ignoring diacritics and confusing symbols
+
 ## 1.5.4
 
 - Reusing the `initEns` existing flow to save connections
