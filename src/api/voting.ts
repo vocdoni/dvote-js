@@ -153,6 +153,28 @@ export class VotingApi {
     }
 
     /**
+     * Fetch the parameters of the given processId as they are stored in the gateway
+     * @param processId
+     * @param gateway
+     */
+          static getProcessInfo(processId: string, gateway: IGateway | IGatewayPool): Promise<object> {
+            if (!processId) return Promise.reject(new Error("Empty process ID"))
+            else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+
+            return gateway.sendRequest({ method: "getProcessInfo", processId })
+                .then((response) => {
+                    if (!response.ok) throw new Error(response.message || null)
+                    else if (typeof response.process !== 'object') throw new Error()
+
+                    return response.process
+                })
+                .catch((error) => {
+                    const message = error.message ? "Could not retrieve the process info: " + error.message : "Could not retrieve the process info"
+                    throw new Error(message)
+                })
+        }
+
+    /**
      * Retrieves the number of blocks on the Vochain
      * @param gateway
      */

@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.5.6
+
+- Implements `getProcessInfo` for the `VotingApi`
+
 ## 1.5.5
 
 - Improved string normalization, ignoring diacritics and confusing symbols
