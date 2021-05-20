@@ -451,11 +451,16 @@ export class CensusErc20Api {
     static getTokenInfo(tokenAddress: string, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string): Promise<{ isRegistered: boolean, isVerified: boolean, balanceMappingPosition: number }> {
         return gw.getTokenStorageProofInstance(null, customContractAddress)
             .then((contractInstance) => contractInstance.tokens(tokenAddress))
-            .then((tokenDataTuple) => ({
-                isRegistered: tokenDataTuple[0],
-                isVerified: tokenDataTuple[1],
-                balanceMappingPosition: tokenDataTuple[2]
-            }))
+            .then((tokenDataTuple) => {
+                const balanceMappingPosition = BigNumber.isBigNumber(tokenDataTuple[2]) ?
+                    tokenDataTuple[2].toNumber() : tokenDataTuple[2]
+
+                return {
+                    isRegistered: tokenDataTuple[0],
+                    isVerified: tokenDataTuple[1],
+                    balanceMappingPosition
+                }
+            })
     }
 
     static isRegistered(tokenAddress: string, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string) {

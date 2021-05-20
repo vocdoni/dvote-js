@@ -68,11 +68,11 @@ export class DVoteGateway {
      * Returns a new DVote Gateway web socket client
      * @param gatewayOrParams Either a GatewayInfo instance or a JSON object with the service URI, the supported API's and the public key
      */
-    constructor(gatewayOrParams: GatewayInfo | { uri: string, supportedApis: (GatewayApiName | BackendApiName)[], publicKey?: string }) {
+    constructor(gatewayOrParams: GatewayInfo | { uri: string, supportedApis?: (GatewayApiName | BackendApiName)[], publicKey?: string }) {
         if (gatewayOrParams instanceof GatewayInfo) {
             this.client = axios.create({ baseURL: gatewayOrParams.dvote, method: "post", responseType: "arraybuffer" })
             this._uri = gatewayOrParams.dvote
-            this._supportedApis = gatewayOrParams.supportedApis
+            this._supportedApis = gatewayOrParams.supportedApis || []
             this._pubKey = gatewayOrParams.publicKey
         } else {
             const { uri, supportedApis, publicKey } = gatewayOrParams
@@ -80,7 +80,7 @@ export class DVoteGateway {
 
             this.client = axios.create({ baseURL: uri, method: "post", responseType: "arraybuffer" })
             this._uri = uri
-            this._supportedApis = supportedApis
+            this._supportedApis = supportedApis || []
             this._pubKey = publicKey || ""
         }
     }
@@ -98,7 +98,7 @@ export class DVoteGateway {
 
     /** Check whether the client is connected to a Gateway */
     public get isReady(): boolean {
-        return this.client && this._uri && this.supportedApis && this.supportedApis.length > 0
+        return this.client && this._uri && Array.isArray(this.supportedApis)
     }
 
     /** Get the current URI of the Gateway */

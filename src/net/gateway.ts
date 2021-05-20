@@ -157,6 +157,10 @@ export class Gateway {
         return this.provider.getNetwork().then(network => network.chainId)
     }
 
+    public get networkId(): Promise<string> {
+        return this.provider.getNetwork().then(network => network.name)
+    }
+
     /**
      * Send a message to a Vocdoni Gateway and return the response
      * @param requestBody Parameters of the request to send. The timestamp (in seconds) will be added to the object.

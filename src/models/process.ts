@@ -122,6 +122,7 @@ export interface ProcessMetadata {
 }
 
 export type INewProcessParams = Omit<Omit<IProcessCreateParams, "metadata">, "questionCount"> & { metadata: ProcessMetadata }
+export type INewProcessErc20Params = Omit<Omit<INewProcessParams, "censusRoot">, "censusOrigin">
 
 export interface DigestedProcessResults {
     totalVotes: number,

@@ -106,7 +106,7 @@ async function fileUpload() {
 
         console.log("SIGNING FROM ADDRESS", wallet.address)
 
-        const strData = fs.readFileSync(__dirname + "/data/file.html").toString()
+        const strData = fs.readFileSync(__dirname + "/other/support/file.html").toString()
         console.error("PUTTING STRING OF LENGTH: ", strData.length)
         const origin = await FileApi.add(Buffer.from(strData), "mobile-org-web-action-example.html", wallet, gw)
         console.log("DATA STORED ON:", origin)
@@ -580,8 +580,8 @@ async function submitVoteBatch() {
     console.log("On Process", processId)
 
     // Load a set of registered accounts that can vote on the process
-    if (!require('fs').existsSync(__dirname + "/data/user-accounts.json")) throw new Error("File user-accounts.json does not exist")
-    var censusAccounts = require(__dirname + "/data/user-accounts.json")
+    if (!require('fs').existsSync(__dirname + "/other/support/user-accounts.json")) throw new Error("File user-accounts.json does not exist")
+    var censusAccounts = require(__dirname + "/other/support/user-accounts.json")
     if (!Array.isArray(censusAccounts)) throw new Error("File user-accounts.json does not contain a valid array")
     else if (toAccountIdx >= censusAccounts.length) throw new Error("'toAccountIdx' is greater than the size of the user accounts array")
 

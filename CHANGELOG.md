@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.7.0
+
+- Adding signaling voting via `VotingSignalingApi`
+
 ## 1.6.0
 
 - Provides a new set of recovery questions for wallets (dvote-protobuf)

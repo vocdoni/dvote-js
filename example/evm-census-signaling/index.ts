@@ -1,5 +1,5 @@
 import * as Bluebird from "bluebird"
-import { Wallet, utils, providers, BigNumber } from "ethers"
+import { Wallet, providers } from "ethers"
 import * as assert from "assert"
 import { readFileSync, writeFileSync } from "fs"
 import * as YAML from 'yaml'
@@ -12,11 +12,14 @@ import {
     EntityMetadataTemplate,
     ProcessMetadata, ProcessMetadataTemplate,
     ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin,
-    VochainWaiter, EthWaiter,
+    VochainWaiter,
     compressPublicKey,
     VocdoniEnvironment,
     Erc20TokensApi,
-    IGatewayDiscoveryParameters
+    IGatewayDiscoveryParameters,
+    DVoteGateway,
+    VotingSignalingApi,
+    INewProcessErc20Params
 } from "../../src"
 // import { Buffer } from "buffer/"
 
@@ -25,6 +28,7 @@ const CONFIG_PATH = "./config.yaml"
 const config = getConfig(CONFIG_PATH)
 
 let pool: GatewayPool | Gateway, creatorWallet: Wallet, processId: string, processParams: ProcessContractParameters, processMetadata: ProcessMetadata, accounts: Account[]
+let oracleClient: DVoteGateway
 
 async function main() {
     console.log("Reading account list")
@@ -85,7 +89,7 @@ async function connectGateways(accounts: Account[]): Promise<GatewayPool | Gatew
     console.log("Connecting to the gateways")
     let gw: GatewayPool | Gateway
 
-    if (config.dvoteGatewayUri && config.web3Uri) {
+    if (config.dvoteGatewayUri) {
         const info = new GatewayInfo(config.dvoteGatewayUri, ["census", "file", "results", "vote"], config.web3Uri, config.dvoteGatewayPublicKey || "")
         gw = await Gateway.fromInfo(info, config.vocdoniEnvironment)
     }
@@ -103,6 +107,14 @@ async function connectGateways(accounts: Account[]): Promise<GatewayPool | Gatew
 
     console.log("Connected to", gw.dvoteUri)
     console.log("Connected to", gw.provider["connection"].url)
+
+    oracleClient = new DVoteGateway({
+        uri: config.oracleUri,
+        supportedApis: ["oracle"]
+    })
+    await oracleClient.init()
+
+    console.log("Connected to", config.oracleUri)
 
     // WEB3 CLIENT
     creatorWallet = new Wallet(accounts[0].privateKey).connect(gw.provider)
@@ -128,18 +140,9 @@ async function launchNewVote() {
         assert((await CensusErc20Api.getTokenInfo(config.tokenAddress, pool)).isRegistered)
     }
 
-    const tokenInfo = await CensusErc20Api.getTokenInfo(config.tokenAddress, pool)
-
-    const blockNumber = (await pool.provider.getBlockNumber()) - 1
-    const balanceSlot = CensusErc20Api.getHolderBalanceSlot(creatorWallet.address, tokenInfo.balanceMappingPosition)
-    const result = await CensusErc20Api.generateProof(config.tokenAddress, [balanceSlot], blockNumber, pool.provider as providers.JsonRpcProvider)
-    const { proof, block, blockHeaderRLP, accountProofRLP, storageProofsRLP } = result
-
-    const registeredTokens = await Erc20TokensApi.getTokenList(pool)
-
-    assert(registeredTokens.some(address => address.toLowerCase() == config.tokenAddress.toLowerCase()), "The token address is not registered on the contract")
-
     console.log("Preparing the new vote metadata")
+
+    const sourceBlockHeight = (await pool.provider.getBlockNumber()) - 1
 
     const processMetadataPre: ProcessMetadata = JSON.parse(JSON.stringify(ProcessMetadataTemplate)) // make a copy of the template
     processMetadataPre.title.default = "Bridge Process"
@@ -164,12 +167,10 @@ async function launchNewVote() {
     // TODO: COMPUTE THE PARAMS SIGNATURE
     // TODO: INCLUDE THE BALANCE SLOT IN SUCH SIGNATURE
 
-    const processParamsPre: Omit<Omit<IProcessCreateParams, "metadata">, "questionCount"> & { metadata: ProcessMetadata } = {
+    const processParams: INewProcessErc20Params = {
         mode: ProcessMode.make({ autoStart: true }),
         envelopeType: ProcessEnvelopeType.make({}), // bit mask
-        censusOrigin: ProcessCensusOrigin.ERC20,
         metadata: processMetadataPre,
-        censusRoot: proof.storageHash,
         startBlock,
         blockCount,
         maxCount: 1,
@@ -177,23 +178,20 @@ async function launchNewVote() {
         maxTotalCost: 0,
         costExponent: 10000,
         maxVoteOverwrites: 1,
-        sourceBlockHeight: blockNumber,
+        sourceBlockHeight,
         tokenAddress: config.tokenAddress,
         paramsSignature: "0x0000000000000000000000000000000000000000000000000000000000000000"
     }
-
     console.log("Creating the process")
-    processId = await VotingApi.newProcess(processParamsPre, creatorWallet, pool)
+    processId = await VotingSignalingApi.newProcessErc20(processParams, creatorWallet, pool, oracleClient)
     assert(processId)
 
+    const processInfo = await VotingSignalingApi.getProcessInfo(processId, pool)
+
     // Reading back
-    const processInfo = await VotingApi.getProcess(processId, pool)
-    processParams = processInfo.parameters
-    processMetadata = processInfo.metadata
-    assert.strictEqual(processParams.entityAddress.toLowerCase(), config.tokenAddress.toLowerCase())
-    assert.strictEqual(processParams.startBlock, processParamsPre.startBlock, "SENT " + JSON.stringify(processParamsPre) + " GOT " + JSON.stringify(processParams))
-    assert.strictEqual(processParams.blockCount, processParamsPre.blockCount)
-    assert.strictEqual(processParams.censusRoot, processParamsPre.censusRoot)
+    assert.strictEqual(processInfo.entityId.toLowerCase(), config.tokenAddress.toLowerCase())
+    assert.strictEqual(processInfo.startBlock, processParams.startBlock, "SENT " + JSON.stringify(processParams) + " GOT " + JSON.stringify(processParams))
+    assert.strictEqual(processInfo.endBlock - processInfo.startBlock, processParams.blockCount)
 }
 
 async function waitUntilStarted() {
@@ -202,21 +200,6 @@ async function waitUntilStarted() {
     assert(processParams)
 
     await VochainWaiter.waitUntil(processParams.startBlock, pool, { verbose: true })
-
-    console.log("Checking that the Process ID is on the list")
-
-    let processList: string[] = await VotingApi.getProcessList({ entityId: config.tokenAddress }, pool)
-    assert(processList.length > 0)
-
-    const trimProcId = processId.replace(/^0x/, "")
-    let start = processList.length
-    while (!processList.some(v => v == trimProcId)) {
-        processList = await VotingApi.getProcessList({ entityId: config.tokenAddress, from: start }, pool)
-        if (!processList.length) break
-
-        start += processList.length
-    }
-    assert(processList.some(v => v == trimProcId), "Process ID not present")
 }
 
 async function submitVotes(accounts: Account[]) {
@@ -335,6 +318,7 @@ function getConfig(path: string): Config {
     assert(!config.dvoteGatewayUri || typeof config.dvoteGatewayUri == "string", "config.yaml > dvoteGatewayUri should be a string")
     assert(!config.dvoteGatewayPublicKey || typeof config.dvoteGatewayPublicKey == "string", "config.yaml > dvoteGatewayPublicKey should be a string")
     assert(!config.web3Uri || typeof config.web3Uri == "string", "config.yaml > web3Uri should be a string")
+    assert(typeof config.oracleUri == "string", "config.yaml > oracleUri should be a string")
     assert(typeof config.encryptedVote == "boolean", "config.yaml > encryptedVote should be a boolean")
     return config
 }
@@ -352,9 +336,10 @@ type Config = {
     privKeys: string[]
 
     bootnodesUrlRw: string
-    dvoteGatewayUri: string
-    dvoteGatewayPublicKey: string
-    web3Uri: string
+    dvoteGatewayUri?: string
+    dvoteGatewayPublicKey?: string
+    web3Uri?: string
+    oracleUri: string
 
     encryptedVote: boolean
 }

@@ -141,6 +141,10 @@ export class GatewayPool {
         return this.provider.getNetwork().then(network => network.chainId)
     }
 
+    public get networkId(): Promise<string> {
+        return this.provider.getNetwork().then(network => network.name)
+    }
+
     public getEnsPublicResolverInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IEnsPublicResolverContract> {
         return this.activeGateway.getEnsPublicResolverInstance(walletOrSigner, customAddress)
     }

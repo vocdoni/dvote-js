@@ -1,8 +1,8 @@
-import { Wallet, Signer, utils, ContractTransaction, BigNumber } from "ethers"
+import { Wallet, Signer, utils, ContractTransaction, BigNumber, providers } from "ethers"
 import { Gateway, IGateway } from "../net/gateway"
 import { FileApi } from "./file"
 import { EntityApi } from "./entity"
-import { ProcessMetadata, checkValidProcessMetadata, DigestedProcessResults, DigestedProcessResultItem, INewProcessParams, IProofEVM, IProofCA, IProofGraviton } from "../models/process"
+import { ProcessMetadata, checkValidProcessMetadata, DigestedProcessResults, DigestedProcessResultItem, INewProcessParams, IProofEVM, IProofCA, IProofGraviton, INewProcessErc20Params } from "../models/process"
 import { VOCHAIN_BLOCK_TIME, XDAI_GAS_PRICE, XDAI_CHAIN_ID, SOKOL_CHAIN_ID, SOKOL_GAS_PRICE } from "../constants"
 import { BytesSignature } from "../util/data-signing"
 import { Buffer } from "buffer/"  // Previously using "arraybuffer-to-string"
@@ -22,8 +22,10 @@ import {
     ProofCA,
     CAbundle,
 } from "../models/protobuf"
-import { DVoteGatewayResponseBody, IRequestParameters } from "../net/gateway-dvote"
+import { DVoteGateway, DVoteGatewayResponseBody, IRequestParameters } from "../net/gateway-dvote"
 import { CensusErc20Api } from "./census"
+import { ProcessEnvelopeType } from "dvote-solidity"
+import { ApiMethod } from "../models/gateway"
 
 export const CaBundleProtobuf: any = CAbundle
 
@@ -55,6 +57,36 @@ export type IProcessInfo = {
     metadata: ProcessMetadata
     parameters: ProcessContractParameters
     entity: string
+}
+
+export type IProcessVochainParameters = {
+    censusOrigin: number,
+    censusRoot: string,
+    censusURI: string,
+    metadata: string,
+    creationTime: string,
+    startBlock: number,
+    endBlock: number,
+    entityId: string,
+    envelopeType: {
+        encryptedVotes: boolean
+    },
+    finalResults: boolean,
+    haveResults: boolean,
+    namespace: number,
+    processId: string,
+    processMode: {
+        autoStart: boolean
+    },
+    questionIndex: number,
+    sourceBlockHeight: number,
+    status: IProcessStatus,
+    voteOptions: {
+        costExponent: number,
+        maxCount: number,
+        maxValue: number,
+        maxVoteOverwrites: number
+    }
 }
 
 export type IProcessKeys = {
@@ -91,7 +123,7 @@ export class VotingApi {
     }
 
     /**
-     * Fetch the parameters and metadata for the given processId using the given gateway
+     * Fetch the Ethereum parameters and metadata for the given processId using the given gateway
      * @param processId
      * @param gateway
      */
@@ -122,7 +154,7 @@ export class VotingApi {
     }
 
     /**
-     * Fetch the raw parameters for the given processId using the given gateway
+     * Fetch the raw parameters on Ethereum for the given processId using the given gateway
      * @param processId
      * @param gateway
      */
@@ -153,26 +185,26 @@ export class VotingApi {
     }
 
     /**
-     * Fetch the parameters of the given processId as they are stored in the gateway
+     * Fetch the Vochain parameters of the given processId on the Vochain
      * @param processId
      * @param gateway
      */
-          static getProcessInfo(processId: string, gateway: IGateway | IGatewayPool): Promise<object> {
-            if (!processId) return Promise.reject(new Error("Empty process ID"))
-            else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+    static getProcessInfo(processId: string, gateway: IGateway | IGatewayPool): Promise<IProcessVochainParameters> {
+        if (!processId) return Promise.reject(new Error("Empty process ID"))
+        else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
-            return gateway.sendRequest({ method: "getProcessInfo", processId })
-                .then((response) => {
-                    if (!response.ok) throw new Error(response.message || null)
-                    else if (typeof response.process !== 'object') throw new Error()
+        return gateway.sendRequest({ method: "getProcessInfo", processId })
+            .then((response) => {
+                if (!response.ok) throw new Error(response.message || null)
+                else if (typeof response.process !== 'object') throw new Error()
 
-                    return response.process
-                })
-                .catch((error) => {
-                    const message = error.message ? "Could not retrieve the process info: " + error.message : "Could not retrieve the process info"
-                    throw new Error(message)
-                })
-        }
+                return response.process
+            })
+            .catch((error) => {
+                const message = error.message ? "Could not retrieve the process info: " + error.message : "Could not retrieve the process info"
+                throw new Error(message)
+            })
+    }
 
     /**
      * Retrieves the number of blocks on the Vochain
@@ -512,7 +544,7 @@ export class VotingApi {
      * @param gateway
      * @returns The process ID
      */
-    private static async newProcessOffchainCensus(processParameters: Omit<Omit<IProcessCreateParams, "metadata">, "questionCount"> & { metadata: ProcessMetadata },
+    private static async newProcessOffchainCensus(processParameters: INewProcessParams,
         walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
         try {
             // throw if not valid
@@ -592,7 +624,7 @@ export class VotingApi {
     * @param gateway
     * @returns The process ID
     */
-    private static async newProcessEvmCensus(processParameters: Omit<Omit<IProcessCreateParams, "metadata">, "questionCount"> & { metadata: ProcessMetadata },
+    private static async newProcessEvmCensus(processParameters: INewProcessParams,
         walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
         try {
             // throw if not valid
@@ -1225,4 +1257,101 @@ export class VotingApi {
 
         return utils.keccak256(utils.arrayify("0x" + address + processId))
     }
+}
+
+export class VotingSignalingApi {
+    /**
+    * Use the given JSON metadata to create a new voting process using an EVM-based census from the given token address.
+    * The given Metadata will be stored on IPFS
+    * @param processParameters The details sent to the smart contract, along with the human readable metadata. See https://vocdoni.io/docs/#/architecture/components/process?id=internal-structs
+    * @param proof An Ethereum Storage proof, proving that the wallet address holds tokens on the given token contract
+    * @param walletOrSigner
+    * @param gateway
+    * @param oracle network client
+    * @returns The process ID
+    */
+    static async newProcessErc20(processParameters: INewProcessErc20Params,
+        walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool, oracleGw: DVoteGateway): Promise<string> {
+        if (!processParameters) return Promise.reject(new Error("Invalid process metadata"))
+        else if (!processParameters.metadata) return Promise.reject(new Error("Invalid process metadata"))
+        else if (!walletOrSigner || !walletOrSigner._isSigner)
+            return Promise.reject(new Error("Invalid Wallet or Signer"))
+        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!(oracleGw instanceof DVoteGateway))
+            return Promise.reject(new Error("Invalid oracle client"))
+
+        try {
+            // throw if not valid
+            const metadata = checkValidProcessMetadata(processParameters.metadata)
+            const holderAddress = await walletOrSigner.getAddress()
+
+            // CHECK THAT THE TOKEN EXISTS
+            const tokenInfo = await CensusErc20Api.getTokenInfo(processParameters.tokenAddress, gateway)
+            if (!tokenInfo.isRegistered) return Promise.reject(new Error("The token is not yet registered"))
+
+            // Generate the census proof
+            const balanceSlot = CensusErc20Api.getHolderBalanceSlot(holderAddress, tokenInfo.balanceMappingPosition)
+            const { proof } = await CensusErc20Api.generateProof(processParameters.tokenAddress, [balanceSlot], processParameters.sourceBlockHeight, gateway.provider as providers.JsonRpcProvider)
+            if (!proof?.storageProof?.length)
+                return Promise.reject(new Error("Invalid storage proof"))
+
+            // UPLOAD THE METADATA
+            const strJsonMeta = JSON.stringify(metadata)
+            const metadataOrigin = await FileApi.add(strJsonMeta, "process-metadata.json", walletOrSigner, gateway)
+            if (!metadataOrigin) return Promise.reject(new Error("The process metadata could not be uploaded"))
+
+            // Ignoring this, by now
+            // const questionCount = processParameters.metadata.questions.length
+
+            const networkId = await gateway.networkId
+            const envelopetype = typeof processParameters.envelopeType == "number" ?
+                new ProcessEnvelopeType(processParameters.envelopeType)
+                : processParameters.envelopeType
+
+            const requestPayload = {
+                method: "newERC20process" as ApiMethod,
+                storageProof: {
+                    key: proof.storageProof[0].key,
+                    value: proof.storageProof[0].value,
+                    proof: proof.storageProof[0].proof
+                },
+                newProcess: {
+                    networkId,
+                    entityId: processParameters.tokenAddress,
+                    startBlock: processParameters.startBlock,
+                    blockCount: processParameters.blockCount,
+                    censusRoot: proof.storageHash,
+                    metadata: metadataOrigin,
+                    sourceHeight: processParameters.sourceBlockHeight,
+                    envelopeType: {
+                        serial: envelopetype.hasSerialVoting,
+                        anonymous: envelopetype.hasAnonymousVoters,
+                        encryptedVotes: envelopetype.hasEncryptedVotes,
+                        uniqueValues: envelopetype.hasUniqueValues,
+                        costFromWeight: envelopetype.hasCostFromWeight,
+                    },
+                    voteOptions: {
+                        maxCount: processParameters.maxCount,
+                        maxValue: processParameters.maxValue,
+                        maxVoteOverwrites: processParameters.maxVoteOverwrites,
+                        maxTotalCost: processParameters.maxTotalCost,
+                        costExponent: processParameters.costExponent
+                    },
+                    ethIndexSlot: tokenInfo.balanceMappingPosition
+                },
+            }
+
+            const response = await oracleGw.sendRequest(requestPayload, walletOrSigner)
+            if (!response.ok) throw new Error(response.message || null)
+            else if (!response.processId) throw new Error()
+
+            return response.processId
+        }
+        catch (err) {
+            const message = err.message ? "Could not register the process: " + err.message : "Could not register the process"
+            throw new Error(message)
+        }
+    }
+
+    static getProcessInfo = VotingApi.getProcessInfo
 }
