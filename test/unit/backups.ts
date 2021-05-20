@@ -17,7 +17,7 @@ describe("Account backups", () => {
 
       const backupBytes = AccountBackup.create({
         backupName: "Hello " + i,
-        questionIds: [1, 2, 3],
+        questionIds: [i * 3, i * 3 + 1, i * 3 + 2],
         answers: ["Answer 1" + i, "Answer 2" + i, "Answer 3" + i],
         accountWallet: {
           encryptedMnemonic,
@@ -34,7 +34,7 @@ describe("Account backups", () => {
 
       const parsedBackup = AccountBackup.parse(backupBytes)
       expect(parsedBackup.name).to.eq("Hello " + i)
-      expect(parsedBackup.passphraseRecovery.questionIds).to.deep.eq([1, 2, 3])
+      expect(parsedBackup.passphraseRecovery.questionIds).to.deep.eq([i * 3, i * 3 + 1, i * 3 + 2])
       expect(parsedBackup.wallet.encryptedMnemonic.join(",")).to.eq(encryptedMnemonic.join(","))
     }
   })
@@ -56,7 +56,7 @@ describe("Account backups", () => {
             hdPath: wallet.mnemonic.path,
             locale: wallet.mnemonic.locale
           },
-          currentPassphrase: "this-is-a-wrong-passphrase-" + Math.random()
+          currentPassphrase: "this-is-an-incorrect-passphrase-" + Math.random()
         })
       }).to.throw
     }

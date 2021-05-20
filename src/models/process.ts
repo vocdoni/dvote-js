@@ -13,7 +13,7 @@ import { object, array, string, mixed, number } from "yup"
 import { by639_1 } from 'iso-language-codes'
 import { IProcessCreateParams } from "../net/contracts"
 import { BigNumber } from "ethers"
-import { SignatureType as CaSignatureType } from "../models/protobuf"
+import { ProofCA_Type } from "../models/protobuf"
 
 export { ProcessMetadataTemplate } from "./templates/process"
 
@@ -149,5 +149,5 @@ type IProofCaSignatureType = {
     ECDSA_BLIND: number,
     ECDSA_BLIND_PIDSALTED: number
 }
-const ProofCaSignatureTypes = CaSignatureType as IProofCaSignatureType
+const ProofCaSignatureTypes = ProofCA_Type as IProofCaSignatureType
 export { ProofCaSignatureTypes }

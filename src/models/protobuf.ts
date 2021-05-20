@@ -2,12 +2,12 @@ export {
     VoteEnvelope,
     Proof,
     ProofCA,
+    ProofCA_Type,
     ProofGraviton,
     ProofIden3,
     ProofEthereumStorage,
     ProofEthereumAccount,
     CAbundle,
-    SignatureType,
     Tx,
     SignedTx,
 } from "./protobuf/build/ts/vochain/vochain"

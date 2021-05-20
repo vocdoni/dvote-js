@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.6.0
+
+- Provides a new set of recovery questions for wallets (dvote-protobuf)
+
 ## 1.5.6
 
 - Implements `getProcessInfo` for the `VotingApi`
