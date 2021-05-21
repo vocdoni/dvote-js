@@ -7,6 +7,7 @@ export {
     ProofIden3,
     ProofEthereumStorage,
     ProofEthereumAccount,
+    ProcessStatus as VochainProcessStatus,
     CAbundle,
     Tx,
     SignedTx,

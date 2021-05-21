@@ -10,7 +10,7 @@ import { Asymmetric } from "../util/encryption"
 import { GatewayPool, IGatewayPool } from "../net/gateway-pool"
 import { VochainWaiter } from "../util/waiters"
 import { Random } from "../util/random"
-import { IMethodOverrides, ProcessStatus, ProcessContractParameters, IProcessCreateParams, IProcessStatus, ProcessCensusOrigin, IProcessCensusOrigin } from "../net/contracts"
+import { IMethodOverrides, ProcessContractParameters, ProcessStatus, IProcessStatus, ProcessCensusOrigin, IProcessCensusOrigin } from "../net/contracts"
 import {
     Tx, SignedTx,
     VoteEnvelope,
@@ -20,6 +20,7 @@ import {
     ProofEthereumStorage,
     // ProofEthereumAccount
     ProofCA,
+    VochainProcessStatus,
     CAbundle,
 } from "../models/protobuf"
 import { DVoteGateway, DVoteGatewayResponseBody, IRequestParameters } from "../net/gateway-dvote"
@@ -180,8 +181,9 @@ export class VotingApi {
         if (!processId) throw new Error("Invalid processId")
         else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
-        return VotingApi.getProcess(processId, gateway)
-            .then(processInfo => processInfo.metadata)
+        return VotingApi.getProcessInfo(processId, gateway)
+            .then(processInfo => FileApi.fetchString(processInfo.metadata, gateway))
+            .then(str => JSON.parse(str))
     }
 
     /**
@@ -198,7 +200,12 @@ export class VotingApi {
                 if (!response.ok) throw new Error(response.message || null)
                 else if (typeof response.process !== 'object') throw new Error()
 
-                return response.process
+                // Ensure 0x's
+                const result = response.process
+                result.censusRoot = "0x" + result.censusRoot
+                result.entityId = utils.getAddress("0x" + result.entityId)
+                result.processId = "0x" + result.processId
+                return result
             })
             .catch((error) => {
                 const message = error.message ? "Could not retrieve the process info: " + error.message : "Could not retrieve the process info"
@@ -936,23 +943,24 @@ export class VotingApi {
             throw new Error("Invalid Gateway object")
 
         processId = processId.startsWith("0x") ? processId : "0x" + processId
-        let emptyResults = { totalVotes: 0, questions: [] }
+        const emptyResults = { totalVotes: 0, questions: [] }
 
         try {
-            const processState = await VotingApi.getProcessParameters(processId, gateway)
-            if (processState.status.isCanceled) return emptyResults
+            const processState = await VotingApi.getProcessInfo(processId, gateway)
+            if (processState.status == VochainProcessStatus.CANCELED) return emptyResults
 
             // Encrypted?
             let procKeys: IProcessKeys, retries: number
             const currentBlock = await VotingApi.getBlockHeight(gateway)
-            if (processState.envelopeType.hasEncryptedVotes) {
+            if (processState.envelopeType.encryptedVotes) {
                 if (currentBlock < processState.startBlock) return emptyResults // not started
-                else if (processState.mode.isInterruptible) {
-                    if (!processState.status.hasResults && !processState.status.isEnded &&
-                        (currentBlock < (processState.startBlock + processState.blockCount))) return emptyResults // not ended
+                else if (processState.processMode["interruptible"]) {
+                    if (processState.status !== VochainProcessStatus.RESULTS &&
+                        processState.status !== VochainProcessStatus.ENDED &&
+                        (currentBlock < processState.endBlock)) return emptyResults // not ended
                 } else {
-                    if (!processState.status.hasResults &&
-                        (currentBlock < (processState.startBlock + processState.blockCount))) return emptyResults // not ended
+                    if (processState.status !== VochainProcessStatus.RESULTS &&
+                        (currentBlock < processState.endBlock)) return emptyResults // not ended
                 }
 
                 retries = 3
@@ -966,7 +974,7 @@ export class VotingApi {
                 if (!procKeys || !procKeys.encryptionPrivKeys || !procKeys.encryptionPrivKeys.length) return emptyResults
             }
 
-            const { results, status, envelopHeight } = await VotingApi.getRawResults(processId, gateway)
+            const { results, status: resultsStatus, envelopHeight } = await VotingApi.getRawResults(processId, gateway)
             const metadata = await VotingApi.getProcessMetadata(processId, gateway)
 
             const resultsDigest: DigestedProcessResults = { totalVotes: envelopHeight, questions: [] }
@@ -1259,7 +1267,7 @@ export class VotingApi {
     }
 }
 
-export class VotingSignalingApi {
+export class VotingOracleApi {
     /**
     * Use the given JSON metadata to create a new voting process using an EVM-based census from the given token address.
     * The given Metadata will be stored on IPFS
@@ -1345,13 +1353,11 @@ export class VotingSignalingApi {
             if (!response.ok) throw new Error(response.message || null)
             else if (!response.processId) throw new Error()
 
-            return response.processId
+            return "0x" + response.processId
         }
         catch (err) {
             const message = err.message ? "Could not register the process: " + err.message : "Could not register the process"
             throw new Error(message)
         }
     }
-
-    static getProcessInfo = VotingApi.getProcessInfo
 }

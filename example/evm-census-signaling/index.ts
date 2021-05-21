@@ -18,8 +18,9 @@ import {
     Erc20TokensApi,
     IGatewayDiscoveryParameters,
     DVoteGateway,
-    VotingSignalingApi,
-    INewProcessErc20Params
+    VotingOracleApi,
+    INewProcessErc20Params,
+    IProcessVochainParameters
 } from "../../src"
 // import { Buffer } from "buffer/"
 
@@ -27,7 +28,7 @@ import {
 const CONFIG_PATH = "./config.yaml"
 const config = getConfig(CONFIG_PATH)
 
-let pool: GatewayPool | Gateway, creatorWallet: Wallet, processId: string, processParams: ProcessContractParameters, processMetadata: ProcessMetadata, accounts: Account[]
+let pool: GatewayPool | Gateway, creatorWallet: Wallet, processId: string, processInfo: IProcessVochainParameters, accounts: Account[]
 let oracleClient: DVoteGateway
 
 async function main() {
@@ -46,32 +47,28 @@ async function main() {
 
     if (config.readExistingProcess) {
         console.log("Reading process metadata")
-        const procInfo: { processId: string, processMetadata: ProcessMetadata } = JSON.parse(readFileSync(config.processInfoFilePath).toString())
+        const procInfo: { processId: string } = JSON.parse(readFileSync(config.processInfoFilePath).toString())
         processId = procInfo.processId
-        processMetadata = procInfo.processMetadata
-        processParams = await VotingApi.getProcessParameters(processId, pool)
+        processInfo = await VotingApi.getProcessInfo(processId, pool)
 
         assert(processId)
-        assert(processMetadata)
     }
     else {
         // Create a new voting process
         await launchNewVote()
         assert(processId)
-        assert(processMetadata)
-        writeFileSync(config.processInfoFilePath, JSON.stringify({ processId, processMetadata }, null, 2))
+        writeFileSync(config.processInfoFilePath, JSON.stringify({ processId }, null, 2))
 
         console.log("The voting process is ready")
     }
 
-    assert(processParams)
+    assert(processInfo)
 
-    console.log("- Entity Addr", processParams.entityAddress)
+    console.log("- Entity Addr", processInfo.entityId)
     console.log("- Process ID", processId)
-    console.log("- Process start block", processParams.startBlock)
-    console.log("- Process end block", processParams.startBlock + processParams.blockCount)
-    console.log("- Process merkle root", processParams.censusRoot)
-    console.log("- Process merkle tree", processParams.censusUri)
+    console.log("- Process start block", processInfo.startBlock)
+    console.log("- Process end block", processInfo.endBlock)
+    console.log("- Process merkle root", processInfo.censusRoot)
     console.log("-", accounts.length, "accounts on the census")
 
     // Wait until the current block >= startBlock
@@ -160,9 +157,8 @@ async function launchNewVote() {
 
     console.log("Getting the block height")
     const currentBlock = await VotingApi.getBlockHeight(pool)
-    const startBlock = currentBlock + 25
-    // const blockCount = 6 * 10 // 10m
-    const blockCount = 6 * 4 // 4m
+    const startBlock = currentBlock + 5
+    const blockCount = 6 * 1 // 1 minute
 
     // TODO: COMPUTE THE PARAMS SIGNATURE
     // TODO: INCLUDE THE BALANCE SLOT IN SUCH SIGNATURE
@@ -183,10 +179,13 @@ async function launchNewVote() {
         paramsSignature: "0x0000000000000000000000000000000000000000000000000000000000000000"
     }
     console.log("Creating the process")
-    processId = await VotingSignalingApi.newProcessErc20(processParams, creatorWallet, pool, oracleClient)
+    processId = await VotingOracleApi.newProcessErc20(processParams, creatorWallet, pool, oracleClient)
     assert(processId)
+    console.log("Created the process", processId)
 
-    const processInfo = await VotingSignalingApi.getProcessInfo(processId, pool)
+    await VochainWaiter.wait(1, pool)
+
+    processInfo = await VotingApi.getProcessInfo(processId, pool)
 
     // Reading back
     assert.strictEqual(processInfo.entityId.toLowerCase(), config.tokenAddress.toLowerCase())
@@ -197,15 +196,14 @@ async function launchNewVote() {
 async function waitUntilStarted() {
     assert(pool)
     assert(processId)
-    assert(processParams)
 
-    await VochainWaiter.waitUntil(processParams.startBlock, pool, { verbose: true })
+    await VochainWaiter.waitUntil(processInfo.startBlock, pool, { verbose: true })
 }
 
 async function submitVotes(accounts: Account[]) {
     console.log("Launching votes")
 
-    const processKeys = processParams.envelopeType.hasEncryptedVotes ? await VotingApi.getProcessKeys(processId, pool) : null
+    const processKeys = processInfo.envelopeType.encryptedVotes ? await VotingApi.getProcessKeys(processId, pool) : null
     const balanceMappingPosition = (await CensusErc20Api.getTokenInfo(config.tokenAddress, pool)).balanceMappingPosition
 
     await Bluebird.map(accounts, async (account: Account, idx: number) => {
@@ -216,16 +214,16 @@ async function submitVotes(accounts: Account[]) {
         process.stdout.write(`Gen Proof [${idx}] ; `)
 
         const balanceSlot = CensusErc20Api.getHolderBalanceSlot(wallet.address, balanceMappingPosition)
-        const result = await CensusErc20Api.generateProof(config.tokenAddress, [balanceSlot], processParams.sourceBlockHeight, pool.provider as providers.JsonRpcProvider)
+        const result = await CensusErc20Api.generateProof(config.tokenAddress, [balanceSlot], processInfo.sourceBlockHeight, pool.provider as providers.JsonRpcProvider)
 
         process.stdout.write(`Pkg Envelope [${idx}] ; `)
 
         const choices = [0]
         const censusProof = result.proof.storageProof[0]
 
-        const envelope = processParams.envelopeType.hasEncryptedVotes ?
-            await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet, processKeys }) :
-            await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet })
+        const envelope = processInfo.envelopeType.encryptedVotes ?
+            await VotingApi.packageSignedEnvelope({ censusOrigin: processInfo.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet, processKeys }) :
+            await VotingApi.packageSignedEnvelope({ censusOrigin: processInfo.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet })
 
         process.stdout.write(`Sending [${idx}] ; `)
         await VotingApi.submitEnvelope(envelope, wallet, pool)
@@ -238,7 +236,7 @@ async function submitVotes(accounts: Account[]) {
         await new Promise(resolve => setTimeout(resolve, 11000))
 
         process.stdout.write(`Checking [${idx}] ; `)
-        const nullifier = await VotingApi.getSignedVoteNullifier(wallet.address, processId)
+        const nullifier = VotingApi.getSignedVoteNullifier(wallet.address, processId)
         const { registered, date, block } = await VotingApi.getEnvelopeStatus(processId, nullifier, pool)
             .catch(err => {
                 console.error("\ngetEnvelopeStatus ERR", account.publicKey, nullifier, err)
@@ -265,13 +263,13 @@ async function checkVoteResults() {
         const envelopeHeight = await VotingApi.getEnvelopeHeight(processId, pool)
         assert.strictEqual(envelopeHeight, config.privKeys.length)
 
-        processParams = await VotingApi.getProcessParameters(processId, pool)
+        processInfo = await VotingApi.getProcessInfo(processId, pool)
 
         console.log("Waiting for the process to end", processId)
-        await VochainWaiter.waitUntil(processParams.startBlock + processParams.blockCount, pool, { verbose: true })
+        await VochainWaiter.waitUntil(processInfo.endBlock, pool, { verbose: true })
     }
     console.log("Waiting a bit for the results to be ready", processId)
-    await VochainWaiter.wait(5, pool, { verbose: true })
+    await VochainWaiter.wait(2, pool, { verbose: true })
 
     console.log("Fetching the vote results for", processId)
     const resultsDigest = await VotingApi.getResultsDigest(processId, pool)

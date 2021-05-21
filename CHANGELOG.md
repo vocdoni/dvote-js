@@ -2,7 +2,7 @@
 
 ## 1.7.0
 
-- Adding signaling voting via `VotingSignalingApi`
+- Adding signaling voting via `VotingOracleApi`
 
 ## 1.6.0
 
