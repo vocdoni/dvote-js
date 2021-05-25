@@ -42,6 +42,13 @@ export type IVotePackage = {
     votes: number[]  // Directly mapped to the `questions` field of the metadata
 }
 
+export type SignedEnvelopeParams = {
+    censusOrigin: number | ProcessCensusOrigin,
+    votes: number[], processId: string, walletOrSigner: Wallet | Signer,
+    censusProof: IProofGraviton | IProofCA | IProofEVM,
+    processKeys?: IProcessKeys
+}
+
 export type BlockStatus = {
     /** The current block height */
     blockNumber: number,
@@ -51,32 +58,21 @@ export type BlockStatus = {
     blockTimes: number[]
 }
 
-export type SignedEnvelopeParams = {
-    censusOrigin: number | ProcessCensusOrigin,
-    votes: number[], processId: string, walletOrSigner: Wallet | Signer,
-    censusProof: IProofGraviton | IProofCA | IProofEVM,
-    processKeys?: IProcessKeys
-}
-
-export type IProcessHeaders = {
-    entityId: string,
-    height: number,
-    state: IProcessVochainStatus,
-    type: string
-}
-
-export type IProcessInfo = {
+/** Contains the full details of a process, including the human readable metadata and the on-chain flags */
+export type IProcessDetails = {
     id: string
     metadata: ProcessMetadata
-    parameters: IProcessVochainParameters
-    entity: string
+    state: IProcessState
+    entityId: string
 }
 
-export type IProcessVochainParameters = {
+/** Contains the current state of a process on the Vochain */
+export type IProcessState = {
     censusOrigin: number,
     censusRoot: string,
     censusURI: string,
     metadata: string,
+    /** Example: 2021-05-12T15:52:10-05:00 */
     creationTime: string,
     startBlock: number,
     endBlock: number,
@@ -93,13 +89,33 @@ export type IProcessVochainParameters = {
     },
     questionIndex: number,
     sourceBlockHeight: number,
-    status: IProcessStatus,
+    status: IProcessVochainStatus,
     voteOptions: {
         costExponent: number,
         maxCount: number,
         maxValue: number,
         maxVoteOverwrites: number
     }
+}
+
+/** Contains a summary of the most relevant process details */
+export type IProcessSummary = {
+    entityId: string
+    status: IProcessVochainStatus
+    /** The amount of votes registered */
+    envelopeHeight: number
+    type: {
+        /** Whether votes are encrypted */
+        encrypted: boolean
+    }
+    /** The IPFS URI pointing to the JSON metadata file */
+    metadata: string
+    startBlock: number
+    endBlock: number
+    /** The origin from which the process was created */
+    sourceNetworkId: ISourceNetworkId
+    /** The index of the current process from its entity, starting at 1 */
+    entityIndex: number
 }
 
 export type IProcessKeys = {
@@ -140,38 +156,38 @@ export class VotingApi {
      * @param processId
      * @param gateway
      */
-    static getProcess(processId: string, gateway: IGateway | IGatewayPool): Promise<IProcessInfo> {
+    static getProcess(processId: string, gateway: IGateway | IGatewayPool): Promise<IProcessDetails> {
         if (!processId) throw new Error("Invalid processId")
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
-        let parameters: IProcessVochainParameters
-        return VotingApi.getProcessInfo(processId, gateway)
-            .then(params => {
-                if (!params.metadata) throw new Error("The given voting process has no metadata")
+        let state: IProcessState
+        return VotingApi.getProcessState(processId, gateway)
+            .then(result => {
+                if (!result.metadata) throw new Error("The given voting process has no metadata")
 
-                parameters = params
-                return FileApi.fetchString(params.metadata, gateway)
+                state = result
+                return FileApi.fetchString(result.metadata, gateway)
             })
             .then(strMetadata => {
                 return {
                     id: processId,
-                    entity: parameters.entityId.toLowerCase(),
+                    entityId: state.entityId.toLowerCase(),
                     metadata: JSON.parse(strMetadata),
-                    parameters
+                    state
                 }
             })
             .catch(error => {
-                const message = (error.message) ? "Could not fetch the process data: " + error.message : "Could not fetch the process data"
+                const message = (error.message) ? "Could not fetch the process details: " + error.message : "Could not fetch the process details"
                 throw new Error(message)
             })
     }
 
     /**
-     * Fetch the Vochain parameters of the given processId on the Vochain
+     * Fetch the full state of the given processId on the Vochain
      * @param processId
      * @param gateway
      */
-    static getProcessInfo(processId: string, gateway: IGateway | IGatewayPool): Promise<IProcessVochainParameters> {
+    static getProcessState(processId: string, gateway: IGateway | IGatewayPool): Promise<IProcessState> {
         if (!processId) return Promise.reject(new Error("Empty process ID"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -194,6 +210,37 @@ export class VotingApi {
     }
 
     /**
+     * Fetch the Vochain headers of the given processId on the Vochain. This operation is more lightweight than getProcessInfo
+     * @param processId
+     * @param gateway
+     */
+    static getProcessSummary(processId: string, gateway: IGateway | IGatewayPool): Promise<IProcessSummary> {
+        if (!processId) return Promise.reject(new Error("Empty process ID"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
+
+        return gateway.sendRequest({ method: "getProcessSummary", processId })
+            .then((response) => {
+                if (!response.ok) throw new Error(response.message || null)
+
+                return {
+                    entityId: "0x" + response.entityId,
+                    envelopeHeight: response.height,
+                    status: response.state,
+                    type: response.type || {},
+                    startBlock: response.startBlock,
+                    endBlock: response.endBlock,
+                    entityIndex: response.entityIndex,
+                    metadata: response.metadata,
+                    sourceNetworkId: response.sourceNetworkID || response.sourceNetworkId,
+                } as IProcessSummary
+            })
+            .catch((error) => {
+                const message = error.message ? "Could not retrieve the process info: " + error.message : "Could not retrieve the process info"
+                throw new Error(message)
+            })
+    }
+
+    /**
      * Fetch the JSON metadata for the given processId using the given gateway
      * @param processId
      * @param gateway
@@ -202,35 +249,9 @@ export class VotingApi {
         if (!processId) throw new Error("Invalid processId")
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
-        return VotingApi.getProcessInfo(processId, gateway)
+        return VotingApi.getProcessSummary(processId, gateway)
             .then(processInfo => FileApi.fetchString(processInfo.metadata, gateway))
             .then(str => JSON.parse(str))
-    }
-
-    /**
-     * Fetch the Vochain headers of the given processId on the Vochain. This operation is more lightweight than getProcessInfo
-     * @param processId
-     * @param gateway
-     */
-    static getProcessHeaders(processId: string, gateway: IGateway | IGatewayPool): Promise<IProcessHeaders> {
-        if (!processId) return Promise.reject(new Error("Empty process ID"))
-        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
-
-        return gateway.sendRequest({ method: "getProcessMeta", processId })
-            .then((response) => {
-                if (!response.ok) throw new Error(response.message || null)
-
-                return {
-                    entityId: response.entityId,
-                    height: response.height,
-                    state: response.state,
-                    type: response.type,
-                }
-            })
-            .catch((error) => {
-                const message = error.message ? "Could not retrieve the process info: " + error.message : "Could not retrieve the process info"
-                throw new Error(message)
-            })
     }
 
     /**
@@ -290,28 +311,6 @@ export class VotingApi {
             })
             .catch((error) => {
                 const message = error.message ? "Could not retrieve the block status: " + error.message : "Could not retrieve the block status"
-                throw new Error(message)
-            })
-    }
-
-    /**
-     * Retrieves the cumulative weight that has been casted in votes for the given process ID.
-     * @param processId
-     * @param gateway
-     */
-    static getResultsWeight(processId: string, gateway: IGateway | IGatewayPool): Promise<BigNumber> {
-        if (!processId) return Promise.reject(new Error("Empty process ID"))
-        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
-
-        return gateway.sendRequest({ method: "getResultsWeight", processId })
-            .then((response) => {
-                if (response.weight < 0) throw new Error("The weight value is not valid")
-                else if (typeof response.weight !== 'string' && !BigNumber.isBigNumber(response.weight)) throw new Error("The weight value is not valid")
-
-                return BigNumber.from(response.weight)
-            })
-            .catch((error) => {
-                const message = error.message ? "Could not retrieve the results weight: " + error.message : "Could not retrieve the results weight"
                 throw new Error(message)
             })
     }
@@ -542,6 +541,28 @@ export class VotingApi {
             })
             .catch((error) => {
                 const message = (error.message) ? "Could not retrieve the process encryption keys: " + error.message : "Could not retrieve the process encryption keys"
+                throw new Error(message)
+            })
+    }
+
+    /**
+     * Retrieves the cumulative weight that has been casted in votes for the given process ID.
+     * @param processId
+     * @param gateway
+     */
+    static getResultsWeight(processId: string, gateway: IGateway | IGatewayPool): Promise<BigNumber> {
+        if (!processId) return Promise.reject(new Error("Empty process ID"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
+
+        return gateway.sendRequest({ method: "getResultsWeight", processId })
+            .then((response) => {
+                if (response.weight < 0) throw new Error("The weight value is not valid")
+                else if (typeof response.weight !== 'string' && !BigNumber.isBigNumber(response.weight)) throw new Error("The weight value is not valid")
+
+                return BigNumber.from(response.weight)
+            })
+            .catch((error) => {
+                const message = error.message ? "Could not retrieve the results weight: " + error.message : "Could not retrieve the results weight"
                 throw new Error(message)
             })
     }
@@ -899,7 +920,7 @@ export class VotingApi {
      * @param filters Optional criteria to filter the processes ID's given by the gateway
      * @param gateway
      */
-    static async getProcessList(filters: { entityId?: string, namespace?: number, status?: IProcessStatus, withResults?: boolean, from?: number } = {}, gateway: IGateway | IGatewayPool): Promise<string[]> {
+    static async getProcessList(filters: { entityId?: string, namespace?: number, status?: IProcessVochainStatus, withResults?: boolean, from?: number } = {}, gateway: IGateway | IGatewayPool): Promise<string[]> {
         if (!gateway) throw new Error("Invalid Gateway object")
         else if (typeof filters != "object") throw new Error("Invalid filters parameter")
 
@@ -984,8 +1005,8 @@ export class VotingApi {
         const emptyResults = { totalVotes: 0, questions: [] }
 
         try {
-            const processState = await VotingApi.getProcessInfo(processId, gateway)
-            if (processState.status == VochainProcessStatus.CANCELED) return emptyResults
+            const processState = await VotingApi.getProcessState(processId, gateway)
+            if (processState.status == "CANCELED") return emptyResults
 
             // Encrypted?
             let procKeys: IProcessKeys, retries: number
@@ -993,11 +1014,11 @@ export class VotingApi {
             if (processState.envelopeType.encryptedVotes) {
                 if (currentBlock < processState.startBlock) return emptyResults // not started
                 else if (processState.processMode["interruptible"]) {
-                    if (processState.status !== VochainProcessStatus.RESULTS &&
-                        processState.status !== VochainProcessStatus.ENDED &&
+                    if (processState.status !== "RESULTS" &&
+                        processState.status !== "ENDED" &&
                         (currentBlock < processState.endBlock)) return emptyResults // not ended
                 } else {
-                    if (processState.status !== VochainProcessStatus.RESULTS &&
+                    if (processState.status !== "RESULTS" &&
                         (currentBlock < processState.endBlock)) return emptyResults // not ended
                 }
 
@@ -1323,8 +1344,7 @@ export class VotingOracleApi {
         else if (!walletOrSigner || !walletOrSigner._isSigner)
             return Promise.reject(new Error("Invalid Wallet or Signer"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
-        else if (!(oracleGw instanceof DVoteGateway))
-            return Promise.reject(new Error("Invalid oracle client"))
+        else if (!oracleGw) return Promise.reject(new Error("Invalid oracle client"))
 
         try {
             // throw if not valid

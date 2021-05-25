@@ -46,7 +46,7 @@ async function main() {
         const procInfo: { processId: string, processMetadata: ProcessMetadata } = JSON.parse(readFileSync(config.processInfoFilePath).toString())
         processId = procInfo.processId
         processMetadata = procInfo.processMetadata
-        processParams = await VotingApi.getProcessParameters(processId, pool)
+        processParams = await VotingApi.getProcessContractParameters(processId, pool)
 
         assert(processId)
         assert(processMetadata)
@@ -188,9 +188,7 @@ async function launchNewVote() {
     assert(processId)
 
     // Reading back
-    const processInfo = await VotingApi.getProcess(processId, pool)
-    processParams = processInfo.parameters
-    processMetadata = processInfo.metadata
+    processParams = await VotingApi.getProcessContractParameters(processId, pool)
     assert.strictEqual(processParams.entityAddress.toLowerCase(), config.tokenAddress.toLowerCase())
     assert.strictEqual(processParams.startBlock, processParamsPre.startBlock, "SENT " + JSON.stringify(processParamsPre) + " GOT " + JSON.stringify(processParams))
     assert.strictEqual(processParams.blockCount, processParamsPre.blockCount)
@@ -283,7 +281,7 @@ async function checkVoteResults() {
         const envelopeHeight = await VotingApi.getEnvelopeHeight(processId, pool)
         assert.strictEqual(envelopeHeight, config.privKeys.length)
 
-        processParams = await VotingApi.getProcessParameters(processId, pool)
+        processParams = await VotingApi.getProcessContractParameters(processId, pool)
 
         console.log("Waiting for the process to end", processId)
         await VochainWaiter.waitUntil(processParams.startBlock + processParams.blockCount, pool, { verbose: true })

@@ -20,7 +20,7 @@ import {
     DVoteGateway,
     VotingOracleApi,
     INewProcessErc20Params,
-    IProcessVochainParameters
+    IProcessState
 } from "../../src"
 // import { Buffer } from "buffer/"
 
@@ -28,7 +28,7 @@ import {
 const CONFIG_PATH = "./config.yaml"
 const config = getConfig(CONFIG_PATH)
 
-let pool: GatewayPool | Gateway, creatorWallet: Wallet, processId: string, processInfo: IProcessVochainParameters, accounts: Account[]
+let pool: GatewayPool | Gateway, creatorWallet: Wallet, processId: string, processState: IProcessState, accounts: Account[]
 let oracleClient: DVoteGateway
 
 async function main() {
@@ -49,7 +49,7 @@ async function main() {
         console.log("Reading process metadata")
         const procInfo: { processId: string } = JSON.parse(readFileSync(config.processInfoFilePath).toString())
         processId = procInfo.processId
-        processInfo = await VotingApi.getProcessInfo(processId, pool)
+        processState = await VotingApi.getProcessState(processId, pool)
 
         assert(processId)
     }
@@ -62,13 +62,13 @@ async function main() {
         console.log("The voting process is ready")
     }
 
-    assert(processInfo)
+    assert(processState)
 
-    console.log("- Entity Addr", processInfo.entityId)
+    console.log("- Entity Addr", processState.entityId)
     console.log("- Process ID", processId)
-    console.log("- Process start block", processInfo.startBlock)
-    console.log("- Process end block", processInfo.endBlock)
-    console.log("- Process merkle root", processInfo.censusRoot)
+    console.log("- Process start block", processState.startBlock)
+    console.log("- Process end block", processState.endBlock)
+    console.log("- Process merkle root", processState.censusRoot)
     console.log("-", accounts.length, "accounts on the census")
 
     // Wait until the current block >= startBlock
@@ -185,26 +185,26 @@ async function launchNewVote() {
 
     await VochainWaiter.wait(1, pool)
 
-    const { parameters } = await VotingApi.getProcess(processId, pool)
-    processInfo = parameters
+    const { state } = await VotingApi.getProcess(processId, pool)
+    processState = state
 
     // Reading back
-    assert.strictEqual(processInfo.entityId.toLowerCase(), config.tokenAddress.toLowerCase())
-    assert.strictEqual(processInfo.startBlock, processParams.startBlock, "SENT " + JSON.stringify(processParams) + " GOT " + JSON.stringify(processParams))
-    assert.strictEqual(processInfo.endBlock - processInfo.startBlock, processParams.blockCount)
+    assert.strictEqual(processState.entityId.toLowerCase(), config.tokenAddress.toLowerCase())
+    assert.strictEqual(processState.startBlock, processParams.startBlock, "SENT " + JSON.stringify(processParams) + " GOT " + JSON.stringify(processParams))
+    assert.strictEqual(processState.endBlock - processState.startBlock, processParams.blockCount)
 }
 
 async function waitUntilStarted() {
     assert(pool)
     assert(processId)
 
-    await VochainWaiter.waitUntil(processInfo.startBlock, pool, { verbose: true })
+    await VochainWaiter.waitUntil(processState.startBlock, pool, { verbose: true })
 }
 
 async function submitVotes(accounts: Account[]) {
     console.log("Launching votes")
 
-    const processKeys = processInfo.envelopeType.encryptedVotes ? await VotingApi.getProcessKeys(processId, pool) : null
+    const processKeys = processState.envelopeType.encryptedVotes ? await VotingApi.getProcessKeys(processId, pool) : null
     const balanceMappingPosition = (await CensusErc20Api.getTokenInfo(config.tokenAddress, pool)).balanceMappingPosition
 
     await Bluebird.map(accounts, async (account: Account, idx: number) => {
@@ -215,16 +215,16 @@ async function submitVotes(accounts: Account[]) {
         process.stdout.write(`Gen Proof [${idx}] ; `)
 
         const balanceSlot = CensusErc20Api.getHolderBalanceSlot(wallet.address, balanceMappingPosition)
-        const result = await CensusErc20Api.generateProof(config.tokenAddress, [balanceSlot], processInfo.sourceBlockHeight, pool.provider as providers.JsonRpcProvider)
+        const result = await CensusErc20Api.generateProof(config.tokenAddress, [balanceSlot], processState.sourceBlockHeight, pool.provider as providers.JsonRpcProvider)
 
         process.stdout.write(`Pkg Envelope [${idx}] ; `)
 
         const choices = [0]
         const censusProof = result.proof.storageProof[0]
 
-        const envelope = processInfo.envelopeType.encryptedVotes ?
-            await VotingApi.packageSignedEnvelope({ censusOrigin: processInfo.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet, processKeys }) :
-            await VotingApi.packageSignedEnvelope({ censusOrigin: processInfo.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet })
+        const envelope = processState.envelopeType.encryptedVotes ?
+            await VotingApi.packageSignedEnvelope({ censusOrigin: processState.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet, processKeys }) :
+            await VotingApi.packageSignedEnvelope({ censusOrigin: processState.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet })
 
         process.stdout.write(`Sending [${idx}] ; `)
         await VotingApi.submitEnvelope(envelope, wallet, pool)
@@ -264,10 +264,10 @@ async function checkVoteResults() {
         const envelopeHeight = await VotingApi.getEnvelopeHeight(processId, pool)
         assert.strictEqual(envelopeHeight, config.privKeys.length)
 
-        processInfo = await VotingApi.getProcessInfo(processId, pool)
+        processState = await VotingApi.getProcessState(processId, pool)
 
         console.log("Waiting for the process to end", processId)
-        await VochainWaiter.waitUntil(processInfo.endBlock, pool, { verbose: true })
+        await VochainWaiter.waitUntil(processState.endBlock, pool, { verbose: true })
     }
     console.log("Waiting a bit for the results to be ready", processId)
     await VochainWaiter.wait(2, pool, { verbose: true })

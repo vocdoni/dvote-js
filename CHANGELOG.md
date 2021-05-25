@@ -1,5 +1,17 @@
 # DVote JS changelog
 
+## 1.9.0
+
+- BREAKING:
+    - `IProcessInfo` is now `IProcessDetails` to avoid confusions with similar Vochain calls
+        - `IProcessInfo.parameters` is now `IProcessDetails.state`
+        - `IProcessInfo.entity` is now `IProcessDetails.entityId`
+    - `IProcessHeaders` is now `IProcessSummary`
+    - `IProcessVochainParameters` is now `IProcessState`
+    - `getProcessHeaders` is now `getProcessSummary`
+    - `getProcessInfo` is now `getProcessState`
+- Adding `IProcessVochainStatus` and `ISourceNetworkId` types
+
 ## 1.8.3
 
 - Relaxing the gateway prototype checks
