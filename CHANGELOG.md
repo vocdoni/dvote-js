@@ -1,5 +1,10 @@
 # DVote JS changelog
 
+## 1.8.0
+
+- BREAKING: `getProcessInfo` now returns `parameters` of type `IProcessVochainParameters`
+- Adding `getProcessHeaders`
+
 ## 1.7.0
 
 - Adding signaling voting via `VotingOracleApi`

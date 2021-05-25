@@ -53,10 +53,17 @@ export type SignedEnvelopeParams = {
     processKeys?: IProcessKeys
 }
 
+export type IProcessHeaders = {
+    entityId: string,
+    height: number,
+    state: "READY" | "PAUSED" | "ENDED" | "CANCELED" | "RESULTS",
+    type: string
+}
+
 export type IProcessInfo = {
     id: string
     metadata: ProcessMetadata
-    parameters: ProcessContractParameters
+    parameters: IProcessVochainParameters
     entity: string
 }
 
@@ -132,8 +139,8 @@ export class VotingApi {
         if (!processId) throw new Error("Invalid processId")
         else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
-        let parameters: ProcessContractParameters
-        return VotingApi.getProcessParameters(processId, gateway)
+        let parameters: IProcessVochainParameters
+        return VotingApi.getProcessInfo(processId, gateway)
             .then(params => {
                 if (!params.metadata) throw new Error("The given voting process has no metadata")
 
@@ -143,7 +150,7 @@ export class VotingApi {
             .then(strMetadata => {
                 return {
                     id: processId,
-                    entity: parameters.entityAddress.toLowerCase(),
+                    entity: parameters.entityId.toLowerCase(),
                     metadata: JSON.parse(strMetadata),
                     parameters
                 }
@@ -152,38 +159,6 @@ export class VotingApi {
                 const message = (error.message) ? "Could not fetch the process data: " + error.message : "Could not fetch the process data"
                 throw new Error(message)
             })
-    }
-
-    /**
-     * Fetch the raw parameters on Ethereum for the given processId using the given gateway
-     * @param processId
-     * @param gateway
-     */
-    static getProcessParameters(processId: string, gateway: IGateway | IGatewayPool): Promise<ProcessContractParameters> {
-        if (!processId) throw new Error("Invalid processId")
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
-
-        return gateway.getProcessesInstance()
-            .then(processInstance => processInstance.get(processId))
-            .then(params => ProcessContractParameters.fromContract(params))
-            .catch(error => {
-                const message = (error.message) ? "Could not fetch the process data: " + error.message : "Could not fetch the process data"
-                throw new Error(message)
-            })
-    }
-
-    /**
-     * Fetch the JSON metadata for the given processId using the given gateway
-     * @param processId
-     * @param gateway
-     */
-    static async getProcessMetadata(processId: string, gateway: IGateway | IGatewayPool): Promise<ProcessMetadata> {
-        if (!processId) throw new Error("Invalid processId")
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
-
-        return VotingApi.getProcessInfo(processId, gateway)
-            .then(processInfo => FileApi.fetchString(processInfo.metadata, gateway))
-            .then(str => JSON.parse(str))
     }
 
     /**
@@ -209,6 +184,64 @@ export class VotingApi {
             })
             .catch((error) => {
                 const message = error.message ? "Could not retrieve the process info: " + error.message : "Could not retrieve the process info"
+                throw new Error(message)
+            })
+    }
+
+    /**
+     * Fetch the JSON metadata for the given processId using the given gateway
+     * @param processId
+     * @param gateway
+     */
+    static getProcessMetadata(processId: string, gateway: IGateway | IGatewayPool): Promise<ProcessMetadata> {
+        if (!processId) throw new Error("Invalid processId")
+        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+
+        return VotingApi.getProcessInfo(processId, gateway)
+            .then(processInfo => FileApi.fetchString(processInfo.metadata, gateway))
+            .then(str => JSON.parse(str))
+    }
+
+    /**
+     * Fetch the Vochain headers of the given processId on the Vochain. This operation is more lightweight than getProcessInfo
+     * @param processId
+     * @param gateway
+     */
+    static getProcessHeaders(processId: string, gateway: IGateway | IGatewayPool): Promise<IProcessHeaders> {
+        if (!processId) return Promise.reject(new Error("Empty process ID"))
+        else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+
+        return gateway.sendRequest({ method: "getProcessMeta", processId })
+            .then((response) => {
+                if (!response.ok) throw new Error(response.message || null)
+
+                return {
+                    entityId: response.entityId,
+                    height: response.height,
+                    state: response.state,
+                    type: response.type,
+                }
+            })
+            .catch((error) => {
+                const message = error.message ? "Could not retrieve the process info: " + error.message : "Could not retrieve the process info"
+                throw new Error(message)
+            })
+    }
+
+    /**
+     * Fetch the raw parameters on Ethereum for the given processId using the given gateway
+     * @param processId
+     * @param gateway
+     */
+    static getProcessContractParameters(processId: string, gateway: IGateway | IGatewayPool): Promise<ProcessContractParameters> {
+        if (!processId) throw new Error("Invalid processId")
+        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+
+        return gateway.getProcessesInstance()
+            .then(processInstance => processInstance.get(processId))
+            .then(params => ProcessContractParameters.fromContract(params))
+            .catch(error => {
+                const message = (error.message) ? "Could not fetch the process data: " + error.message : "Could not fetch the process data"
                 throw new Error(message)
             })
     }

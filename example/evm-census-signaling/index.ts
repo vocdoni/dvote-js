@@ -185,7 +185,8 @@ async function launchNewVote() {
 
     await VochainWaiter.wait(1, pool)
 
-    processInfo = await VotingApi.getProcessInfo(processId, pool)
+    const { parameters } = await VotingApi.getProcess(processId, pool)
+    processInfo = parameters
 
     // Reading back
     assert.strictEqual(processInfo.entityId.toLowerCase(), config.tokenAddress.toLowerCase())
