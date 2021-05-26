@@ -1,6 +1,6 @@
 # DVote JS changelog
 
-## 1.8.2
+## 1.8.3
 
 - Relaxing the gateway prototype checks
 

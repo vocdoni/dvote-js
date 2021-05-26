@@ -949,9 +949,9 @@ export class VotingApi {
      * @returns Results, vote process  type, vote process state
      */
     static getRawResults(processId: string, gateway: IGateway | IGatewayPool): Promise<{ results: string[][], status: ProcessStatus, envelopHeight: number }> {
-        if (!gateway || !processId)
+        if (!processId)
             return Promise.reject(new Error("No process ID provided"))
-        else if (!((gateway instanceof Gateway || gateway instanceof GatewayPool)))
+        else if (!gateway)
             return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getResults", processId })
@@ -977,7 +977,7 @@ export class VotingApi {
     static async getResultsDigest(processId: string, gateway: IGateway | IGatewayPool): Promise<DigestedProcessResults> {
         if (!processId)
             throw new Error("No process ID provided")
-        else if (!((gateway instanceof Gateway || gateway instanceof GatewayPool)))
+        else if (!gateway)
             throw new Error("Invalid Gateway object")
 
         processId = processId.startsWith("0x") ? processId : "0x" + processId
