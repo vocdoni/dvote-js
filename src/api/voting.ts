@@ -105,8 +105,16 @@ export type IProcessSummary = {
     /** The amount of votes registered */
     envelopeHeight: number
     type: {
+        /** Whether votes are signed or anonymous */
+        anonymous: boolean
         /** Whether votes are encrypted */
         encrypted: boolean
+        /** Whether the cost of a vote comes from the voter's weight */
+        costFromWeight: boolean
+        /** Whether votes rae submitted all together or sequentially */
+        serial: boolean
+        /** Whether vote values need to be unique */
+        uniqueValues: boolean
     }
     /** The IPFS URI pointing to the JSON metadata file */
     metadata: string
