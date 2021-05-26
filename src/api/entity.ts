@@ -16,7 +16,7 @@ export class EntityApi {
      */
     static async getMetadata(address: string, gateway: Gateway | IGatewayPool): Promise<EntityMetadata> {
         if (!address) return Promise.reject(new Error("Invalid address"))
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         const resolverInstance = await gateway.getEnsPublicResolverInstance()
 
@@ -37,7 +37,7 @@ export class EntityApi {
     static async setMetadata(address: string, metadata: EntityMetadata, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
         if (!address) return Promise.reject(new Error("Invalid address"))
         else if (!metadata) return Promise.reject(new Error("Invalid Entity metadata"))
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         // throw if not valid
         checkValidEntityMetadata(metadata)

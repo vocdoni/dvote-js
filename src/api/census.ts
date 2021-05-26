@@ -81,7 +81,7 @@ export class CensusOffChainApi {
      */
     static async addCensus(censusName: string, managerPublicKeys: string[], walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<{ censusId: string, censusRoot: string }> {
         if (!censusName || !managerPublicKeys || !managerPublicKeys.length || !gateway) return Promise.reject(new Error("Invalid parameters"))
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!walletOrSigner || !walletOrSigner._isSigner) return Promise.reject(new Error("Invalid WalletOrSinger object"))
 
         const censusId = CensusOffChainApi.generateCensusId(censusName, await walletOrSigner.getAddress())
@@ -121,7 +121,7 @@ export class CensusOffChainApi {
      */
     static addClaim(censusId: string, claim: { key: string, value?: string }, digested: boolean, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
         if (!censusId || !claim || !claim.key || !claim.key.length || !gateway) return Promise.reject(new Error("Invalid parameters"))
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!walletOrSigner || !walletOrSigner._isSigner) return Promise.reject(new Error("Invalid WalletOrSinger object"))
 
         return gateway.sendRequest({ method: "addClaim", censusId, digested, censusKey: claim.key, censusValue: claim.value || undefined }, walletOrSigner)
@@ -148,7 +148,7 @@ export class CensusOffChainApi {
      */
     static async addClaimBulk(censusId: string, claimList: { key: string, value?: string }[], digested: boolean, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<{ censusRoot: string, invalidClaims: any[] }> {
         if (!censusId || !claimList || !claimList.length || !gateway) return Promise.reject(new Error("Invalid parameters"))
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!walletOrSigner || !walletOrSigner._isSigner) return Promise.reject(new Error("Invalid WalletOrSinger object"))
 
         let invalidClaims = []
@@ -167,7 +167,7 @@ export class CensusOffChainApi {
 
     private static addClaimChunk(censusId: string, claimList: { key: string, value?: string }[], digested: boolean, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<any[]> {
         if (!censusId || !claimList || claimList.length > CENSUS_MAX_BULK_SIZE || !gateway) return Promise.reject(new Error("Invalid parameters"))
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!claimList.length) return Promise.resolve([])
         else if (!walletOrSigner || !walletOrSigner._isSigner) return Promise.reject(new Error("Invalid WalletOrSinger object"))
 
@@ -193,7 +193,7 @@ export class CensusOffChainApi {
      */
     static getRoot(censusId: string, gateway: IGateway | IGatewayPool): Promise<string> {
         if (!censusId || !gateway) return Promise.reject(new Error("Invalid parameters"))
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getRoot", censusId })
             .then(response => {
@@ -213,7 +213,7 @@ export class CensusOffChainApi {
      */
     static getCensusSize(censusRootHash: string, gateway: IGateway | IGatewayPool): Promise<string> {
         if (!censusRootHash || !gateway) return Promise.reject(new Error("Invalid parameters"))
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getSize", censusId: censusRootHash })
             .then(response => {
@@ -234,7 +234,7 @@ export class CensusOffChainApi {
     */
     static dump(censusId: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool, rootHash?: String): Promise<string[]> {
         if (!censusId || !gateway) return Promise.reject(new Error("Invalid parameters"))
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         const msg: IRequestParameters = (rootHash) ? { method: "dump", censusId, rootHash } : { method: "dump", censusId }
 
@@ -256,7 +256,7 @@ export class CensusOffChainApi {
     */
     static dumpPlain(censusId: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool, rootHash?: String): Promise<{ key: string, value?: string }[]> {
         if (!censusId || !gateway) return Promise.reject(new Error("Invalid parameters"))
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         const msg: IRequestParameters = (rootHash) ? { method: "dumpPlain", censusId, rootHash } : { method: "dumpPlain", censusId }
 
@@ -295,7 +295,7 @@ export class CensusOffChainApi {
     /** Exports and publish the entire census on the storage of the backend (usually IPFS). Returns the URI of the set of claims */
     static publishCensus(censusId: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
         if (!censusId || !gateway) return Promise.reject(new Error("Invalid parameters"))
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!walletOrSigner || !walletOrSigner._isSigner) return Promise.reject(new Error("Invalid WalletOrSinger object"))
 
         return gateway.sendRequest({ method: "publish", censusId }, walletOrSigner)
@@ -317,7 +317,7 @@ export class CensusOffChainApi {
      */
     static generateProof(censusRoot: string, { key, value }: { key: string, value?: number }, isDigested: boolean, gateway: IGateway | IGatewayPool): Promise<string> {
         if (!censusRoot || !key || !gateway) return Promise.reject(new Error("Invalid parameters"))
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({
             method: "genProof",
@@ -341,7 +341,7 @@ export class CensusOffChainApi {
 
     static getCensusList(gateway: IGateway | IGatewayPool): Promise<string[]> {
         if (!gateway) return Promise.reject(new Error("Invalid parameters"))
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getCensusList" })
             .then(response => {

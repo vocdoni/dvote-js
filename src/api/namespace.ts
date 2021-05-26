@@ -9,7 +9,7 @@ export class NamespaceApi {
         if (typeof namespace != "number" || namespace < 0 || namespace > 65355) return Promise.reject(new Error("Invalid namespace"))
         else if (!Array.isArray(validators)) return Promise.reject(new Error("Invalid validators array"))
         else if (!Array.isArray(oracles)) return Promise.reject(new Error("Invalid oracles array"))
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         try {
             const namespaceInstance = await gateway.getNamespacesInstance(walletOrSigner)
@@ -26,7 +26,7 @@ export class NamespaceApi {
 
     static async setChainId(namespace: number, chainId: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool) {
         if (typeof namespace != "number" || namespace < 0 || namespace > 65355) return Promise.reject(new Error("Invalid namespace"))
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         try {
             const namespaceInstance = await gateway.getNamespacesInstance(walletOrSigner)
@@ -43,7 +43,7 @@ export class NamespaceApi {
 
     static async setGenesis(namespace: number, genesis: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool) {
         if (typeof namespace != "number" || namespace < 0 || namespace > 65355) return Promise.reject(new Error("Invalid namespace"))
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         try {
             const namespaceInstance = await gateway.getNamespacesInstance(walletOrSigner)
@@ -60,7 +60,7 @@ export class NamespaceApi {
 
     static async addValidator(namespace: number, validatorPublicKey: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool) {
         if (typeof namespace != "number" || namespace < 0 || namespace > 65355) return Promise.reject(new Error("Invalid namespace"))
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         try {
             const namespaceInstance = await gateway.getNamespacesInstance(walletOrSigner)
@@ -77,7 +77,7 @@ export class NamespaceApi {
 
     static async removeValidator(namespace: number, index: number, validatorPublicKey: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool) {
         if (typeof namespace != "number" || namespace < 0 || namespace > 65355) return Promise.reject(new Error("Invalid namespace"))
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         try {
             const namespaceInstance = await gateway.getNamespacesInstance(walletOrSigner)
@@ -94,7 +94,7 @@ export class NamespaceApi {
 
     static async addOracle(namespace: number, oracleAddress: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool) {
         if (typeof namespace != "number" || namespace < 0 || namespace > 65355) return Promise.reject(new Error("Invalid namespace"))
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         try {
             const namespaceInstance = await gateway.getNamespacesInstance(walletOrSigner)
@@ -111,7 +111,7 @@ export class NamespaceApi {
 
     static async removeOracle(namespace: number, index: number, oracleAddress: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool) {
         if (typeof namespace != "number" || namespace < 0 || namespace > 65355) return Promise.reject(new Error("Invalid namespace"))
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         try {
             const namespaceInstance = await gateway.getNamespacesInstance(walletOrSigner)
@@ -128,7 +128,7 @@ export class NamespaceApi {
 
     static async getNamespace(namespace: number, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<NamespaceData> {
         if (typeof namespace != "number" || namespace < 0 || namespace > 65355) return Promise.reject(new Error("Invalid namespace"))
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         try {
             const namespaceInstance = await gateway.getNamespacesInstance(walletOrSigner)
@@ -152,7 +152,7 @@ export class NamespaceApi {
 
     static async isValidator(namespace: number, validatorPublicKey: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool) {
         if (typeof namespace != "number" || namespace < 0 || namespace > 65355) return Promise.reject(new Error("Invalid namespace"))
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         try {
             const namespaceInstance = await gateway.getNamespacesInstance(walletOrSigner)
@@ -167,7 +167,7 @@ export class NamespaceApi {
 
     static async isOracle(namespace: number, oracleAddress: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool) {
         if (typeof namespace != "number" || namespace < 0 || namespace > 65355) return Promise.reject(new Error("Invalid namespace"))
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         try {
             const namespaceInstance = await gateway.getNamespacesInstance(walletOrSigner)

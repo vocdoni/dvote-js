@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.8.2
+
+- Relaxing the gateway prototype checks
+
 ## 1.8.1
 
 - Increases XDAI gasprices to 30gwei

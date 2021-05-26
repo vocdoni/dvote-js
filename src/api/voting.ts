@@ -32,6 +32,11 @@ export const CaBundleProtobuf: any = CAbundle
 
 // TYPES
 
+/** The current status of a process on the Vochain */
+export type IProcessVochainStatus = "READY" | "PAUSED" | "CANCELED" | "ENDED" | "RESULTS"
+/** The origin from which a process was created */
+export type ISourceNetworkId = "UNKNOWN" | "ETH_MAINNET" | "ETH_RINKEBY" | "ETH_GOERLI" | "POA_XDAI" | "POA_SOKOL" | "POLYGON" | "BSC" | "ETH_MAINNET_SIGNALING" | "ETH_RINKEBY_SIGNALING"
+
 export type IVotePackage = {
     nonce: string, // (optional) random number to prevent guessing the encrypted payload before the key is revealed
     votes: number[]  // Directly mapped to the `questions` field of the metadata
@@ -56,7 +61,7 @@ export type SignedEnvelopeParams = {
 export type IProcessHeaders = {
     entityId: string,
     height: number,
-    state: "READY" | "PAUSED" | "ENDED" | "CANCELED" | "RESULTS",
+    state: IProcessVochainStatus,
     type: string
 }
 
@@ -137,7 +142,7 @@ export class VotingApi {
      */
     static getProcess(processId: string, gateway: IGateway | IGatewayPool): Promise<IProcessInfo> {
         if (!processId) throw new Error("Invalid processId")
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         let parameters: IProcessVochainParameters
         return VotingApi.getProcessInfo(processId, gateway)
@@ -168,7 +173,7 @@ export class VotingApi {
      */
     static getProcessInfo(processId: string, gateway: IGateway | IGatewayPool): Promise<IProcessVochainParameters> {
         if (!processId) return Promise.reject(new Error("Empty process ID"))
-        else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getProcessInfo", processId })
             .then((response) => {
@@ -195,7 +200,7 @@ export class VotingApi {
      */
     static getProcessMetadata(processId: string, gateway: IGateway | IGatewayPool): Promise<ProcessMetadata> {
         if (!processId) throw new Error("Invalid processId")
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return VotingApi.getProcessInfo(processId, gateway)
             .then(processInfo => FileApi.fetchString(processInfo.metadata, gateway))
@@ -209,7 +214,7 @@ export class VotingApi {
      */
     static getProcessHeaders(processId: string, gateway: IGateway | IGatewayPool): Promise<IProcessHeaders> {
         if (!processId) return Promise.reject(new Error("Empty process ID"))
-        else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getProcessMeta", processId })
             .then((response) => {
@@ -235,7 +240,7 @@ export class VotingApi {
      */
     static getProcessContractParameters(processId: string, gateway: IGateway | IGatewayPool): Promise<ProcessContractParameters> {
         if (!processId) throw new Error("Invalid processId")
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.getProcessesInstance()
             .then(processInstance => processInstance.get(processId))
@@ -269,7 +274,7 @@ export class VotingApi {
      * @see estimateDateAtBlock (blockNumber, gateway)
      */
     static getBlockStatus(gateway: IGateway | IGatewayPool): Promise<BlockStatus> {
-        if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getBlockStatus" })
             .then((response) => {
@@ -296,7 +301,7 @@ export class VotingApi {
      */
     static getResultsWeight(processId: string, gateway: IGateway | IGatewayPool): Promise<BigNumber> {
         if (!processId) return Promise.reject(new Error("Empty process ID"))
-        else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getResultsWeight", processId })
             .then((response) => {
@@ -507,7 +512,7 @@ export class VotingApi {
      * @param gateway
      */
     static getProcessPrice(gateway: IGateway | IGatewayPool): Promise<BigNumber> {
-        if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.getProcessesInstance()
             .then(procInstance => procInstance.processPrice())
@@ -519,7 +524,7 @@ export class VotingApi {
      * @param gateway
      */
     static getProcessKeys(processId: string, gateway: IGateway | IGatewayPool): Promise<IProcessKeys> {
-        if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getProcessKeys", processId })
             .then((response) => {
@@ -558,7 +563,7 @@ export class VotingApi {
         else if (!processParameters.metadata) return Promise.reject(new Error("Invalid process metadata"))
         else if (!walletOrSigner || !walletOrSigner._isSigner)
             return Promise.reject(new Error("Invalid Wallet or Signer"))
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool))
+        else if (!gateway)
             return Promise.reject(new Error("Invalid Gateway object"))
         const censusOrigin = ((typeof processParameters.censusOrigin) === "number") ? processParameters.censusOrigin : (processParameters.censusOrigin as ProcessCensusOrigin).value
         switch (censusOrigin) {
@@ -738,7 +743,7 @@ export class VotingApi {
     static async setStatus(processId: string, newStatus: IProcessStatus, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<void> {
         if (!processId) throw new Error("Invalid process ID")
         else if (!walletOrSigner) throw new Error("Invalid Wallet or Signer")
-        else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) throw new Error("Invalid Gateway object")
+        else if (!gateway) throw new Error("Invalid Gateway object")
 
         try {
             let processInstance = await gateway.getProcessesInstance(walletOrSigner)
@@ -768,7 +773,7 @@ export class VotingApi {
     static async incrementQuestionIndex(processId: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<void> {
         if (!processId) throw new Error("Invalid process ID")
         else if (!walletOrSigner) throw new Error("Invalid Wallet or Signer")
-        else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) throw new Error("Invalid Gateway object")
+        else if (!gateway) throw new Error("Invalid Gateway object")
 
         try {
             let processInstance = await gateway.getProcessesInstance(walletOrSigner)
@@ -798,7 +803,7 @@ export class VotingApi {
     static async setCensus(processId: string, censusRoot: string, censusUri: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<void> {
         if (!processId) throw new Error("Invalid process ID")
         else if (!walletOrSigner) throw new Error("Invalid Wallet or Signer")
-        else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) throw new Error("Invalid Gateway object")
+        else if (!gateway) throw new Error("Invalid Gateway object")
 
         try {
             let processInstance = await gateway.getProcessesInstance(walletOrSigner)
@@ -828,7 +833,7 @@ export class VotingApi {
     static async setResults(processId: string, results: number[][], envelopeCount: number, vochainId: number, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<void> {
         if (!processId) throw new Error("Invalid process ID")
         else if (!walletOrSigner) throw new Error("Invalid Wallet or Signer")
-        else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) throw new Error("Invalid Gateway object")
+        else if (!gateway) throw new Error("Invalid Gateway object")
 
         try {
             const resultsInstance = await gateway.getResultsInstance(walletOrSigner)
@@ -855,7 +860,7 @@ export class VotingApi {
      */
     static async getEnvelope(processId: string, gateway: IGateway | IGatewayPool, nullifier: string): Promise<string> {
         if (!processId) return Promise.reject(new Error("No process ID provided"))
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getEnvelope", nullifier, processId })
             .then((response) => {
@@ -876,7 +881,7 @@ export class VotingApi {
      */
     static getEnvelopeHeight(processId: string, gateway: IGateway | IGatewayPool): Promise<number> {
         if (!processId) return Promise.reject(new Error("No process ID provided"))
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getEnvelopeHeight", processId })
             .then((response) => {
@@ -895,7 +900,7 @@ export class VotingApi {
      * @param gateway
      */
     static async getProcessList(filters: { entityId?: string, namespace?: number, status?: IProcessStatus, withResults?: boolean, from?: number } = {}, gateway: IGateway | IGatewayPool): Promise<string[]> {
-        if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) throw new Error("Invalid Gateway object")
+        if (!gateway) throw new Error("Invalid Gateway object")
         else if (typeof filters != "object") throw new Error("Invalid filters parameter")
 
         try {
@@ -1041,7 +1046,7 @@ export class VotingApi {
      */
     static async submitEnvelope(voteEnvelope: VoteEnvelope, walletOrSigner: Wallet | Signer, gateway: IGateway | GatewayPool): Promise<DVoteGatewayResponseBody> {
         if (typeof voteEnvelope != "object") return Promise.reject(new Error("The vote has to be a VoteEnvelope object"))
-        else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         const tx = Tx.encode({ payload: { $case: "vote", vote: voteEnvelope } })
         const txBytes = tx.finish()
@@ -1068,7 +1073,7 @@ export class VotingApi {
      */
     static getEnvelopeStatus(processId: string, nullifier: string, gateway: IGateway | IGatewayPool): Promise<{ registered: boolean, date?: Date, block?: number }> {
         if (!processId || !nullifier) return Promise.reject(new Error("Invalid parameters"))
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getEnvelopeStatus", processId, nullifier })
             .then((response) => {
@@ -1317,7 +1322,7 @@ export class VotingOracleApi {
         else if (!processParameters.metadata) return Promise.reject(new Error("Invalid process metadata"))
         else if (!walletOrSigner || !walletOrSigner._isSigner)
             return Promise.reject(new Error("Invalid Wallet or Signer"))
-        else if (!(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!(oracleGw instanceof DVoteGateway))
             return Promise.reject(new Error("Invalid oracle client"))
 

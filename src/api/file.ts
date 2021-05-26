@@ -18,8 +18,6 @@ export class FileApi {
      * @param gateway (optional) A Vocdoni Gateway to use
      */
     static fetchString(contentUri: ContentUri | ContentHashedUri | string, gateway: IDVoteGateway | IGateway | IGatewayPool = null): Promise<string> {
-        if (gateway && !(gateway instanceof DVoteGateway || gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
-
         let cUri: ContentUri | ContentHashedUri
         if (typeof contentUri == "string") cUri = new ContentUri(contentUri)
         else cUri = contentUri
@@ -39,7 +37,6 @@ export class FileApi {
      */
     static async fetchBytes(contentUri: ContentUri | ContentHashedUri | string, gateway: IDVoteGateway | IGateway | IGatewayPool = null): Promise<Buffer> {
         if (!contentUri) throw new Error("Invalid contentUri")
-        else if (gateway && !(gateway instanceof DVoteGateway || gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
         let cUri: ContentHashedUri
         if (typeof contentUri == "string") cUri = new ContentHashedUri(contentUri)
@@ -146,7 +143,6 @@ export class FileApi {
     static async add(buffer: Uint8Array | string, name: string, walletOrSigner: Wallet | Signer, gateway: IDVoteGateway | IGateway | GatewayPool): Promise<string> {
         if (!buffer) return Promise.reject(new Error("Empty payload"))
         else if (!walletOrSigner) return Promise.reject(new Error("Wallet is required"))
-        else if (!(gateway instanceof DVoteGateway || gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
         if (typeof buffer == "string") {
             buffer = new Uint8Array(Buffer.from(buffer))
