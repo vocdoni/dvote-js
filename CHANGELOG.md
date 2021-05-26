@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.8.1
+
+- Increases XDAI gasprices to 30gwei
+
 ## 1.8.0
 
 - BREAKING: `getProcessInfo` now returns `parameters` of type `IProcessVochainParameters`

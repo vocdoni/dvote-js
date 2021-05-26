@@ -22,7 +22,7 @@ export const VOCDONI_SOKOL_ENTITY_ID = "0x60E134146338EEce72EF01275Ea4109744e6Ca
 
 export const XDAI_CHAIN_ID = 100
 export const XDAI_PROVIDER_URI = "https://dai.poa.network"
-export const XDAI_GAS_PRICE = utils.parseUnits("1", "gwei")
+export const XDAI_GAS_PRICE = utils.parseUnits("60", "gwei")
 export const XDAI_ENS_REGISTRY_ADDRESS = "0x00cEBf9E1E81D3CC17fbA0a49306EBA77a8F26cD"
 
 export const SOKOL_CHAIN_ID = 77
