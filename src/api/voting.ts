@@ -157,22 +157,22 @@ export class VotingApi {
      * @param processId
      * @param gateway
      */
-          static getProcessInfo(processId: string, gateway: IGateway | IGatewayPool): Promise<object> {
-            if (!processId) return Promise.reject(new Error("Empty process ID"))
-            else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
+    static getProcessInfo(processId: string, gateway: IGateway | IGatewayPool): Promise<object> {
+        if (!processId) return Promise.reject(new Error("Empty process ID"))
+        else if (!gateway || !(gateway instanceof Gateway || gateway instanceof GatewayPool)) return Promise.reject(new Error("Invalid Gateway object"))
 
-            return gateway.sendRequest({ method: "getProcessInfo", processId })
-                .then((response) => {
-                    if (!response.ok) throw new Error(response.message || null)
-                    else if (typeof response.process !== 'object') throw new Error()
+        return gateway.sendRequest({ method: "getProcessInfo", processId })
+            .then((response) => {
+                if (!response.ok) throw new Error(response.message || null)
+                else if (typeof response.process !== 'object') throw new Error()
 
-                    return response.process
-                })
-                .catch((error) => {
-                    const message = error.message ? "Could not retrieve the process info: " + error.message : "Could not retrieve the process info"
-                    throw new Error(message)
-                })
-        }
+                return response.process
+            })
+            .catch((error) => {
+                const message = error.message ? "Could not retrieve the process info: " + error.message : "Could not retrieve the process info"
+                throw new Error(message)
+            })
+    }
 
     /**
      * Retrieves the number of blocks on the Vochain
@@ -546,7 +546,13 @@ export class VotingApi {
             let tx: ContractTransaction
             switch (ethChainId) {
                 case XDAI_CHAIN_ID:
-                    options.gasPrice = XDAI_GAS_PRICE
+                    let gasPrice = XDAI_GAS_PRICE
+                    try {
+                        gasPrice = await walletOrSigner.provider.getGasPrice()
+                    } catch (error) {
+                        console.log("Could not estimate gas price with 'getGasPrice, using default value: '", gasPrice.toString())
+                    }
+                    options.gasPrice = gasPrice
                     tx = await processInstance.newProcessStd(...contractParameters.toContractParamsStd(options))
                     break
                 case SOKOL_CHAIN_ID:
@@ -626,7 +632,13 @@ export class VotingApi {
             let tx: ContractTransaction
             switch (ethChainId) {
                 case XDAI_CHAIN_ID:
-                    options.gasPrice = XDAI_GAS_PRICE
+                    let gasPrice = XDAI_GAS_PRICE
+                    try {
+                        gasPrice = await walletOrSigner.provider.getGasPrice()
+                    } catch (error) {
+                        console.log("Could not estimate gas price with 'getGasPrice, using default value: '", gasPrice.toString())
+                    }
+                    options.gasPrice = gasPrice
                     tx = await processInstance.newProcessEvm(...contractParameters.toContractParamsEvm(options))
                     break
                 case SOKOL_CHAIN_ID:

@@ -1,4 +1,4 @@
-import { Wallet, Signer, ContractTransaction } from "ethers"
+import { Wallet, Signer, ContractTransaction, BigNumber } from "ethers"
 import { checkValidEntityMetadata, EntityMetadata } from "../models/entity"
 import { Gateway, IGateway } from "../net/gateway"
 import { TextRecordKeys } from "../models/entity"
@@ -58,7 +58,13 @@ export class EntityApi {
         let tx: ContractTransaction
         switch (chainId) {
             case XDAI_CHAIN_ID:
-                options = { gasPrice: XDAI_GAS_PRICE }
+                let gasPrice = XDAI_GAS_PRICE
+                try {
+                    gasPrice = await walletOrSigner.provider.getGasPrice()
+                } catch (error) {
+                    console.log("Could not estimate gas price with 'getGasPrice, using default value: '",gasPrice.toString())
+                }
+                options = { gasPrice }
                 tx = await resolverInstance.setText(entityAddrHash, TextRecordKeys.JSON_METADATA_CONTENT_URI, ipfsUri, options)
                 break
             case SOKOL_CHAIN_ID:
