@@ -5,7 +5,7 @@
   "keywords": [],
   "author": "",
   "scripts": {
-    "benchmark": "ts-node index.ts"
+    "start": "ts-node index.ts"
   },
   "license": "ISC",
   "homepage": "https://vocdoni.io",

@@ -20,7 +20,6 @@ import {
     ProofEthereumStorage,
     // ProofEthereumAccount
     ProofCA,
-    VochainProcessStatus,
     CAbundle,
 } from "../models/protobuf"
 import { DVoteGateway, DVoteGatewayResponseBody, IRequestParameters } from "../net/gateway-dvote"
@@ -68,7 +67,7 @@ export type IProcessDetails = {
 
 /** Contains the current state of a process on the Vochain */
 export type IProcessState = {
-    censusOrigin: number,
+    censusOrigin: IProcessCensusOrigin,
     censusRoot: string,
     censusURI: string,
     metadata: string,
@@ -77,6 +76,8 @@ export type IProcessState = {
     startBlock: number,
     endBlock: number,
     entityId: string,
+    /** The index of the current process within the entity's list */
+    entityIndex: number,
     envelopeType: {
         encryptedVotes: boolean
     },
@@ -89,7 +90,7 @@ export type IProcessState = {
     },
     questionIndex: number,
     sourceBlockHeight: number,
-    status: IProcessVochainStatus,
+    status: IProcessStatus,
     voteOptions: {
         costExponent: number,
         maxCount: number,
@@ -104,7 +105,7 @@ export type IProcessSummary = {
     status: IProcessVochainStatus
     /** The amount of votes registered */
     envelopeHeight: number
-    type: {
+    envelopeType: {
         /** Whether votes are signed or anonymous */
         anonymous: boolean
         /** Whether votes are encrypted */
@@ -119,7 +120,7 @@ export type IProcessSummary = {
     /** The IPFS URI pointing to the JSON metadata file */
     metadata: string
     startBlock: number
-    endBlock: number
+    blockCount: number
     /** The origin from which the process was created */
     sourceNetworkId: ISourceNetworkId
     /** The index of the current process from its entity, starting at 1 */
@@ -207,7 +208,7 @@ export class VotingApi {
                 // Ensure 0x's
                 const result = response.process
                 result.censusRoot = "0x" + result.censusRoot
-                result.entityId = utils.getAddress("0x" + result.entityId)
+                result.entityId = "0x" + result.entityId
                 result.processId = "0x" + result.processId
                 return result
             })
@@ -229,17 +230,18 @@ export class VotingApi {
         return gateway.sendRequest({ method: "getProcessSummary", processId })
             .then((response) => {
                 if (!response.ok) throw new Error(response.message || null)
+                const { processSummary } = response
 
                 return {
-                    entityId: "0x" + response.entityId,
-                    envelopeHeight: response.height,
-                    status: response.state,
-                    type: response.type || {},
-                    startBlock: response.startBlock,
-                    endBlock: response.endBlock,
-                    entityIndex: response.entityIndex,
-                    metadata: response.metadata,
-                    sourceNetworkId: response.sourceNetworkID || response.sourceNetworkId,
+                    entityId: "0x" + processSummary.entityId,
+                    envelopeHeight: processSummary.envelopeHeight,
+                    status: processSummary.state,
+                    envelopeType: processSummary.envelopeType || {},
+                    startBlock: processSummary.startBlock,
+                    blockCount: processSummary.blockCount,
+                    entityIndex: processSummary.entityIndex,
+                    metadata: processSummary.metadata,
+                    sourceNetworkId: processSummary.sourceNetworkID || processSummary.sourceNetworkId,
                 } as IProcessSummary
             })
             .catch((error) => {
@@ -1014,7 +1016,7 @@ export class VotingApi {
 
         try {
             const processState = await VotingApi.getProcessState(processId, gateway)
-            if (processState.status == "CANCELED") return emptyResults
+            if (processState.status == ProcessStatus.CANCELED) return emptyResults
 
             // Encrypted?
             let procKeys: IProcessKeys, retries: number
@@ -1022,11 +1024,11 @@ export class VotingApi {
             if (processState.envelopeType.encryptedVotes) {
                 if (currentBlock < processState.startBlock) return emptyResults // not started
                 else if (processState.processMode["interruptible"]) {
-                    if (processState.status !== "RESULTS" &&
-                        processState.status !== "ENDED" &&
+                    if (processState.status !== ProcessStatus.RESULTS &&
+                        processState.status !== ProcessStatus.ENDED &&
                         (currentBlock < processState.endBlock)) return emptyResults // not ended
                 } else {
-                    if (processState.status !== "RESULTS" &&
+                    if (processState.status !== ProcessStatus.RESULTS &&
                         (currentBlock < processState.endBlock)) return emptyResults // not ended
                 }
 

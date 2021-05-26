@@ -265,6 +265,8 @@ async function checkVoteResults() {
         assert.strictEqual(envelopeHeight, config.privKeys.length)
 
         processState = await VotingApi.getProcessState(processId, pool)
+        const processSummary = await VotingApi.getProcessSummary(processId, pool)
+        const proc = await VotingApi.getProcess(processId, pool)
 
         console.log("Waiting for the process to end", processId)
         await VochainWaiter.waitUntil(processState.endBlock, pool, { verbose: true })
