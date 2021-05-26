@@ -1,5 +1,3 @@
-import { parseURL } from 'universal-parse-url'
-import { Buffer } from 'buffer/'
 import { Wallet, Signer } from "ethers"
 import { GatewayInfo } from "../wrappers/gateway-info"
 import { GatewayApiMethod, BackendApiMethod, allApis, registryApiMethods, ApiMethod, GatewayApiName, BackendApiName, InfoApiMethod, RawApiMethod } from "../models/gateway"
@@ -7,7 +5,6 @@ import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
 import { JsonSignature, BytesSignature } from "../util/data-signing"
 import axios, { AxiosInstance, AxiosResponse } from "axios"
 import { extractUint8ArrayJSONValue } from "../util/uint8array"
-import { readBlobText, readBlobArrayBuffer } from "../util/blob"
 import { promiseWithTimeout } from '../util/timeout'
 import { Random } from '../util/random'
 
@@ -41,15 +38,10 @@ export type DVoteGatewayResponseBody = {
     request: string,
     message?: string,
     timestamp?: number,
+    signature?: string,
 
     // the rest of fields
     [k: string]: any
-}
-type DVoteGatewayResponse = {
-    id: string,
-    response: DVoteGatewayResponseBody,
-    signature?: string,
-    // responseBytes?: Uint8Array,
 }
 
 /**
