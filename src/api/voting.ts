@@ -548,7 +548,7 @@ export class VotingApi {
                 case XDAI_CHAIN_ID:
                     let gasPrice = XDAI_GAS_PRICE
                     try {
-                        gasPrice = await walletOrSigner.provider.getGasPrice()
+                        gasPrice = await walletOrSigner.connect(gateway.provider).provider.getGasPrice()
                     } catch (error) {
                         console.log("Could not estimate gas price with 'getGasPrice, using default value: '", gasPrice.toString())
                     }
