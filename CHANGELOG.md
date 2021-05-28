@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.9.1
+
+- Getting the metadata URI from Ethereum if the GW doesn't have it
+
 ## 1.9.0
 
 - BREAKING:
@@ -11,6 +15,10 @@
     - `getProcessHeaders` is now `getProcessSummary`
     - `getProcessInfo` is now `getProcessState`
 - Adding `IProcessVochainStatus` and `ISourceNetworkId` types
+
+## 1.8.4
+
+- (Backport) Getting the metadata URI from Ethereum if the GW doesn't have it
 
 ## 1.8.3
 

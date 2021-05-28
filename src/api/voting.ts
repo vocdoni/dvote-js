@@ -172,9 +172,17 @@ export class VotingApi {
         let state: IProcessState
         return VotingApi.getProcessState(processId, gateway)
             .then(result => {
-                if (!result.metadata) throw new Error("The given voting process has no metadata")
-
                 state = result
+
+                if (!result.metadata) {
+                    // Fallback => try on Ethereum
+                    return VotingApi.getProcessContractParameters(processId, gateway)
+                        .then(params => FileApi.fetchString(params.metadata, gateway))
+                        .catch(() => {
+                            throw new Error("The given voting process has no metadata")
+                        })
+                }
+
                 return FileApi.fetchString(result.metadata, gateway)
             })
             .then(strMetadata => {
