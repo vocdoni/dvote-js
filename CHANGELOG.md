@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.9.2
+
+- Getting the metadata URI from Ethereum if the GW doesn't have it (results)
+
 ## 1.9.1
 
 - Getting the metadata URI from Ethereum if the GW doesn't have it
