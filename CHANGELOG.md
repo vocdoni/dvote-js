@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.8.5
+
+- (Backport) Getting the metadata URI from Ethereum if the GW doesn't have it (results)
+
 ## 1.8.4
 
 - (Backport) Getting the metadata URI from Ethereum if the GW doesn't have it

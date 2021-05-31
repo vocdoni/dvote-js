@@ -212,7 +212,17 @@ export class VotingApi {
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return VotingApi.getProcessInfo(processId, gateway)
-            .then(processInfo => FileApi.fetchString(processInfo.metadata, gateway))
+            .then(processInfo => {
+                if (!processInfo.metadata) {
+                    // Fallback => try on Ethereum
+                    return VotingApi.getProcessContractParameters(processId, gateway)
+                        .then(params => FileApi.fetchString(params.metadata, gateway))
+                        .catch(() => {
+                            throw new Error("The given voting process has no metadata")
+                        })
+                }
+                return FileApi.fetchString(processInfo.metadata, gateway)
+            })
             .then(str => JSON.parse(str))
     }
 
