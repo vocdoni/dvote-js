@@ -12,6 +12,7 @@ const GATEWAY_UPDATE_ERRORS = [
     "read ECONNRESET",
     "censusId not valid or not found"
 ]
+const MAX_GW_POOL_SHIFT_COUNT = 5
 // const MAX_POOL_REFRESH_COUNT = 10
 
 export type IGatewayPool = InstanceType<typeof GatewayPool>
@@ -70,8 +71,12 @@ export class GatewayPool {
     /**
      * Skips the currently active gateway and connects using the next one
      */
-    public shift(): Promise<void> {
-        if (this.errorCount > this.pool.length) {
+    public shift(throwIfAllFailed?: boolean): Promise<void> {
+        if (this.errorCount > MAX_GW_POOL_SHIFT_COUNT || this.errorCount > this.pool.length) {
+            if (throwIfAllFailed) {
+                this.errorCount = 0
+                return Promise.reject(new Error("The operation cannot be completed"))
+            }
             return this.refresh()
         }
 

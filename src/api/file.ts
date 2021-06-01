@@ -1,12 +1,15 @@
 import { ContentUri } from "../wrappers/content-uri"
 import { ContentHashedUri } from "../wrappers/content-hashed-uri"
-import { Gateway, IGateway } from "../net/gateway"
-import { DVoteGateway, IDVoteGateway, IRequestParameters } from "../net/gateway-dvote"
+import { IGateway } from "../net/gateway"
+import { IDVoteGateway, IRequestParameters } from "../net/gateway-dvote"
 import { IGatewayPool, GatewayPool } from "../net/gateway-pool"
 import { IPFS } from "../net/ipfs"
 import { Buffer } from 'buffer/'
 import axios from "axios"
 import { Wallet, Signer } from "ethers"
+import { promiseWithTimeout } from "../util/timeout"
+
+const MAX_FETCH_TIMEOUT = 8000
 
 export class FileApi {
     /**
@@ -68,7 +71,7 @@ export class FileApi {
         // Attempt 2: fetch fallback from IPFS public gateways
         if (cUri.ipfsHash) {
             try {
-                var response = await IPFS.fetchHash(cUri.ipfsHash)
+                var response = await promiseWithTimeout(IPFS.fetchHash(cUri.ipfsHash), MAX_FETCH_TIMEOUT)
                 if (response) {
                     if (cUri.hash) {
                         // TODO: Compute the SHA3-256 hash of the contents
@@ -85,29 +88,7 @@ export class FileApi {
         // Attempt 3: fetch from fallback https endpoints
         for (let uri of cUri.httpsItems) {
             try {
-                const res = await axios.get(uri)
-                if (!res || !res.data || res.status < 200 || res.status >= 300) continue
-                else if (cUri.hash) {
-                    // TODO: Compute the SHA3-256 hash of the contents
-                    console.warn("TO DO: Compute the SHA3-256 hash of the contents")
-                }
-
-                // If the response is not a string, it's because it has been parsed
-                // into a JSON object, so we stringify it back
-                if (typeof res.data != "string") {
-                    res.data = JSON.stringify(res.data)
-                }
-                return Buffer.from(res.data)
-            } catch (err) {
-                // keep trying
-                continue
-            }
-        }
-
-        // Attempt 4: fetch from fallback http endpoints
-        for (let uri of cUri.httpItems) {
-            try {
-                const res = await axios.get(uri)
+                const res = await promiseWithTimeout(axios.get(uri), MAX_FETCH_TIMEOUT)
                 if (!res || !res.data || res.status < 200 || res.status >= 300) continue
                 else if (cUri.hash) {
                     // TODO: Compute the SHA3-256 hash of the contents

@@ -1,5 +1,10 @@
 # DVote JS changelog
 
+## 1.9.3
+
+- Stop retrying failed operations on gateway pool clients after a certain count
+- Lighter and faster attempt to fetch files from well-known IPFS gateways
+
 ## 1.9.2
 
 - Getting the metadata URI from Ethereum if the GW doesn't have it (results)
