@@ -432,12 +432,12 @@ async function setProcessStatus() {
     console.log("Created", processId)
 
     // Get process parameters on the contract
-    let params = await VotingApi.getProcessParameters(processId, pool)
+    let params = await VotingApi.getProcessContractParameters(processId, pool)
     console.log("Prior status:", params.status, "Ended:", params.status.isEnded)
 
     // Set new status
     await VotingApi.setStatus(processId, ProcessStatus.ENDED, wallet, pool)
-    params = await VotingApi.getProcessParameters(processId, pool)
+    params = await VotingApi.getProcessContractParameters(processId, pool)
     console.log("Current status:", params.status, "Ended:", params.status.isEnded)
 }
 
@@ -461,7 +461,7 @@ async function cloneVotingProcess() {
     const PROCESS_ID_CURRENT = "0xe0b52bee5470b195b7633d007b587fbfa74653c8cac31ba260ddbc22b7d1d6eb"
     const currentProcessInfo = await VotingApi.getProcess(PROCESS_ID_CURRENT, pool)
     const currentMetadata = currentProcessInfo.metadata
-    const currentParameters = currentProcessInfo.parameters
+    const currentParameters = currentProcessInfo.state
     const currentBlock = await VotingApi.getBlockHeight(pool)
     const startBlock = currentBlock + 100
     const blockCount = 2000
@@ -469,27 +469,29 @@ async function cloneVotingProcess() {
     const NEW_MERKLE_ROOT = "0xbae0912183e55c3173bad6eeb4408bfe4de6892f82123562475aca66b109ba13"
     const NEW_MERKLE_TREE_ORIGIN = "ipfs://QmUC4NokWrykhZwY9CNGPz7KS8AvHWD3M4SLk5doMRMCmA"
 
+    const mode = ProcessMode.make({
+        autoStart: currentParameters.processMode.autoStart
+    })
+    const envelopeType = ProcessEnvelopeType.make({
+        encryptedVotes: currentParameters.envelopeType.encryptedVotes
+    })
+
     const params: INewProcessParams = {
-        mode: currentParameters.mode,
-        envelopeType: currentParameters.envelopeType,
+        mode,
+        envelopeType,
         censusOrigin: currentParameters.censusOrigin,
         metadata: currentMetadata,
         startBlock,
         blockCount,
         censusRoot: NEW_MERKLE_ROOT,
         censusUri: NEW_MERKLE_TREE_ORIGIN,
-        maxCount: currentParameters.maxCount,
-        costExponent: currentParameters.costExponent,
-        maxValue: currentParameters.maxCount,
-        maxTotalCost: currentParameters.maxTotalCost,
-        maxVoteOverwrites: currentParameters.maxVoteOverwrites,
+        maxCount: currentParameters.voteOptions.maxCount,
+        costExponent: currentParameters.voteOptions.costExponent,
+        maxValue: currentParameters.voteOptions.maxCount,
+        maxTotalCost: currentParameters.voteOptions.maxTotalCost,
+        maxVoteOverwrites: currentParameters.voteOptions.maxVoteOverwrites,
         paramsSignature: "0x0000000000000000000000000000000000000000000000000000000000000000",
     }
-    const processId = await VotingApi.newProcess(params, wallet, pool)
-
-    delete currentParameters.entityAddress // these are overwritten later on
-    delete currentParameters.questionCount
-
     const newProcessId = await VotingApi.newProcess(params, wallet, pool)
 
     console.log("CREATED", newProcessId)
@@ -512,7 +514,7 @@ async function useVoteApi() {
     const processId = entityMeta.votingProcesses.active[entityMeta.votingProcesses.active.length - 1]
     // const processId = "0xf36b729d6226b8257922a60cea6ab80e47686c3f86edbd0749b1c3291e2651ed"
     // const processId = "0x55b6f0b5180c918d8e815e5a6e7b093caf3c496bd104a177d90bd81bfe1bd312"
-    const processParams = await VotingApi.getProcessParameters(processId, pool)
+    const processParams = await VotingApi.getProcessContractParameters(processId, pool)
     // const processMeta = await VotingApi.getProcessMetadata(processId, pool)
 
     const censusRoot = processParams.censusRoot
@@ -573,7 +575,7 @@ async function submitVoteBatch() {
     await pool.init()
 
     const processInfo = await VotingApi.getProcess(processId, pool)
-    const processParams = processInfo.parameters
+    const processParams = processInfo.state
     // const processMeta = processInfo.metadata
     const censusRoot = processParams.censusRoot
 
