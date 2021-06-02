@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.9.4
+
+- Simplifying `IProcessDetails` avoiding a redundant field (`entityId`)
+
 ## 1.9.3
 
 - Stop retrying failed operations on gateway pool clients after a certain count

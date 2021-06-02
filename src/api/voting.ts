@@ -62,7 +62,6 @@ export type IProcessDetails = {
     id: string
     metadata: ProcessMetadata
     state: IProcessState
-    entityId: string
 }
 
 /** Contains the current state of a process on the Vochain */
@@ -75,6 +74,7 @@ export type IProcessState = {
     creationTime: string,
     startBlock: number,
     endBlock: number,
+    /** The Ethereum address of the entity holding the process */
     entityId: string,
     /** The index of the current process within the entity's list */
     entityIndex: number,
@@ -101,6 +101,7 @@ export type IProcessState = {
 
 /** Contains a summary of the most relevant process details */
 export type IProcessSummary = {
+    /** The Ethereum address of the entity holding the process */
     entityId: string
     status: IProcessVochainStatus
     /** The amount of votes registered */
@@ -188,7 +189,6 @@ export class VotingApi {
             .then(strMetadata => {
                 return {
                     id: processId,
-                    entityId: state.entityId.toLowerCase(),
                     metadata: JSON.parse(strMetadata),
                     state
                 }
