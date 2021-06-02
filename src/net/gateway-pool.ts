@@ -71,13 +71,10 @@ export class GatewayPool {
     /**
      * Skips the currently active gateway and connects using the next one
      */
-    public shift(throwIfAllFailed?: boolean): Promise<void> {
+    public shift(): Promise<void> {
         if (this.errorCount > MAX_GW_POOL_SHIFT_COUNT || this.errorCount > this.pool.length) {
-            if (throwIfAllFailed) {
-                this.errorCount = 0
-                return Promise.reject(new Error("The operation cannot be completed"))
-            }
-            return this.refresh()
+            this.errorCount = 0
+            return Promise.reject(new Error("The operation cannot be completed"))
         }
 
         this.pool.push(this.pool.shift())
@@ -103,10 +100,8 @@ export class GatewayPool {
         if (!this.activeGateway.supportsMethod(requestBody.method)) {
             this.errorCount += 1
             return this.shift()
-                .then(() => {
-                    // Retry with the new one
-                    return this.sendRequest(requestBody, wallet, params)
-                })   // next gw
+                // Retry with a new one, if possible
+                .then(() => this.sendRequest(requestBody, wallet, params))
         }
 
         return this.activeGateway.sendRequest(requestBody, wallet, params) // => capture time out exceptions
@@ -128,10 +123,8 @@ export class GatewayPool {
                 if (result.length) {
                     this.errorCount += 1
                     return this.shift()
-                        .then(() => {
-                            // Retry with the new one
-                            return this.sendRequest(requestBody, wallet, params)
-                        })   // next gw
+                        // Retry with a new one, if possible
+                        .then(() => this.sendRequest(requestBody, wallet, params))
                 }
                 throw err
             })
