@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.9.6
+
+- FileApi catching GW pool shift errors
+
 ## 1.9.5
 
 - Supporting fetchFile GW responses to shift pool nodes

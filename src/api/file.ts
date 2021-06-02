@@ -63,7 +63,8 @@ export class FileApi {
 
                 return Buffer.from(response.content, "base64")
             } catch (err) {
-                if (err && (err != "The request timed out" && err.message != "The request timed out")) throw err
+                const msg = err?.message?.toString?.()
+                if (msg != "The operation cannot be completed" && msg != "The request timed out") throw err
                 // otherwise, continue below
             }
         }
