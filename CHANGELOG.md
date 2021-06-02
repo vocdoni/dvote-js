@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.9.5
+
+- Supporting fetchFile GW responses to shift pool nodes
+
 ## 1.9.4
 
 - Simplifying `IProcessDetails` avoiding a redundant field (`entityId`)

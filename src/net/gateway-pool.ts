@@ -10,7 +10,9 @@ const ERROR_SKIP_METHODS = ['getRoot']
 const GATEWAY_UPDATE_ERRORS = [
     "Time out",
     "read ECONNRESET",
-    "censusId not valid or not found"
+    "censusId not valid or not found",
+    "error fetching file: (not supported)",
+    "not supported"
 ]
 const MAX_GW_POOL_SHIFT_COUNT = 5
 // const MAX_POOL_REFRESH_COUNT = 10
