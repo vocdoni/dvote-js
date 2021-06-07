@@ -674,7 +674,13 @@ export class VotingApi {
             let tx: ContractTransaction
             switch (ethChainId) {
                 case XDAI_CHAIN_ID:
-                    options.gasPrice = XDAI_GAS_PRICE
+                    let gasPrice = XDAI_GAS_PRICE
+                    try {
+                        gasPrice = await walletOrSigner.provider.getGasPrice()
+                    } catch (error) {
+                        console.log("Could not estimate gas price with 'getGasPrice, using default value: '", gasPrice.toString())
+                    }
+                    options.gasPrice = gasPrice
                     tx = await processInstance.newProcessStd(...contractParameters.toContractParamsStd(options))
                     break
                 case SOKOL_CHAIN_ID:
@@ -754,7 +760,13 @@ export class VotingApi {
             let tx: ContractTransaction
             switch (ethChainId) {
                 case XDAI_CHAIN_ID:
-                    options.gasPrice = XDAI_GAS_PRICE
+                    let gasPrice = XDAI_GAS_PRICE
+                    try {
+                        gasPrice = await walletOrSigner.connect(gateway.provider).provider.getGasPrice()
+                    } catch (error) {
+                        console.log("Could not estimate gas price with 'getGasPrice, using default value: '", gasPrice.toString())
+                    }
+                    options.gasPrice = gasPrice
                     tx = await processInstance.newProcessEvm(...contractParameters.toContractParamsEvm(options))
                     break
                 case SOKOL_CHAIN_ID:
