@@ -1,5 +1,10 @@
 # DVote JS changelog
 
+## 1.9.7
+
+- Adds support for XDAI `stg` environment introducing the corresponding registry address
+- Adds XDAI gasPrice estimation before sending     transactions with a default of 60Gwei
+
 ## 1.9.6
 
 - FileApi catching GW pool shift errors

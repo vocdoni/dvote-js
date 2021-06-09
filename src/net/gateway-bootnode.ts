@@ -6,7 +6,7 @@ import { ContentUri } from "../wrappers/content-uri"
 import { FileApi } from "../api/file"
 import {
     VOCDONI_MAINNET_ENTITY_ID, VOCDONI_RINKEBY_ENTITY_ID, VOCDONI_GOERLI_ENTITY_ID, VOCDONI_XDAI_ENTITY_ID, VOCDONI_SOKOL_ENTITY_ID, XDAI_ENS_REGISTRY_ADDRESS, XDAI_PROVIDER_URI, XDAI_CHAIN_ID,
-    SOKOL_CHAIN_ID, SOKOL_PROVIDER_URI, SOKOL_ENS_REGISTRY_ADDRESS
+    SOKOL_CHAIN_ID, SOKOL_PROVIDER_URI, SOKOL_ENS_REGISTRY_ADDRESS, XDAI_STG_ENS_REGISTRY_ADDRESS, VOCDONI_XDAI_STG_ENTITY_ID
 } from "../constants"
 import { TextRecordKeys } from "../models/entity"
 import { JsonBootnodeData } from "../models/gateway"
@@ -50,7 +50,11 @@ export class GatewayBootnode {
                 provider = getDefaultProvider(networkId)
                 break
             case "xdai":
-                provider = new providers.JsonRpcProvider(XDAI_PROVIDER_URI, { chainId: XDAI_CHAIN_ID, name: "xdai", ensAddress: XDAI_ENS_REGISTRY_ADDRESS })
+                if (environment === "prod") {
+                    provider = new providers.JsonRpcProvider(XDAI_PROVIDER_URI, { chainId: XDAI_CHAIN_ID, name: "xdai", ensAddress: XDAI_ENS_REGISTRY_ADDRESS })
+                    break
+                }
+                provider = new providers.JsonRpcProvider(XDAI_PROVIDER_URI, { chainId: XDAI_CHAIN_ID, name: "xdai", ensAddress: XDAI_STG_ENS_REGISTRY_ADDRESS })
                 break
             case "sokol":
                 provider = new providers.JsonRpcProvider(SOKOL_PROVIDER_URI, { chainId: SOKOL_CHAIN_ID, name: "sokol", ensAddress: SOKOL_ENS_REGISTRY_ADDRESS });
@@ -72,7 +76,11 @@ export class GatewayBootnode {
                     entityEnsNode = keccak256(VOCDONI_RINKEBY_ENTITY_ID)
                     break
                 case "xdai":
-                    entityEnsNode = keccak256(VOCDONI_XDAI_ENTITY_ID)
+                    if (environment === 'prod') {
+                        entityEnsNode = keccak256(VOCDONI_XDAI_ENTITY_ID)
+                        break
+                    }
+                    entityEnsNode = keccak256(VOCDONI_XDAI_STG_ENTITY_ID)
                     break
                 case "sokol":
                     entityEnsNode = keccak256(VOCDONI_SOKOL_ENTITY_ID)

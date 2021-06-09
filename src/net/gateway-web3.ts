@@ -73,12 +73,12 @@ export class Web3Gateway {
 
             const url = parseURL(gatewayOrProvider)
             if (url.protocol != "http:" && url.protocol != "https:") throw new Error("Unsupported gateway protocol: " + url.protocol)
-            this._provider = ProviderUtil.fromUri(gatewayOrProvider, networkId)
+            this._provider = ProviderUtil.fromUri(gatewayOrProvider, networkId, environment)
         }
         else if (gatewayOrProvider instanceof GatewayInfo) {
             const url = parseURL(gatewayOrProvider.web3)
             if (url.protocol != "http:" && url.protocol != "https:") throw new Error("Unsupported gateway protocol: " + url.protocol)
-            this._provider = ProviderUtil.fromUri(gatewayOrProvider.web3, networkId)
+            this._provider = ProviderUtil.fromUri(gatewayOrProvider.web3, networkId, environment)
         }
         else if (gatewayOrProvider instanceof providers.BaseProvider) { // use as a provider
             this._provider = gatewayOrProvider
