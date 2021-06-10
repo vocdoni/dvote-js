@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.9.8
+
+- Minor bug fix
+
 ## 1.9.7
 
 - Adds support for XDAI `stg` environment introducing the corresponding registry address

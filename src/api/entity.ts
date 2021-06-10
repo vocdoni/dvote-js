@@ -64,7 +64,7 @@ export class EntityApi {
                 } catch (error) {
                     console.log("Could not estimate gas price with 'getGasPrice, using default value: '", gasPrice.toString())
                 }
-                options.gasPrice = gasPrice
+                options = { gasPrice }
                 tx = await resolverInstance.setText(entityAddrHash, TextRecordKeys.JSON_METADATA_CONTENT_URI, ipfsUri, options)
                 break
             case SOKOL_CHAIN_ID:
