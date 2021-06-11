@@ -21,6 +21,8 @@ import {
     // ProofEthereumAccount
     ProofCA,
     CAbundle,
+    VochainCensusOrigin,
+    VochainProcessStatus,
 } from "../models/protobuf"
 import { DVoteGateway, DVoteGatewayResponseBody, IRequestParameters } from "../net/gateway-dvote"
 import { CensusErc20Api } from "./census"
@@ -29,10 +31,6 @@ import { ApiMethod } from "../models/gateway"
 
 export const CaBundleProtobuf: any = CAbundle
 
-// TYPES
-
-/** The current status of a process on the Vochain */
-export type IProcessVochainStatus = "READY" | "PAUSED" | "CANCELED" | "ENDED" | "RESULTS"
 /** The origin from which a process was created */
 export type ISourceNetworkId = "UNKNOWN" | "ETH_MAINNET" | "ETH_RINKEBY" | "ETH_GOERLI" | "POA_XDAI" | "POA_SOKOL" | "POLYGON" | "BSC" | "ETH_MAINNET_SIGNALING" | "ETH_RINKEBY_SIGNALING"
 
@@ -66,7 +64,7 @@ export type IProcessDetails = {
 
 /** Contains the current state of a process on the Vochain */
 export type IProcessState = {
-    censusOrigin: IProcessCensusOrigin,
+    censusOrigin: VochainCensusOrigin,
     censusRoot: string,
     censusURI: string,
     metadata: string,
@@ -90,7 +88,7 @@ export type IProcessState = {
     },
     questionIndex: number,
     sourceBlockHeight: number,
-    status: IProcessStatus,
+    status: VochainProcessStatus,
     voteOptions: {
         costExponent: number,
         maxCount: number,
@@ -100,32 +98,20 @@ export type IProcessState = {
 }
 
 /** Contains a summary of the most relevant process details */
-export type IProcessSummary = {
-    /** The Ethereum address of the entity holding the process */
-    entityId: string
-    status: IProcessVochainStatus
+export type IProcessSummary = Pick<IProcessState,
+    "entityId" |
+    "status" |
+    "startBlock" |
+    "endBlock" |
+    "envelopeType" |
+    "entityIndex"
+> & {
     /** The amount of votes registered */
     envelopeHeight: number
-    envelopeType: {
-        /** Whether votes are signed or anonymous */
-        anonymous: boolean
-        /** Whether votes are encrypted */
-        encrypted: boolean
-        /** Whether the cost of a vote comes from the voter's weight */
-        costFromWeight: boolean
-        /** Whether votes rae submitted all together or sequentially */
-        serial: boolean
-        /** Whether vote values need to be unique */
-        uniqueValues: boolean
-    }
     /** The IPFS URI pointing to the JSON metadata file */
     metadata: string
-    startBlock: number
-    blockCount: number
     /** The origin from which the process was created */
     sourceNetworkId: ISourceNetworkId
-    /** The index of the current process from its entity, starting at 1 */
-    entityIndex: number
 }
 
 export type IProcessKeys = {
@@ -243,10 +229,10 @@ export class VotingApi {
                 return {
                     entityId: "0x" + processSummary.entityId,
                     envelopeHeight: processSummary.envelopeHeight,
-                    status: processSummary.state,
+                    status: VochainProcessStatus[processSummary.state as string],
                     envelopeType: processSummary.envelopeType || {},
                     startBlock: processSummary.startBlock,
-                    blockCount: processSummary.blockCount,
+                    endBlock: processSummary.startBlock + processSummary.blockCount,
                     entityIndex: processSummary.entityIndex,
                     metadata: processSummary.metadata,
                     sourceNetworkId: processSummary.sourceNetworkID || processSummary.sourceNetworkId,
@@ -962,15 +948,19 @@ export class VotingApi {
      * @param filters Optional criteria to filter the processes ID's given by the gateway
      * @param gateway
      */
-    static async getProcessList(filters: { entityId?: string, namespace?: number, status?: IProcessVochainStatus, withResults?: boolean, from?: number } = {}, gateway: IGateway | IGatewayPool): Promise<string[]> {
+    static async getProcessList(filters: { entityId?: string, namespace?: number, status?: VochainProcessStatus, withResults?: boolean, from?: number } = {}, gateway: IGateway | IGatewayPool): Promise<string[]> {
         if (!gateway) throw new Error("Invalid Gateway object")
         else if (typeof filters != "object") throw new Error("Invalid filters parameter")
 
+        const req: IRequestParameters = {
+            method: "getProcessList",
+            ...filters
+        }
+        if ('status' in filters) {
+            req['status'] =VochainProcessStatus[filters.status]
+        }
+
         try {
-            const req: IRequestParameters = {
-                method: "getProcessList",
-                ...filters
-            }
             const response = await gateway.sendRequest(req)
             if (!response || !Array.isArray(response.processList || [])) throw new Error("Invalid response")
             return response.processList || []
