@@ -3,6 +3,7 @@
 // It provides a wrapper to use a Vocdoni Gateway, as well as a wrapper a Web3 one
 
 import { parseURL } from 'universal-parse-url'
+import { performance } from 'perf_hooks'
 import { Contract, ContractFactory, providers, Wallet, Signer, ContractInterface, BigNumber } from "ethers"
 import { ProviderUtil } from "../util/providers"
 import { GatewayInfo } from "../wrappers/gateway-info"
@@ -50,6 +51,7 @@ export class Web3Gateway {
     private _provider: providers.BaseProvider
     private _environment: VocdoniEnvironment
     private _initializingEns: Promise<any>
+    public performanceTime: number
     public peerCount: number
     public lastBlockNumber: number
     public ensPublicResolverContractAddress: string
@@ -199,24 +201,23 @@ export class Web3Gateway {
 
     public isUp(timeout: number = GATEWAY_SELECTION_TIMEOUT, checkEns?: boolean): Promise<any> {
         return promiseFuncWithTimeout(() => {
-            return this._provider.getBlockNumber()
-                .then(blockNumber => {
-                    this.lastBlockNumber = blockNumber
+            const performanceTime = performance.now()
+            return this.isSyncing()
+                .then(syncing => {
+                    if (syncing) throw new Error("The Web3 gateway is syncing")
                     return this.getPeers()
                 })
                 .then(peerCount => {
                     this.peerCount = peerCount
-                    return this.isSyncing()
-                })
-                .then(syncing => {
-                    if (syncing) throw new Error("The Web3 gateway is syncing")
-                    else if (this.isReady) return // done
+                    if (this.isReady) return // done
                     else if (!checkEns) return // done
 
                     // Fetch and set the contract addresses
                     return this.initEns()
                 })
-                .then(() => null)
+                .then(() => {
+                    this.performanceTime = Math.round(performance.now() - performanceTime)
+                })
                 .catch(err => {
                     // console.error(err)
                     if (err.message == "The Web3 gateway is syncing")
@@ -252,8 +253,22 @@ export class Web3Gateway {
                 return BigNumber.from(result).toNumber()
             })
             .catch(err => {
-                return 0
+                return -1
             })
+    }
+
+    /** Request the block number of the Gateway which is currently connected to */
+    public async getBlockNumber(): Promise<void> {
+        if (this.lastBlockNumber) {
+            return Promise.resolve()
+        } else if (!this._provider) {
+            return Promise.resolve()
+        } else if (!(this._provider instanceof JsonRpcProvider) && !(this._provider instanceof Web3Provider) &&
+            !(this._provider instanceof IpcProvider) && !(this._provider instanceof InfuraProvider)) {
+            return Promise.resolve()
+        }
+
+        this.lastBlockNumber = await this._provider.getBlockNumber();
     }
 
     ///////////////////////////////////////////////////////////////////////////

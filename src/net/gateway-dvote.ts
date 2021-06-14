@@ -1,4 +1,5 @@
 import { Wallet, Signer } from "ethers"
+import { performance } from "perf_hooks";
 import { GatewayInfo } from "../wrappers/gateway-info"
 import { GatewayApiMethod, BackendApiMethod, allApis, registryApiMethods, ApiMethod, GatewayApiName, BackendApiName, InfoApiMethod, RawApiMethod } from "../models/gateway"
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
@@ -8,14 +9,12 @@ import { extractUint8ArrayJSONValue } from "../util/uint8array"
 import { promiseWithTimeout } from '../util/timeout'
 import { Random } from '../util/random'
 
-
 ///////////////////////////////////////////////////////////////////////////////
 // DVOTE GATEWAY
 ///////////////////////////////////////////////////////////////////////////////
 
 // Export the class typings as an interface
 export type IDVoteGateway = InstanceType<typeof DVoteGateway>
-
 
 /** Parameters sent by the function caller */
 export interface IRequestParameters {
@@ -54,6 +53,7 @@ export class DVoteGateway {
     private _health: number = 0
     private _weight: number = 0
     private _uri: string
+    private _performanceTime: number
     private client: AxiosInstance = null
 
     /**
@@ -99,6 +99,7 @@ export class DVoteGateway {
     public get publicKey() { return this._pubKey }
     public get health() { return this._health }
     public get weight() { return this._weight }
+    public get performanceTime() { return this._performanceTime }
 
     /**
      * Send a message to a Vocdoni Gateway and return the response
@@ -175,6 +176,7 @@ export class DVoteGateway {
 
     /** Retrieves the status of the gateway and updates the internal status */
     public updateGatewayStatus(timeout?: number): Promise<void> {
+        const performanceTime = performance.now()
         return this.getInfo(timeout)
             .then((result) => {
                 if (!result) throw new Error("Could not update")
@@ -182,6 +184,7 @@ export class DVoteGateway {
                 else if (typeof result.health !== "number") throw new Error("invalid health")
                 this._health = result.health
                 this._weight = Math.floor(Math.random() * 100) * 40 / 100 + result.health * 60 / 100
+                this._performanceTime = Math.round(performance.now() - performanceTime)
                 this._supportedApis = result.apiList
             })
     }
