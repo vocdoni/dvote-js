@@ -265,10 +265,10 @@ export class Web3Gateway {
         if (this.lastBlockNumber) {
             return Promise.resolve()
         } else if (!this._provider) {
-            return Promise.resolve()
+            return Promise.reject()
         } else if (!(this._provider instanceof JsonRpcProvider) && !(this._provider instanceof Web3Provider) &&
             !(this._provider instanceof IpcProvider) && !(this._provider instanceof InfuraProvider)) {
-            return Promise.resolve()
+            return Promise.reject()
         }
 
         this.lastBlockNumber = await this._provider.getBlockNumber();
