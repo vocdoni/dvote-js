@@ -137,7 +137,7 @@ export class GatewayDiscovery {
         }).map((gw: IWeb3Gateway) => gw.getBlockNumber())
 
         if (web3getBlockNumberCandidates.length) {
-            await Promise.all(web3getBlockNumberCandidates).then()
+            await Promise.all(web3getBlockNumberCandidates.map(p => p.catch(e => e))).then()
         }
 
         healthyNodes.web3.sort((a: IWeb3Gateway, b: IWeb3Gateway) => {
