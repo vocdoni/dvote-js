@@ -15,7 +15,7 @@ import { BackendApiName, GatewayApiName } from "../../src/models/gateway"
 let baseAccount = new DevWeb3Service({ port: 80000 }).accounts[0]
 // let entityAccount: TestAccount
 // let randomAccount: TestAccount
-let port: number = 9100
+let port: number = 9200
 
 const defaultConnectResponse = { timestamp: 123, ok: true, apiList: ["file", "vote", "census", "results"], health: 100 } as { ok: boolean, apiList: (GatewayApiName | BackendApiName)[], health: number }
 const defaultDummyResponse = { ok: true }
