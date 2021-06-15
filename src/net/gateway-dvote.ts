@@ -79,17 +79,35 @@ export class DVoteGateway {
 
     /** Checks the gateway status and updates the currently available API's. Same as calling `isUp()` */
     public init(requiredApis: (GatewayApiName | BackendApiName)[] = []): Promise<void> {
-        return this.isUp().then(() => {
-            if (!this.supportedApis) return
-            else if (!requiredApis.length) return
-            const missingApi = requiredApis.find(api => !this.supportedApis.includes(api))
+        if (this.isReady && requiredApis.every((v) => this.supportedApis.includes(v))) {
+            return Promise.resolve()
+        } else {
+            return this.isUp().then(() => {
+                if (!this.supportedApis) return
+                else if (!requiredApis.length) return
+                const missingApi = requiredApis.find(api => !this.supportedApis.includes(api))
 
-            if (missingApi) throw new Error("A required API is not available: " + missingApi)
-        })
+                if (missingApi) throw new Error("A required API is not available: " + missingApi)
+            })
+        }
     }
 
-    /** Check whether the client is connected to a Gateway */
+    /**
+     * Check whether the client is already connected to a Gateway
+     *
+     * @return boolean
+     */
     public get isReady(): boolean {
+        return this.isPrepared && Number.isInteger(this.performanceTime)
+    }
+
+    /**
+     * Check whether the client is prepared to connect to a Gateway
+     *
+     * @return boolean
+     */
+    public get isPrepared(): boolean {
+        // TODO maybe remove? this should be true when GW is instantiated
         return this.client && this._uri && Array.isArray(this.supportedApis)
     }
 
@@ -108,7 +126,7 @@ export class DVoteGateway {
      * @param params (optional) Optional parameters. Timeout in milliseconds.
      */
     public async sendRequest(requestBody: IRequestParameters, wallet: Wallet | Signer = null, params: { timeout?: number } = { timeout: 15 * 1000 }): Promise<DVoteGatewayResponseBody> {
-        if (!this.isReady) throw new Error("Not initialized")
+        if (!this.isPrepared) throw new Error("Not initialized")
         else if (typeof requestBody != "object") throw new Error("The payload should be a javascript object")
         else if (typeof wallet != "object") throw new Error("The wallet is required")
 
@@ -194,7 +212,7 @@ export class DVoteGateway {
      * If there is no connection open, the method returns null.
      */
     public async getInfo(timeout?: number): Promise<{ apiList: (GatewayApiName | BackendApiName)[], health: number }> {
-        if (!this.isReady) return null
+        if (!this.isPrepared) return null
 
         try {
             const result = await promiseWithTimeout(

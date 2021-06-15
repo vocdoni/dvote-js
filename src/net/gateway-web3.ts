@@ -192,11 +192,14 @@ export class Web3Gateway {
 
     /** Returns true if the provider and contract details are properly set */
     public get isReady(): boolean {
-        return !!this._provider &&
-            !!this.ensPublicResolverContractAddress &&
-            !!this.processesContractAddress &&
-            !!this.namespacesContractAddress &&
+        return !!this._provider && (
+            !!this.ensPublicResolverContractAddress ||
+            !!this.genesisContractAddress ||
+            !!this.processesContractAddress ||
+            !!this.namespacesContractAddress ||
+            !!this.resultsContractAddress ||
             !!this.tokenStorageProofContractAddress
+        )
     }
 
     public isUp(timeout: number = GATEWAY_SELECTION_TIMEOUT, checkEns?: boolean): Promise<any> {
@@ -285,7 +288,7 @@ export class Web3Gateway {
         let contractAddress: string
         if (customAddress) contractAddress = customAddress
         else {
-            if (!this.isReady) await this.initEns()
+            if (!this.ensPublicResolverContractAddress) await this.initEns()
             contractAddress = this.ensPublicResolverContractAddress
         }
 
@@ -311,7 +314,7 @@ export class Web3Gateway {
         let contractAddress: string
         if (customAddress) contractAddress = customAddress
         else {
-            if (!this.isReady) await this.initEns()
+            if (!this.genesisContractAddress) await this.initEns()
             contractAddress = this.genesisContractAddress
         }
 
@@ -337,7 +340,7 @@ export class Web3Gateway {
         let contractAddress: string
         if (customAddress) contractAddress = customAddress
         else {
-            if (!this.isReady) await this.initEns()
+            if (!this.namespacesContractAddress) await this.initEns()
             contractAddress = this.namespacesContractAddress
         }
 
@@ -363,7 +366,7 @@ export class Web3Gateway {
         let contractAddress: string
         if (customAddress) contractAddress = customAddress
         else {
-            if (!this.isReady) await this.initEns()
+            if (!this.processesContractAddress) await this.initEns()
             contractAddress = this.processesContractAddress
         }
 
@@ -389,7 +392,7 @@ export class Web3Gateway {
         let contractAddress: string
         if (customAddress) contractAddress = customAddress
         else {
-            if (!this.isReady) await this.initEns()
+            if (!this.resultsContractAddress) await this.initEns()
             contractAddress = this.resultsContractAddress
         }
 
@@ -415,7 +418,7 @@ export class Web3Gateway {
         let contractAddress: string
         if (customAddress) contractAddress = customAddress
         else {
-            if (!this.isReady) await this.initEns()
+            if (!this.tokenStorageProofContractAddress) await this.initEns()
             contractAddress = this.tokenStorageProofContractAddress
         }
 

@@ -39,7 +39,10 @@ export class GatewayPool {
     static discover(params: IGatewayDiscoveryParameters): Promise<GatewayPool> {
         return GatewayDiscovery.run(params)
             .then((bestNodes: Gateway[]) => {
-                return new GatewayPool(bestNodes, params)
+                const pool = new GatewayPool(bestNodes, params)
+
+                return pool.init()
+                    .then(() => pool)
             })
             .catch(error => {
                 throw new Error(error)
