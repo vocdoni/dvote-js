@@ -1,5 +1,23 @@
 # DVote JS changelog
 
+## 1.9.9
+
+- Changes to `IProcessState`
+  - Establishes use of `VochainProcessStatus` instead of `IProcessStatus` since the state data are received only from vochain
+  - Removes `IProcessVochainStatus` type in favour of `VochainProcessStatus` and uses the enum reverse mapping to handle strings
+  - Converts `censusOrigin`  to `VochainCensusOrigin` since it is a superset of `IProcessCensusOrigin`
+- Redefines `IProcessSummary` reusing fields from the existing `IProcessState`
+  - Converts `blockCount` of `IProcessSummary` to `endBlock` for consistency with `IProcessState`
+
+## 1.9.8
+
+- Minor bug fix
+
+## 1.9.7
+
+- Adds support for XDAI `stg` environment introducing the corresponding registry address
+- Adds XDAI gasPrice estimation before sending     transactions with a default of 60Gwei
+
 ## 1.9.6
 
 - FileApi catching GW pool shift errors
