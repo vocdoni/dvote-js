@@ -44,7 +44,7 @@ describe("DVote Block Status", () => {
         gatewayServer.addResponse({ blockTime: [10000, 10000, 10000, 10000, 10000], blockTimestamp: 1556110642, height: 10000000, ok: true, timestamp: 1556110672 })
 
         const w3 = new Web3Gateway(web3DummyService.uri)
-        w3.isUp = () => Promise.resolve()
+        w3.check = () => Promise.resolve()
         const gw = new Gateway(new DVoteGateway(gatewayServer.gatewayInfo), w3)
         await gw.init()
 
@@ -70,7 +70,7 @@ describe("DVote Block Status", () => {
         gatewayServer.addResponse({ blockTime: [8000, 8000, 8000, 8000, 8000], blockTimestamp: blockTimestampA - 3, height: baseBlock, ok: true, timestamp: 1556110672 })
 
         const w3 = new Web3Gateway(web3DummyService.uri)
-        w3.isUp = () => Promise.resolve()
+        w3.check = () => Promise.resolve()
         const gw = new Gateway(new DVoteGateway(gatewayServer.gatewayInfo), w3)
         await gw.init()
 
@@ -94,7 +94,7 @@ describe("DVote Block Status", () => {
             let now: number
 
             const w3 = new Web3Gateway(web3DummyService.uri)
-            w3.isUp = () => Promise.resolve()
+            w3.check = () => Promise.resolve()
             const gw = new Gateway(new DVoteGateway(gatewayServer.gatewayInfo), w3)
             await gw.init()
 
@@ -111,7 +111,7 @@ describe("DVote Block Status", () => {
             let now: number
 
             const w3 = new Web3Gateway(web3DummyService.uri)
-            w3.isUp = () => Promise.resolve()
+            w3.check = () => Promise.resolve()
             const gw = new Gateway(new DVoteGateway(gatewayServer.gatewayInfo), w3)
             await gw.init()
 
@@ -207,7 +207,7 @@ describe("DVote Block Status", () => {
             let now: number
 
             const w3 = new Web3Gateway(web3DummyService.uri)
-            w3.isUp = () => Promise.resolve()
+            w3.check = () => Promise.resolve()
             const gw = new Gateway(new DVoteGateway(gatewayServer.gatewayInfo), w3)
             await gw.init()
 
@@ -285,7 +285,7 @@ describe("DVote Block Status", () => {
             let now: number
 
             const w3 = new Web3Gateway(web3DummyService.uri)
-            w3.isUp = () => Promise.resolve()
+            w3.check = () => Promise.resolve()
             const gw = new Gateway(new DVoteGateway(gatewayServer.gatewayInfo), w3)
             await gw.init()
 
@@ -317,7 +317,7 @@ describe("DVote Block Status", () => {
             let now: number
 
             const w3 = new Web3Gateway(web3DummyService.uri)
-            w3.isUp = () => Promise.resolve()
+            w3.check = () => Promise.resolve()
             const gw = new Gateway(new DVoteGateway(gatewayServer.gatewayInfo), w3)
             await gw.init()
 
@@ -384,7 +384,7 @@ describe("DVote Block Status", () => {
             let now: number
 
             const w3 = new Web3Gateway(web3DummyService.uri)
-            w3.isUp = () => Promise.resolve()
+            w3.check = () => Promise.resolve()
             const gw = new Gateway(new DVoteGateway(gatewayServer.gatewayInfo), w3)
             await gw.init()
 
@@ -516,7 +516,7 @@ describe("DVote Block Status", () => {
             const zero = 0
 
             const w3 = new Web3Gateway(web3DummyService.uri)
-            w3.isUp = () => Promise.resolve()
+            w3.check = () => Promise.resolve()
             const gw = new Gateway(new DVoteGateway(gatewayServer.gatewayInfo), w3)
             await gw.init()
 
@@ -645,7 +645,7 @@ describe("DVote Block Status", () => {
             const zero = 0
 
             const w3 = new Web3Gateway(web3DummyService.uri)
-            w3.isUp = () => Promise.resolve()
+            w3.check = () => Promise.resolve()
             const gw = new Gateway(new DVoteGateway(gatewayServer.gatewayInfo), w3)
             await gw.init()
 
@@ -738,7 +738,7 @@ describe("DVote Block Status", () => {
             let now: number
 
             const w3 = new Web3Gateway(web3DummyService.uri)
-            w3.isUp = () => Promise.resolve()
+            w3.check = () => Promise.resolve()
             const gw = new Gateway(new DVoteGateway(gatewayServer.gatewayInfo), w3)
             await gw.init()
 
@@ -761,7 +761,7 @@ describe("DVote Block Status", () => {
             let now: number, blockDiff: number
 
             const w3 = new Web3Gateway(web3DummyService.uri)
-            w3.isUp = () => Promise.resolve()
+            w3.check = () => Promise.resolve()
             const gw = new Gateway(new DVoteGateway(gatewayServer.gatewayInfo), w3)
             await gw.init()
 
@@ -792,7 +792,7 @@ describe("DVote Block Status", () => {
             const zero = 0
 
             const w3 = new Web3Gateway(web3DummyService.uri)
-            w3.isUp = () => Promise.resolve()
+            w3.check = () => Promise.resolve()
             const gw = new Gateway(new DVoteGateway(gatewayServer.gatewayInfo), w3)
             await gw.init()
 

@@ -68,6 +68,7 @@ export class Web3Gateway {
     constructor(gatewayOrProvider: string | GatewayInfo | providers.BaseProvider, networkId: EthNetworkID = "xdai", environment: VocdoniEnvironment = "prod") {
         if (!["prod", "stg", "dev"].includes(environment)) throw new Error("Invalid environment")
         this._environment = environment
+        this.performanceTime = 0
 
         if (!gatewayOrProvider) throw new Error("Invalid GatewayInfo or provider")
         else if (typeof gatewayOrProvider == "string") {
@@ -202,76 +203,105 @@ export class Web3Gateway {
         )
     }
 
-    public isUp(timeout: number = GATEWAY_SELECTION_TIMEOUT, checkEns?: boolean): Promise<any> {
-        return promiseFuncWithTimeout(() => {
-            const performanceTime = performance.now()
-            return this.isSyncing()
-                .then(syncing => {
-                    if (syncing) throw new Error("The Web3 gateway is syncing")
-                    return this.getPeers()
-                })
-                .then(peerCount => {
-                    this.peerCount = peerCount
-                    if (this.isReady) return // done
-                    else if (!checkEns) return // done
-
-                    // Fetch and set the contract addresses
-                    return this.initEns()
-                })
-                .then(() => {
-                    this.performanceTime = Math.round(performance.now() - performanceTime)
-                })
-                .catch(err => {
-                    // console.error(err)
-                    if (err.message == "The Web3 gateway is syncing")
-                        throw new Error(err.message)
-                    else
-                        throw new Error("The Web3 Gateway seems to be down")
-                })
-        }, timeout, "The Web3 Gateway is too slow")
+    /**
+     * The needed metrics for evaluating Gateways during the discovery process are called here.
+     * It also will calculate the response time for each call as a metric itself
+     *
+     * @param timeout
+     */
+    public check(timeout: number = GATEWAY_SELECTION_TIMEOUT): Promise<void> {
+        return promiseWithTimeout(Promise.all([
+                this.getBlockNumber(),
+                this.getPeers(),
+                this.isSyncing(),
+                this.checkEns(),
+            ]).then(() => {
+                // ok
+                // maybe flag it as already checked
+            })
+            .catch(() => {
+                throw new Error()
+            }), timeout, "The Web3 Gateway is too slow")
     }
 
     /** Determines whether the current Web3 provider is syncing blocks or not. Several types of prviders may always return false. */
-    public isSyncing(): Promise<boolean> {
-        if (!this._provider) return Promise.resolve(false)
+    public isSyncing(): Promise<void> {
+        if (!this._provider) return Promise.reject()
         else if (this._provider instanceof JsonRpcProvider || this._provider instanceof Web3Provider || this._provider instanceof IpcProvider || this._provider instanceof InfuraProvider) {
-            return this._provider.send("eth_syncing", []).then(result => !!result)
+            let performanceTime = performance.now()
+            return this._provider.send("eth_syncing", []).then(result => {
+                performanceTime = Math.round(performance.now() - performanceTime)
+                this.performanceTime = performanceTime > this.performanceTime ? performanceTime : this.performanceTime
+                return !!result ? Promise.reject() : Promise.resolve()
+            })
         }
-        // else if (this._provider instanceof FallbackProvider || this._provider instanceof EtherscanProvider) {}
 
-        return Promise.resolve(false)
+        return Promise.reject()
     }
 
     /** Request the amount of peers the Gateway is currently connected to */
-    public getPeers(): Promise<number> {
-        if (!this._provider) return Promise.resolve(0)
+    public getPeers(): Promise<void> {
+        // TODO Review if not rejecting and setting peerCount = -1 is the best solution
+        if (!this._provider) return Promise.reject()
         else if (!(this._provider instanceof JsonRpcProvider) && !(this._provider instanceof Web3Provider) &&
             !(this._provider instanceof IpcProvider) && !(this._provider instanceof InfuraProvider)) {
-            return Promise.resolve(0)
+            return Promise.reject()
         }
 
+        let performanceTime = performance.now()
         return this._provider.send("net_peerCount", [])
             .then(result => {
+                // TODO maybe not needed Exception here
                 if (!result) throw new Error('peersCount not available for web3 gateway')
-                return BigNumber.from(result).toNumber()
+                performanceTime = Math.round(performance.now() - performanceTime)
+                this.performanceTime = performanceTime > this.performanceTime ? performanceTime : this.performanceTime
+                this.peerCount = BigNumber.from(result).toNumber()
             })
             .catch(err => {
-                return -1
+                this.peerCount = -1
             })
     }
 
     /** Request the block number of the Gateway which is currently connected to */
-    public async getBlockNumber(): Promise<void> {
-        if (this.lastBlockNumber) {
-            return Promise.resolve()
-        } else if (!this._provider) {
+    public getBlockNumber(): Promise<void> {
+        if (!this._provider) {
             return Promise.reject()
         } else if (!(this._provider instanceof JsonRpcProvider) && !(this._provider instanceof Web3Provider) &&
             !(this._provider instanceof IpcProvider) && !(this._provider instanceof InfuraProvider)) {
             return Promise.reject()
         }
 
-        this.lastBlockNumber = await this._provider.getBlockNumber();
+        let performanceTime = performance.now()
+        return this._provider.getBlockNumber().then((blockNumber) => {
+            performanceTime = Math.round(performance.now() - performanceTime)
+            this.performanceTime = performanceTime > this.performanceTime ? performanceTime : this.performanceTime
+            this.lastBlockNumber = blockNumber
+        });
+    }
+
+    public checkEns(): Promise<void> {
+        let rootDomain: string
+        switch (this._environment) {
+            case "prod":
+                rootDomain = VOCDONI_ENS_ROOT
+                break
+            case "stg":
+                rootDomain = VOCDONI_ENS_ROOT_STAGING
+                break
+            case "dev":
+                rootDomain = VOCDONI_ENS_ROOT_DEV
+                break
+            default:
+                throw new Error("Invalid environment")
+        }
+
+        let performanceTime = performance.now()
+        return this._provider.resolveName(ENTITY_RESOLVER_ENS_SUBDOMAIN + "." + rootDomain)
+            .then((address) => {
+                performanceTime = Math.round(performance.now() - performanceTime)
+                this.performanceTime = performanceTime > this.performanceTime ? performanceTime : this.performanceTime
+                this.ensPublicResolverContractAddress = address
+            })
     }
 
     ///////////////////////////////////////////////////////////////////////////
