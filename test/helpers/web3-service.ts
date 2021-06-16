@@ -51,8 +51,8 @@ export class DevWeb3Service {
         // await gw.initEns()
 
         // Bypass health checks
-        gw.isUp = () => Promise.resolve()
-        gw.isSyncing = () => Promise.resolve(false)
+        gw.check = () => Promise.resolve()
+        gw.isSyncing = () => Promise.resolve()
 
         // Bypass contract address resolution
         gw.ensPublicResolverContractAddress = entityResolverAddress
