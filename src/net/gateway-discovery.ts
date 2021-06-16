@@ -130,16 +130,6 @@ export class GatewayDiscovery {
             }
         })
 
-        const web3PeerCount = healthyNodes.web3.map((gw: IWeb3Gateway) => (gw.peerCount))
-
-        const web3getBlockNumberCandidates: Array<Promise<void>> = healthyNodes.web3.filter((gw: IWeb3Gateway, index: number) => {
-            return gw.peerCount === -1 || web3PeerCount.filter((v: number, i: number) => i !== index).includes(gw.peerCount)
-        }).map((gw: IWeb3Gateway) => gw.getBlockNumber())
-
-        if (web3getBlockNumberCandidates.length) {
-            await Promise.allSettled(web3getBlockNumberCandidates).then()
-        }
-
         healthyNodes.web3.sort((a: IWeb3Gateway, b: IWeb3Gateway) => {
             switch (!!a && !!b) {
                 // Return the GW with more peers
@@ -262,12 +252,12 @@ export class GatewayDiscovery {
         })
 
         web3Nodes.forEach(web3Gw => {
-            let prom = web3Gw.isUp(timeout)
-                .then(() => { result.web3.push(web3Gw) })
-                .catch(error => {
-                    // console.error("Health check failed:", web3Gw.provider["connection"].url, error)
-                    // Skip adding tot the list
-                })
+            const prom = web3Gw.check(timeout)
+                    .then(() => { result.web3.push(web3Gw) })
+                    .catch(error => {
+                        // console.error("Health check failed:", web3Gw.provider["connection"].url, error)
+                        // Skip adding tot the list
+                    })
             checks.push(prom)
         })
 
