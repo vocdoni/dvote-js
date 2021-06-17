@@ -223,7 +223,7 @@ export class GatewayDiscovery {
 
         // Less gateways than requested
         // TODO should not throw an error?
-        if (dvoteGateways.length && web3Gateways.length && false) {
+        if (dvoteGateways.length && web3Gateways.length) {
             return { dvote: dvoteGateways, web3: web3Gateways }
         }
 
