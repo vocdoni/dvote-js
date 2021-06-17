@@ -1,11 +1,12 @@
 export class GatewayDiscoveryError extends Error {
 
     public static BOOTNODE_FETCH_ERROR: string = "Could not fetch the bootnode details"
+    public static BOOTNODE_TIMEOUT_ERROR: string = "Timeout fetching the bootnode details"
+    public static BOOTNODE_NOT_ENOUGH_GATEWAYS: string = "Not enough gateways found in the bootnode"
     public static NO_CANDIDATES_READY: string = "None of the candidates is ready"
-    public static NO_WORKING_GATEWAYS: string = "No working gateway found"
 
-    constructor(message: string) {
-        super(message);
+    constructor(message?: string) {
+        super(message ? message : "No working gateways found");
     }
 }
 
