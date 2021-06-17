@@ -94,7 +94,7 @@ export class GatewayDiscovery {
      *
      * @returns A list of working and healthy pairs of DVote and Web3 Gateways
      */
-    private static async getWorkingGateways(
+    private static getWorkingGateways(
         networkId: EthNetworkID,
         bootnodesContentUri: string | ContentUri,
         environment: VocdoniEnvironment = "prod",
@@ -133,7 +133,7 @@ export class GatewayDiscovery {
      *
      * @returns A list of DVote and Web3 Gateways instances
      */
-    private static async getGatewaysFromBootnodeData(
+    private static getGatewaysFromBootnodeData(
         networkId: EthNetworkID,
         bootnodesContentUri: string | ContentUri,
         environment: VocdoniEnvironment,
@@ -141,7 +141,7 @@ export class GatewayDiscovery {
         timeout: number,
     ): Promise<IGatewayActiveNodes> {
 
-        return await promiseWithTimeout(
+        return promiseWithTimeout(
             // Extract BootnodeData
             GatewayBootnode.getGatewaysFromUri(bootnodesContentUri).catch(() => {
                 throw new GatewayDiscoveryError(GatewayDiscoveryError.BOOTNODE_FETCH_ERROR)
