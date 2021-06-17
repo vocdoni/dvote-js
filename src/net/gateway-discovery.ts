@@ -103,63 +103,23 @@ export class GatewayDiscovery {
     ): Promise<IGateway[]> {
 
         // Get the gateways instances from bootnode data
-        const bootnodeGateways = await this.getGatewaysFromBootnodeData(networkId, bootnodesContentUri, environment, numberOfGateways, timeout)
+        return this.getGatewaysFromBootnodeData(networkId, bootnodesContentUri, environment, numberOfGateways, timeout)
+            .then((bootnodeGateways: IGatewayActiveNodes) => {
+                // Discard unhealthy nodes
+                return this.filterHealthyNodes(
+                    bootnodeGateways.dvote,
+                    bootnodeGateways.web3,
+                    numberOfGateways,
+                    [timeout, 2 * timeout, 4 * timeout, 16 * timeout],
+                )
+            })
+            .then((healthyNodes: IGatewayActiveNodes) => {
+                // Sort nodes
+                const sortedNodes = this.sortNodes(healthyNodes)
 
-        // Discard unhealthy nodes
-        const healthyNodes: { dvote: IDVoteGateway[], web3: IWeb3Gateway[] } = await this.filterHealthyNodes(
-            bootnodeGateways.dvote,
-            bootnodeGateways.web3,
-            numberOfGateways,
-            [timeout, 2 * timeout, 4 * timeout, 16 * timeout],
-        )
-
-        // Sort Gateways by metrics
-        healthyNodes.dvote.sort((a: IDVoteGateway, b: IDVoteGateway) => {
-            switch (!!a && !!b) {
-                // Return the GW with more weight
-                case a.weight !== b.weight:
-                    return b.weight - a.weight
-                // Else return the best performance time
-                default:
-                    return a.performanceTime - b.performanceTime
-            }
-        })
-
-        // Get the block numbers frequency and select the most frequent if there is any
-        let mostFrequentBlockNumber: number
-        const blockNumbersByFrequency = Object.entries(
-                healthyNodes.web3.map((gw: IWeb3Gateway) => (gw.lastBlockNumber)).reduce((a, v: number) => {
-                    a[v] = a[v] ? a[v] + 1 : 1;
-                    return a;
-                }, {})
-            )
-        if (blockNumbersByFrequency.length !== healthyNodes.web3.length) {
-            mostFrequentBlockNumber = +blockNumbersByFrequency.reduce((a, v) => (v[1] >= a[1] ? v : a), [null, 0])[0];
-        }
-
-        healthyNodes.web3.sort((a: IWeb3Gateway, b: IWeb3Gateway) => {
-            switch (!!a && !!b) {
-                // Return the gateway which last block number is the most frequent
-                case Number.isInteger(mostFrequentBlockNumber) && Math.abs(mostFrequentBlockNumber - a.lastBlockNumber) !== Math.abs(mostFrequentBlockNumber - b.lastBlockNumber):
-                    return Math.abs(mostFrequentBlockNumber - b.lastBlockNumber) === 0 ? 1 : -1
-                // Last metric is the performance time
-                default:
-                    return a.performanceTime - b.performanceTime
-            }
-        })
-
-        // Create pairs of DVote and Web3 gateways
-        const gwNodePairs = this.createNodePairs(healthyNodes.dvote, healthyNodes.web3)
-        let hasInitialCandidate = false
-        for (let gw of gwNodePairs) {
-            if (gw.dvote.isReady) {
-                hasInitialCandidate = true
-                break
-            }
-        }
-        if (!hasInitialCandidate) throw new GatewayDiscoveryError(GatewayDiscoveryError.NO_CANDIDATES_READY)
-
-        return gwNodePairs
+                // Create pairs of DVote and Web3 gateways
+                return this.createNodePairs(sortedNodes.dvote, sortedNodes.web3)
+            })
     }
 
     /**
@@ -273,6 +233,7 @@ export class GatewayDiscovery {
     /**
      * Helper functions that returns an array of dvote/web3 pairs merging the two input arrays in order
      */
+    // TODO remove this function when refactoring pool
     private static createNodePairs(dvoteGateways: IDVoteGateway[], web3Gateways: IWeb3Gateway[]): { dvote: IDVoteGateway, web3: IWeb3Gateway }[] {
         let length = (dvoteGateways.length > web3Gateways.length) ? dvoteGateways.length : web3Gateways.length
         let gatewayList: { dvote: IDVoteGateway, web3: IWeb3Gateway }[] = Array(length)
@@ -282,7 +243,64 @@ export class GatewayDiscovery {
                 dvote: (idx < dvoteGateways.length) ? dvoteGateways[idx] : dvoteGateways[Math.floor(Math.random() * dvoteGateways.length)]
             }
         }
+
+        let hasInitialCandidate = false
+        for (let gw of gatewayList) {
+            if (gw.dvote.isReady) {
+                hasInitialCandidate = true
+                break
+            }
+        }
+        if (!hasInitialCandidate) throw new GatewayDiscoveryError(GatewayDiscoveryError.NO_CANDIDATES_READY)
+
         return gatewayList
+    }
+
+    /**
+     * Sorts the given nodes list based on different metrics for DVote Gateways and Web3 Gateways
+     *
+     * @param healthyNodes A list of DVote and Web3 Gateways
+     *
+     * @returns A list of sorted DVote and Web3 Gateways
+     */
+    private static sortNodes(healthyNodes: IGatewayActiveNodes): IGatewayActiveNodes {
+        // Sort DVote gateways by metrics
+        healthyNodes.dvote.sort((a: IDVoteGateway, b: IDVoteGateway) => {
+            switch (!!a && !!b) {
+                // Return the GW with more weight
+                case a.weight !== b.weight:
+                    return b.weight - a.weight
+                // Else return the best performance time
+                default:
+                    return a.performanceTime - b.performanceTime
+            }
+        })
+
+        // Get the block numbers frequency and select the most frequent if there is any
+        let mostFrequentBlockNumber: number
+        const blockNumbersByFrequency = Object.entries(
+            healthyNodes.web3.map((gw: IWeb3Gateway) => (gw.lastBlockNumber)).reduce((a, v: number) => {
+                a[v] = a[v] ? a[v] + 1 : 1;
+                return a;
+            }, {})
+        )
+        if (blockNumbersByFrequency.length !== healthyNodes.web3.length) {
+            mostFrequentBlockNumber = +blockNumbersByFrequency.reduce((a, v) => (v[1] >= a[1] ? v : a), [null, 0])[0];
+        }
+
+        // Sort the Web3 Gateways by metrics
+        healthyNodes.web3.sort((a: IWeb3Gateway, b: IWeb3Gateway) => {
+            switch (!!a && !!b) {
+                // Return the gateway which last block number is the most frequent
+                case Number.isInteger(mostFrequentBlockNumber) && Math.abs(mostFrequentBlockNumber - a.lastBlockNumber) !== Math.abs(mostFrequentBlockNumber - b.lastBlockNumber):
+                    return Math.abs(mostFrequentBlockNumber - b.lastBlockNumber) === 0 ? 1 : -1
+                // Last metric is the performance time
+                default:
+                    return a.performanceTime - b.performanceTime
+            }
+        })
+
+        return healthyNodes
     }
 
     /**
