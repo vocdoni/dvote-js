@@ -116,6 +116,8 @@ export class DVoteGateway {
     public get supportedApis() { return this._supportedApis }
     public get publicKey() { return this._pubKey }
     public get health() { return this._health }
+    // TODO Remove
+    public get weight() { return this._health }
     public get performanceTime() { return this._performanceTime }
 
     /**
