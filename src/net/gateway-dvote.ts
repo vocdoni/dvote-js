@@ -44,17 +44,17 @@ export type DVoteGatewayResponseBody = {
 }
 
 /**
- * This class provides access to Vocdoni Gateways sending JSON payloads over Web Sockets
+ * This class provides access to Vocdoni Gateways sending JSON payloads over HTTP requests
  * intended to interact within voting processes
  */
 export class DVoteGateway {
     private _supportedApis: (GatewayApiName | BackendApiName)[] = []
     private _pubKey: string = ""
     private _health: number = 0
-    private _weight: number = 0
     private _uri: string
     private _performanceTime: number
     private client: AxiosInstance = null
+    private _currentRequestId: string
 
     /**
      * Returns a new DVote Gateway web socket client
@@ -116,70 +116,112 @@ export class DVoteGateway {
     public get supportedApis() { return this._supportedApis }
     public get publicKey() { return this._pubKey }
     public get health() { return this._health }
-    public get weight() { return this._weight }
     public get performanceTime() { return this._performanceTime }
 
     /**
-     * Send a message to a Vocdoni Gateway and return the response
+     * Send a message to a Vocdoni Gateway and return the checked response
+     *
      * @param requestBody Parameters of the request to send. The timestamp (in seconds) will be added to the object.
      * @param wallet (optional) The wallet to use for signing (default: null)
      * @param params (optional) Optional parameters. Timeout in milliseconds.
      */
-    public async sendRequest(requestBody: IRequestParameters, wallet: Wallet | Signer = null, params: { timeout?: number } = { timeout: 15 * 1000 }): Promise<DVoteGatewayResponseBody> {
-        if (!this.isPrepared) throw new Error("Not initialized")
-        else if (typeof requestBody != "object") throw new Error("The payload should be a javascript object")
-        else if (typeof wallet != "object") throw new Error("The wallet is required")
+    public sendRequest(requestBody: IRequestParameters, wallet: Wallet | Signer = null, params: { timeout?: number } = { timeout: 15 * 1000 }): Promise<DVoteGatewayResponseBody> {
+        return this.createRequest(requestBody, wallet)
+            .then((request: MessageRequestContent) => {
+                return promiseWithTimeout(
+                    this.client.post('', JsonSignature.sort(request)),
+                    params.timeout,
+                )
+            })
+            .then((response: AxiosResponse) => {
+                return this.checkRequest(response)
+            })
+            .finally(() => {
+                this._currentRequestId = null
+            })
+    }
+
+    /**
+     * Create a request for a Vocdoni Gateway, check for a valid body, add control parameters
+     * and sign the request if needed
+     *
+     * @param requestBody Parameters of the request to send. The timestamp (in seconds) will be added to the object.
+     * @param wallet The wallet to use for signing (default: null)
+     *
+     * @return The valid request for a Vocdoni Gateway
+     */
+    private createRequest(requestBody: IRequestParameters, wallet: Wallet | Signer): Promise<MessageRequestContent> {
+        // TODO errors
+        if (!this.isPrepared) {
+            throw new Error("Not initialized")
+        } else if (typeof requestBody !== "object") {
+            throw new Error("The payload should be a javascript object")
+        } else if (typeof wallet !== "object") {
+            throw new Error("The wallet is required")
+        }
 
         // Check API method availability
-        if (!this.supportsMethod(requestBody.method)) throw new Error(`The method is not available in the Gateway's supported API's (${requestBody.method})`)
+        if (!this.supportsMethod(requestBody.method)) {
+            throw new Error(`The method is not available in the Gateway's supported API's (${requestBody.method})`)
+        }
 
         // Append the current timestamp to the body
-        if (typeof requestBody.timestamp == "undefined") {
+        if (typeof requestBody.timestamp === "undefined") {
             requestBody.timestamp = Math.floor(Date.now() / 1000)
         }
-        const requestId = Random.getHex().substr(2, 10)
+
+        this._currentRequestId = Random.getHex().substr(2, 10)
 
         const request: MessageRequestContent = {
-            id: requestId,
+            id: this._currentRequestId,
             request: requestBody,
-            signature: ""
+            signature: "",
         }
+
         if (wallet) {
-            request.signature = await JsonSignature.sign(requestBody, wallet)
+            return JsonSignature.sign(requestBody, wallet)
+                .then((signature: string) => {
+                    request.signature = signature
+                    return request
+                })
         }
 
-        const response = await promiseWithTimeout(
-            this.client.post('', JsonSignature.sort(request)),
-            params.timeout
-        )
+        return Promise.resolve(request)
+    }
 
+    /**
+     * Check the result of a Gateway request and return its response
+     *
+     * @param response
+     *
+     * @return The checked response of the Gateway
+     */
+    private checkRequest(response: AxiosResponse): DVoteGatewayResponseBody {
         const msgBytes: Uint8Array = extractUint8ArrayJSONValue(new Uint8Array(response.data), "response")
         const msg: DVoteGatewayResponseBody = JSON.parse(new TextDecoder().decode(response.data))
 
-        if (!msg.response) throw new Error("Invalid response message")
+        if (!msg.response) {
+            throw new Error("Invalid response message")
+        }
 
         const incomingReqId = msg.response.request || null
-        if (incomingReqId !== requestId) {
+        if (incomingReqId !== this._currentRequestId) {
             throw new Error("The signed request ID does not match the expected one")
         }
 
         // Check the signature of the response
         if (this.publicKey) {
-            // const timestamp = msg.response.timestamp || null
-            //
-            // const from = Math.floor(Date.now() / 1000) - SIGNATURE_TIMESTAMP_TOLERANCE
-            // const until = Math.floor(Date.now() / 1000) + SIGNATURE_TIMESTAMP_TOLERANCE
-            // if (typeof timestamp != "number" || timestamp < from || timestamp > until) {
-            //     throw new Error("The response does not provide a valid timestamp")
-            // }
             if (!BytesSignature.isValid(msg.signature, this.publicKey, msgBytes)) {
                 throw new Error("The signature of the response does not match the expected one")
             }
         }
 
         if (!msg.response.ok) {
-            if (msg.response.message) throw new Error(msg.response.message)
-            else throw new Error("There was an error while handling the request at the gateway")
+            if (msg.response.message) {
+                throw new Error(msg.response.message)
+            } else {
+                throw new Error("There was an error while handling the request at the gateway")
+            }
         }
 
         return msg.response
@@ -197,11 +239,7 @@ export class DVoteGateway {
         const performanceTime = performance.now()
         return this.getInfo(timeout)
             .then((result) => {
-                if (!result) throw new Error("Could not update")
-                else if (!Array.isArray(result.apiList)) throw new Error("apiList is not an array")
-                else if (typeof result.health !== "number") throw new Error("invalid health")
                 this._health = result.health
-                this._weight = Math.floor(Math.random() * 100) * 40 / 100 + result.health * 60 / 100
                 this._performanceTime = Math.round(performance.now() - performanceTime)
                 this._supportedApis = result.apiList
             })
@@ -211,25 +249,28 @@ export class DVoteGateway {
      * Retrieves the status of the given gateway and returns an object indicating the services it provides.
      * If there is no connection open, the method returns null.
      */
-    public async getInfo(timeout?: number): Promise<{ apiList: (GatewayApiName | BackendApiName)[], health: number }> {
-        if (!this.isPrepared) return null
-
-        try {
-            const result = await promiseWithTimeout(
-                this.sendRequest({ method: "getInfo" }, null),
-                timeout || 1000
-            )
-            if (!Array.isArray(result.apiList)) throw new Error("apiList is not an array")
-            else if (typeof result.health !== "number") throw new Error("invalid gateway reply")
-
-            return { apiList: result.apiList, health: result.health }
+    public getInfo(timeout?: number): Promise<{ apiList: Array<GatewayApiName | BackendApiName>, health: number }> {
+        if (!this.isPrepared) {
+            return Promise.reject()
         }
-        catch (error) {
-            if (error && error.message == "Time out") throw error
-            let message = "The status of the gateway could not be retrieved"
-            message = (error.message) ? message + ": " + error.message : message
-            throw new Error(message)
-        }
+
+        return this.sendRequest({ method: "getInfo" }, null, { timeout })
+            .then((result: DVoteGatewayResponseBody) => {
+                if (!Array.isArray(result.apiList)) {
+                    throw new Error("apiList is not an array")
+                } else if (typeof result.health !== "number") {
+                    throw new Error("invalid gateway reply")
+                }
+
+                return { apiList: result.apiList, health: result.health }
+            })
+            .catch((error) => {
+                // TODO refactor errors
+                if (error && error.message == "Time out") return Promise.reject(error.message)
+                let message = "The status of the gateway could not be retrieved"
+                message = (error.message) ? message + ": " + error.message : message
+                return Promise.reject(message)
+            })
     }
 
     /**
