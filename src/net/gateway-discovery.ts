@@ -267,12 +267,12 @@ export class GatewayDiscovery {
         // Sort DVote gateways by metrics
         healthyNodes.dvote.sort((a: IDVoteGateway, b: IDVoteGateway) => {
             switch (!!a && !!b) {
-                // Return the GW with more weight
-                case a.weight !== b.weight:
-                    return b.weight - a.weight
-                // Else return the best performance time
-                default:
+                // Return the GW with best performance time
+                case a.performanceTime !== b.performanceTime:
                     return a.performanceTime - b.performanceTime
+                // Else return the GW with best health
+                default:
+                    return b.health - a.health
             }
         })
 
