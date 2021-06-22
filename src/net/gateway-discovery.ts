@@ -355,7 +355,8 @@ export class GatewayDiscovery {
             checks.push(prom)
         })
 
-        // return Promise.all(checks).then(() => activeNodes).catch(() => activeNodes)
-        return Promise.allSettled(checks).then(() => activeNodes).catch(() => activeNodes)
+        // TODO Promise.allSettled is the correct one, should be used when target = ES2020 is fixed
+        return Promise.all(checks).then(() => activeNodes).catch(() => activeNodes)
+        // return Promise.allSettled(checks).then(() => activeNodes).catch(() => activeNodes)
     }
 }
