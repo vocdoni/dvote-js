@@ -51,6 +51,7 @@ export class Web3Gateway {
     private _provider: providers.BaseProvider
     private _environment: VocdoniEnvironment
     private _initializingEns: Promise<any>
+    private _hasTimeOutLastRequest: boolean
     public performanceTime: number
     public peerCount: number
     public lastBlockNumber: number
@@ -145,6 +146,8 @@ export class Web3Gateway {
         this._provider.polling = false
     }
 
+    public get hasTimeOutLastRequest() { return this._hasTimeOutLastRequest }
+
     /**
      * Deploy the contract using the given signer or wallet.
      * If a signer is given, its current connection will be used.
@@ -204,13 +207,30 @@ export class Web3Gateway {
     }
 
     /**
-     * The needed metrics for evaluating Gateways during the discovery process are called here.
-     * It also will calculate the response time for each call as a metric itself
+     * Checks the Gateway healthy by requesting and calculating certain metrics
      *
      * @param timeout
      */
     public check(timeout: number = GATEWAY_SELECTION_TIMEOUT): Promise<void> {
-        return promiseWithTimeout(Promise.all([
+        this._hasTimeOutLastRequest = false
+        return promiseWithTimeout(
+                this.getMetrics(), timeout, "The Web3 Gateway is too slow"
+            )
+            .catch((error) => {
+                // TODO refactor errors
+                if (error && error.message == "The Web3 Gateway is too slow") {
+                    this._hasTimeOutLastRequest = true
+                }
+                throw error
+            })
+    }
+
+    /**
+     * The needed metrics for evaluating Gateways during the discovery process are called here.
+     * It also will calculate the response time for each call as a metric itself
+     */
+    private getMetrics(): Promise<void> {
+        return Promise.all([
                 this.getBlockNumber(),
                 this.getPeers(),
                 this.isSyncing(),
@@ -219,9 +239,6 @@ export class Web3Gateway {
                 // ok
                 // maybe flag it as already checked
             })
-            .catch(() => {
-                throw new Error()
-            }), timeout, "The Web3 Gateway is too slow")
     }
 
     /** Determines whether the current Web3 provider is syncing blocks or not. Several types of prviders may always return false. */
