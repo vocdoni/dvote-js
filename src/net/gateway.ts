@@ -56,7 +56,7 @@ export class Gateway {
                 // TODO: Filter by required API's
                 const [web3, dvote] = await Promise.all([
                     Promise.race(gateways.web3.map(w3 => w3.check().then(() => w3))),
-                    Promise.race(gateways.dvote.map(dv => dv.isUp().then(() => dv)))
+                    Promise.race(gateways.dvote.map(dv => dv.check().then(() => dv)))
                 ])
                 if (!web3) throw new Error("Could not find an active Web3 Gateway")
                 else if (!dvote) throw new Error("Could not find an active DVote Gateway")
@@ -81,7 +81,7 @@ export class Gateway {
                 // TODO: Filter by required API's
                 const [web3, dvote] = await Promise.all([
                     Promise.race(gateways.web3.map(w3 => w3.check().then(() => w3))),
-                    Promise.race(gateways.dvote.map(dv => dv.isUp().then(() => dv)))
+                    Promise.race(gateways.dvote.map(dv => dv.check().then(() => dv)))
                 ])
                 if (!web3) throw new Error("Could not find an active Web3 Gateway")
                 else if (!dvote) throw new Error("Could not find an active DVote Gateway")
@@ -139,7 +139,7 @@ export class Gateway {
     // DVOTE
 
     async isDVoteUp(requiredApis: (GatewayApiName | BackendApiName)[] = []): Promise<boolean> {
-        return this.dvote.isUp()
+        return this.dvote.check()
             .then(() => {
                 if (!this.dvote.supportedApis) return false
                 else if (!requiredApis.length) return true

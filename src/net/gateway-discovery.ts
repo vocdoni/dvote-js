@@ -34,13 +34,13 @@ export class GatewayDiscovery {
     /**
      * Maximum number of GWs that will be tested parallel
      */
-    public static PARALLEL_GATEWAY_TESTS: number = 5
+    public static PARALLEL_GATEWAY_TESTS: number = 2
 
     /**
-     * Minimum number of GWs that need to succeed on a check round for it to be valid.
-     * Otherwise, the next threshold rate will be attempted
+     * Minimum number of GWs that need to succeed on a check round for considering the discovery process finished.
+     * Otherwise, the next round will be done in order to achieve the desired number
      */
-    public static MIN_ROUND_SUCCESS_COUNT: number = 2
+    public static MIN_NUMBER_GATEWAYS: number = 1
 
     /**
      * Retrieve a **connected and live** gateway, choosing based on the info provided by the metrics of the Gateway
@@ -89,7 +89,7 @@ export class GatewayDiscovery {
      * @param networkId The Ethereum network to which the gateway should be associated
      * @param bootnodesContentUri The Content URI from which the list of gateways will be extracted
      * @param environment (optional) The Vocdoni environment that will be used
-     * @param numberOfGateways (optional) The minimum number of gateways needed
+     * @param minNumberOfGateways (optional) The minimum number of gateways needed
      * @param timeout (optional) The timeout for a gateway discovery process
      *
      * @returns A list of working and healthy pairs of DVote and Web3 Gateways
@@ -98,18 +98,18 @@ export class GatewayDiscovery {
         networkId: EthNetworkID,
         bootnodesContentUri: string | ContentUri,
         environment: VocdoniEnvironment = "prod",
-        numberOfGateways: number = this.MIN_ROUND_SUCCESS_COUNT,
+        minNumberOfGateways: number = this.MIN_NUMBER_GATEWAYS,
         timeout: number = GATEWAY_SELECTION_TIMEOUT,
     ): Promise<IGateway[]> {
 
         // Get the gateways instances from bootnode data
-        return this.getGatewaysFromBootnodeData(networkId, bootnodesContentUri, environment, numberOfGateways, timeout)
+        return this.getGatewaysFromBootnodeData(networkId, bootnodesContentUri, environment, minNumberOfGateways, timeout)
             .then((bootnodeGateways: IGatewayActiveNodes) => {
                 // Discard unhealthy nodes
                 return this.filterHealthyNodes(
                     bootnodeGateways.dvote,
                     bootnodeGateways.web3,
-                    numberOfGateways,
+                    minNumberOfGateways,
                     [timeout, 2 * timeout, 4 * timeout, 16 * timeout],
                 )
             })
@@ -128,7 +128,7 @@ export class GatewayDiscovery {
      * @param networkId The Ethereum network to which the gateway should be associated
      * @param bootnodesContentUri The Content URI from which the list of gateways will be extracted
      * @param environment The Vocdoni environment that will be used
-     * @param numberOfGateways The minimum number of gateways needed
+     * @param minNumberOfGateways The minimum number of gateways needed
      * @param timeout The timeout for a gateway discovery process
      *
      * @returns A list of DVote and Web3 Gateways instances
@@ -137,10 +137,9 @@ export class GatewayDiscovery {
         networkId: EthNetworkID,
         bootnodesContentUri: string | ContentUri,
         environment: VocdoniEnvironment,
-        numberOfGateways: number,
+        minNumberOfGateways: number,
         timeout: number,
     ): Promise<IGatewayActiveNodes> {
-
         return promiseWithTimeout(
             // Extract BootnodeData
             GatewayBootnode.getGatewaysFromUri(bootnodesContentUri).catch(() => {
@@ -151,9 +150,17 @@ export class GatewayDiscovery {
         )
         .then((bootnodeData: JsonBootnodeData) => {
             // Check if there are enough gateways
-            if (bootnodeData[networkId].dvote.length < numberOfGateways) {
+            if (bootnodeData[networkId].dvote.length < minNumberOfGateways) {
                 throw new GatewayDiscoveryError(GatewayDiscoveryError.BOOTNODE_NOT_ENOUGH_GATEWAYS)
             }
+
+            // Removing duplicates
+            bootnodeData[networkId].dvote = bootnodeData[networkId].dvote.filter(
+                (v, i, a) => a.findIndex((t) => (t.uri === v.uri)) === i
+            )
+            bootnodeData[networkId].web3 = bootnodeData[networkId].web3.filter(
+                (v, i, a) => a.findIndex((t) => (t.uri === v.uri)) === i
+            )
 
             // Randomizing Gateways order
             bootnodeData[networkId].dvote = Random.shuffle(bootnodeData[networkId].dvote)
@@ -165,15 +172,16 @@ export class GatewayDiscovery {
     }
 
     /**
-     * Implements the logic of the health check on the gateways in the following manner. There are two
-     * basic rounds
+     * Implements the logic of the health check on the gateways in the following manner.
+     * There are two basic rounds:
+     *
      * 1. Check sets of gateways: The retrieved list of gateways is split in
      *    sets of $ParallelGatewayTests that are parallel checked with a given timeout
      * 2. Repeat with next timeout if not enough Gateways are found
      *
      * @param discoveredDvoteNodes The discovered DVote Gateway instances from bootnode data
      * @param discoveredWeb3Nodes The discovered Web3 Gateway instances from bootnode data
-     * @param numberOfGateways The minimum number of gateways needed
+     * @param minNumberOfGateways The minimum number of gateways needed
      * @param timeoutsToTest A list of timeouts to use for each discovery round
      *
      * @returns A list of working and healthy DVote and Web3 Gateways
@@ -181,51 +189,53 @@ export class GatewayDiscovery {
     private static async filterHealthyNodes(
         discoveredDvoteNodes: IDVoteGateway[],
         discoveredWeb3Nodes: IWeb3Gateway[],
-        numberOfGateways: number,
+        minNumberOfGateways: number,
         timeoutsToTest: number[],
     ): Promise<IGatewayActiveNodes> {
         let dvoteGateways: IDVoteGateway[] = []
         let web3Gateways: IWeb3Gateway[] = []
 
-        // forLoop implements the timeout rounds
-        // TODO next timeout is used even if GWs are discarded because of another reason
-        for (const timeout of timeoutsToTest) {
-            // define which gateways are going to be used in this timeout round
-            // i.e All the nodes except from the ones found working already
+        // Loop all timeouts as a check round
+        do {
+            const timeout = timeoutsToTest.shift()
+            let isDiscoveryRoundFinished = false
 
-            const dvoteNodes = discoveredDvoteNodes.slice().filter(gw => !dvoteGateways.includes(gw))
-            const web3Nodes = discoveredWeb3Nodes.slice().filter(gw => !web3Gateways.includes(gw))
+            // The gateways to check in this round are filtered here
+            // We take those unchecked or those who timed out the round before
+            const dvoteNodes = discoveredDvoteNodes.slice().filter(
+                (gw: IDVoteGateway) => !dvoteGateways.includes(gw) && (gw.hasTimeOutLastRequest === undefined || gw.hasTimeOutLastRequest)
+            )
+            const web3Nodes = discoveredWeb3Nodes.slice().filter(
+                (gw: IWeb3Gateway) => !web3Gateways.includes(gw) && (gw.hasTimeOutLastRequest === undefined || gw.hasTimeOutLastRequest)
+            )
 
-            // define which gateways are going to be used in this Parallel test round
-            // that is N  dvote and N web3 gateways with N=PARALLEL_GATEWAY_TESTS
+            // Launch the checking process for this round split by the maximum parallel requests defined
+            do {
+                const testDvote = dvoteGateways.length < minNumberOfGateways ? dvoteNodes.splice(0, this.PARALLEL_GATEWAY_TESTS) : []
+                const testWeb3 = web3Gateways.length < minNumberOfGateways ? web3Nodes.splice(0, this.PARALLEL_GATEWAY_TESTS) : []
 
-            let testDvote = dvoteNodes.splice(0, this.PARALLEL_GATEWAY_TESTS)
-            let testWeb3 = web3Nodes.splice(0, this.PARALLEL_GATEWAY_TESTS)
+                // Until there are gateways to test, the check round is not finished
+                if (testDvote.length !== 0 || testWeb3.length !== 0) {
+                    await this.selectActiveNodes(testDvote, testWeb3, timeout).then((result: IGatewayActiveNodes) => {
+                        dvoteGateways = dvoteGateways.concat(result.dvote)
+                        web3Gateways = web3Gateways.concat(result.web3)
 
-            // whileLoop tests the gateways parallely by sets of $PARALLEL_GATEWAY_TESTS
-            while (testDvote.length > 0 || testWeb3.length > 0) {
-                await this.selectActiveNodes(testDvote, testWeb3, timeout).then((result: IGatewayActiveNodes) => {
-                    dvoteGateways = dvoteGateways.concat(result.dvote)
-                    web3Gateways = web3Gateways.concat(result.web3)
+                        // If enough gateways collected then stop the process immediately
+                        if (dvoteGateways.length >= minNumberOfGateways && web3Gateways.length >= minNumberOfGateways) {
+                            isDiscoveryRoundFinished = true
+                        }
+                    })
+                } else {
+                    isDiscoveryRoundFinished = true
+                }
+            // Loop until the discovery round is finished
+            } while (!isDiscoveryRoundFinished)
 
-                    // next
-                    testDvote = dvoteNodes.splice(0, this.PARALLEL_GATEWAY_TESTS)
-                    testWeb3 = web3Nodes.splice(0, this.PARALLEL_GATEWAY_TESTS)
-                })
-            }
-
-            // Check to decide if we should proceed to the next timeout
             // If enough gateways collected then return
-            if (dvoteGateways.length >= numberOfGateways && web3Gateways.length >= numberOfGateways) {
+            if (dvoteGateways.length >= minNumberOfGateways && web3Gateways.length >= minNumberOfGateways) {
                 return { dvote: dvoteGateways, web3: web3Gateways }
             }
-        }
-
-        // Less gateways than requested
-        // TODO should not throw an error?
-        if (dvoteGateways.length && web3Gateways.length) {
-            return { dvote: dvoteGateways, web3: web3Gateways }
-        }
+        } while (timeoutsToTest.length)
 
         throw new GatewayDiscoveryError()
     }
@@ -233,7 +243,7 @@ export class GatewayDiscovery {
     /**
      * Helper functions that returns an array of dvote/web3 pairs merging the two input arrays in order
      */
-    // TODO remove this function when refactoring pool
+    // TODO: @marcvelmer remove this function when refactoring pool
     private static createNodePairs(dvoteGateways: IDVoteGateway[], web3Gateways: IWeb3Gateway[]): { dvote: IDVoteGateway, web3: IWeb3Gateway }[] {
         let length = (dvoteGateways.length > web3Gateways.length) ? dvoteGateways.length : web3Gateways.length
         let gatewayList: { dvote: IDVoteGateway, web3: IWeb3Gateway }[] = Array(length)
@@ -321,7 +331,7 @@ export class GatewayDiscovery {
         const checks: Array<Promise<void>> = []
 
         dvoteNodes.forEach((dvoteGw: IDVoteGateway) => {
-            const prom = dvoteGw.isUp(timeout)
+            const prom = dvoteGw.check(timeout)
                 .then(() => { activeNodes.dvote.push(dvoteGw) })
             checks.push(prom)
         })
@@ -345,6 +355,7 @@ export class GatewayDiscovery {
             checks.push(prom)
         })
 
-        return Promise.all(checks).then(() => activeNodes).catch(() => activeNodes)
+        // return Promise.all(checks).then(() => activeNodes).catch(() => activeNodes)
+        return Promise.allSettled(checks).then(() => activeNodes).catch(() => activeNodes)
     }
 }

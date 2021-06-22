@@ -54,7 +54,7 @@ export class DVoteGateway {
     private _uri: string
     private _performanceTime: number
     private client: AxiosInstance = null
-    private _currentRequestId: string
+    private _hasTimeOutLastRequest: boolean
 
     /**
      * Returns a new DVote Gateway web socket client
@@ -82,7 +82,7 @@ export class DVoteGateway {
         if (this.isReady && requiredApis.every((v) => this.supportedApis.includes(v))) {
             return Promise.resolve()
         } else {
-            return this.isUp().then(() => {
+            return this.check().then(() => {
                 if (!this.supportedApis) return
                 else if (!requiredApis.length) return
                 const missingApi = requiredApis.find(api => !this.supportedApis.includes(api))
@@ -117,8 +117,9 @@ export class DVoteGateway {
     public get publicKey() { return this._pubKey }
     public get health() { return this._health }
     // TODO Remove
-    public get weight() { return this._health }
+    public get weight() { return this.health }
     public get performanceTime() { return this._performanceTime }
+    public get hasTimeOutLastRequest() { return this._hasTimeOutLastRequest }
 
     /**
      * Send a message to a Vocdoni Gateway and return the checked response
@@ -128,18 +129,25 @@ export class DVoteGateway {
      * @param params (optional) Optional parameters. Timeout in milliseconds.
      */
     public sendRequest(requestBody: IRequestParameters, wallet: Wallet | Signer = null, params: { timeout?: number } = { timeout: 15 * 1000 }): Promise<DVoteGatewayResponseBody> {
+        let requestId: string = null
+        this._hasTimeOutLastRequest = false
         return this.createRequest(requestBody, wallet)
             .then((request: MessageRequestContent) => {
+                requestId = request.id
                 return promiseWithTimeout(
                     this.client.post('', JsonSignature.sort(request)),
                     params.timeout,
                 )
             })
             .then((response: AxiosResponse) => {
-                return this.checkRequest(response)
+                return this.checkRequest(response, requestId)
             })
-            .finally(() => {
-                this._currentRequestId = null
+            .catch((error) => {
+                // TODO refactor errors
+                if (error && error.message == "Time out") {
+                    this._hasTimeOutLastRequest = true
+                }
+                throw error
             })
     }
 
@@ -172,10 +180,8 @@ export class DVoteGateway {
             requestBody.timestamp = Math.floor(Date.now() / 1000)
         }
 
-        this._currentRequestId = Random.getHex().substr(2, 10)
-
         const request: MessageRequestContent = {
-            id: this._currentRequestId,
+            id: Random.getHex().substr(2, 10),
             request: requestBody,
             signature: "",
         }
@@ -194,11 +200,12 @@ export class DVoteGateway {
     /**
      * Check the result of a Gateway request and return its response
      *
-     * @param response
+     * @param response The response from the Gateway
+     * @param requestId The request id set in the request
      *
      * @return The checked response of the Gateway
      */
-    private checkRequest(response: AxiosResponse): DVoteGatewayResponseBody {
+    private checkRequest(response: AxiosResponse, requestId: string): DVoteGatewayResponseBody {
         const msgBytes: Uint8Array = extractUint8ArrayJSONValue(new Uint8Array(response.data), "response")
         const msg: DVoteGatewayResponseBody = JSON.parse(new TextDecoder().decode(response.data))
 
@@ -207,7 +214,7 @@ export class DVoteGateway {
         }
 
         const incomingReqId = msg.response.request || null
-        if (incomingReqId !== this._currentRequestId) {
+        if (incomingReqId !== requestId) {
             throw new Error("The signed request ID does not match the expected one")
         }
 
@@ -230,14 +237,12 @@ export class DVoteGateway {
     }
 
     /**
-     * Alias of updateGatewayStatus, for convenience purposes.
+     * Checks the gateway status and updates the currently available API's, the health status and
+     * the performance time
+     *
+     * @param timeout (optional) Timeout in milliseconds
      */
-    public isUp(timeout: number = GATEWAY_SELECTION_TIMEOUT): Promise<void> {
-        return this.updateGatewayStatus(timeout)
-    }
-
-    /** Retrieves the status of the gateway and updates the internal status */
-    public updateGatewayStatus(timeout?: number): Promise<void> {
+    public check(timeout: number = GATEWAY_SELECTION_TIMEOUT): Promise<void> {
         const performanceTime = performance.now()
         return this.getInfo(timeout)
             .then((result) => {
