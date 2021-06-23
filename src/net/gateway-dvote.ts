@@ -1,5 +1,4 @@
 import { Wallet, Signer } from "ethers"
-import { performance } from "perf_hooks";
 import { GatewayInfo } from "../wrappers/gateway-info"
 import { GatewayApiMethod, BackendApiMethod, allApis, registryApiMethods, ApiMethod, GatewayApiName, BackendApiName, InfoApiMethod, RawApiMethod } from "../models/gateway"
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
@@ -243,11 +242,11 @@ export class DVoteGateway {
      * @param timeout (optional) Timeout in milliseconds
      */
     public check(timeout: number = GATEWAY_SELECTION_TIMEOUT): Promise<void> {
-        const performanceTime = performance.now()
+        const performanceTime = new Date().getTime()
         return this.getInfo(timeout)
             .then((result) => {
                 this._health = result.health
-                this._performanceTime = Math.round(performance.now() - performanceTime)
+                this._performanceTime = Math.round(new Date().getTime() - performanceTime)
                 this._supportedApis = result.apiList
             })
     }
