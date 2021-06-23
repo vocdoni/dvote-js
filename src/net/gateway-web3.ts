@@ -3,7 +3,6 @@
 // It provides a wrapper to use a Vocdoni Gateway, as well as a wrapper a Web3 one
 
 import { parseURL } from 'universal-parse-url'
-import { performance } from 'perf_hooks'
 import { Contract, ContractFactory, providers, Wallet, Signer, ContractInterface, BigNumber } from "ethers"
 import { ProviderUtil } from "../util/providers"
 import { GatewayInfo } from "../wrappers/gateway-info"
@@ -245,9 +244,9 @@ export class Web3Gateway {
     public isSyncing(): Promise<void> {
         if (!this._provider) return Promise.reject()
         else if (this._provider instanceof JsonRpcProvider || this._provider instanceof Web3Provider || this._provider instanceof IpcProvider || this._provider instanceof InfuraProvider) {
-            let performanceTime = performance.now()
+            let performanceTime = new Date().getTime()
             return this._provider.send("eth_syncing", []).then(result => {
-                performanceTime = Math.round(performance.now() - performanceTime)
+                performanceTime = Math.round(new Date().getTime() - performanceTime)
                 this.performanceTime = performanceTime > this.performanceTime ? performanceTime : this.performanceTime
                 return !!result ? Promise.reject() : Promise.resolve()
             })
@@ -265,12 +264,12 @@ export class Web3Gateway {
             return Promise.reject()
         }
 
-        let performanceTime = performance.now()
+        let performanceTime = new Date().getTime()
         return this._provider.send("net_peerCount", [])
             .then(result => {
                 // TODO maybe not needed Exception here
                 if (!result) throw new Error('peersCount not available for web3 gateway')
-                performanceTime = Math.round(performance.now() - performanceTime)
+                performanceTime = Math.round(new Date().getTime() - performanceTime)
                 this.performanceTime = performanceTime > this.performanceTime ? performanceTime : this.performanceTime
                 this.peerCount = BigNumber.from(result).toNumber()
             })
@@ -288,9 +287,9 @@ export class Web3Gateway {
             return Promise.reject()
         }
 
-        let performanceTime = performance.now()
+        let performanceTime = new Date().getTime()
         return this._provider.getBlockNumber().then((blockNumber) => {
-            performanceTime = Math.round(performance.now() - performanceTime)
+            performanceTime = Math.round(new Date().getTime() - performanceTime)
             this.performanceTime = performanceTime > this.performanceTime ? performanceTime : this.performanceTime
             this.lastBlockNumber = blockNumber
         });
@@ -312,10 +311,10 @@ export class Web3Gateway {
                 throw new Error("Invalid environment")
         }
 
-        let performanceTime = performance.now()
+        let performanceTime = new Date().getTime()
         return this._provider.resolveName(ENTITY_RESOLVER_ENS_SUBDOMAIN + "." + rootDomain)
             .then((address) => {
-                performanceTime = Math.round(performance.now() - performanceTime)
+                performanceTime = Math.round(new Date().getTime() - performanceTime)
                 this.performanceTime = performanceTime > this.performanceTime ? performanceTime : this.performanceTime
                 this.ensPublicResolverContractAddress = address
             })
