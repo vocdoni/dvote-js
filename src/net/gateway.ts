@@ -26,6 +26,8 @@ export class Gateway {
     public get weight() { return this.dvote.weight }
     public get publicKey() { return this.dvote.publicKey }
     public get supportedApis() { return this.dvote.supportedApis }
+    public get dvoteClient() { return this.dvote }
+    public get web3Client() { return this.web3 }
 
     /**
      * Returns a new Gateway
