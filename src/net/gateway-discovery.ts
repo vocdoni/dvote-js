@@ -19,14 +19,9 @@ export interface IGatewayDiscoveryParameters {
     timeout?: number
 }
 
-interface IGatewayActiveNodes {
+export interface IGatewayActiveNodes {
     dvote: IDVoteGateway[],
     web3: IWeb3Gateway[],
-}
-
-interface IGateway {
-    dvote: IDVoteGateway,
-    web3: IWeb3Gateway,
 }
 
 export class GatewayDiscovery {
@@ -49,7 +44,7 @@ export class GatewayDiscovery {
      *
      * @returns A Gateway array
      */
-    public static run(params: IGatewayDiscoveryParameters): Promise<Gateway[]> {
+    public static run(params: IGatewayDiscoveryParameters): Promise<IGatewayActiveNodes> {
         if (!params) {
             return Promise.reject(new GatewayDiscoveryValidationError())
         } else if (!params.networkId) {
@@ -71,9 +66,7 @@ export class GatewayDiscovery {
                 params.numberOfGateways,
                 params.timeout,
             )
-            .then((gateways: IGateway[]) => gateways.map(
-                (gw: IGateway) => new Gateway(gw.dvote, gw.web3)
-            ))
+            .then((gateways: IGatewayActiveNodes) => gateways)
             .catch((error: Error | GatewayDiscoveryError) => {
                 if (error instanceof GatewayDiscoveryError) {
                     throw error
@@ -100,7 +93,7 @@ export class GatewayDiscovery {
         environment: VocdoniEnvironment = "prod",
         minNumberOfGateways: number = this.MIN_NUMBER_GATEWAYS,
         timeout: number = GATEWAY_SELECTION_TIMEOUT,
-    ): Promise<IGateway[]> {
+    ): Promise<IGatewayActiveNodes> {
 
         // Get the gateways instances from bootnode data
         return this.getGatewaysFromBootnodeData(networkId, bootnodesContentUri, environment, minNumberOfGateways, timeout)
@@ -115,10 +108,7 @@ export class GatewayDiscovery {
             })
             .then((healthyNodes: IGatewayActiveNodes) => {
                 // Sort nodes
-                const sortedNodes = this.sortNodes(healthyNodes)
-
-                // Create pairs of DVote and Web3 gateways
-                return this.createNodePairs(sortedNodes.dvote, sortedNodes.web3)
+                return this.sortNodes(healthyNodes)
             })
     }
 
@@ -238,32 +228,6 @@ export class GatewayDiscovery {
         } while (timeoutsToTest.length)
 
         throw new GatewayDiscoveryError()
-    }
-
-    /**
-     * Helper functions that returns an array of dvote/web3 pairs merging the two input arrays in order
-     */
-    // TODO: @marcvelmer remove this function when refactoring pool
-    private static createNodePairs(dvoteGateways: IDVoteGateway[], web3Gateways: IWeb3Gateway[]): { dvote: IDVoteGateway, web3: IWeb3Gateway }[] {
-        let length = (dvoteGateways.length > web3Gateways.length) ? dvoteGateways.length : web3Gateways.length
-        let gatewayList: { dvote: IDVoteGateway, web3: IWeb3Gateway }[] = Array(length)
-        for (let idx = 0; idx < gatewayList.length; idx++) {
-            gatewayList[idx] = {
-                web3: (idx < web3Gateways.length) ? web3Gateways[idx] : web3Gateways[Math.floor(Math.random() * web3Gateways.length)],
-                dvote: (idx < dvoteGateways.length) ? dvoteGateways[idx] : dvoteGateways[Math.floor(Math.random() * dvoteGateways.length)]
-            }
-        }
-
-        let hasInitialCandidate = false
-        for (let gw of gatewayList) {
-            if (gw.dvote.isReady) {
-                hasInitialCandidate = true
-                break
-            }
-        }
-        if (!hasInitialCandidate) throw new GatewayDiscoveryError(GatewayDiscoveryError.NO_CANDIDATES_READY)
-
-        return gatewayList
     }
 
     /**

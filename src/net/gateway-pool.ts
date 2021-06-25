@@ -1,7 +1,7 @@
 import { Gateway } from "./gateway"
 import { DVoteGateway, DVoteGatewayResponseBody, IRequestParameters } from "./gateway-dvote"
 // import { clientApis, GatewayApiName } from "../models/gateway"
-import { GatewayDiscovery, IGatewayDiscoveryParameters } from "./gateway-discovery"
+import {GatewayDiscovery, IGatewayActiveNodes, IGatewayDiscoveryParameters} from "./gateway-discovery"
 import { Wallet, Signer, providers } from "ethers"
 import { IProcessesContract, IEnsPublicResolverContract, INamespacesContract, ITokenStorageProofContract, IGenesisContract, IResultsContract } from "./contracts"
 import { Web3Gateway } from "./gateway-web3"
@@ -32,16 +32,17 @@ export class GatewayPool {
     private errorCount: number = 0
     public get supportedApis() { return this.activeDvoteClient.supportedApis }
 
-    constructor(newPool: Gateway[], p: IGatewayDiscoveryParameters) {
-        this.dvotePool = newPool.map((gw) => gw.dvoteClient)
-        this.web3Pool = newPool.map((gw) => gw.web3Client)
+    constructor(newPool: IGatewayActiveNodes, p: IGatewayDiscoveryParameters) {
+        this.dvotePool = newPool.dvote
+        this.web3Pool = newPool.web3
         this.params = p
     }
 
     /** Searches for healthy gateways and initialized them for immediate usage */
-    static discover(params: IGatewayDiscoveryParameters): Promise<GatewayPool> {
+    public static discover(params: IGatewayDiscoveryParameters): Promise<GatewayPool> {
         return GatewayDiscovery.run(params)
-            .then((bestNodes: Gateway[]) => {
+            .then((bestNodes: IGatewayActiveNodes) => {
+
                 const pool = new GatewayPool(bestNodes, params)
 
                 return pool.init()
@@ -65,9 +66,9 @@ export class GatewayPool {
     /** Launches a new discovery process and selects the healthiest gateway pair */
     public refresh(): Promise<void> {
         return GatewayDiscovery.run(this.params)
-            .then((bestNodes: Gateway[]) => {
-                this.dvotePool = bestNodes.map((gw) => gw.dvoteClient)
-                this.web3Pool = bestNodes.map((gw) => gw.web3Client)
+            .then((bestNodes: IGatewayActiveNodes) => {
+                this.dvotePool = bestNodes.dvote
+                this.web3Pool = bestNodes.web3
                 this.errorCount = 0
             }).catch(error => {
                 throw new Error(error)
