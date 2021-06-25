@@ -1,10 +1,9 @@
 import { ContentUri } from "../wrappers/content-uri"
-import { Gateway } from "./gateway"
 import { IDVoteGateway } from "./gateway-dvote"
 import { IWeb3Gateway } from "./gateway-web3"
 import { EthNetworkID, GatewayBootnode } from "./gateway-bootnode"
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
-import { JsonBootnodeData } from "../models/gateway"
+import { BackendApiName, GatewayApiName, JsonBootnodeData } from "../models/gateway"
 import { promiseWithTimeout } from "../util/timeout"
 import { Random } from "../util/random"
 import { VocdoniEnvironment } from "../models/common"
@@ -86,6 +85,66 @@ export class GatewayDiscovery {
                 }
                 throw new GatewayDiscoveryError()
             })
+    }
+
+    /**
+     * Returns a new random Gateway that is attached to the required network
+     *
+     * @param networkId Either "mainnet", "rinkeby" or "goerli" (test)
+     * @param requiredApis A list of the required APIs
+     * @param environment The Vocdoni environment that will be used
+     */
+    public static randomFromDefault(networkId: EthNetworkID,
+                                    requiredApis: (GatewayApiName | BackendApiName)[] = [],
+                                    environment: VocdoniEnvironment
+    ): Promise<{ dvote: IDVoteGateway, web3: IWeb3Gateway }> {
+        return GatewayBootnode.getDefaultUri(networkId, environment)
+            .then((bootnodeUri: ContentUri) => {
+                return this.getGatewaysFromBootnodeData(
+                    networkId,
+                    bootnodeUri,
+                    environment,
+                    1,
+                    GATEWAY_SELECTION_TIMEOUT
+                )
+            })
+            .then((gateways: IGatewayActiveNodes) => this.getFirstGateway(gateways))
+    }
+
+    /**
+     * Returns a new random Gateway that is attached to the required network
+     *
+     * @param networkId Either "mainnet", "rinkeby" or "goerli" (test)
+     * @param requiredApis A list of the required APIs
+     * @param bootnodeUri The uri from which contains the available gateways
+     * @param environment The Vocdoni environment that will be used
+     */
+    public static randomfromUri(networkId: EthNetworkID,
+                                requiredApis: (GatewayApiName | BackendApiName)[] = [],
+                                bootnodeUri: string | ContentUri,
+                                environment: VocdoniEnvironment,
+    ): Promise<{ dvote: IDVoteGateway, web3: IWeb3Gateway }> {
+        return this.getGatewaysFromBootnodeData(
+            networkId, bootnodeUri, environment, 1, GATEWAY_SELECTION_TIMEOUT
+        )
+        .then((gateways: IGatewayActiveNodes) => this.getFirstGateway(gateways))
+    }
+
+    /**
+     * Returns the first available Gateway from the given list
+     *
+     * @param gateways The list of gateways to race
+     */
+    private static async getFirstGateway(gateways: IGatewayActiveNodes): Promise<{ dvote: IDVoteGateway, web3: IWeb3Gateway }> {
+        // TODO: Filter by required API's
+        const [web3, dvote] = await Promise.all([
+            Promise.race(gateways.web3.map(w3 => w3.check().then(() => w3))),
+            Promise.race(gateways.dvote.map(dv => dv.check().then(() => dv)))
+        ])
+        if (!web3) throw new Error("Could not find an active Web3 Gateway")
+        else if (!dvote) throw new Error("Could not find an active DVote Gateway")
+
+        return { dvote, web3 }
     }
 
     /**
