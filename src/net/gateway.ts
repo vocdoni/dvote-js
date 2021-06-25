@@ -8,6 +8,7 @@ import { GatewayApiName, BackendApiName, ApiMethod } from "../models/gateway"
 import { GatewayBootnode, EthNetworkID } from "./gateway-bootnode"
 import { ContentUri } from "../wrappers/content-uri"
 import { IProcessesContract, IEnsPublicResolverContract, INamespacesContract, ITokenStorageProofContract, IGenesisContract, IResultsContract } from "../net/contracts"
+import { GatewayDiscovery } from "./gateway-discovery";
 import { DVoteGateway, IDVoteGateway, IRequestParameters } from "./gateway-dvote"
 import { IWeb3Gateway, Web3Gateway } from "./gateway-web3"
 import { VocdoniEnvironment } from "../models/common"
@@ -26,11 +27,10 @@ export class Gateway {
     public get weight() { return this.dvote.weight }
     public get publicKey() { return this.dvote.publicKey }
     public get supportedApis() { return this.dvote.supportedApis }
-    public get dvoteClient() { return this.dvote }
-    public get web3Client() { return this.web3 }
 
     /**
      * Returns a new Gateway
+     *
      * @param dvoteGateway A DvoteGateway instance
      * @param web3Gateway A Web3Gateway instance
      */
@@ -45,58 +45,40 @@ export class Gateway {
 
     /**
      * Returns a new random Gateway that is attached to the required network
+     *
      * @param networkId Either "mainnet", "rinkeby" or "goerli" (test)
      * @param requiredApis A list of the required APIs
+     * @param environment The Vocdoni environment that will be used
      */
-    static randomFromDefault(networkId: EthNetworkID, requiredApis: (GatewayApiName | BackendApiName)[] = [], environment: VocdoniEnvironment): Promise<Gateway> {
-        return GatewayBootnode.getDefaultGateways(networkId, environment)
-            .then(async bootNodeData => {
-                if (!bootNodeData[networkId]) throw new Error("The bootnode doesn't define any gateway for " + networkId)
-
-                const gateways = GatewayBootnode.digestNetwork(bootNodeData, networkId, environment)
-
-                // TODO: Filter by required API's
-                const [web3, dvote] = await Promise.all([
-                    Promise.race(gateways.web3.map(w3 => w3.check().then(() => w3))),
-                    Promise.race(gateways.dvote.map(dv => dv.check().then(() => dv)))
-                ])
-                if (!web3) throw new Error("Could not find an active Web3 Gateway")
-                else if (!dvote) throw new Error("Could not find an active DVote Gateway")
-
-                return new Gateway(dvote, web3)
+    public static randomFromDefault(networkId: EthNetworkID, requiredApis: (GatewayApiName | BackendApiName)[] = [], environment: VocdoniEnvironment): Promise<Gateway> {
+        return GatewayDiscovery.randomFromDefault(networkId, requiredApis, environment)
+            .then((gatewayPair: { dvote: IDVoteGateway, web3: IWeb3Gateway } ) => {
+                return new Gateway(gatewayPair.dvote, gatewayPair.web3)
             })
     }
 
     /**
-     * Returns a new random Gateway that is attached to the required network
+     * Returns a new random Gateway from given URI that is attached to the required network
+     *
      * @param networkId Either "mainnet", "rinkeby" or "goerli" (test)
      * @param bootnodesContentUri The uri from which contains the available gateways
      * @param requiredApis A list of the required APIs
+     * @param environment The Vocdoni environment that will be used
      */
-    static randomfromUri(networkId: EthNetworkID, bootnodesContentUri: string | ContentUri, requiredApis: (GatewayApiName | BackendApiName)[] = [], environment: VocdoniEnvironment): Promise<Gateway> {
-        return GatewayBootnode.getGatewaysFromUri(bootnodesContentUri)
-            .then(async bootNodeData => {
-                if (!bootNodeData[networkId]) throw new Error("The bootnode doesn't define any gateway for " + networkId)
-
-                const gateways = GatewayBootnode.digestNetwork(bootNodeData, networkId, environment)
-
-                // TODO: Filter by required API's
-                const [web3, dvote] = await Promise.all([
-                    Promise.race(gateways.web3.map(w3 => w3.check().then(() => w3))),
-                    Promise.race(gateways.dvote.map(dv => dv.check().then(() => dv)))
-                ])
-                if (!web3) throw new Error("Could not find an active Web3 Gateway")
-                else if (!dvote) throw new Error("Could not find an active DVote Gateway")
-
-                return new Gateway(dvote, web3)
+    public static randomfromUri(networkId: EthNetworkID, bootnodesContentUri: string | ContentUri, requiredApis: (GatewayApiName | BackendApiName)[] = [], environment: VocdoniEnvironment): Promise<Gateway> {
+        return GatewayDiscovery.randomfromUri(networkId, requiredApis, bootnodesContentUri, environment)
+            .then((gatewayPair: { dvote: IDVoteGateway, web3: IWeb3Gateway } ) => {
+                return new Gateway(gatewayPair.dvote, gatewayPair.web3)
             })
     }
 
     /**
      * Returns a new *connected* Gateway that is instantiated based on the given parameters
+     *
      * @param gatewayOrParams Either a gatewayInfo object or an object with the defined parameters
+     * @param environment The Vocdoni environment that will be used
      */
-    static fromInfo(gatewayOrParams: GatewayInfo | { dvoteUri: string, supportedApis: GatewayApiName[], web3Uri: string, publicKey?: string }, environment: VocdoniEnvironment): Promise<Gateway> {
+    public static fromInfo(gatewayOrParams: GatewayInfo | { dvoteUri: string, supportedApis: GatewayApiName[], web3Uri: string, publicKey?: string }, environment: VocdoniEnvironment): Promise<Gateway> {
         let dvoteGateway, web3Gateway
         if (gatewayOrParams instanceof GatewayInfo) {
             dvoteGateway = new DVoteGateway(gatewayOrParams)
