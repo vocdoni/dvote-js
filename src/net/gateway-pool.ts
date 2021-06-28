@@ -5,6 +5,7 @@ import {GatewayDiscovery, IGatewayActiveNodes, IGatewayDiscoveryParameters} from
 import { Wallet, Signer, providers } from "ethers"
 import { IProcessesContract, IEnsPublicResolverContract, INamespacesContract, ITokenStorageProofContract, IGenesisContract, IResultsContract } from "./contracts"
 import { Web3Gateway } from "./gateway-web3"
+import { GatewayPoolError } from "../util/errors/gateway-pool"
 
 const SEQUENTIAL_METHODS = ['addClaimBulk', 'publishCensus'] //generateProof and vote?
 const ERROR_SKIP_METHODS = ['getRoot']
@@ -48,7 +49,7 @@ export class GatewayPool {
                 return pool.init()
                     .then(() => pool)
             })
-            .catch(error => {
+            .catch((error) => {
                 throw new Error(error)
             })
     }
@@ -70,7 +71,7 @@ export class GatewayPool {
                 this.dvotePool = bestNodes.dvote
                 this.web3Pool = bestNodes.web3
                 this.errorCount = 0
-            }).catch(error => {
+            }).catch((error) => {
                 throw new Error(error)
             })
     }
@@ -81,7 +82,7 @@ export class GatewayPool {
     public shiftDVoteClient(): Promise<void> {
         if (this.errorCount > MAX_GW_POOL_SHIFT_COUNT || this.errorCount >= this.dvotePool.length) {
             this.errorCount = 0
-            return Promise.reject(new Error("The operation cannot be completed"))
+            return Promise.reject(new GatewayPoolError(GatewayPoolError.OPERATION_CANNOT_COMPLETE))
         }
 
         this.dvotePool.push(this.dvotePool.shift())
@@ -94,7 +95,7 @@ export class GatewayPool {
     public shiftWeb3Client(): Promise<void> {
         if (this.errorCount > MAX_GW_POOL_SHIFT_COUNT || this.errorCount >= this.web3Pool.length) {
             this.errorCount = 0
-            return Promise.reject(new Error("The operation cannot be completed"))
+            return Promise.reject(new GatewayPoolError(GatewayPoolError.OPERATION_CANNOT_COMPLETE))
         }
 
         this.web3Pool.push(this.web3Pool.shift())
@@ -102,12 +103,16 @@ export class GatewayPool {
     }
 
     public get activeDvoteClient(): DVoteGateway {
-        if (!this.dvotePool || !this.dvotePool.length) throw new Error("The pool has no Dvote clients")
+        if (!this.dvotePool || !this.dvotePool.length) {
+            throw new GatewayPoolError(GatewayPoolError.NO_DVOTE_CLIENTS)
+        }
         return this.dvotePool[0]
     }
 
     public get activeWeb3Client(): Web3Gateway {
-        if (!this.web3Pool || !this.web3Pool.length) throw new Error("The pool has no Web3 clients")
+        if (!this.web3Pool || !this.web3Pool.length) {
+            throw new GatewayPoolError(GatewayPoolError.NO_WEB3_CLIENTS)
+        }
         return this.web3Pool[0]
     }
 
@@ -138,8 +143,9 @@ export class GatewayPool {
                     throw err
                 }
 
-                if (SEQUENTIAL_METHODS.includes(requestBody.method))
-                    throw new Error("Connection to gateway lost. The process needs to be reinitiated. Reason:" + err.message)
+                if (SEQUENTIAL_METHODS.includes(requestBody.method)) {
+                    throw new GatewayPoolError(GatewayPoolError.SEQUENTIAL_METHOD_ERROR + err.message)
+                }
 
                 // Check also for the census does not exist
                 const result = GATEWAY_UPDATE_ERRORS.filter(msg => err.message.includes(msg))
