@@ -130,7 +130,7 @@ export class DVoteGateway {
         }
 
         const response = await promiseWithTimeout(
-            this.client.post('', JsonSignature.sort(request)),
+            this.client.post('', request),
             params.timeout
         )
 
