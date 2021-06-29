@@ -120,11 +120,11 @@ export class DVoteGateway {
         }
         const requestId = Random.getHex().substr(2, 10)
 
-        const request: MessageRequestContent = {
+        const request: MessageRequestContent = JsonSignature.sort({
             id: requestId,
             request: requestBody,
             signature: ""
-        }
+        })
         if (wallet) {
             request.signature = await JsonSignature.sign(requestBody, wallet)
         }
