@@ -17,6 +17,7 @@ export interface IGatewayDiscoveryParameters {
     numberOfGateways?: number
     /** Timeout in milliseconds */
     timeout?: number
+    ens?: boolean
 }
 
 interface IGatewayActiveNodes {
@@ -43,6 +44,16 @@ export class GatewayDiscovery {
     public static MIN_NUMBER_GATEWAYS: number = 1
 
     /**
+     *  Parameters provided by the user
+     */
+    public static networkId: EthNetworkID
+    public static environment: VocdoniEnvironment
+    public static bootnodesContentUri: string | ContentUri
+    public static minNumberOfGateways : number
+    public static timeout : number
+    public static ens : boolean
+
+    /**
      * Retrieve a **connected and live** gateway, choosing based on the info provided by the metrics of the Gateway
      *
      * @param params The gateway parameters for running the discovery process
@@ -63,14 +74,14 @@ export class GatewayDiscovery {
         } else if (params.timeout && !Number.isInteger(params.timeout)) {
             return Promise.reject(new GatewayDiscoveryValidationError(GatewayDiscoveryValidationError.INVALID_TIMEOUT))
         }
+        this.networkId = params.networkId
+        this.environment = params.environment || "prod"
+        this.bootnodesContentUri = params.bootnodesContentUri
+        this.minNumberOfGateways = params.numberOfGateways || this.MIN_NUMBER_GATEWAYS
+        this.timeout = params.timeout || GATEWAY_SELECTION_TIMEOUT
+        this.ens = params.ens || false
 
-        return this.getWorkingGateways(
-                params.networkId,
-                params.bootnodesContentUri,
-                params.environment,
-                params.numberOfGateways,
-                params.timeout,
-            )
+        return this.getWorkingGateways()
             .then((gateways: IGateway[]) => gateways.map(
                 (gw: IGateway) => new Gateway(gw.dvote, gw.web3)
             ))
@@ -86,31 +97,18 @@ export class GatewayDiscovery {
      * Gets a list of DVote and Web3 Gateways from bootnode data, discards the not healthy gateways
      * and returns a ordered list of working DVote and Web3 Gateways by performance metrics
      *
-     * @param networkId The Ethereum network to which the gateway should be associated
-     * @param bootnodesContentUri The Content URI from which the list of gateways will be extracted
-     * @param environment (optional) The Vocdoni environment that will be used
-     * @param minNumberOfGateways (optional) The minimum number of gateways needed
-     * @param timeout (optional) The timeout for a gateway discovery process
-     *
      * @returns A list of working and healthy pairs of DVote and Web3 Gateways
      */
-    private static getWorkingGateways(
-        networkId: EthNetworkID,
-        bootnodesContentUri: string | ContentUri,
-        environment: VocdoniEnvironment = "prod",
-        minNumberOfGateways: number = this.MIN_NUMBER_GATEWAYS,
-        timeout: number = GATEWAY_SELECTION_TIMEOUT,
-    ): Promise<IGateway[]> {
+    private static getWorkingGateways(): Promise<IGateway[]> {
 
         // Get the gateways instances from bootnode data
-        return this.getGatewaysFromBootnodeData(networkId, bootnodesContentUri, environment, minNumberOfGateways, timeout)
+        return this.getGatewaysFromBootnodeData()
             .then((bootnodeGateways: IGatewayActiveNodes) => {
                 // Discard unhealthy nodes
                 return this.filterHealthyNodes(
                     bootnodeGateways.dvote,
                     bootnodeGateways.web3,
-                    minNumberOfGateways,
-                    [timeout, 2 * timeout, 4 * timeout, 16 * timeout],
+                    [this.timeout, 2 * this.timeout, 4 * this.timeout, 16 * this.timeout],
                 )
             })
             .then((healthyNodes: IGatewayActiveNodes) => {
@@ -125,32 +123,21 @@ export class GatewayDiscovery {
     /**
      * Gets the bootnodes data from the given URI and returns the gateway instances for the given network.
      *
-     * @param networkId The Ethereum network to which the gateway should be associated
-     * @param bootnodesContentUri The Content URI from which the list of gateways will be extracted
-     * @param environment The Vocdoni environment that will be used
-     * @param minNumberOfGateways The minimum number of gateways needed
-     * @param timeout The timeout for a gateway discovery process
-     *
      * @returns A list of DVote and Web3 Gateways instances
      */
-    private static getGatewaysFromBootnodeData(
-        networkId: EthNetworkID,
-        bootnodesContentUri: string | ContentUri,
-        environment: VocdoniEnvironment,
-        minNumberOfGateways: number,
-        timeout: number,
-    ): Promise<IGatewayActiveNodes> {
+    private static getGatewaysFromBootnodeData(): Promise<IGatewayActiveNodes> {
+        const networkId = this.networkId
         return promiseWithTimeout(
             // Extract BootnodeData
-            GatewayBootnode.getGatewaysFromUri(bootnodesContentUri).catch(() => {
+            GatewayBootnode.getGatewaysFromUri(this.bootnodesContentUri).catch(() => {
                 throw new GatewayDiscoveryError(GatewayDiscoveryError.BOOTNODE_FETCH_ERROR)
             }),
-            timeout,
+            this.timeout,
             GatewayDiscoveryError.BOOTNODE_TIMEOUT_ERROR,
         )
         .then((bootnodeData: JsonBootnodeData) => {
             // Check if there are enough gateways
-            if (bootnodeData[networkId].dvote.length < minNumberOfGateways) {
+            if (bootnodeData[networkId].dvote.length < this.minNumberOfGateways) {
                 throw new GatewayDiscoveryError(GatewayDiscoveryError.BOOTNODE_NOT_ENOUGH_GATEWAYS)
             }
 
@@ -167,7 +154,7 @@ export class GatewayDiscovery {
             bootnodeData[networkId].web3 = Random.shuffle(bootnodeData[networkId].web3)
 
             // Return the instances
-            return GatewayBootnode.digestNetwork(bootnodeData, networkId, environment)
+            return GatewayBootnode.digestNetwork(bootnodeData, networkId, this.environment)
         })
     }
 
@@ -181,7 +168,6 @@ export class GatewayDiscovery {
      *
      * @param discoveredDvoteNodes The discovered DVote Gateway instances from bootnode data
      * @param discoveredWeb3Nodes The discovered Web3 Gateway instances from bootnode data
-     * @param minNumberOfGateways The minimum number of gateways needed
      * @param timeoutsToTest A list of timeouts to use for each discovery round
      *
      * @returns A list of working and healthy DVote and Web3 Gateways
@@ -189,9 +175,9 @@ export class GatewayDiscovery {
     private static async filterHealthyNodes(
         discoveredDvoteNodes: IDVoteGateway[],
         discoveredWeb3Nodes: IWeb3Gateway[],
-        minNumberOfGateways: number,
         timeoutsToTest: number[],
     ): Promise<IGatewayActiveNodes> {
+        const minNumberOfGateways = this.minNumberOfGateways
         let dvoteGateways: IDVoteGateway[] = []
         let web3Gateways: IWeb3Gateway[] = []
 
@@ -337,10 +323,10 @@ export class GatewayDiscovery {
         })
 
         web3Nodes.forEach((web3Gw: IWeb3Gateway) => {
-            const prom = web3Gw.check(timeout)
+            const prom = web3Gw.check(timeout, this.ens)
                 .then(() => {
                     // Skip adding to the list if there is no address resolved
-                    if (!web3Gw.ensPublicResolverContractAddress) {
+                    if  (this.ens && !web3Gw.ensPublicResolverContractAddress) {
                         return
                     }
                     // Skip adding to the list if peer count is not enough
