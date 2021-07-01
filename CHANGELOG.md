@@ -2,6 +2,8 @@
 
 ## 1.9.10
 
+- Improved and ligther Gateway Discovery process
+- Better handling of requests and responses
 - Changes to `IGatewayDiscoveryParameters`
   - Change from `type` to `interface`
   - New attribute `resolveEnsDomains` for resolving the ENS Domains in the discovery process
