@@ -17,7 +17,7 @@ export interface IGatewayDiscoveryParameters {
     numberOfGateways?: number
     /** Timeout in milliseconds */
     timeout?: number
-    ens?: boolean
+    resolveEnsDomains?: boolean
 }
 
 interface IGatewayActiveNodes {
@@ -51,7 +51,7 @@ export class GatewayDiscovery {
     public static bootnodesContentUri: string | ContentUri
     public static minNumberOfGateways: number
     public static timeout: number
-    public static ens: boolean
+    public static resolveEnsDomains: boolean
 
     /**
      * Retrieve a **connected and live** gateway, choosing based on the info provided by the metrics of the Gateway
@@ -79,7 +79,7 @@ export class GatewayDiscovery {
         this.bootnodesContentUri = params.bootnodesContentUri
         this.minNumberOfGateways = params.numberOfGateways || this.MIN_NUMBER_GATEWAYS
         this.timeout = params.timeout || GATEWAY_SELECTION_TIMEOUT
-        this.ens = params.ens || false
+        this.resolveEnsDomains = params.resolveEnsDomains || false
 
         return this.getWorkingGateways()
             .then((gateways: IGateway[]) => gateways.map(
@@ -127,35 +127,33 @@ export class GatewayDiscovery {
      */
     private static getGatewaysFromBootnodeData(): Promise<IGatewayActiveNodes> {
         const networkId = this.networkId
-        return promiseWithTimeout(
-            // Extract BootnodeData
-            GatewayBootnode.getGatewaysFromUri(this.bootnodesContentUri).catch(() => {
+        const prom = GatewayBootnode.getGatewaysFromUri(this.bootnodesContentUri)
+            .catch(() => {
                 throw new GatewayDiscoveryError(GatewayDiscoveryError.BOOTNODE_FETCH_ERROR)
-            }),
-            this.timeout,
-            GatewayDiscoveryError.BOOTNODE_TIMEOUT_ERROR,
-        )
-        .then((bootnodeData: JsonBootnodeData) => {
-            // Check if there are enough gateways
-            if (bootnodeData[networkId].dvote.length < this.minNumberOfGateways) {
-                throw new GatewayDiscoveryError(GatewayDiscoveryError.BOOTNODE_NOT_ENOUGH_GATEWAYS)
-            }
+            })
 
-            // Removing duplicates
-            bootnodeData[networkId].dvote = bootnodeData[networkId].dvote.filter(
-                (v, i, a) => a.findIndex((t) => (t.uri === v.uri)) === i
-            )
-            bootnodeData[networkId].web3 = bootnodeData[networkId].web3.filter(
-                (v, i, a) => a.findIndex((t) => (t.uri === v.uri)) === i
-            )
+        return promiseWithTimeout(prom, this.timeout, GatewayDiscoveryError.BOOTNODE_TIMEOUT_ERROR)
+            .then((bootnodeData: JsonBootnodeData) => {
+                // Check if there are enough gateways
+                if (bootnodeData[networkId].dvote.length < this.minNumberOfGateways) {
+                    throw new GatewayDiscoveryError(GatewayDiscoveryError.BOOTNODE_NOT_ENOUGH_GATEWAYS)
+                }
 
-            // Randomizing Gateways order
-            bootnodeData[networkId].dvote = Random.shuffle(bootnodeData[networkId].dvote)
-            bootnodeData[networkId].web3 = Random.shuffle(bootnodeData[networkId].web3)
+                // Removing duplicates
+                bootnodeData[networkId].dvote = bootnodeData[networkId].dvote.filter(
+                    (v, i, a) => a.findIndex((t) => (t.uri === v.uri)) === i
+                )
+                bootnodeData[networkId].web3 = bootnodeData[networkId].web3.filter(
+                    (v, i, a) => a.findIndex((t) => (t.uri === v.uri)) === i
+                )
 
-            // Return the instances
-            return GatewayBootnode.digestNetwork(bootnodeData, networkId, this.environment)
-        })
+                // Randomizing Gateways order
+                bootnodeData[networkId].dvote = Random.shuffle(bootnodeData[networkId].dvote)
+                bootnodeData[networkId].web3 = Random.shuffle(bootnodeData[networkId].web3)
+
+                // Return the instances
+                return GatewayBootnode.digestNetwork(bootnodeData, networkId, this.environment)
+            })
     }
 
     /**
@@ -270,13 +268,13 @@ export class GatewayDiscovery {
         // Get the block numbers frequency and select the most frequent if there is any
         let mostFrequentBlockNumber: number
         const blockNumbersByFrequency = Object.entries(
-            healthyNodes.web3.map((gw: IWeb3Gateway) => (gw.lastBlockNumber)).reduce((a, v: number) => {
-                a[v] = a[v] ? a[v] + 1 : 1;
-                return a;
+            healthyNodes.web3.map((gw: IWeb3Gateway) => (gw.lastBlockNumber)).reduce((prev, cur: number) => {
+                prev[cur] = prev[cur] ? prev[cur] + 1 : 1;
+                return prev;
             }, {})
         )
         if (blockNumbersByFrequency.length !== healthyNodes.web3.length) {
-            mostFrequentBlockNumber = +blockNumbersByFrequency.reduce((a, v) => (v[1] >= a[1] ? v : a), [null, 0])[0];
+            mostFrequentBlockNumber = +blockNumbersByFrequency.reduce((prev, cur) => (cur[1] >= prev[1] ? cur : prev), [null, 0])[0];
         }
 
         // Sort the Web3 Gateways by metrics
@@ -312,16 +310,16 @@ export class GatewayDiscovery {
         const checks: Array<Promise<void>> = []
 
         dvoteNodes.forEach((dvoteGw: IDVoteGateway) => {
-            const prom = dvoteGw.check(timeout)
+            const prom = dvoteGw.checkStatus(timeout)
                 .then(() => { activeNodes.dvote.push(dvoteGw) })
             checks.push(prom)
         })
 
         web3Nodes.forEach((web3Gw: IWeb3Gateway) => {
-            const prom = web3Gw.check(timeout, this.ens)
+            const prom = web3Gw.checkStatus(timeout, this.resolveEnsDomains)
                 .then(() => {
                     // Skip adding to the list if there is no address resolved
-                    if  (this.ens && !web3Gw.ensPublicResolverContractAddress) {
+                    if  (this.resolveEnsDomains && !web3Gw.ensPublicResolverContractAddress) {
                         return
                     }
                     // Skip adding to the list if peer count is not enough

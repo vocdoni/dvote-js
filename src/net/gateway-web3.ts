@@ -209,11 +209,12 @@ export class Web3Gateway {
      * Checks the Gateway healthy by requesting and calculating certain metrics
      *
      * @param timeout
+     * @param resolveEnsDomains
      */
-    public check(timeout: number = GATEWAY_SELECTION_TIMEOUT, ens: boolean = false): Promise<void> {
+    public checkStatus(timeout: number = GATEWAY_SELECTION_TIMEOUT, resolveEnsDomains: boolean = false): Promise<void> {
         this._hasTimeOutLastRequest = false
         return promiseWithTimeout(
-                this.getMetrics(ens), timeout, "The Web3 Gateway is too slow"
+                this.getMetrics(resolveEnsDomains), timeout, "The Web3 Gateway is too slow"
             )
             .catch((error) => {
                 // TODO refactor errors
@@ -227,14 +228,16 @@ export class Web3Gateway {
     /**
      * The needed metrics for evaluating Gateways during the discovery process are called here.
      * It also will calculate the response time for each call as a metric itself
+     *
+     * @param resolveEnsDomains
      */
-    private getMetrics(ens: boolean): Promise<void> {
-        let metrics = [
+    private getMetrics(resolveEnsDomains: boolean): Promise<void> {
+        const metrics = [
             this.getBlockNumber(),
             this.getPeers(),
-            this.isSyncing()
+            this.isSyncing(),
         ]
-        if (ens) metrics.push(this.checkEns())
+        if (resolveEnsDomains) metrics.push(this.checkEns())
         return Promise.all(metrics).then(() => {
                 // ok
                 // maybe flag it as already checked
