@@ -1,5 +1,11 @@
 # DVote JS changelog
 
+## 1.9.10
+
+- Changes to `IGatewayDiscoveryParameters`
+  - Change from `type` to `interface`
+  - New attribute `resolveEnsDomains` for resolving the ENS Domains in the discovery process
+
 ## 1.9.9
 
 - Changes to `IProcessState`

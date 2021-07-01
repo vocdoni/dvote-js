@@ -81,7 +81,7 @@ export class DVoteGateway {
         if (this.isReady && requiredApis.every((v) => this.supportedApis.includes(v))) {
             return Promise.resolve()
         } else {
-            return this.check().then(() => {
+            return this.checkStatus().then(() => {
                 if (!this.supportedApis) return
                 else if (!requiredApis.length) return
                 const missingApi = requiredApis.find(api => !this.supportedApis.includes(api))
@@ -139,7 +139,7 @@ export class DVoteGateway {
                 )
             })
             .then((response: AxiosResponse) => {
-                return this.checkRequest(response, requestId)
+                return this.checkResponse(response, requestId)
             })
             .catch((error) => {
                 // TODO refactor errors
@@ -182,7 +182,7 @@ export class DVoteGateway {
         const request: MessageRequestContent = JsonSignature.sort({
             id: Random.getHex().substr(2, 10),
             request: requestBody,
-            signature: ""
+            signature: "",
         })
 
         if (wallet) {
@@ -197,14 +197,14 @@ export class DVoteGateway {
     }
 
     /**
-     * Check the result of a Gateway request and return its response
+     * Check the response of a Gateway and return its content
      *
      * @param response The response from the Gateway
      * @param requestId The request id set in the request
      *
      * @return The checked response of the Gateway
      */
-    private checkRequest(response: AxiosResponse, requestId: string): DVoteGatewayResponseBody {
+    private checkResponse(response: AxiosResponse, requestId: string): DVoteGatewayResponseBody {
         const msgBytes: Uint8Array = extractUint8ArrayJSONValue(new Uint8Array(response.data), "response")
         const msg: DVoteGatewayResponseBody = JSON.parse(new TextDecoder().decode(response.data))
 
@@ -241,7 +241,7 @@ export class DVoteGateway {
      *
      * @param timeout (optional) Timeout in milliseconds
      */
-    public check(timeout: number = GATEWAY_SELECTION_TIMEOUT): Promise<void> {
+    public checkStatus(timeout: number = GATEWAY_SELECTION_TIMEOUT): Promise<void> {
         const performanceTime = new Date().getTime()
         return this.getInfo(timeout)
             .then((result) => {
