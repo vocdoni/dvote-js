@@ -18,12 +18,12 @@ export class ProviderUtil {
         switch (networkId) {
             case "xdai":
                 if (environment === 'prod')
-                    return new providers.JsonRpcProvider(uri, { chainId: XDAI_CHAIN_ID, name: "xdai", ensAddress: XDAI_ENS_REGISTRY_ADDRESS })
-                return new providers.JsonRpcProvider(uri, { chainId: XDAI_CHAIN_ID, name: "xdai", ensAddress: XDAI_STG_ENS_REGISTRY_ADDRESS })
+                    return new providers.StaticJsonRpcProvider(uri, { chainId: XDAI_CHAIN_ID, name: "xdai", ensAddress: XDAI_ENS_REGISTRY_ADDRESS })
+                return new providers.StaticJsonRpcProvider(uri, { chainId: XDAI_CHAIN_ID, name: "xdai", ensAddress: XDAI_STG_ENS_REGISTRY_ADDRESS })
             case "sokol":
-                return new providers.JsonRpcProvider(uri, { chainId: SOKOL_CHAIN_ID, name: "sokol", ensAddress: SOKOL_ENS_REGISTRY_ADDRESS })
+                return new providers.StaticJsonRpcProvider(uri, { chainId: SOKOL_CHAIN_ID, name: "sokol", ensAddress: SOKOL_ENS_REGISTRY_ADDRESS })
             default:
-                return new providers.JsonRpcProvider(uri)
+                return new providers.StaticJsonRpcProvider(uri)
         }
     }
 
