@@ -51,7 +51,7 @@ export class DVoteGateway implements IGatewayDVoteClient {
     private _health: number = 0
     private _weight: number = 0
     private _uri: string
-    private _performanceTime: number
+    private _responseTime: number
     private client: AxiosInstance = null
     private _hasTimeOutLastRequest: boolean
     private _environment: VocdoniEnvironment
@@ -100,7 +100,7 @@ export class DVoteGateway implements IGatewayDVoteClient {
      * @return boolean
      */
     public get isReady(): boolean {
-        return this.isPrepared && Number.isInteger(this.performanceTime)
+        return this.isPrepared && Number.isInteger(this.responseTime)
     }
 
     /**
@@ -122,7 +122,7 @@ export class DVoteGateway implements IGatewayDVoteClient {
     public get health() { return this._health }
     // TODO Remove
     public get weight() { return this._weight }
-    public get performanceTime() { return this._performanceTime }
+    public get responseTime() { return this._responseTime }
     public get hasTimeOutLastRequest() { return this._hasTimeOutLastRequest }
     public get environment() { return this._environment }
 
@@ -248,14 +248,14 @@ export class DVoteGateway implements IGatewayDVoteClient {
      * @param timeout (optional) Timeout in milliseconds
      */
     public checkStatus(timeout: number = GATEWAY_SELECTION_TIMEOUT): Promise<void> {
-        const performanceTime = new Date().getTime()
+        const responseTime = new Date().getTime()
         return this.getInfo(timeout)
             .then((result) => {
                 this._health = result.health
-                this._performanceTime = Math.round(new Date().getTime() - performanceTime)
+                this._responseTime = Math.round(new Date().getTime() - responseTime)
                 this._weight = Math.round(
                     Math.floor(Math.random() * 100) * (20 / 100)
-                    + (100 * (timeout - this._performanceTime) / timeout) * (60 / 100)
+                    + (100 * (timeout - this._responseTime) / timeout) * (60 / 100)
                     + this.health * (20 / 100)
                 )
                 this._supportedApis = result.apiList
