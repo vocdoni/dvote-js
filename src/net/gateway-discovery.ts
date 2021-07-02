@@ -257,8 +257,8 @@ export class GatewayDiscovery {
         healthyNodes.dvote.sort((a: IDVoteGateway, b: IDVoteGateway) => {
             switch (!!a && !!b) {
                 // Return the GW with best performance time
-                case a.performanceTime !== b.performanceTime:
-                    return a.performanceTime - b.performanceTime
+                case a.responseTime !== b.responseTime:
+                    return a.responseTime - b.responseTime
                 // Else return the GW with best health
                 default:
                     return b.health - a.health
@@ -285,7 +285,7 @@ export class GatewayDiscovery {
                     return Math.abs(mostFrequentBlockNumber - b.lastBlockNumber) === 0 ? 1 : -1
                 // Last metric is the performance time
                 default:
-                    return a.performanceTime - b.performanceTime
+                    return a.responseTime - b.responseTime
             }
         })
 
