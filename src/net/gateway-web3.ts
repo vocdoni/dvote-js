@@ -51,7 +51,7 @@ export class Web3Gateway {
     private _environment: VocdoniEnvironment
     private _initializingEns: Promise<any>
     private _hasTimeOutLastRequest: boolean
-    public responseTime: number
+    public responseTime: number = 0
     public peerCount: number
     public lastBlockNumber: number
     public ensPublicResolverContractAddress: string
@@ -68,7 +68,6 @@ export class Web3Gateway {
     constructor(gatewayOrProvider: string | GatewayInfo | providers.BaseProvider, networkId: EthNetworkID = "xdai", environment: VocdoniEnvironment = "prod") {
         if (!["prod", "stg", "dev"].includes(environment)) throw new Error("Invalid environment")
         this._environment = environment
-        this.responseTime = 0
 
         if (!gatewayOrProvider) throw new Error("Invalid GatewayInfo or provider")
         else if (typeof gatewayOrProvider == "string") {
