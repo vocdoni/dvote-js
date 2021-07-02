@@ -265,7 +265,7 @@ export class Web3Gateway implements IGatewayWeb3Client {
 
     /** Determines whether the current Web3 provider is syncing blocks or not. Several types of prviders may always return false. */
     public isSyncing(): Promise<void> {
-        if (!this._provider) return Promise.reject()
+        if (!this._provider) return Promise.reject(new Error("Invalid provider"))
         else if (this._provider instanceof JsonRpcProvider || this._provider instanceof Web3Provider || this._provider instanceof IpcProvider || this._provider instanceof InfuraProvider) {
             let responseTime = new Date().getTime()
             return this._provider.send("eth_syncing", []).then(result => {
@@ -281,10 +281,10 @@ export class Web3Gateway implements IGatewayWeb3Client {
     /** Request the amount of peers the Gateway is currently connected to */
     public getPeers(): Promise<void> {
         // TODO Review if not rejecting and setting peerCount = -1 is the best solution
-        if (!this._provider) return Promise.reject()
+        if (!this._provider) return Promise.reject(new Error("Invalid provider"))
         else if (!(this._provider instanceof JsonRpcProvider) && !(this._provider instanceof Web3Provider) &&
             !(this._provider instanceof IpcProvider) && !(this._provider instanceof InfuraProvider)) {
-            return Promise.reject()
+            return Promise.reject(new Error("Invalid provider"))
         }
 
         let responseTime = new Date().getTime()
@@ -304,10 +304,10 @@ export class Web3Gateway implements IGatewayWeb3Client {
     /** Request the block number of the Gateway which is currently connected to */
     public getBlockNumber(): Promise<void> {
         if (!this._provider) {
-            return Promise.reject()
+            return Promise.reject(new Error("Invalid provider"))
         } else if (!(this._provider instanceof JsonRpcProvider) && !(this._provider instanceof Web3Provider) &&
             !(this._provider instanceof IpcProvider) && !(this._provider instanceof InfuraProvider)) {
-            return Promise.reject()
+            return Promise.reject(new Error("Invalid provider"))
         }
 
         let responseTime = new Date().getTime()
