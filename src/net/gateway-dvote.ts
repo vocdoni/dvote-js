@@ -268,7 +268,7 @@ export class DVoteGateway implements IGatewayDVoteClient {
      */
     public getInfo(timeout?: number): Promise<{ apiList: Array<GatewayApiName | BackendApiName>, health: number }> {
         if (!this.isPrepared) {
-            return Promise.reject()
+            return Promise.reject(new Error("Gateway is not ready"))
         }
 
         return this.sendRequest({ method: "getInfo" }, null, { timeout })
