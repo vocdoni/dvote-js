@@ -48,7 +48,7 @@ export class Web3Gateway implements IGatewayWeb3Client {
     private _initializingEns: Promise<any>
     private _hasTimeOutLastRequest: boolean
     private _archiveIpnsId: string
-    public performanceTime: number
+    public responseTime: number
     public weight: number
     public peerCount: number
     public lastBlockNumber: number
@@ -66,7 +66,7 @@ export class Web3Gateway implements IGatewayWeb3Client {
     constructor(gatewayOrProvider: string | GatewayInfo | providers.BaseProvider, networkId: EthNetworkID = "xdai", environment: VocdoniEnvironment = "prod") {
         if (!["prod", "stg", "dev"].includes(environment)) throw new Error("Invalid environment")
         this._environment = environment
-        this.performanceTime = 0
+        this.responseTime = 0
 
         if (!gatewayOrProvider) throw new Error("Invalid GatewayInfo or provider")
         else if (typeof gatewayOrProvider == "string") {
@@ -258,7 +258,7 @@ export class Web3Gateway implements IGatewayWeb3Client {
             .then(() => {
                 this.weight = Math.round(
                     Math.floor(Math.random() * 100) * (40 / 100)
-                    + (100 * (timeout - this.performanceTime) / timeout) * (60 / 100)
+                    + (100 * (timeout - this.responseTime) / timeout) * (60 / 100)
                 )
             })
     }
@@ -267,10 +267,10 @@ export class Web3Gateway implements IGatewayWeb3Client {
     public isSyncing(): Promise<void> {
         if (!this._provider) return Promise.reject()
         else if (this._provider instanceof JsonRpcProvider || this._provider instanceof Web3Provider || this._provider instanceof IpcProvider || this._provider instanceof InfuraProvider) {
-            let performanceTime = new Date().getTime()
+            let responseTime = new Date().getTime()
             return this._provider.send("eth_syncing", []).then(result => {
-                performanceTime = Math.round(new Date().getTime() - performanceTime)
-                this.performanceTime = performanceTime > this.performanceTime ? performanceTime : this.performanceTime
+                responseTime = Math.round(new Date().getTime() - responseTime)
+                this.responseTime = responseTime > this.responseTime ? responseTime : this.responseTime
                 return !!result ? Promise.reject() : Promise.resolve()
             })
         }
@@ -287,13 +287,13 @@ export class Web3Gateway implements IGatewayWeb3Client {
             return Promise.reject()
         }
 
-        let performanceTime = new Date().getTime()
+        let responseTime = new Date().getTime()
         return this._provider.send("net_peerCount", [])
             .then(result => {
                 // TODO maybe not needed Exception here
                 if (!result) throw new Error('peersCount not available for web3 gateway')
-                performanceTime = Math.round(new Date().getTime() - performanceTime)
-                this.performanceTime = performanceTime > this.performanceTime ? performanceTime : this.performanceTime
+                responseTime = Math.round(new Date().getTime() - responseTime)
+                this.responseTime = responseTime > this.responseTime ? responseTime : this.responseTime
                 this.peerCount = BigNumber.from(result).toNumber()
             })
             .catch(err => {
@@ -310,10 +310,10 @@ export class Web3Gateway implements IGatewayWeb3Client {
             return Promise.reject()
         }
 
-        let performanceTime = new Date().getTime()
+        let responseTime = new Date().getTime()
         return this._provider.getBlockNumber().then((blockNumber) => {
-            performanceTime = Math.round(new Date().getTime() - performanceTime)
-            this.performanceTime = performanceTime > this.performanceTime ? performanceTime : this.performanceTime
+            responseTime = Math.round(new Date().getTime() - responseTime)
+            this.responseTime = responseTime > this.responseTime ? responseTime : this.responseTime
             this.lastBlockNumber = blockNumber
         });
     }
@@ -334,11 +334,11 @@ export class Web3Gateway implements IGatewayWeb3Client {
                 throw new Error("Invalid environment")
         }
 
-        let performanceTime = new Date().getTime()
+        let responseTime = new Date().getTime()
         return this._provider.resolveName(ENTITY_RESOLVER_ENS_SUBDOMAIN + "." + rootDomain)
             .then((address) => {
-                performanceTime = Math.round(new Date().getTime() - performanceTime)
-                this.performanceTime = performanceTime > this.performanceTime ? performanceTime : this.performanceTime
+                responseTime = Math.round(new Date().getTime() - responseTime)
+                this.responseTime = responseTime > this.responseTime ? responseTime : this.responseTime
                 this.ensPublicResolverContractAddress = address
             })
     }
