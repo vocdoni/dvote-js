@@ -51,7 +51,7 @@ export class DVoteGateway implements IGatewayDVoteClient {
     private _health: number = 0
     private _weight: number = 0
     private _uri: string
-    private _responseTime: number = 0
+    private _responseTime: number
     private client: AxiosInstance = null
     private _hasTimeOutLastRequest: boolean
     private _environment: VocdoniEnvironment
