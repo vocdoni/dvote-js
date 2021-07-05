@@ -54,7 +54,7 @@ export class GatewayDiscovery {
      *
      * @returns A Gateway array
      */
-    public static run(params: IGatewayDiscoveryParameters): Promise<Gateway[]> {
+    public static run(params: IGatewayDiscoveryParameters): Promise<IGatewayActiveNodes> {
         if (!params) {
             return Promise.reject(new GatewayDiscoveryValidationError())
         } else if (!params.networkId) {
@@ -76,9 +76,7 @@ export class GatewayDiscovery {
         this.resolveEnsDomains = params.resolveEnsDomains || false
 
         return this.getWorkingGateways()
-            .then((gateways: IGateway[]) => gateways.map(
-                (gw: IGateway) => new Gateway(gw.dvote, gw.web3)
-            ))
+            .then((gateways: IGatewayActiveNodes) => gateways)
             .catch((error: Error | GatewayDiscoveryError) => {
                 if (error instanceof GatewayDiscoveryError) {
                     throw error
@@ -98,15 +96,14 @@ export class GatewayDiscovery {
                                     requiredApis: (GatewayApiName | BackendApiName)[] = [],
                                     environment: VocdoniEnvironment
     ): Promise<{ dvote: IDVoteGateway, web3: IWeb3Gateway }> {
-        return GatewayBootnode.getDefaultUri(networkId, environment)
+        this.networkId = networkId
+        this.environment = environment
+        this.timeout = GATEWAY_SELECTION_TIMEOUT
+
+        return GatewayBootnode.getDefaultUri(this.networkId, this.environment)
             .then((bootnodeUri: ContentUri) => {
-                return this.getGatewaysFromBootnodeData(
-                    networkId,
-                    bootnodeUri,
-                    environment,
-                    1,
-                    GATEWAY_SELECTION_TIMEOUT
-                )
+                this.bootnodesContentUri = bootnodeUri
+                return this.getGatewaysFromBootnodeData()
             })
             .then((gateways: IGatewayActiveNodes) => this.getFirstGateway(gateways))
     }
@@ -124,10 +121,13 @@ export class GatewayDiscovery {
                                 bootnodeUri: string | ContentUri,
                                 environment: VocdoniEnvironment,
     ): Promise<{ dvote: IDVoteGateway, web3: IWeb3Gateway }> {
-        return this.getGatewaysFromBootnodeData(
-            networkId, bootnodeUri, environment, 1, GATEWAY_SELECTION_TIMEOUT
-        )
-        .then((gateways: IGatewayActiveNodes) => this.getFirstGateway(gateways))
+        this.networkId = networkId
+        this.environment = environment
+        this.bootnodesContentUri = bootnodeUri
+        this.timeout = GATEWAY_SELECTION_TIMEOUT
+
+        return this.getGatewaysFromBootnodeData()
+            .then((gateways: IGatewayActiveNodes) => this.getFirstGateway(gateways))
     }
 
     /**
@@ -138,8 +138,8 @@ export class GatewayDiscovery {
     private static async getFirstGateway(gateways: IGatewayActiveNodes): Promise<{ dvote: IDVoteGateway, web3: IWeb3Gateway }> {
         // TODO: Filter by required API's
         const [web3, dvote] = await Promise.all([
-            Promise.race(gateways.web3.map(w3 => w3.check().then(() => w3))),
-            Promise.race(gateways.dvote.map(dv => dv.check().then(() => dv)))
+            Promise.race(gateways.web3.map(w3 => w3.checkStatus().then(() => w3))),
+            Promise.race(gateways.dvote.map(dv => dv.checkStatus().then(() => dv)))
         ])
         if (!web3) throw new Error("Could not find an active Web3 Gateway")
         else if (!dvote) throw new Error("Could not find an active DVote Gateway")
@@ -153,7 +153,7 @@ export class GatewayDiscovery {
      *
      * @returns A list of working and healthy pairs of DVote and Web3 Gateways
      */
-    private static getWorkingGateways(): Promise<IGateway[]> {
+    private static getWorkingGateways(): Promise<IGatewayActiveNodes> {
 
         // Get the gateways instances from bootnode data
         return this.getGatewaysFromBootnodeData()
