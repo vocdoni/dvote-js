@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.9.11
+- Reestablishes weight and random factor for gateway discovery (dvote and web3)
+- Changes ethers provider from `JsonRpcProvider` to `StaticJsonRpcProvider` in order to avoid unecessarry `eth_chainId` calls
+
 ## 1.9.10
 
 - Improved and ligther Gateway Discovery process
