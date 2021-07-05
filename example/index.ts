@@ -728,7 +728,7 @@ async function gatewayRawRequest() {
     const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL_RW })
     await pool.init()
 
-    console.log("THE DVOTE GW:", pool.activeGateway.publicKey)
+    console.log("THE DVOTE GW:", pool.activeDvoteClient.publicKey)
 
     // SIGNED
     const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)

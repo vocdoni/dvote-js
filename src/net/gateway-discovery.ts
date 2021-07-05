@@ -1,10 +1,9 @@
 import { ContentUri } from "../wrappers/content-uri"
-import { Gateway } from "./gateway"
 import { IDVoteGateway } from "./gateway-dvote"
 import { IWeb3Gateway } from "./gateway-web3"
 import { EthNetworkID, GatewayBootnode } from "./gateway-bootnode"
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
-import { JsonBootnodeData } from "../models/gateway"
+import { BackendApiName, GatewayApiName, JsonBootnodeData } from "../models/gateway"
 import { promiseWithTimeout } from "../util/timeout"
 import { Random } from "../util/random"
 import { VocdoniEnvironment } from "../models/common"
@@ -20,14 +19,9 @@ export interface IGatewayDiscoveryParameters {
     resolveEnsDomains?: boolean
 }
 
-interface IGatewayActiveNodes {
+export interface IGatewayActiveNodes {
     dvote: IDVoteGateway[],
     web3: IWeb3Gateway[],
-}
-
-interface IGateway {
-    dvote: IDVoteGateway,
-    web3: IWeb3Gateway,
 }
 
 export class GatewayDiscovery {
@@ -60,7 +54,7 @@ export class GatewayDiscovery {
      *
      * @returns A Gateway array
      */
-    public static run(params: IGatewayDiscoveryParameters): Promise<Gateway[]> {
+    public static run(params: IGatewayDiscoveryParameters): Promise<IGatewayActiveNodes> {
         if (!params) {
             return Promise.reject(new GatewayDiscoveryValidationError())
         } else if (!params.networkId) {
@@ -82,9 +76,7 @@ export class GatewayDiscovery {
         this.resolveEnsDomains = params.resolveEnsDomains || false
 
         return this.getWorkingGateways()
-            .then((gateways: IGateway[]) => gateways.map(
-                (gw: IGateway) => new Gateway(gw.dvote, gw.web3)
-            ))
+            .then((gateways: IGatewayActiveNodes) => gateways)
             .catch((error: Error | GatewayDiscoveryError) => {
                 if (error instanceof GatewayDiscoveryError) {
                     throw error
@@ -94,12 +86,74 @@ export class GatewayDiscovery {
     }
 
     /**
+     * Returns a new random Gateway that is attached to the required network
+     *
+     * @param networkId Either "mainnet", "rinkeby" or "goerli" (test)
+     * @param requiredApis A list of the required APIs
+     * @param environment The Vocdoni environment that will be used
+     */
+    public static randomFromDefault(networkId: EthNetworkID,
+                                    requiredApis: (GatewayApiName | BackendApiName)[] = [],
+                                    environment: VocdoniEnvironment
+    ): Promise<{ dvote: IDVoteGateway, web3: IWeb3Gateway }> {
+        this.networkId = networkId
+        this.environment = environment
+        this.timeout = GATEWAY_SELECTION_TIMEOUT
+
+        return GatewayBootnode.getDefaultUri(this.networkId, this.environment)
+            .then((bootnodeUri: ContentUri) => {
+                this.bootnodesContentUri = bootnodeUri
+                return this.getGatewaysFromBootnodeData()
+            })
+            .then((gateways: IGatewayActiveNodes) => this.getFirstGateway(gateways))
+    }
+
+    /**
+     * Returns a new random Gateway that is attached to the required network
+     *
+     * @param networkId Either "mainnet", "rinkeby" or "goerli" (test)
+     * @param requiredApis A list of the required APIs
+     * @param bootnodeUri The uri from which contains the available gateways
+     * @param environment The Vocdoni environment that will be used
+     */
+    public static randomfromUri(networkId: EthNetworkID,
+                                requiredApis: (GatewayApiName | BackendApiName)[] = [],
+                                bootnodeUri: string | ContentUri,
+                                environment: VocdoniEnvironment,
+    ): Promise<{ dvote: IDVoteGateway, web3: IWeb3Gateway }> {
+        this.networkId = networkId
+        this.environment = environment
+        this.bootnodesContentUri = bootnodeUri
+        this.timeout = GATEWAY_SELECTION_TIMEOUT
+
+        return this.getGatewaysFromBootnodeData()
+            .then((gateways: IGatewayActiveNodes) => this.getFirstGateway(gateways))
+    }
+
+    /**
+     * Returns the first available Gateway from the given list
+     *
+     * @param gateways The list of gateways to race
+     */
+    private static async getFirstGateway(gateways: IGatewayActiveNodes): Promise<{ dvote: IDVoteGateway, web3: IWeb3Gateway }> {
+        // TODO: Filter by required API's
+        const [web3, dvote] = await Promise.all([
+            Promise.race(gateways.web3.map(w3 => w3.checkStatus().then(() => w3))),
+            Promise.race(gateways.dvote.map(dv => dv.checkStatus().then(() => dv)))
+        ])
+        if (!web3) throw new Error("Could not find an active Web3 Gateway")
+        else if (!dvote) throw new Error("Could not find an active DVote Gateway")
+
+        return { dvote, web3 }
+    }
+
+    /**
      * Gets a list of DVote and Web3 Gateways from bootnode data, discards the not healthy gateways
      * and returns a ordered list of working DVote and Web3 Gateways by performance metrics
      *
      * @returns A list of working and healthy pairs of DVote and Web3 Gateways
      */
-    private static getWorkingGateways(): Promise<IGateway[]> {
+    private static getWorkingGateways(): Promise<IGatewayActiveNodes> {
 
         // Get the gateways instances from bootnode data
         return this.getGatewaysFromBootnodeData()
@@ -113,10 +167,7 @@ export class GatewayDiscovery {
             })
             .then((healthyNodes: IGatewayActiveNodes) => {
                 // Sort nodes
-                const sortedNodes = this.sortNodes(healthyNodes)
-
-                // Create pairs of DVote and Web3 gateways
-                return this.createNodePairs(sortedNodes.dvote, sortedNodes.web3)
+                return this.sortNodes(healthyNodes)
             })
     }
 
@@ -217,32 +268,6 @@ export class GatewayDiscovery {
         } while (timeoutsToTest.length)
 
         throw new GatewayDiscoveryError()
-    }
-
-    /**
-     * Helper functions that returns an array of dvote/web3 pairs merging the two input arrays in order
-     */
-    // TODO: @marcvelmer remove this function when refactoring pool
-    private static createNodePairs(dvoteGateways: IDVoteGateway[], web3Gateways: IWeb3Gateway[]): { dvote: IDVoteGateway, web3: IWeb3Gateway }[] {
-        let length = (dvoteGateways.length > web3Gateways.length) ? dvoteGateways.length : web3Gateways.length
-        let gatewayList: { dvote: IDVoteGateway, web3: IWeb3Gateway }[] = Array(length)
-        for (let idx = 0; idx < gatewayList.length; idx++) {
-            gatewayList[idx] = {
-                web3: (idx < web3Gateways.length) ? web3Gateways[idx] : web3Gateways[Math.floor(Math.random() * web3Gateways.length)],
-                dvote: (idx < dvoteGateways.length) ? dvoteGateways[idx] : dvoteGateways[Math.floor(Math.random() * dvoteGateways.length)]
-            }
-        }
-
-        let hasInitialCandidate = false
-        for (let gw of gatewayList) {
-            if (gw.dvote.isReady) {
-                hasInitialCandidate = true
-                break
-            }
-        }
-        if (!hasInitialCandidate) throw new GatewayDiscoveryError(GatewayDiscoveryError.NO_CANDIDATES_READY)
-
-        return gatewayList
     }
 
     /**

@@ -25,6 +25,7 @@ const discoveryParams = {
 const App = () => {
   return (
     <div>
+      <GatewayPoolComponent />
       <FileApiComponent />
     </div>
   )
@@ -71,13 +72,40 @@ const FileApiComponent = () => {
   </div>
 }
 
+const GatewayPoolComponent = () => {
+  const [loading, setLoading] = useState(false)
+  const [dvoteClient, setDvoteClient] = useState("")
+  const [web3Client, setWeb3Client] = useState("")
+
+  const loadPool = () => {
+    setLoading(true)
+    getClient()
+      .then((gwPool: GatewayPool) => {
+        setDvoteClient(gwPool.dvoteUri)
+        setWeb3Client(gwPool.web3Uri)
+      })
+      .catch((err) => {
+        alert("Could not create the Gateway Pool: " + err.message)
+      })
+      .finally(() => setLoading(false))
+  }
+
+  return <div>
+    <h2>Gateway Pool</h2>
+    <p>Status: ({loading ? "loading" : "ready"})</p>
+    <h3>Active Dvote Client URI</h3>
+    <pre>{dvoteClient}</pre>
+    <h3>Active Web3 Client URI</h3>
+    <pre>{web3Client}</pre>
+    {!loading ? <p><button onClick={loadPool}>Create pool</button></p> : null}
+  </div>
+}
+
 // HELPERS
 
 const getClient = () => {
-  return GatewayDiscovery.run(discoveryParams)
-    .then(result => {
-      return new GatewayPool(result, discoveryParams)
-    })
+  return GatewayPool.discover(discoveryParams)
+    .then((gwPool: GatewayPool) => gwPool)
 }
 
 ReactDOM.render(<App />, document.getElementById('root'))
