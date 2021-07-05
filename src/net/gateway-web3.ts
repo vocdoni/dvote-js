@@ -52,6 +52,7 @@ export class Web3Gateway {
     private _initializingEns: Promise<any>
     private _hasTimeOutLastRequest: boolean
     public performanceTime: number
+    public weight: number
     public peerCount: number
     public lastBlockNumber: number
     public ensPublicResolverContractAddress: string
@@ -214,7 +215,7 @@ export class Web3Gateway {
     public checkStatus(timeout: number = GATEWAY_SELECTION_TIMEOUT, resolveEnsDomains: boolean = false): Promise<void> {
         this._hasTimeOutLastRequest = false
         return promiseWithTimeout(
-                this.getMetrics(resolveEnsDomains), timeout, "The Web3 Gateway is too slow"
+                this.getMetrics(timeout, resolveEnsDomains), timeout, "The Web3 Gateway is too slow"
             )
             .catch((error) => {
                 // TODO refactor errors
@@ -229,18 +230,22 @@ export class Web3Gateway {
      * The needed metrics for evaluating Gateways during the discovery process are called here.
      * It also will calculate the response time for each call as a metric itself
      *
+     * @param timeout
      * @param resolveEnsDomains
      */
-    private getMetrics(resolveEnsDomains: boolean): Promise<void> {
+    private getMetrics(timeout: number, resolveEnsDomains: boolean): Promise<void> {
         const metrics = [
             this.getBlockNumber(),
             this.getPeers(),
             this.isSyncing(),
         ]
         if (resolveEnsDomains) metrics.push(this.checkEns())
-        return Promise.all(metrics).then(() => {
-                // ok
-                // maybe flag it as already checked
+        return Promise.all(metrics)
+            .then(() => {
+                this.weight = Math.round(
+                    Math.floor(Math.random() * 100) * (40 / 100)
+                    + (100 * (timeout - this.performanceTime) / timeout) * (60 / 100)
+                )
             })
     }
 
