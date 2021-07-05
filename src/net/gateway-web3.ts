@@ -51,7 +51,7 @@ export class Web3Gateway {
     private _environment: VocdoniEnvironment
     private _initializingEns: Promise<any>
     private _hasTimeOutLastRequest: boolean
-    public performanceTime: number
+    public responseTime: number = 0
     public peerCount: number
     public lastBlockNumber: number
     public ensPublicResolverContractAddress: string
@@ -68,7 +68,6 @@ export class Web3Gateway {
     constructor(gatewayOrProvider: string | GatewayInfo | providers.BaseProvider, networkId: EthNetworkID = "xdai", environment: VocdoniEnvironment = "prod") {
         if (!["prod", "stg", "dev"].includes(environment)) throw new Error("Invalid environment")
         this._environment = environment
-        this.performanceTime = 0
 
         if (!gatewayOrProvider) throw new Error("Invalid GatewayInfo or provider")
         else if (typeof gatewayOrProvider == "string") {
@@ -246,12 +245,12 @@ export class Web3Gateway {
 
     /** Determines whether the current Web3 provider is syncing blocks or not. Several types of prviders may always return false. */
     public isSyncing(): Promise<void> {
-        if (!this._provider) return Promise.reject()
+        if (!this._provider) return Promise.reject(new Error("Invalid provider"))
         else if (this._provider instanceof JsonRpcProvider || this._provider instanceof Web3Provider || this._provider instanceof IpcProvider || this._provider instanceof InfuraProvider) {
-            let performanceTime = new Date().getTime()
+            let responseTime = new Date().getTime()
             return this._provider.send("eth_syncing", []).then(result => {
-                performanceTime = Math.round(new Date().getTime() - performanceTime)
-                this.performanceTime = performanceTime > this.performanceTime ? performanceTime : this.performanceTime
+                responseTime = Math.round(new Date().getTime() - responseTime)
+                this.responseTime = responseTime > this.responseTime ? responseTime : this.responseTime
                 return !!result ? Promise.reject() : Promise.resolve()
             })
         }
@@ -262,19 +261,19 @@ export class Web3Gateway {
     /** Request the amount of peers the Gateway is currently connected to */
     public getPeers(): Promise<void> {
         // TODO Review if not rejecting and setting peerCount = -1 is the best solution
-        if (!this._provider) return Promise.reject()
+        if (!this._provider) return Promise.reject(new Error("Invalid provider"))
         else if (!(this._provider instanceof JsonRpcProvider) && !(this._provider instanceof Web3Provider) &&
             !(this._provider instanceof IpcProvider) && !(this._provider instanceof InfuraProvider)) {
-            return Promise.reject()
+            return Promise.reject(new Error("Invalid provider"))
         }
 
-        let performanceTime = new Date().getTime()
+        let responseTime = new Date().getTime()
         return this._provider.send("net_peerCount", [])
             .then(result => {
                 // TODO maybe not needed Exception here
                 if (!result) throw new Error('peersCount not available for web3 gateway')
-                performanceTime = Math.round(new Date().getTime() - performanceTime)
-                this.performanceTime = performanceTime > this.performanceTime ? performanceTime : this.performanceTime
+                responseTime = Math.round(new Date().getTime() - responseTime)
+                this.responseTime = responseTime > this.responseTime ? responseTime : this.responseTime
                 this.peerCount = BigNumber.from(result).toNumber()
             })
             .catch(err => {
@@ -285,16 +284,16 @@ export class Web3Gateway {
     /** Request the block number of the Gateway which is currently connected to */
     public getBlockNumber(): Promise<void> {
         if (!this._provider) {
-            return Promise.reject()
+            return Promise.reject(new Error("Invalid provider"))
         } else if (!(this._provider instanceof JsonRpcProvider) && !(this._provider instanceof Web3Provider) &&
             !(this._provider instanceof IpcProvider) && !(this._provider instanceof InfuraProvider)) {
-            return Promise.reject()
+            return Promise.reject(new Error("Invalid provider"))
         }
 
-        let performanceTime = new Date().getTime()
+        let responseTime = new Date().getTime()
         return this._provider.getBlockNumber().then((blockNumber) => {
-            performanceTime = Math.round(new Date().getTime() - performanceTime)
-            this.performanceTime = performanceTime > this.performanceTime ? performanceTime : this.performanceTime
+            responseTime = Math.round(new Date().getTime() - responseTime)
+            this.responseTime = responseTime > this.responseTime ? responseTime : this.responseTime
             this.lastBlockNumber = blockNumber
         });
     }
@@ -315,11 +314,11 @@ export class Web3Gateway {
                 throw new Error("Invalid environment")
         }
 
-        let performanceTime = new Date().getTime()
+        let responseTime = new Date().getTime()
         return this._provider.resolveName(ENTITY_RESOLVER_ENS_SUBDOMAIN + "." + rootDomain)
             .then((address) => {
-                performanceTime = Math.round(new Date().getTime() - performanceTime)
-                this.performanceTime = performanceTime > this.performanceTime ? performanceTime : this.performanceTime
+                responseTime = Math.round(new Date().getTime() - responseTime)
+                this.responseTime = responseTime > this.responseTime ? responseTime : this.responseTime
                 this.ensPublicResolverContractAddress = address
             })
     }

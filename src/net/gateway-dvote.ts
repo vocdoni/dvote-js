@@ -51,7 +51,7 @@ export class DVoteGateway {
     private _pubKey: string = ""
     private _health: number = 0
     private _uri: string
-    private _performanceTime: number
+    private _responseTime: number
     private client: AxiosInstance = null
     private _hasTimeOutLastRequest: boolean
 
@@ -97,7 +97,7 @@ export class DVoteGateway {
      * @return boolean
      */
     public get isReady(): boolean {
-        return this.isPrepared && Number.isInteger(this.performanceTime)
+        return this.isPrepared && Number.isInteger(this.responseTime)
     }
 
     /**
@@ -117,7 +117,7 @@ export class DVoteGateway {
     public get health() { return this._health }
     // TODO Remove
     public get weight() { return this.health }
-    public get performanceTime() { return this._performanceTime }
+    public get responseTime() { return this._responseTime }
     public get hasTimeOutLastRequest() { return this._hasTimeOutLastRequest }
 
     /**
@@ -242,11 +242,11 @@ export class DVoteGateway {
      * @param timeout (optional) Timeout in milliseconds
      */
     public checkStatus(timeout: number = GATEWAY_SELECTION_TIMEOUT): Promise<void> {
-        const performanceTime = new Date().getTime()
+        const responseTime = new Date().getTime()
         return this.getInfo(timeout)
             .then((result) => {
                 this._health = result.health
-                this._performanceTime = Math.round(new Date().getTime() - performanceTime)
+                this._responseTime = Math.round(new Date().getTime() - responseTime)
                 this._supportedApis = result.apiList
             })
     }
@@ -257,7 +257,7 @@ export class DVoteGateway {
      */
     public getInfo(timeout?: number): Promise<{ apiList: Array<GatewayApiName | BackendApiName>, health: number }> {
         if (!this.isPrepared) {
-            return Promise.reject()
+            return Promise.reject(new Error("Gateway is not ready"))
         }
 
         return this.sendRequest({ method: "getInfo" }, null, { timeout })
