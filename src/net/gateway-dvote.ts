@@ -50,6 +50,7 @@ export class DVoteGateway {
     private _supportedApis: (GatewayApiName | BackendApiName)[] = []
     private _pubKey: string = ""
     private _health: number = 0
+    private _weight: number = 0
     private _uri: string
     private _performanceTime: number
     private client: AxiosInstance = null
@@ -116,7 +117,7 @@ export class DVoteGateway {
     public get publicKey() { return this._pubKey }
     public get health() { return this._health }
     // TODO Remove
-    public get weight() { return this.health }
+    public get weight() { return this._weight }
     public get performanceTime() { return this._performanceTime }
     public get hasTimeOutLastRequest() { return this._hasTimeOutLastRequest }
 
@@ -247,6 +248,11 @@ export class DVoteGateway {
             .then((result) => {
                 this._health = result.health
                 this._performanceTime = Math.round(new Date().getTime() - performanceTime)
+                this._weight = Math.round(
+                    Math.floor(Math.random() * 100) * (20 / 100)
+                    + (100 * (timeout - this._performanceTime) / timeout) * (60 / 100)
+                    + this.health * (20 / 100)
+                )
                 this._supportedApis = result.apiList
             })
     }

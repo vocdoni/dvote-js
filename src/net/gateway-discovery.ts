@@ -44,12 +44,6 @@ export class GatewayDiscovery {
     public static MIN_NUMBER_GATEWAYS: number = 1
 
     /**
-     * Probability of randomizing each Dvote/Web3 Gateway position
-     * Float values between 0 (never) and 1 (always)
-     */
-    public static RANDOMIZE_SORTING: number = 0.4
-
-    /**
      *  Parameters provided by the user
      */
     public static networkId: EthNetworkID
@@ -259,19 +253,9 @@ export class GatewayDiscovery {
      * @returns A list of sorted DVote and Web3 Gateways
      */
     private static sortNodes(healthyNodes: IGatewayActiveNodes): IGatewayActiveNodes {
-        // Sort DVote gateways by metrics
+        // Sort DVote gateways by weight
         healthyNodes.dvote.sort((a: IDVoteGateway, b: IDVoteGateway) => {
-            switch (!!a && !!b) {
-                // Randomize if needed
-                case Math.random() < this.RANDOMIZE_SORTING:
-                    return Math.random() - 0.5
-                // Return the GW with best performance time
-                case a.performanceTime !== b.performanceTime:
-                    return a.performanceTime - b.performanceTime
-                // Else return the GW with best health
-                default:
-                    return b.health - a.health
-            }
+            return (!!a && !!b) ? b.weight - a.weight : 0
         })
 
         // Get the block numbers frequency and select the most frequent if there is any
@@ -289,15 +273,12 @@ export class GatewayDiscovery {
         // Sort the Web3 Gateways by metrics
         healthyNodes.web3.sort((a: IWeb3Gateway, b: IWeb3Gateway) => {
             switch (!!a && !!b) {
-                // Randomize if needed
-                case Math.random() < this.RANDOMIZE_SORTING:
-                    return Math.random() - 0.5
                 // Return the gateway which last block number is the most frequent
                 case Number.isInteger(mostFrequentBlockNumber) && Math.abs(mostFrequentBlockNumber - a.lastBlockNumber) !== Math.abs(mostFrequentBlockNumber - b.lastBlockNumber):
                     return Math.abs(mostFrequentBlockNumber - b.lastBlockNumber) === 0 ? 1 : -1
-                // Last metric is the performance time
+                // Last metric is the weight
                 default:
-                    return a.performanceTime - b.performanceTime
+                    return b.weight - a.weight
             }
         })
 
