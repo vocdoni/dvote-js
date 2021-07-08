@@ -1,11 +1,29 @@
 # DVote JS changelog
 
+## 1.10.0
+
+- Converting classes grouping methods into `namespaces`
+    - `CensusOffChainApi`, `CensusCaApi`, `CensusErc20Api`
+- [Breaking] Using a new version of the Poseidon hash algorithm (now working with bigInt's)
+- [Breaking] Refactoring `hashing.ts`
+    - Removing `hashBuffer`, `multiHash` and `hash` from `hashing.ts`
+    - Adding `Keccak256.hashText`, `Keccak256.hashHexString`, `Keccak256.hashBytes`
+    - Adding `Poseidon.hash`, `Poseidon.hashBabyJubJubPublicKey`, `Poseidon.getNullifier`
+- Adding `CensusOffChain`
+    - Adding `CensusOffChain.Public` (`encodePublicKey`) and `CensusOffChain.Anonymous` (`digestPublicKey`)
+    - `CensusOffChainApi.digestPublicKey` is gone
+        - Replace `CensusOffChainApi.digestPublicKey(..., CensusOffchainDigestType.RAW_PUBKEY)` by `CensusOffChain.Public.encodePublicKey` instead
+    - `CensusOffchainDigestType` is no longer needed
+    - [Breaking] `generateCensusId` and `generateCensusIdSuffix` are now part of `CensusOffChain`
+- `generateCensusIdSuffix` now uses keccak256 internally
+- [Breaking] `CensusOffchainApi.getCensusSize` is now `CensusOffchainApi.getSize`
+
 ## 1.9.14
 ## 1.9.13
 - Fixing a relative path that was causing issues with yarn
 
 ## 1.9.12
-- Upgrades the Ethereum Storage proofs dependency to account for the London hard fork
+- Upgrades the Ethereum Storage proofs dependency to account for the London hard for
 
 ## 1.9.11
 - Reestablishes weight and random factor for gateway discovery (dvote and web3)
