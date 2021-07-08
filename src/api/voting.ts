@@ -105,6 +105,7 @@ export type IProcessState = {
         costExponent: number,
         maxCount: number,
         maxValue: number,
+        maxTotalCost?: number,
         maxVoteOverwrites: number
     }
 }
@@ -1045,7 +1046,7 @@ export class VotingApi {
             ...filters
         }
         if ('status' in filters) {
-            req['status'] =VochainProcessStatus[filters.status]
+            req['status'] = VochainProcessStatus[filters.status]
         }
 
         try {

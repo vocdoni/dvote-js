@@ -1,5 +1,6 @@
 import { utils } from "ethers"
 import * as poseidon from "circomlib/src/poseidon.js"
+import { Buffer } from "buffer/"
 
 export namespace Keccak256 {
     export function hashText(value: string): string {
