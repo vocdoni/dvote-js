@@ -1,33 +1,65 @@
 import { utils } from "ethers"
+// import { Buffer } from "buffer/"
 
-export class Random {
+export namespace Random {
+    /**
+     * Generates a random buffer of the given length
+     */
+    export function getBytes(count: number): Buffer {
+        if (typeof window != "undefined" && typeof window?.crypto?.getRandomValues != "function") {
+            // browser
+            const buff = new Uint8Array(count)
+            window.crypto.getRandomValues(buff)
+            return Buffer.from(buff)
+        }
+        else if (typeof process != "undefined" && typeof require != "undefined"
+            && typeof require("crypto")?.randomBytes != "undefined") {
+            return require("crypto").randomBytes(count)
+        }
+
+        // other environments (fallback)
+        const result: number[] = []
+        for (let i = 0; i < count; i++) {
+            const val = Math.random() * 256 | 0
+            result.push(val)
+        }
+        return Buffer.from(result)
+    }
+
     /**
      * Generates a random seed and returns a 32 byte keccak256 hash of it (starting with "0x")
      */
-    static getHex(): string {
-        if (typeof window != "undefined" && window?.crypto?.getRandomValues) { // Browser
-            const bytes = new Uint8Array(32)
-            window.crypto.getRandomValues(bytes)
+    export function getHex(): string {
+        const bytes = getBytes(32)
+        return utils.keccak256(bytes)
+    }
 
-            return utils.keccak256(bytes)
-        } else if (typeof process != "undefined") { // NodeJS
-            var crypto
-            if (typeof require != "undefined") {
-                crypto = require("crypto")
+    /**
+     * Generates a random big integer, ranging from `0n` to `maxValue - 1`
+     */
+    export function getBigInt(maxValue: bigint): bigint {
+        const step = BigInt("256")
+        let result = BigInt("0")
+        let nextByte: number
+        let nextValue: bigint
+
+        while (true) {
+            nextByte = getBytes(1)[0]
+            nextValue = result * step + BigInt(nextByte)
+
+            if (nextValue > maxValue) {
+                // already reached maxValue
+                return nextValue % maxValue
             }
-            const bytes = crypto.randomBytes(32)
-            return utils.keccak256(bytes)
-        } else { // Other?
-            const payload = Math.random().toString() + Math.random().toString() + Date.now().toString() + Math.random().toString() + Math.random().toString()
-            const bytes = utils.toUtf8Bytes(payload)
-            return utils.keccak256(bytes)
+            // accumulate bytes
+            result = nextValue
         }
     }
 
     /**
      * Helper function that shuffles the elements of an array
      */
-    static shuffle<T>(array: T[]): T[] {
+    export function shuffle<T>(array: T[]): T[] {
         let temporaryValue: T, idx: number
         let currentIndex = array.length
 
@@ -45,5 +77,4 @@ export class Random {
 
         return array
     }
-
 }

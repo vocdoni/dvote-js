@@ -1,4 +1,8 @@
 import { providers, Wallet, utils } from "ethers"
+import * as createBlakeHash from "blake-hash"
+import * as eddsa from "circomlib/src/eddsa.js"
+import * as babyJubJub from "circomlib/src/babyjub.js"
+import { Scalar, utils as ffutils } from "ffjavascript"
 
 export class WalletUtil {
     /**
@@ -34,12 +38,57 @@ export class WalletUtil {
     }
 }
 
-export class SignerUtil {
+export class WalletBabyJubJub {
+    private _rawPrivKey: Buffer
+    private _privKey: bigint
+
+    constructor(rawPrivateKey: Buffer) {
+        if (!(rawPrivateKey instanceof Uint8Array)) throw new Error("Invalid private key (buffer)")
+        this._rawPrivKey = rawPrivateKey
+
+        const keyHashBytes = createBlakeHash("blake512").update(rawPrivateKey).digest().slice(0, 32)
+        const rawpvkHash = eddsa.pruneBuffer(keyHashBytes)
+        this._privKey = Scalar.shr(ffutils.leBuff2int(rawpvkHash), 3) as bigint
+    }
+
+    /** Concatenates the given login key and process ID with the UTF8 hex representation of the
+     * given secret string and returns a  Baby JubJub wallet using that as the private key
+     */
+    static fromLogin(hexLoginKey: string, hexProcessId: string, userSecret: string) {
+        const hexSeed = hexLoginKey.replace(/^0x/, "") +
+            hexProcessId.replace(/^0x/, "") +
+            Buffer.from(userSecret, "utf8").toString("hex")
+        const seedBytes = Buffer.from(hexSeed, "hex")
+
+        return new WalletBabyJubJub(seedBytes)
+    }
+
+    /** Returns the private key originally provided */
+    public get rawPrivateKey(): Buffer {
+        return this._rawPrivKey
+    }
+
+    /** Returns the blake hash of the original private key, as a bigint.
+     * Use this value to feed to the snarks circuit.
+     */
+    public get privateKey(): bigint {
+        return this._privKey
+    }
+
+    /** Returns the two points of the public key coordinate as big integers */
+    public get publicKey(): { x: bigint, y: bigint } {
+        const [pubKeyX, pubKeyY] = babyJubJub.mulPointEscalar(babyJubJub.Base8, this.privateKey) as [bigint, bigint]
+
+        return { x: pubKeyX, y: pubKeyY }
+    }
+}
+
+export namespace SignerUtil {
     /**
      * Returns a Web3 signer if the browser supports it or if Metamask is available
      * Returns null otherwise
      */
-    static fromInjectedWeb3() {
+    export function fromInjectedWeb3() {
         if (typeof window == "undefined" || typeof window["web3"] == "undefined") return null
 
         const provider = new providers.Web3Provider(window["web3"].currentProvider)

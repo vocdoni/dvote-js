@@ -3,9 +3,9 @@ import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
 import { utils } from "ethers"
 
-import { WalletUtil } from "../../src/util/signers"
+import { WalletBabyJubJub, WalletUtil } from "../../src/crypto/wallets"
 import { Random } from "../../src/util/random"
-import { JsonSignature, BytesSignature } from "../../src/util/data-signing"
+import { JsonSignature, BytesSignature } from "../../src/crypto/data-signing"
 import { compressPublicKey } from "../../dist"
 
 addCompletionHooks()
@@ -141,5 +141,84 @@ describe("Standalone Ethereum wallets", () => {
 
         expect(JsonSignature.isValid(signature, compressPublicKey(wallet.publicKey), jsonBody)).to.be.true
         expect(JsonSignature.isValid(signature, wallet.publicKey, jsonBody)).to.be.true
+    })
+})
+
+describe("Baby JubJub wallets", () => {
+    it("Should create a wallet from a private key", () => {
+        const bytes = Random.getBytes(32)
+        const wallet = new WalletBabyJubJub(bytes)
+
+        expect(wallet.rawPrivateKey.toString("hex")).to.eq(bytes.toString("hex"))
+    })
+    it("Should create a wallet from login details", () => {
+        const wallet1 = WalletBabyJubJub.fromLogin(
+            "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+            "0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0",
+            "secret1234"
+        )
+        const wallet2 = WalletBabyJubJub.fromLogin(
+            "0x0123456789abcdef0123456789abcdef0123456789abcdef0000000000000000",
+            "0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0",
+            "secret1234"
+        )
+        expect(wallet1.privateKey.toString()).to.not.eq(wallet2.privateKey.toString())
+
+        const wallet3 = WalletBabyJubJub.fromLogin(
+            "0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0",
+            "0x0123456789abcdef0123456789abcdef0123456789abcdef0000000000000000",
+            "secret1234"
+        )
+        expect(wallet1.privateKey.toString()).to.not.eq(wallet3.privateKey.toString())
+
+        const wallet4 = WalletBabyJubJub.fromLogin(
+            "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+            "0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0",
+            "secretXXXXXXXXXXX"
+        )
+        expect(wallet1.privateKey.toString()).to.not.eq(wallet4.privateKey.toString())
+
+        expect(wallet2.privateKey.toString()).to.not.eq(wallet3.privateKey.toString())
+        expect(wallet2.privateKey.toString()).to.not.eq(wallet4.privateKey.toString())
+
+        expect(wallet3.privateKey.toString()).to.not.eq(wallet4.privateKey.toString())
+    })
+    it("Should compute the hashed private key", () => {
+        const loginKey = "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        const processId = "0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0"
+        // TODO: Add the expected private keys from an external source
+        const inputs = [
+            { secret: "1234ABCDE", privKey: "" },
+            { secret: "&&QQ$$__", privKey: "" },
+            { secret: "verysupersecret", privKey: "" },
+            { secret: "ULTRA_MAXI_SECRET", privKey: "" },
+            { secret: "¡¡!!>>%%&&//", privKey: "" },
+        ]
+
+        for (let input of inputs) {
+            const wallet = WalletBabyJubJub.fromLogin(loginKey, processId, input.secret)
+
+            expect(wallet.privateKey.toString()).to.eq(input.privKey)
+        }
+    })
+    it("Should compute the public key", () => {
+        // TODO: Add the expected public keys from an external source
+        const inputs = [
+            { privKeyRaw: "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", publicKeyX: "0", publicKeyY: "0" },
+            { privKeyRaw: "0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0", publicKeyX: "0", publicKeyY: "0" },
+            { privKeyRaw: "0x23456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01", publicKeyX: "0", publicKeyY: "0" },
+            { privKeyRaw: "0x3456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012", publicKeyX: "0", publicKeyY: "0" },
+            { privKeyRaw: "0x456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123", publicKeyX: "0", publicKeyY: "0" },
+            { privKeyRaw: "0x56789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01234", publicKeyX: "0", publicKeyY: "0" },
+            { privKeyRaw: "0x6789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012345", publicKeyX: "0", publicKeyY: "0" },
+            { privKeyRaw: "0x789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456", publicKeyX: "0", publicKeyY: "0" },
+        ]
+
+        for (let input of inputs) {
+            const wallet = new WalletBabyJubJub(Buffer.from(input.privKeyRaw, "hex"))
+            const { x, y } = wallet.publicKey
+            expect(x.toString()).to.eq(input.publicKeyX)
+            expect(y.toString()).to.eq(input.publicKeyY)
+        }
     })
 })

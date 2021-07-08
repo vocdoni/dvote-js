@@ -4,7 +4,7 @@ import { addCompletionHooks } from "../mocha-hooks"
 import { Wallet } from "ethers"
 import { TextEncoder, TextDecoder } from "util"
 
-import { JsonSignature, BytesSignature } from "../../src/util/data-signing"
+import { JsonSignature, BytesSignature } from "../../src/crypto/data-signing"
 import { extractUint8ArrayJSONValue } from "../../src/util/uint8array"
 import { compressPublicKey } from "../../dist"
 
