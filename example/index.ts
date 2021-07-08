@@ -11,7 +11,7 @@ import { utils, providers, Wallet } from "ethers"
 import { FileApi } from "../src/api/file"
 import { EntityApi } from "../src/api/entity"
 import { VotingApi } from "../src/api/voting"
-import { CensusOffChainApi, CensusOffchainDigestType } from "../src/api/census"
+import { CensusOffChainApi, CensusOffChain } from "../src/api/census"
 import { ProcessContractParameters } from "../src/net/contracts"
 import { Gateway } from "../src/net/gateway"
 import { DVoteGateway } from "../src/net/gateway-dvote"
@@ -487,7 +487,7 @@ async function cloneVotingProcess() {
         censusUri: NEW_MERKLE_TREE_ORIGIN,
         maxCount: currentParameters.voteOptions.maxCount,
         costExponent: currentParameters.voteOptions.costExponent,
-        maxValue: currentParameters.voteOptions.maxCount,
+        maxValue: currentParameters.voteOptions.maxValue,
         maxTotalCost: currentParameters.voteOptions.maxTotalCost,
         maxVoteOverwrites: currentParameters.voteOptions.maxVoteOverwrites,
         paramsSignature: "0x0000000000000000000000000000000000000000000000000000000000000000",
@@ -524,7 +524,7 @@ async function useVoteApi() {
     console.log("BLOCKCHAIN INFO:\n")
     console.log("- Process startBlock:", processParams.startBlock)
     console.log("- Process endBlock:", processParams.startBlock + processParams.blockCount)
-    console.log("- Census size:", await CensusOffChainApi.getCensusSize(censusRoot, pool))
+    console.log("- Census size:", await CensusOffChainApi.getSize(censusRoot, pool))
     console.log("- Block height:", await VotingApi.getBlockHeight(pool))
     console.log("- Envelope height:", await VotingApi.getEnvelopeHeight(processId, pool))
 
@@ -537,7 +537,7 @@ async function useVoteApi() {
     console.log("- Date at block 500:", await VotingApi.estimateDateAtBlock(500, pool))
     console.log("- Block in 200 seconds:", await VotingApi.estimateBlockAtDateTime(new Date(Date.now() + VOCHAIN_BLOCK_TIME * 20), pool))
 
-    const publicKeyDigest = CensusOffChainApi.digestPublicKey(wallet.publicKey, CensusOffchainDigestType.RAW_PUBKEY)
+    const publicKeyDigest = CensusOffChain.Public.encodePublicKey(wallet.publicKey)
     const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: publicKeyDigest }, true, pool)
     const votes = [1, 2, 1]
 
@@ -595,7 +595,7 @@ async function submitVoteBatch() {
             const wallet = Wallet.fromMnemonic(mnemonic, PATH)
             // const myEntityAddress = await wallet.getAddress()
 
-            const publicKeyDigest = CensusOffChainApi.digestPublicKey(wallet.publicKey, CensusOffchainDigestType.RAW_PUBKEY)
+            const publicKeyDigest = CensusOffChain.Public.encodePublicKey(wallet.publicKey)
             const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: publicKeyDigest }, true, pool)
             const votes = [1]
             const envelope = await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet })
