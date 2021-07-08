@@ -1,14 +1,14 @@
 import { Wallet, Signer, utils } from "ethers"
 import { compressPublicKey } from "./elliptic"
 
-export class JsonSignature {
+export namespace JsonSignature {
     /**
      * Sign a JSON payload using the given Ethers wallet or signer.
      * Ensures that the object keys are alphabetically sorted.
      * @param request
      * @param walletOrSigner
      */
-    static sign(request: any, walletOrSigner: Wallet | Signer): Promise<string> {
+    export function sign(request: any, walletOrSigner: Wallet | Signer): Promise<string> {
         if (!walletOrSigner) throw new Error("Invalid wallet/signer")
 
         const sortedRequest = JsonSignature.sort(request)
@@ -24,7 +24,7 @@ export class JsonSignature {
      * @param publicKey
      * @param responseBody JSON object of the `response` or `error` fields
      */
-    static isValid(signature: string, publicKey: string, responseBody: any): boolean {
+    export function isValid(signature: string, publicKey: string, responseBody: any): boolean {
         if (!publicKey) return true
         else if (!signature) return false
 
@@ -46,7 +46,7 @@ export class JsonSignature {
      * @param signature Hex encoded signature (created with the Ethereum prefix)
      * @param responseBody JSON object of the `response` or `error` fields
      */
-    static recoverPublicKey(responseBody: any, signature: string, expanded: boolean = false): string {
+    export function recoverPublicKey(responseBody: any, signature: string, expanded: boolean = false): string {
         if (!signature) throw new Error("Invalid signature")
         else if (!responseBody) throw new Error("Invalid body")
 
@@ -65,7 +65,7 @@ export class JsonSignature {
      * Returns a copy of the JSON data so that fields are ordered alphabetically and signatures are 100% reproduceable
      * @param data Any valid JSON payload
      */
-    static sort(data: any) {
+    export function sort(data: any) {
         switch (typeof data) {
             case "bigint":
             case "boolean":
@@ -88,14 +88,14 @@ export class JsonSignature {
 }
 
 
-export class BytesSignature {
+export namespace BytesSignature {
     /**
      * Sign a JSON payload using the given Ethers wallet or signer. 
      * Ensures that the object keys are alphabetically sorted.
      * @param request 
      * @param walletOrSigner 
      */
-    static sign(request: Uint8Array, walletOrSigner: Wallet | Signer): Promise<string> {
+    export function sign(request: Uint8Array, walletOrSigner: Wallet | Signer): Promise<string> {
         if (!walletOrSigner) throw new Error("Invalid wallet/signer")
 
         return walletOrSigner.signMessage(request)
@@ -108,7 +108,7 @@ export class BytesSignature {
      * @param publicKey
      * @param responseBody Uint8Array of the inner response JSON object
      */
-    static isValid(signature: string, publicKey: string, responseBody: Uint8Array): boolean {
+    export function isValid(signature: string, publicKey: string, responseBody: Uint8Array): boolean {
         if (!publicKey) return true
         else if (!signature) return false
 

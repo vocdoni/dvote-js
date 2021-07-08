@@ -4,12 +4,12 @@ import { json } from "body-parser"
 import { Server } from "http";
 import { Wallet } from "ethers"
 import { TextEncoder } from "util"
-import { BytesSignature } from "../../src/util/data-signing"
+import { BytesSignature } from "../../src/crypto/data-signing"
 import { DVoteGateway } from "../../src/net/gateway-dvote"
 import { GatewayInfo } from "../../src/wrappers/gateway-info"
 import { getWallets } from "./web3-service"
 import { BackendApiName, GatewayApiName } from "../../src/models/gateway";
-import { compressPublicKey } from "../../src/util/elliptic";
+import { compressPublicKey } from "../../src/crypto/elliptic";
 
 
 export type TestResponse = {

@@ -1,24 +1,12 @@
 import { Wallet, Signer, utils, ContractTransaction, BigNumber, providers } from "ethers"
 import { Gateway, IGateway } from "../net/gateway"
-import { GatewayArchive, IArchiveResponseBody } from "../net/gateway-archive";
 import { FileApi } from "./file"
 import { EntityApi } from "./entity"
 import { ProcessMetadata, checkValidProcessMetadata, DigestedProcessResults, DigestedProcessResultItem, INewProcessParams, IProofEVM, IProofCA, IProofGraviton, INewProcessErc20Params } from "../models/process"
-import {
-    VOCHAIN_BLOCK_TIME,
-    XDAI_GAS_PRICE,
-    XDAI_CHAIN_ID,
-    SOKOL_CHAIN_ID,
-    SOKOL_GAS_PRICE,
-    VOCDONI_MAINNET_ENTITY_ID,
-    VOCDONI_GOERLI_ENTITY_ID,
-    VOCDONI_RINKEBY_ENTITY_ID,
-    VOCDONI_XDAI_ENTITY_ID,
-    VOCDONI_XDAI_STG_ENTITY_ID, VOCDONI_SOKOL_ENTITY_ID
-} from "../constants"
-import { BytesSignature } from "../util/data-signing"
+import { VOCHAIN_BLOCK_TIME, XDAI_GAS_PRICE, XDAI_CHAIN_ID, SOKOL_CHAIN_ID, SOKOL_GAS_PRICE } from "../constants"
+import { BytesSignature } from "../crypto/data-signing"
 import { Buffer } from "buffer/"  // Previously using "arraybuffer-to-string"
-import { Asymmetric } from "../util/encryption"
+import { Asymmetric } from "../crypto/encryption"
 import { GatewayPool, IGatewayPool } from "../net/gateway-pool"
 import { VochainWaiter } from "../util/waiters"
 import { Random } from "../util/random"
@@ -141,7 +129,7 @@ const blocksPer6h = 6 * blocksPerH
 const blocksPerDay = 24 * blocksPerH
 
 
-export class VotingApi {
+export namespace VotingApi {
     ///////////////////////////////////////////////////////////////////////////////
     // CONTRACT GETTERS
     ///////////////////////////////////////////////////////////////////////////////
@@ -152,7 +140,7 @@ export class VotingApi {
      * @param processCountIndex
      * @param namespace
      */
-    static getProcessId(entityAddress: string, processCountIndex: number, namespace: number, chainId: number): string {
+    export function getProcessId(entityAddress: string, processCountIndex: number, namespace: number, chainId: number): string {
         if (!entityAddress) throw new Error("Invalid address")
 
         return utils.keccak256(
@@ -164,20 +152,19 @@ export class VotingApi {
      * Fetch the Ethereum parameters and metadata for the given processId using the given gateway
      * @param processId
      * @param gateway
-     * @param params
      */
-    static getProcess(processId: string, gateway: IGateway | IGatewayPool, params: { skipArchive?: boolean } = {}): Promise<IProcessDetails> {
+    export function getProcess(processId: string, gateway: IGateway | IGatewayPool): Promise<IProcessDetails> {
         if (!processId) throw new Error("Invalid processId")
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         let state: IProcessState
-        return VotingApi.getProcessState(processId, gateway, params)
+        return getProcessState(processId, gateway)
             .then(result => {
                 state = result
 
                 if (!result.metadata) {
                     // Fallback => try on Ethereum
-                    return VotingApi.getProcessContractParameters(processId, gateway)
+                    return getProcessContractParameters(processId, gateway)
                         .then(params => FileApi.fetchString(params.metadata, gateway))
                         .catch(() => {
                             throw new Error("The given voting process has no metadata")
@@ -203,22 +190,15 @@ export class VotingApi {
      * Fetch the full state of the given processId on the Vochain
      * @param processId
      * @param gateway
-     * @param params
      */
-    static getProcessState(processId: string, gateway: IGateway | IGatewayPool, params: { skipArchive?: boolean } = {}): Promise<IProcessState> {
+    export function getProcessState(processId: string, gateway: IGateway | IGatewayPool): Promise<IProcessState> {
         if (!processId) return Promise.reject(new Error("Empty process ID"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getProcessInfo", processId })
-            .catch((error) => {
-                const message = error.message ? "Could not retrieve the process info: " + error.message : "Could not retrieve the process info"
-                if (!params.skipArchive && message.includes("No data found for this key")) {
-                    return this.getProcessStateArchive(processId, gateway, message)
-                }
-                throw new Error(message)
-            })
             .then((response) => {
-                if (typeof response.process !== 'object') throw new Error()
+                if (!response.ok) throw new Error(response.message || null)
+                else if (typeof response.process !== 'object') throw new Error()
 
                 // Ensure 0x's
                 const result = response.process
@@ -227,69 +207,41 @@ export class VotingApi {
                 result.processId = "0x" + result.processId
                 return result
             })
-    }
-
-    /**
-     * Fetch the full state of the given processId on the process archive
-     *
-     * @param processId
-     * @param gateway
-     * @param errorMessage
-     */
-    private static getProcessStateArchive(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string) {
-        return GatewayArchive.getProcess(processId, gateway, errorMessage)
-            .then((response: IArchiveResponseBody) => response)
+            .catch((error) => {
+                const message = error.message ? "Could not retrieve the process info: " + error.message : "Could not retrieve the process info"
+                throw new Error(message)
+            })
     }
 
     /**
      * Fetch the Vochain headers of the given processId on the Vochain. This operation is more lightweight than getProcessInfo
      * @param processId
      * @param gateway
-     * @param params
      */
-    static getProcessSummary(processId: string, gateway: IGateway | IGatewayPool, params: { skipArchive?: boolean } = {}): Promise<IProcessSummary> {
+    export function getProcessSummary(processId: string, gateway: IGateway | IGatewayPool): Promise<IProcessSummary> {
         if (!processId) return Promise.reject(new Error("Empty process ID"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getProcessSummary", processId })
-            .catch((error) => {
-                const message = error.message ? "Could not retrieve the process info: " + error.message : "Could not retrieve the process info"
-                if (!params.skipArchive && message.includes("No data found for this key")) {
-                    return this.getProcessSummaryArchive(processId, gateway, message)
-                }
-                throw new Error(message)
-            })
             .then((response) => {
+                if (!response.ok) throw new Error(response.message || null)
                 const { processSummary } = response
 
                 return {
                     entityId: "0x" + processSummary.entityId,
                     envelopeHeight: processSummary.envelopeHeight,
-                    status: typeof processSummary.status === "number" ? processSummary.status : VochainProcessStatus[processSummary.state as string],
+                    status: VochainProcessStatus[processSummary.state as string],
                     envelopeType: processSummary.envelopeType || {},
                     startBlock: processSummary.startBlock,
-                    endBlock: processSummary.endBlock ? processSummary.endBlock : processSummary.startBlock + processSummary.blockCount,
+                    endBlock: processSummary.startBlock + processSummary.blockCount,
                     entityIndex: processSummary.entityIndex,
                     metadata: processSummary.metadata,
                     sourceNetworkId: processSummary.sourceNetworkID || processSummary.sourceNetworkId,
                 } as IProcessSummary
             })
-    }
-
-    /**
-     * Fetch the headers of the given processId on the archive.
-     *
-     * @param processId
-     * @param gateway
-     * @param errorMessage
-     */
-    private static getProcessSummaryArchive(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string) {
-        return GatewayArchive.getProcess(processId, gateway, errorMessage)
-            .then((response: IArchiveResponseBody) => {
-                response.process.envelopeHeight = response.results.envelopeHeight
-                return {
-                    processSummary: response.process
-                }
+            .catch((error) => {
+                const message = error.message ? "Could not retrieve the process info: " + error.message : "Could not retrieve the process info"
+                throw new Error(message)
             })
     }
 
@@ -298,16 +250,16 @@ export class VotingApi {
      * @param processId
      * @param gateway
      */
-    static getProcessMetadata(processId: string, gateway: IGateway | IGatewayPool): Promise<ProcessMetadata> {
+    export function getProcessMetadata(processId: string, gateway: IGateway | IGatewayPool): Promise<ProcessMetadata> {
         if (!processId) throw new Error("Invalid processId")
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
-        return VotingApi.getProcessSummary(processId, gateway)
+        return getProcessSummary(processId, gateway)
             .then(processInfo => {
 
                 if (!processInfo.metadata) {
                     // Fallback => try on Ethereum
-                    return VotingApi.getProcessContractParameters(processId, gateway)
+                    return getProcessContractParameters(processId, gateway)
                         .then(params => FileApi.fetchString(params.metadata, gateway))
                         .catch(() => {
                             throw new Error("The given voting process has no metadata")
@@ -324,7 +276,7 @@ export class VotingApi {
      * @param processId
      * @param gateway
      */
-    static getProcessContractParameters(processId: string, gateway: IGateway | IGatewayPool): Promise<ProcessContractParameters> {
+    export function getProcessContractParameters(processId: string, gateway: IGateway | IGatewayPool): Promise<ProcessContractParameters> {
         if (!processId) throw new Error("Invalid processId")
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -341,8 +293,8 @@ export class VotingApi {
      * Retrieves the number of blocks on the Vochain
      * @param gateway
      */
-    static getBlockHeight(gateway: IGateway | IGatewayPool): Promise<number> {
-        return VotingApi.getBlockStatus(gateway)
+    export function getBlockHeight(gateway: IGateway | IGatewayPool): Promise<number> {
+        return getBlockStatus(gateway)
             .then(status => {
                 if (!(typeof status.blockNumber === 'number') || status.blockNumber < 0) throw new Error("The retrieved block number is not valid")
                 return status.blockNumber
@@ -359,7 +311,7 @@ export class VotingApi {
      * @see estimateBlockAtDateTime (date, gateway)
      * @see estimateDateAtBlock (blockNumber, gateway)
      */
-    static getBlockStatus(gateway: IGateway | IGatewayPool): Promise<BlockStatus> {
+    export function getBlockStatus(gateway: IGateway | IGatewayPool): Promise<BlockStatus> {
         if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getBlockStatus" })
@@ -385,12 +337,12 @@ export class VotingApi {
      * @param dateTime
      * @param gatewayClient
      */
-    static estimateBlockAtDateTime(dateTime: Date, gateway: IGateway | IGatewayPool): Promise<number> {
+    export function estimateBlockAtDateTime(dateTime: Date, gateway: IGateway | IGatewayPool): Promise<number> {
         if (typeof dateTime == "number") dateTime = new Date(dateTime)
         else if (!(dateTime instanceof Date)) return null
 
-        return VotingApi.getBlockStatus(gateway)
-            .then(status => VotingApi.estimateBlockAtDateTimeSync(dateTime, status))
+        return getBlockStatus(gateway)
+            .then(status => estimateBlockAtDateTimeSync(dateTime, status))
     }
 
     /**
@@ -398,7 +350,7 @@ export class VotingApi {
      * @param dateTime
      * @param blockStatus The block status to use for the estimation (reported by gateways)
      */
-    static estimateBlockAtDateTimeSync(dateTime: Date, blockStatus: BlockStatus): number {
+    export function estimateBlockAtDateTimeSync(dateTime: Date, blockStatus: BlockStatus): number {
         if (typeof dateTime == "number") dateTime = new Date(dateTime)
         else if (!(dateTime instanceof Date)) return null
 
@@ -485,11 +437,11 @@ export class VotingApi {
      * @param blockNumber
      * @param gatewayClient
      */
-    static estimateDateAtBlock(blockNumber: number, gateway: IGateway | IGatewayPool): Promise<Date> {
+    export function estimateDateAtBlock(blockNumber: number, gateway: IGateway | IGatewayPool): Promise<Date> {
         if (!blockNumber || blockNumber < 0) return null
 
-        return VotingApi.getBlockStatus(gateway)
-            .then(status => VotingApi.estimateDateAtBlockSync(blockNumber, status))
+        return getBlockStatus(gateway)
+            .then(status => estimateDateAtBlockSync(blockNumber, status))
     }
 
     /**
@@ -497,7 +449,7 @@ export class VotingApi {
      * @param blockNumber
      * @param blockStatus The block status to use for the estimation (reported by gateways)
      */
-    static estimateDateAtBlockSync(blockNumber: number, blockStatus?: BlockStatus): Date {
+    export function estimateDateAtBlockSync(blockNumber: number, blockStatus?: BlockStatus): Date {
         if (!blockNumber) return null
 
         // Diff between the last mined block and the given one
@@ -575,7 +527,7 @@ export class VotingApi {
      * Retrieves the current price of process creation
      * @param gateway
      */
-    static getProcessPrice(gateway: IGateway | IGatewayPool): Promise<BigNumber> {
+    export function getProcessPrice(gateway: IGateway | IGatewayPool): Promise<BigNumber> {
         if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.getProcessesInstance()
@@ -587,7 +539,7 @@ export class VotingApi {
      * @param processId
      * @param gateway
      */
-    static getProcessKeys(processId: string, gateway: IGateway | IGatewayPool): Promise<IProcessKeys> {
+    export function getProcessKeys(processId: string, gateway: IGateway | IGatewayPool): Promise<IProcessKeys> {
         if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getProcessKeys", processId })
@@ -614,41 +566,21 @@ export class VotingApi {
      * Retrieves the cumulative weight that has been casted in votes for the given process ID.
      * @param processId
      * @param gateway
-     * @param params
      */
-    static getResultsWeight(processId: string, gateway: IGateway | IGatewayPool, params: { skipArchive?: boolean } = {}): Promise<BigNumber> {
+    export function getResultsWeight(processId: string, gateway: IGateway | IGatewayPool): Promise<BigNumber> {
         if (!processId) return Promise.reject(new Error("Empty process ID"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getResultsWeight", processId })
-            .catch((error) => {
-                const message = error.message ? "Could not retrieve the results weight: " + error.message : "Could not retrieve the results weight"
-                if (!params.skipArchive && message.includes("No data found for this key")) {
-                    return this.getResultsWeightArchive(processId, gateway, message)
-                }
-                throw new Error(message)
-            })
             .then((response) => {
                 if (response.weight < 0) throw new Error("The weight value is not valid")
                 else if (typeof response.weight !== 'string' && !BigNumber.isBigNumber(response.weight)) throw new Error("The weight value is not valid")
 
                 return BigNumber.from(response.weight)
             })
-    }
-
-    /**
-     * Retrieves the archive cumulative weight that has been casted in votes for the given process ID.
-     *
-     * @param processId
-     * @param gateway
-     * @param errorMessage
-     */
-    private static getResultsWeightArchive(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string) {
-        return GatewayArchive.getProcess(processId, gateway, errorMessage)
-            .then((response: IArchiveResponseBody) => {
-                return {
-                    weight: "0x" + response.results.weight.toString(16)
-                }
+            .catch((error) => {
+                const message = error.message ? "Could not retrieve the results weight: " + error.message : "Could not retrieve the results weight"
+                throw new Error(message)
             })
     }
 
@@ -664,7 +596,7 @@ export class VotingApi {
      * @param gateway
      * @returns The process ID
      */
-    static newProcess(processParameters: INewProcessParams, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
+    export function newProcess(processParameters: INewProcessParams, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
         if (!processParameters) return Promise.reject(new Error("Invalid process metadata"))
         else if (!processParameters.metadata) return Promise.reject(new Error("Invalid process metadata"))
         else if (!walletOrSigner || !walletOrSigner._isSigner)
@@ -676,12 +608,12 @@ export class VotingApi {
             case ProcessCensusOrigin.OFF_CHAIN_TREE:
             case ProcessCensusOrigin.OFF_CHAIN_TREE_WEIGHTED:
             case ProcessCensusOrigin.OFF_CHAIN_CA:
-                return VotingApi.newProcessOffchainCensus(processParameters, walletOrSigner, gateway)
+                return newProcessOffchainCensus(processParameters, walletOrSigner, gateway)
             case ProcessCensusOrigin.ERC20:
             case ProcessCensusOrigin.ERC721:
             case ProcessCensusOrigin.ERC1155:
             case ProcessCensusOrigin.ERC777:
-                return VotingApi.newProcessEvmCensus(processParameters, walletOrSigner, gateway)
+                return newProcessEvmCensus(processParameters, walletOrSigner, gateway)
             default:
                 throw new Error("Invalid Census Origin")
         }
@@ -695,7 +627,7 @@ export class VotingApi {
      * @param gateway
      * @returns The process ID
      */
-    private static async newProcessOffchainCensus(processParameters: INewProcessParams,
+    async function newProcessOffchainCensus(processParameters: INewProcessParams,
         walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
         try {
             // throw if not valid
@@ -724,7 +656,7 @@ export class VotingApi {
             // REGISTER THE NEW PROCESS
             const ethChainId = await gateway.chainId
             let options: IMethodOverrides = {
-                value: await VotingApi.getProcessPrice(gateway)
+                value: await getProcessPrice(gateway)
             }
             let tx: ContractTransaction
             switch (ethChainId) {
@@ -781,7 +713,7 @@ export class VotingApi {
     * @param gateway
     * @returns The process ID
     */
-    private static async newProcessEvmCensus(processParameters: INewProcessParams,
+    async function newProcessEvmCensus(processParameters: INewProcessParams,
         walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
         try {
             // throw if not valid
@@ -810,7 +742,7 @@ export class VotingApi {
             // REGISTER THE NEW PROCESS
             const ethChainId = await gateway.chainId
             let options: IMethodOverrides = {
-                value: await VotingApi.getProcessPrice(gateway)
+                value: await getProcessPrice(gateway)
             }
             let tx: ContractTransaction
             switch (ethChainId) {
@@ -858,7 +790,7 @@ export class VotingApi {
      * @param walletOrSigner
      * @param web3Gateway
      */
-    static async setStatus(processId: string, newStatus: IProcessStatus, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<void> {
+    export async function setStatus(processId: string, newStatus: IProcessStatus, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<void> {
         if (!processId) throw new Error("Invalid process ID")
         else if (!walletOrSigner) throw new Error("Invalid Wallet or Signer")
         else if (!gateway) throw new Error("Invalid Gateway object")
@@ -888,7 +820,7 @@ export class VotingApi {
      * @param walletOrSigner
      * @param web3Gateway
      */
-    static async incrementQuestionIndex(processId: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<void> {
+    export async function incrementQuestionIndex(processId: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<void> {
         if (!processId) throw new Error("Invalid process ID")
         else if (!walletOrSigner) throw new Error("Invalid Wallet or Signer")
         else if (!gateway) throw new Error("Invalid Gateway object")
@@ -918,7 +850,7 @@ export class VotingApi {
      * @param walletOrSigner
      * @param web3Gateway
      */
-    static async setCensus(processId: string, censusRoot: string, censusUri: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<void> {
+    export async function setCensus(processId: string, censusRoot: string, censusUri: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<void> {
         if (!processId) throw new Error("Invalid process ID")
         else if (!walletOrSigner) throw new Error("Invalid Wallet or Signer")
         else if (!gateway) throw new Error("Invalid Gateway object")
@@ -948,7 +880,7 @@ export class VotingApi {
      * @param walletOrSigner
      * @param web3Gateway
      */
-    static async setResults(processId: string, results: number[][], envelopeCount: number, vochainId: number, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<void> {
+    export async function setResults(processId: string, results: number[][], envelopeCount: number, vochainId: number, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<void> {
         if (!processId) throw new Error("Invalid process ID")
         else if (!walletOrSigner) throw new Error("Invalid Wallet or Signer")
         else if (!gateway) throw new Error("Invalid Gateway object")
@@ -976,7 +908,7 @@ export class VotingApi {
      * @param gateway
      * @param nullifier
      */
-    static async getEnvelope(processId: string, gateway: IGateway | IGatewayPool, nullifier: string): Promise<string> {
+    export async function getEnvelope(processId: string, gateway: IGateway | IGatewayPool, nullifier: string): Promise<string> {
         if (!processId) return Promise.reject(new Error("No process ID provided"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -996,39 +928,19 @@ export class VotingApi {
      * Fetches the number of vote envelopes for a given processId
      * @param processId
      * @param gateway
-     * @param params
      */
-    static getEnvelopeHeight(processId: string, gateway: IGateway | IGatewayPool, params: { skipArchive?: boolean } = {}): Promise<number> {
+    export function getEnvelopeHeight(processId: string, gateway: IGateway | IGatewayPool): Promise<number> {
         if (!processId) return Promise.reject(new Error("No process ID provided"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getEnvelopeHeight", processId })
-            .catch((error) => {
-                const message = (error.message) ? "Could not get the envelope height: " + error.message : "Could not get the envelope height"
-                if (!params.skipArchive && message.includes("No data found for this key")) {
-                    return this.getEnvelopeHeightArchive(processId, gateway, message)
-                }
-                throw new Error(message)
-            })
             .then((response) => {
                 if (!(typeof response.height === 'number') || response.height < 0) throw new Error("The gateway response is not correct")
                 return response.height
             })
-    }
-
-    /**
-     * Fetches the archive number of vote envelopes for a given processId
-     *
-     * @param processId
-     * @param gateway
-     * @param errorMessage
-     */
-    private static getEnvelopeHeightArchive(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string) {
-        return GatewayArchive.getProcess(processId, gateway, errorMessage)
-            .then((response: IArchiveResponseBody) => {
-                return {
-                    height: response.results.envelopeHeight
-                }
+            .catch((error) => {
+                const message = (error.message) ? "Could not get the envelope height: " + error.message : "Could not get the envelope height"
+                throw new Error(message)
             })
     }
 
@@ -1037,7 +949,7 @@ export class VotingApi {
      * @param filters Optional criteria to filter the processes ID's given by the gateway
      * @param gateway
      */
-    static async getProcessList(filters: { entityId?: string, namespace?: number, status?: VochainProcessStatus, withResults?: boolean, from?: number } = {}, gateway: IGateway | IGatewayPool): Promise<string[]> {
+    export async function getProcessList(filters: { entityId?: string, namespace?: number, status?: VochainProcessStatus, withResults?: boolean, from?: number } = {}, gateway: IGateway | IGatewayPool): Promise<string[]> {
         if (!gateway) throw new Error("Invalid Gateway object")
         else if (typeof filters != "object") throw new Error("Invalid filters parameter")
 
@@ -1068,7 +980,7 @@ export class VotingApi {
      * @param gateway
      * @returns List of submited votes nullifiers
      */
-    static getEnvelopeList(processId: string,
+    export function getEnvelopeList(processId: string,
         from: number, listSize: number, gateway: IGateway | IGatewayPool): Promise<string[]> {
         if (!processId || isNaN(from) || isNaN(listSize) || !gateway)
             return Promise.reject(new Error("Invalid parameters"))
@@ -1088,23 +1000,15 @@ export class VotingApi {
      * Fetches the results for a given processId
      * @param processId
      * @param gateway
-     * @param params
      * @returns Results, vote process  type, vote process state
      */
-    static getRawResults(processId: string, gateway: IGateway | IGatewayPool, params: { skipArchive?: boolean } = {}): Promise<{ results: string[][], status: ProcessStatus, envelopHeight: number }> {
+    export function getRawResults(processId: string, gateway: IGateway | IGatewayPool): Promise<{ results: string[][], status: ProcessStatus, envelopHeight: number }> {
         if (!processId)
             return Promise.reject(new Error("No process ID provided"))
         else if (!gateway)
             return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getResults", processId })
-            .catch((error) => {
-                const message = (error.message) ? "Could not fetch the process results: " + error.message : "Could not fetch the process results"
-                if (!params.skipArchive && message.includes("No data found for this key")) {
-                    return this.getRawResultsArchive(processId, gateway, message)
-                }
-                throw new Error(message)
-            })
             .then((response) => {
                 if (response.results && !Array.isArray(response.results)) throw new Error("The gateway response is not valid")
                 const results = (Array.isArray(response.results) && response.results.length) ? response.results : []
@@ -1112,26 +1016,9 @@ export class VotingApi {
                 const envelopHeight = response.height || 0
                 return { results, status, envelopHeight }
             })
-    }
-
-    /**
-     * Fetches the archive results for a given processId
-     *
-     * @param processId
-     * @param gateway
-     * @param errorMessage
-     * @returns Results, vote process  type, vote process state
-     */
-    private static getRawResultsArchive(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string) {
-        return GatewayArchive.getProcess(processId, gateway, errorMessage)
-            .then((response: IArchiveResponseBody) => {
-                return {
-                    results: response.results.votes.map(votes => {
-                        return votes.map(vote => vote.toString())
-                    }),
-                    state: VochainProcessStatus[response.process.status as string] || "",
-                    height: response.results.envelopeHeight,
-                }
+            .catch((error) => {
+                const message = (error.message) ? "Could not fetch the process results: " + error.message : "Could not fetch the process results"
+                throw new Error(message)
             })
     }
 
@@ -1141,7 +1028,7 @@ export class VotingApi {
      * @param gateway
      * @returns Results, vote process  type, vote process state
      */
-    static async getResultsDigest(processId: string, gateway: IGateway | IGatewayPool): Promise<DigestedProcessResults> {
+    export async function getResultsDigest(processId: string, gateway: IGateway | IGatewayPool): Promise<DigestedProcessResults> {
         if (!processId)
             throw new Error("No process ID provided")
         else if (!gateway)
@@ -1151,12 +1038,12 @@ export class VotingApi {
         const emptyResults = { totalVotes: 0, questions: [] }
 
         try {
-            const processState = await VotingApi.getProcessState(processId, gateway)
+            const processState = await getProcessState(processId, gateway)
             if (processState.status == ProcessStatus.CANCELED) return emptyResults
 
             // Encrypted?
             let procKeys: IProcessKeys, retries: number
-            const currentBlock = await VotingApi.getBlockHeight(gateway)
+            const currentBlock = await getBlockHeight(gateway)
             if (processState.envelopeType.encryptedVotes) {
                 if (currentBlock < processState.startBlock) return emptyResults // not started
                 else if (processState.processMode["interruptible"]) {
@@ -1170,7 +1057,7 @@ export class VotingApi {
 
                 retries = 3
                 do {
-                    procKeys = await VotingApi.getProcessKeys(processId, gateway)
+                    procKeys = await getProcessKeys(processId, gateway)
                     if (procKeys && procKeys.encryptionPrivKeys && procKeys.encryptionPrivKeys.length) break
 
                     await VochainWaiter.wait(2, gateway)
@@ -1179,8 +1066,8 @@ export class VotingApi {
                 if (!procKeys || !procKeys.encryptionPrivKeys || !procKeys.encryptionPrivKeys.length) return emptyResults
             }
 
-            const { results, status: resultsStatus, envelopHeight } = await VotingApi.getRawResults(processId, gateway)
-            const metadata = await VotingApi.getProcessMetadata(processId, gateway)
+            const { results, status: resultsStatus, envelopHeight } = await getRawResults(processId, gateway)
+            const metadata = await getProcessMetadata(processId, gateway)
 
             const resultsDigest: DigestedProcessResults = { totalVotes: envelopHeight, questions: [] }
             const zippedQuestions = metadata.questions.map((e, i) => ({ meta: e, result: results[i] }))
@@ -1211,7 +1098,7 @@ export class VotingApi {
      * @param {String} signature Hex encoded signature of the voteEnvelope
      * @param {Gateway|GatewayPool} gateway
      */
-    static async submitEnvelope(voteEnvelope: VoteEnvelope, walletOrSigner: Wallet | Signer, gateway: IGateway | GatewayPool): Promise<DVoteGatewayResponseBody> {
+    export async function submitEnvelope(voteEnvelope: VoteEnvelope, walletOrSigner: Wallet | Signer, gateway: IGateway | GatewayPool): Promise<DVoteGatewayResponseBody> {
         if (typeof voteEnvelope != "object") return Promise.reject(new Error("The vote has to be a VoteEnvelope object"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -1238,7 +1125,7 @@ export class VotingApi {
      * @param nullifier
      * @param gateway
      */
-    static getEnvelopeStatus(processId: string, nullifier: string, gateway: IGateway | IGatewayPool): Promise<{ registered: boolean, date?: Date, block?: number }> {
+    export function getEnvelopeStatus(processId: string, nullifier: string, gateway: IGateway | IGatewayPool): Promise<{ registered: boolean, date?: Date, block?: number }> {
         if (!processId || !nullifier) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -1273,7 +1160,7 @@ export class VotingApi {
      * If `encryptionPublicKey` is defined, it will be used to encrypt the vote package.
      * @param params
      */
-    static packageAnonymousEnvelope(params: {
+    export function packageAnonymousEnvelope(params: {
         votes: number[], censusProof: string, processId: string, privateKey: string,
         processKeys?: IProcessKeys
     }): Promise<VoteEnvelope> {
@@ -1302,7 +1189,7 @@ export class VotingApi {
      * If `encryptionPublicKey` is defined, it will be used to encrypt the vote package.
      * @param params
      */
-    static async packageSignedEnvelope(params: SignedEnvelopeParams): Promise<VoteEnvelope> {
+    export async function packageSignedEnvelope(params: SignedEnvelopeParams): Promise<VoteEnvelope> {
         if (!params) throw new Error("Invalid parameters")
         else if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
         else if (typeof params.processId != "string" || !params.processId.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid processId")
@@ -1333,7 +1220,7 @@ export class VotingApi {
             }
             else if (censusOrigin.isOffChainCA) {
                 // Check census proof
-                const resolvedProof = VotingApi.resolveCaProof(params.censusProof)
+                const resolvedProof = resolveCaProof(params.censusProof)
                 if (!resolvedProof) throw new Error("The proof is not valid")
 
                 const caBundle = CAbundle.fromPartial({
@@ -1352,7 +1239,7 @@ export class VotingApi {
             }
             else if (censusOrigin.isErc20 || censusOrigin.isErc721 || censusOrigin.isErc1155 || censusOrigin.isErc777) {
                 // Check census proof
-                const resolvedProof = VotingApi.resolveEvmProof(params.censusProof)
+                const resolvedProof = resolveEvmProof(params.censusProof)
                 if (!resolvedProof) throw new Error("The proof is not valid")
 
                 if (typeof resolvedProof == "string") throw new Error("Invalid census proof for an EVM process")
@@ -1380,7 +1267,7 @@ export class VotingApi {
             }
 
             const nonce = Random.getHex().substr(2)
-            const { votePackage, keyIndexes } = VotingApi.packageVoteContent(params.votes, params.processKeys)
+            const { votePackage, keyIndexes } = packageVoteContent(params.votes, params.processKeys)
 
             return VoteEnvelope.fromPartial({
                 proof,
@@ -1395,14 +1282,14 @@ export class VotingApi {
         }
     }
 
-    private static resolveCaProof(proof: IProofGraviton | IProofCA | IProofEVM): IProofCA {
+    function resolveCaProof(proof: IProofGraviton | IProofCA | IProofEVM): IProofCA {
         if (!proof || typeof proof == "string") return null
         // else if (proof["key"] || proof["proof"] || proof["value"]) return null
         else if (typeof proof["type"] != "number" || typeof proof["voterAddress"] != "string" || typeof proof["signature"] != "string") return null
         return proof as IProofCA
     }
 
-    private static resolveEvmProof(proof: IProofGraviton | IProofCA | IProofEVM): IProofEVM {
+    function resolveEvmProof(proof: IProofGraviton | IProofCA | IProofEVM): IProofEVM {
         if (!proof || typeof proof == "string") return null
         // else if (proof["type"] || proof["voterAddress"] || proof["signature"]) return null
         else if (typeof proof["key"] != "string" || !Array.isArray(proof["proof"]) || proof["proof"].some(item => typeof item != "string") || typeof proof["value"] != "string") return null
@@ -1414,7 +1301,7 @@ export class VotingApi {
      * @param votes An array of numbers with the choices
      * @param encryptionPubKeys An array of ed25519 public keys (https://ed25519.cr.yp.to/)
      */
-    static packageVoteContent(votes: number[], processKeys?: IProcessKeys): { votePackage: Buffer, keyIndexes?: number[] } {
+    export function packageVoteContent(votes: number[], processKeys?: IProcessKeys): { votePackage: Buffer, keyIndexes?: number[] } {
         if (!Array.isArray(votes)) throw new Error("Invalid votes")
         else if (votes.some(vote => typeof vote != "number")) throw new Error("Votes needs to be an array of numbers")
         else if (processKeys) {
@@ -1461,7 +1348,7 @@ export class VotingApi {
      * Computes the nullifier of the user's vote within a process where `envelopeType.ANONYMOUS` is disabled.
      * Returns a hex string with kecak256(bytes(address) + bytes(processId))
      */
-    static getSignedVoteNullifier(address: string, processId: string): string {
+    export function getSignedVoteNullifier(address: string, processId: string): string {
         address = address.replace(/^0x/, "")
         processId = processId.replace(/^0x/, "")
 
@@ -1472,7 +1359,7 @@ export class VotingApi {
     }
 }
 
-export class VotingOracleApi {
+export namespace VotingOracleApi {
     /**
     * Use the given JSON metadata to create a new voting process using an EVM-based census from the given token address.
     * The given Metadata will be stored on IPFS
@@ -1483,7 +1370,7 @@ export class VotingOracleApi {
     * @param oracle network client
     * @returns The process ID
     */
-    static async newProcessErc20(processParameters: INewProcessErc20Params,
+    export async function newProcessErc20(processParameters: INewProcessErc20Params,
         walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool, oracleGw: DVoteGateway): Promise<string> {
         if (!processParameters) return Promise.reject(new Error("Invalid process metadata"))
         else if (!processParameters.metadata) return Promise.reject(new Error("Invalid process metadata"))

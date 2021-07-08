@@ -24,14 +24,18 @@ export * from "./net/gateway-web3"
 export * from "./net/gateway"
 export * from "./net/ipfs"
 
+// CRYPTO
+export * from "./crypto/data-signing"
+export * from "./crypto/elliptic"
+export * from "./crypto/encryption"
+export * from "./crypto/hashing"
+export * from "./crypto/wallets"
+export * from "./crypto/signers"
+
 // UTIL
-export * from "./util/data-signing"
-export * from "./util/elliptic"
-export * from "./util/encryption"
 export * from "./util/normalization"
 export * from "./util/providers"
 export * from "./util/random"
-export * from "./util/signers"
 export * from "./util/waiters"
 
 // WRAPPERS
