@@ -1,4 +1,4 @@
-import { Symmetric } from "../util/encryption"
+import { Symmetric } from "../crypto/encryption"
 import { Wallet as PbWallet, WalletBackup, Account as PbAccount } from "../models/protobuf"
 import {
     walletBackup_Recovery_QuestionEnumFromJSON,

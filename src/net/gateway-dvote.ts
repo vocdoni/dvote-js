@@ -2,7 +2,7 @@ import { Wallet, Signer } from "ethers"
 import { GatewayInfo } from "../wrappers/gateway-info"
 import { GatewayApiMethod, BackendApiMethod, allApis, registryApiMethods, ApiMethod, GatewayApiName, BackendApiName, InfoApiMethod, RawApiMethod } from "../models/gateway"
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
-import { JsonSignature, BytesSignature } from "../util/data-signing"
+import { JsonSignature, BytesSignature } from "../crypto/data-signing"
 import axios, { AxiosInstance, AxiosResponse } from "axios"
 import { extractUint8ArrayJSONValue } from "../util/uint8array"
 import { promiseWithTimeout } from '../util/timeout'

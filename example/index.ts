@@ -27,7 +27,7 @@ import { GatewayApiMethod, BackendApiMethod, ApiMethod } from "../src/models/gat
 import { IGatewayDiscoveryParameters } from "../src/net/gateway-discovery"
 import { ProcessEnvelopeType, ProcessMode, ProcessStatus, ProcessCensusOrigin, ensHashAddress } from "../src/net/contracts"
 import { ContentHashedUri } from "../src/wrappers/content-hashed-uri"
-import { compressPublicKey } from "../src/util/elliptic"
+import { compressPublicKey } from "../src/crypto/elliptic"
 
 const { Buffer } = require("buffer/")
 

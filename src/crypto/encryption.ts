@@ -1,12 +1,13 @@
 import { Buffer } from "buffer/"
 import * as tweetnacl from 'tweetnacl'
 import * as sealedbox from 'tweetnacl-sealedbox-js'
-import { hexStringToBuffer } from "./encoding"
+import { hexStringToBuffer } from "../util/encoding"
 import { utils, } from "ethers"
 
 (tweetnacl as any).sealedbox = sealedbox
 
-const newNonce = () => tweetnacl.randomBytes(tweetnacl.secretbox.nonceLength);
+const newNonce = () => tweetnacl.randomBytes(tweetnacl.secretbox.nonceLength)
+
 export class Asymmetric {
     /**
      * Encrypts the given buffer with NaCl SealedBox using the given hex public key.

@@ -1,7 +1,7 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
-import { compressPublicKey, expandPublicKey } from "../../src/util/elliptic"
+import { compressPublicKey, expandPublicKey } from "../../src/crypto/elliptic"
 
 addCompletionHooks()
 

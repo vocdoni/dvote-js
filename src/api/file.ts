@@ -11,7 +11,7 @@ import { promiseWithTimeout } from "../util/timeout"
 
 const MAX_FETCH_TIMEOUT = 8000
 
-export class FileApi {
+export namespace FileApi {
     /**
      * Fetch the contents of a file and return them as a string
      *
@@ -20,7 +20,7 @@ export class FileApi {
      * @param contentUri
      * @param gateway (optional) A Vocdoni Gateway to use
      */
-    static fetchString(contentUri: ContentUri | ContentHashedUri | string, gateway: IDVoteGateway | IGateway | IGatewayPool = null): Promise<string> {
+    export function fetchString(contentUri: ContentUri | ContentHashedUri | string, gateway: IDVoteGateway | IGateway | IGatewayPool = null): Promise<string> {
         let cUri: ContentUri | ContentHashedUri
         if (typeof contentUri == "string") cUri = new ContentUri(contentUri)
         else cUri = contentUri
@@ -38,7 +38,7 @@ export class FileApi {
      * @param contentUri
      * @param gateway (optional) A Vocdoni Gateway to use
      */
-    static async fetchBytes(contentUri: ContentUri | ContentHashedUri | string, gateway: IDVoteGateway | IGateway | IGatewayPool = null): Promise<Buffer> {
+    export async function fetchBytes(contentUri: ContentUri | ContentHashedUri | string, gateway: IDVoteGateway | IGateway | IGatewayPool = null): Promise<Buffer> {
         if (!contentUri) throw new Error("Invalid contentUri")
 
         let cUri: ContentHashedUri
@@ -122,7 +122,7 @@ export class FileApi {
      * @param gateway A string with the Gateway URI or a Gateway object, set with a URI and a public key
      * @return The Content URI friendly URI of the newly added file (ipfs://<hash>)
      */
-    static async add(buffer: Uint8Array | string, name: string, walletOrSigner: Wallet | Signer, gateway: IDVoteGateway | IGateway | GatewayPool): Promise<string> {
+    export async function add(buffer: Uint8Array | string, name: string, walletOrSigner: Wallet | Signer, gateway: IDVoteGateway | IGateway | GatewayPool): Promise<string> {
         if (!buffer) return Promise.reject(new Error("Empty payload"))
         else if (!walletOrSigner) return Promise.reject(new Error("Wallet is required"))
 
@@ -155,7 +155,7 @@ export class FileApi {
      * @param 2
      * @param 3
      */
-    static async pinList(): Promise<string> {
+    export async function pinList(): Promise<string> {
 
         throw new Error("TODO: unimplemented")
 
@@ -167,7 +167,7 @@ export class FileApi {
      * @param 2
      * @param 3
      */
-    static async pinFile(): Promise<string> {
+    export async function pinFile(): Promise<string> {
 
         throw new Error("TODO: unimplemented")
 
@@ -179,7 +179,7 @@ export class FileApi {
      * @param 2
      * @param 3
      */
-    static async unpinFile(): Promise<string> {
+    export async function unpinFile(): Promise<string> {
 
         throw new Error("TODO: unimplemented")
 

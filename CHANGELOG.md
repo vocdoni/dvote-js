@@ -2,8 +2,8 @@
 
 ## 1.10.0
 
-- Converting classes grouping methods into `namespaces`
-    - `CensusOffChainApi`, `CensusCaApi`, `CensusErc20Api`
+Breaking changes to support ZK Snarks and Baby JubJub wallets
+
 - [Breaking] Using a new version of the Poseidon hash algorithm (now working with bigInt's)
 - [Breaking] Refactoring `hashing.ts`
     - Removing `hashBuffer`, `multiHash` and `hash` from `hashing.ts`
@@ -15,8 +15,12 @@
         - Replace `CensusOffChainApi.digestPublicKey(..., CensusOffchainDigestType.RAW_PUBKEY)` by `CensusOffChain.Public.encodePublicKey` instead
     - `CensusOffchainDigestType` is no longer needed
     - [Breaking] `generateCensusId` and `generateCensusIdSuffix` are now part of `CensusOffChain`
-- `generateCensusIdSuffix` now uses keccak256 internally
+- Adding the `WalletBabyJubJub` class
 - [Breaking] `CensusOffchainApi.getCensusSize` is now `CensusOffchainApi.getSize`
+- [Breaking] `SignerUtil.fromInjectedWeb3` is now `Web3Signer.fromInjected`
+- Adding `Random.getRandomBytes` and `Random.getBigInt`
+- `generateCensusIdSuffix` now uses keccak256 internally
+- Converting class groupings into `namespaces`
 
 ## 1.9.14
 ## 1.9.13

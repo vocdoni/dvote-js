@@ -3,7 +3,7 @@ import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
 import { Wallet } from "ethers"
 
-import { Asymmetric, Symmetric } from "../../src/util/encryption"
+import { Asymmetric, Symmetric } from "../../src/crypto/encryption"
 import { Buffer } from "buffer/"
 
 addCompletionHooks()

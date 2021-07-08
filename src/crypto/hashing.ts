@@ -15,7 +15,7 @@ export namespace Keccak256 {
 }
 
 export namespace Poseidon {
-    const Q = BigInt("21888242871839275222246405745257275088548364400416034343698204186575808495617")
+    export const Q = BigInt("21888242871839275222246405745257275088548364400416034343698204186575808495617")
 
     /** Computes the raw poseidon hash of an array of big integers */
     export function hash(inputs: bigint[]): bigint {
