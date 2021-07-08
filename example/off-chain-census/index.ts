@@ -8,7 +8,7 @@ import { EthNetworkID } from "../../src/net/gateway-bootnode"
 import { EntityMetadataTemplate } from "../../src/models/entity"
 import { EntityApi } from "../../src/api/entity"
 import { VotingApi } from "../../src/api/voting"
-import { CensusOffChainApi, CensusOffchainDigestType } from "../../src/api/census"
+import { CensusOffChain, CensusOffChainApi } from "../../src/api/census"
 import { INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "../../src/models/process"
 import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../../src/net/contracts"
 import { VochainWaiter, EthWaiter } from "../../src/util/waiters"
@@ -156,7 +156,7 @@ function createWallets(amount) {
             mnemonic: wallet.mnemonic.phrase,
             privateKey: wallet.privateKey,
             publicKey: compressPublicKey(wallet.publicKey),
-            publicKeyDigested: CensusOffChainApi.digestPublicKey(wallet.publicKey, CensusOffchainDigestType.RAW_PUBKEY)
+            publicKeyDigested: CensusOffChain.Public.encodePublicKey(wallet.publicKey)
             // address: wallet.address
         })
     }
