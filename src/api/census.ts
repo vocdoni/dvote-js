@@ -2,31 +2,25 @@ import { Wallet, Signer, providers, BigNumber, ContractReceipt, Contract } from 
 import { Gateway, IGateway } from "../net/gateway"
 import { IRequestParameters } from "../net/gateway-dvote"
 import { IGatewayPool, GatewayPool } from "../net/gateway-pool"
-import { sha3_256 } from 'js-sha3'
-import { hashBuffer } from "../util/hashing"
+import { Keccak256, Poseidon } from "../util/hashing"
 import { hexStringToBuffer } from "../util/encoding"
 import { CENSUS_MAX_BULK_SIZE } from "../constants"
 import { ERC20Prover } from "@vocdoni/storage-proofs-eth"
 import { Web3Gateway } from "../net/gateway-web3"
 import { compressPublicKey } from "../util/elliptic"
-import { blind, unblind, verify, signatureFromHex, signatureToHex, pointFromHex, pointToHex, UserSecretData, UnblindedSignature, BigInteger, Point } from "blindsecp256k1"
+import { blind as _blind, unblind as _unblind, verify as _verify, signatureFromHex as _signatureFromHex, signatureToHex as _signatureToHex, pointFromHex as _pointFromHex, pointToHex as _pointToHex, UserSecretData, UnblindedSignature, BigInteger, Point } from "blindsecp256k1"
 import { hexZeroPad } from "ethers/lib/utils"
 import { ERC20_ABI } from "../util/erc"
 // import ContentURI from "../wrappers/content-uri"
 
-export enum CensusOffchainDigestType {
-    RAW_PUBKEY,
-    POSEIDON
-}
-
-export class CensusOffChainApi {
+export namespace CensusOffChain {
     /**
      * A census ID consists of the Entity Address and the hash of the name.
      * This function returns the full Census ID
      */
-    static generateCensusId(censusName: string, entityAddress: string) {
+    export function generateCensusId(censusName: string, entityAddress: string) {
         const prefix = "0x" + entityAddress.toLowerCase().substr(2)
-        const suffix = CensusOffChainApi.generateCensusIdSuffix(censusName)
+        const suffix = generateCensusIdSuffix(censusName)
         return prefix + "/" + suffix
     }
 
@@ -34,43 +28,45 @@ export class CensusOffChainApi {
      * A census ID consists of the Entity Address and the hash of the name.
      * This function computes the second term
      */
-    static generateCensusIdSuffix(censusName: string) {
+    export function generateCensusIdSuffix(censusName: string) {
         // A census ID consists of the Entity Address and the hash of the name
         // Now computing the second term
-        return "0x" + sha3_256(censusName.toLowerCase().trim())
+        return Keccak256.hashText(censusName.toLowerCase().trim())
     }
 
-    /**
-     * Given an hex string ECDSA public key (compressed), returns either its
-     * base 64 representation or the (litte-endian) Poseidon hash big int
-     */
-    static digestPublicKey(publicKey: string, type: CensusOffchainDigestType): string {
-        const compPubKey = compressPublicKey(publicKey)
-        const pubKeyBytes = hexStringToBuffer(compPubKey)
+    export namespace Public {
+        /**
+         * Returns a base64 representation of the given ECDSA public key
+         */
+        export function encodePublicKey(publicKey: string | Uint8Array | Buffer | number[]): string {
+            const compPubKey = compressPublicKey(publicKey)
+            const pubKeyBytes = hexStringToBuffer(compPubKey)
 
-        // Raw base64?
-        if (type == CensusOffchainDigestType.RAW_PUBKEY) {
             return pubKeyBytes.toString("base64")
         }
-
-        // Poseidon
-        let hashNumHex: string = hashBuffer(pubKeyBytes).toString(16)
-        if (hashNumHex.length % 2 != 0) {
-            hashNumHex = "0" + hashNumHex
-        }
-
-        // Using big-endian, pad any missing bytes until we get 32 bytes
-        while (hashNumHex.length < 64) {
-            hashNumHex = "00" + hashNumHex
-        }
-        // Convert to Little-endian
-        const hashNumBuffer = hexStringToBuffer(hashNumHex)
-        hashNumBuffer.reverse()
-
-        // Encode in base64
-        return hashNumBuffer.toString("base64")
     }
 
+    export namespace Anonymous {
+        /**
+         * Returns a base64 representation of the Poseidon hash of the given public key,
+         * left padded to 32 bytes
+         */
+        export function digestPublicKey(x: bigint, y: bigint): string {
+            const hashedPubKey = Poseidon.hashBabyJubJubPublicKey(x, y)
+
+            let hexHashedPubKey = hashedPubKey.toString(16)
+
+            // Using big-endian, pad any missing bytes until we get 32 bytes
+            while (hexHashedPubKey.length < 64) {
+                hexHashedPubKey = "0" + hexHashedPubKey
+            }
+
+            return Buffer.from(hexHashedPubKey, "hex").toString("base64")
+        }
+    }
+}
+
+export namespace CensusOffChainApi {
     /**
      * Asks the Gateway to create a new census and set the given public key as the ones who can manage it
      * @param censusName Name given to the census. Will be used to generate the census ID by trimming spaces and converting text to lowercase
@@ -79,28 +75,28 @@ export class CensusOffChainApi {
      * @param walletOrSigner
      * @returns Promise resolving with the new censusRoot
      */
-    static async addCensus(censusName: string, managerPublicKeys: string[], walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<{ censusId: string, censusRoot: string }> {
+    export async function addCensus(censusName: string, managerPublicKeys: string[], walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<{ censusId: string, censusRoot: string }> {
         if (!censusName || !managerPublicKeys || !managerPublicKeys.length || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!walletOrSigner || !walletOrSigner._isSigner) return Promise.reject(new Error("Invalid WalletOrSinger object"))
 
-        const censusId = CensusOffChainApi.generateCensusId(censusName, await walletOrSigner.getAddress())
+        const censusId = CensusOffChain.generateCensusId(censusName, await walletOrSigner.getAddress())
 
         // Check if the census already exists
         let existingRoot
         try {
             // TODO: normalize the `censusId` parameter value
             // Pass the full censusId instead of the second term only
-            existingRoot = await CensusOffChainApi.getRoot(censusId, gateway)
+            existingRoot = await getRoot(censusId, gateway)
             if (typeof existingRoot == "string" && existingRoot.match(/^0x[0-9a-zA-Z]+$/)) return { censusId, censusRoot: existingRoot }
         } catch (error) {
             // If it errors because it doesn't exist, we continue below
         }
 
         try {
-            const censusIdSuffix = CensusOffChainApi.generateCensusIdSuffix(censusName)
+            const censusIdSuffix = CensusOffChain.generateCensusIdSuffix(censusName)
             const response = await gateway.sendRequest({ method: "addCensus", censusId: censusIdSuffix, pubKeys: managerPublicKeys }, walletOrSigner)
-            const censusRoot = await CensusOffChainApi.getRoot(response.censusId, gateway)
+            const censusRoot = await getRoot(response.censusId, gateway)
             return { censusId: response.censusId, censusRoot }
         } catch (error) {
             const message = (error.message) ? "The census could not be created: " + error.message : "The census could not be created "
@@ -119,7 +115,7 @@ export class CensusOffChainApi {
      * @param walletOrSigner
      * @returns Promise resolving with the new censusRoot
      */
-    static addClaim(censusId: string, claim: { key: string, value?: string }, digested: boolean, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
+    export function addClaim(censusId: string, claim: { key: string, value?: string }, digested: boolean, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
         if (!censusId || !claim || !claim.key || !claim.key.length || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!walletOrSigner || !walletOrSigner._isSigner) return Promise.reject(new Error("Invalid WalletOrSinger object"))
@@ -127,7 +123,7 @@ export class CensusOffChainApi {
         return gateway.sendRequest({ method: "addClaim", censusId, digested, censusKey: claim.key, censusValue: claim.value || undefined }, walletOrSigner)
             .then((response) => {
                 if (typeof response.root == "string") return response.root
-                return CensusOffChainApi.getRoot(censusId, gateway)
+                return getRoot(censusId, gateway)
             })
             .catch((error) => {
                 const message = (error.message) ? "The claim could not be added: " + error.message : "The claim could not be added."
@@ -146,7 +142,7 @@ export class CensusOffChainApi {
      * @param walletOrSigner
      * @returns Promise resolving with the new censusRoot
      */
-    static async addClaimBulk(censusId: string, claimList: { key: string, value?: string }[], digested: boolean, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<{ censusRoot: string, invalidClaims: any[] }> {
+    export async function addClaimBulk(censusId: string, claimList: { key: string, value?: string }[], digested: boolean, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<{ censusRoot: string, invalidClaims: any[] }> {
         if (!censusId || !claimList || !claimList.length || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!walletOrSigner || !walletOrSigner._isSigner) return Promise.reject(new Error("Invalid WalletOrSinger object"))
@@ -156,16 +152,16 @@ export class CensusOffChainApi {
         while (addedClaims < claimList.length) {
             let claims = claimList.slice(addedClaims, addedClaims + CENSUS_MAX_BULK_SIZE)
             addedClaims += CENSUS_MAX_BULK_SIZE
-            const partialInvalidClaims = await CensusOffChainApi.addClaimChunk(censusId, claims, digested, walletOrSigner, gateway)
+            const partialInvalidClaims = await addClaimChunk(censusId, claims, digested, walletOrSigner, gateway)
             invalidClaims = invalidClaims.concat(partialInvalidClaims)
         }
 
-        const censusRoot = await CensusOffChainApi.getRoot(censusId, gateway)
+        const censusRoot = await getRoot(censusId, gateway)
 
         return { censusRoot, invalidClaims }
     }
 
-    private static addClaimChunk(censusId: string, claimList: { key: string, value?: string }[], digested: boolean, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<any[]> {
+    function addClaimChunk(censusId: string, claimList: { key: string, value?: string }[], digested: boolean, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<any[]> {
         if (!censusId || !claimList || claimList.length > CENSUS_MAX_BULK_SIZE || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!claimList.length) return Promise.resolve([])
@@ -191,7 +187,7 @@ export class CensusOffChainApi {
      * @param gateway A Gateway instance pointing to a remote Gateway
      * @returns Promise resolving with the censusRoot
      */
-    static getRoot(censusId: string, gateway: IGateway | IGatewayPool): Promise<string> {
+    export function getRoot(censusId: string, gateway: IGateway | IGatewayPool): Promise<string> {
         if (!censusId || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -211,7 +207,7 @@ export class CensusOffChainApi {
      * @param dvoteGw A Gateway instance pointing to a remote Gateway
      * @returns Promise resolving with the census size
      */
-    static getCensusSize(censusRootHash: string, gateway: IGateway | IGatewayPool): Promise<string> {
+    export function getSize(censusRootHash: string, gateway: IGateway | IGatewayPool): Promise<string> {
         if (!censusRootHash || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -232,7 +228,7 @@ export class CensusOffChainApi {
      * @param walletOrSigner
      * @returns Promise resolving with the a hex array dump of the census claims
     */
-    static dump(censusId: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool, rootHash?: String): Promise<string[]> {
+    export function dump(censusId: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool, rootHash?: String): Promise<string[]> {
         if (!censusId || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -254,7 +250,7 @@ export class CensusOffChainApi {
      * @param walletOrSigner
      * @returns Promise resolving with the a raw string dump of the census claims
     */
-    static dumpPlain(censusId: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool, rootHash?: String): Promise<{ key: string, value?: string }[]> {
+    export function dumpPlain(censusId: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool, rootHash?: String): Promise<{ key: string, value?: string }[]> {
         if (!censusId || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -281,19 +277,19 @@ export class CensusOffChainApi {
     }
 
     /** Only works with specific merkle tree format used by dump method. To add a list of plain claims use `addClaimBulk` instead */
-    static importDump() {
+    export function importDump() {
         // TODO: Not implemented
         throw new Error("TODO: Unimplemented")
     }
 
     /** Import a previously published remote census. Only valid URIs accepted */
-    static importRemote() {
+    export function importRemote() {
         // TODO: Not implemented
         throw new Error("TODO: Unimplemented")
     }
 
     /** Exports and publish the entire census on the storage of the backend (usually IPFS). Returns the URI of the set of claims */
-    static publishCensus(censusId: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
+    export function publishCensus(censusId: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
         if (!censusId || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!walletOrSigner || !walletOrSigner._isSigner) return Promise.reject(new Error("Invalid WalletOrSinger object"))
@@ -315,7 +311,7 @@ export class CensusOffChainApi {
      * @param base64Claim Base64-encoded claim of the leaf to request
      * @param gateway
      */
-    static generateProof(censusRoot: string, { key, value }: { key: string, value?: number }, isDigested: boolean, gateway: IGateway | IGatewayPool): Promise<string> {
+    export function generateProof(censusRoot: string, { key, value }: { key: string, value?: number }, isDigested: boolean, gateway: IGateway | IGatewayPool): Promise<string> {
         if (!censusRoot || !key || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -334,12 +330,12 @@ export class CensusOffChainApi {
         })
     }
 
-    static checkProof() {
+    export function checkProof() {
         // TODO: Not implemented
         throw new Error("TODO: Unimplemented")
     }
 
-    static getCensusList(gateway: IGateway | IGatewayPool): Promise<string[]> {
+    export function getCensusList(gateway: IGateway | IGatewayPool): Promise<string[]> {
         if (!gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -353,67 +349,67 @@ export class CensusOffChainApi {
     }
 }
 
-export class CensusCaApi {
+export namespace CensusCaApi {
     /** Decodes the given hex-encoded point */
-    static decodePoint(hexPoint: string): Point {
-        return pointFromHex(hexPoint)
+    export function decodePoint(hexPoint: string): Point {
+        return _pointFromHex(hexPoint)
     }
 
     /** Blinds the given hex string using the given R point and returns the secret data to unblind an eventual blinded signature */
-    static blind(hexMessage: string, signerR: Point): { hexBlinded: string, userSecretData: UserSecretData } {
+    export function blind(hexMessage: string, signerR: Point): { hexBlinded: string, userSecretData: UserSecretData } {
         const msg = BigInteger.fromHex(hexMessage)
-        const { mBlinded, userSecretData } = blind(msg, signerR)
+        const { mBlinded, userSecretData } = _blind(msg, signerR)
 
         return { hexBlinded: hexZeroPad("0x" + mBlinded.toString(16), 32).slice(2), userSecretData }
     }
 
     /** Unblinds the given blinded signature and returns it as a hex string */
-    static unblind(hexBlindedSignature: string, userSecretData: UserSecretData): string {
+    export function unblind(hexBlindedSignature: string, userSecretData: UserSecretData): string {
         const sBlind = BigInteger.fromHex(hexBlindedSignature)
-        const unblindedSignature = unblind(sBlind, userSecretData)
+        const unblindedSignature = _unblind(sBlind, userSecretData)
 
-        return signatureToHex(unblindedSignature)
+        return _signatureToHex(unblindedSignature)
     }
 
     /** Verifies that the given blind signature is valid */
-    static verify(hexMsg: string, hexUnblindedSignature: string, pk: Point) {
+    export function verify(hexMsg: string, hexUnblindedSignature: string, pk: Point) {
         const msg = BigInteger.fromHex(hexMsg)
 
         const unblindedSignature = signatureFromHex(hexUnblindedSignature)
 
-        return verify(msg, unblindedSignature, pk)
+        return _verify(msg, unblindedSignature, pk)
     }
 
     /** Deserializes the given hex Signature */
-    static signatureFromHex(hexSignature: string) {
-        return signatureFromHex(hexSignature)
+    export function signatureFromHex(hexSignature: string) {
+        return _signatureFromHex(hexSignature)
     }
 
     /** Serializes the given signature into a hex string */
-    static signatureToHex(signature: UnblindedSignature) {
-        return signatureToHex(signature)
+    export function signatureToHex(signature: UnblindedSignature) {
+        return _signatureToHex(signature)
     }
 }
 
-export class CensusErc20Api {
-    static generateProof(tokenAddress: string, storageKeys: string[], blockNumber: number | "latest", provider: string | providers.JsonRpcProvider | providers.Web3Provider | providers.IpcProvider | providers.InfuraProvider, options?: { verify?: boolean }) {
+export namespace CensusErc20Api {
+    export function generateProof(tokenAddress: string, storageKeys: string[], blockNumber: number | "latest", provider: string | providers.JsonRpcProvider | providers.Web3Provider | providers.IpcProvider | providers.InfuraProvider, options?: { verify?: boolean }) {
         const prover = new ERC20Prover(provider)
         const verify = options && options.verify || false
         return prover.getProof(tokenAddress, storageKeys, blockNumber, verify)
     }
 
-    static verifyProof(stateRoot: string, address: string, proof: any, provider: string | providers.JsonRpcProvider | providers.Web3Provider | providers.IpcProvider | providers.InfuraProvider) {
+    export function verifyProof(stateRoot: string, address: string, proof: any, provider: string | providers.JsonRpcProvider | providers.Web3Provider | providers.IpcProvider | providers.InfuraProvider) {
         const prover = new ERC20Prover(provider)
         return prover.verify(stateRoot, address, proof)
     }
 
     /** Computes the balance slot that the given holder address has, given the balance mapping position within the contract */
-    static getHolderBalanceSlot(holderAddress: string, balanceMappingPosition: number) {
+    export function getHolderBalanceSlot(holderAddress: string, balanceMappingPosition: number) {
         return ERC20Prover.getHolderBalanceSlot(holderAddress, balanceMappingPosition)
     }
 
     /** Finds the balance mapping position of the given ERC20 token address and attempts to register it on the blockchain */
-    static async registerTokenAuto(tokenAddress: string, walletOrSigner: Wallet | Signer, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string): Promise<ContractReceipt> {
+    export async function registerTokenAuto(tokenAddress: string, walletOrSigner: Wallet | Signer, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string): Promise<ContractReceipt> {
         const contractInstance = await gw.getTokenStorageProofInstance(walletOrSigner, customContractAddress)
 
         const balanceMappingPosition = await CensusErc20Api.findBalanceMappingPosition(tokenAddress, await walletOrSigner.getAddress(), gw.provider as providers.JsonRpcProvider)
@@ -424,7 +420,7 @@ export class CensusErc20Api {
     }
 
     /** Associates the given balance mapping position to the given ERC20 token address  */
-    static registerToken(tokenAddress: string, balanceMappingPosition: number | BigNumber, walletOrSigner: Wallet | Signer, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string): Promise<ContractReceipt> {
+    export function registerToken(tokenAddress: string, balanceMappingPosition: number | BigNumber, walletOrSigner: Wallet | Signer, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string): Promise<ContractReceipt> {
         return gw.getTokenStorageProofInstance(walletOrSigner, customContractAddress)
             .then((contractInstance) =>
                 contractInstance.registerToken(tokenAddress,
@@ -435,7 +431,7 @@ export class CensusErc20Api {
     }
 
     /** Overwrites the token's balance mapping position as long as the provided proof is valid */
-    static setVerifiedBalanceMappingPosition(tokenAddress: string, balanceMappingPosition: number | BigNumber, blockNumber: number | BigNumber, blockHeaderRLP: Buffer, accountStateProof: Buffer, storageProof: Buffer, walletOrSigner: Wallet | Signer, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string): Promise<ContractReceipt> {
+    export function setVerifiedBalanceMappingPosition(tokenAddress: string, balanceMappingPosition: number | BigNumber, blockNumber: number | BigNumber, blockHeaderRLP: Buffer, accountStateProof: Buffer, storageProof: Buffer, walletOrSigner: Wallet | Signer, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string): Promise<ContractReceipt> {
         return gw.getTokenStorageProofInstance(walletOrSigner, customContractAddress)
             .then((contractInstance) =>
                 contractInstance.setVerifiedBalanceMappingPosition(tokenAddress,
@@ -449,7 +445,7 @@ export class CensusErc20Api {
             .then(tx => tx.wait())
     }
 
-    static getTokenInfo(tokenAddress: string, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string): Promise<{ isRegistered: boolean, isVerified: boolean, balanceMappingPosition: number }> {
+    export function getTokenInfo(tokenAddress: string, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string): Promise<{ isRegistered: boolean, isVerified: boolean, balanceMappingPosition: number }> {
         return gw.getTokenStorageProofInstance(null, customContractAddress)
             .then((contractInstance) => contractInstance.tokens(tokenAddress))
             .then((tokenDataTuple) => {
@@ -464,17 +460,17 @@ export class CensusErc20Api {
             })
     }
 
-    static isRegistered(tokenAddress: string, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string) {
+    export function isRegistered(tokenAddress: string, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string) {
         return gw.getTokenStorageProofInstance(null, customContractAddress)
             .then((contractInstance) => contractInstance.isRegistered(tokenAddress))
     }
 
-    static getTokenAddressAt(index: number, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string): Promise<string> {
+    export function getTokenAddressAt(index: number, gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string): Promise<string> {
         return gw.getTokenStorageProofInstance(null, customContractAddress)
             .then((contractInstance) => contractInstance.tokenAddresses(index))
     }
 
-    static getTokenCount(gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string): Promise<number> {
+    export function getTokenCount(gw: Web3Gateway | Gateway | GatewayPool, customContractAddress?: string): Promise<number> {
         return gw.getTokenStorageProofInstance(null, customContractAddress)
             .then((contractInstance) => contractInstance.tokenCount())
     }
@@ -485,7 +481,7 @@ export class CensusErc20Api {
      * Attempts to find the index at which the holder balances are stored within the token contract.
      * If the position cannot be found among the 50 first ones, `null` is returned.
      */
-    static async findBalanceMappingPosition(tokenAddress: string, holderAddress: string, provider: providers.JsonRpcProvider) {
+    export async function findBalanceMappingPosition(tokenAddress: string, holderAddress: string, provider: providers.JsonRpcProvider) {
         const verify = true
         try {
             const blockNumber = await provider.getBlockNumber()

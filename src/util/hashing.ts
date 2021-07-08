@@ -1,53 +1,39 @@
-import { createHash } from "circomlib/src/poseidon.js"
-import { leBuff2int } from "circomlib/src/utils.js"
-import * as bigInt from "big-integer"
+import { utils } from "ethers"
+import * as poseidon from "circomlib/src/poseidon.js"
 
-const Q = bigInt("21888242871839275222246405745257275088548364400416034343698204186575808495617")
-const T = 6
-
-export function hash(arr: bigInt.BigInteger[]) {
-    const poseidonHash = createHash()
-    return poseidonHash(arr)
+export namespace Keccak256 {
+    export function hashText(value: string): string {
+        return utils.keccak256(Buffer.from(value, "utf8"))
+    }
+    export function hashHexString(value: string): string {
+        return utils.keccak256(Buffer.from(value, "hex"))
+    }
+    export function hashBytes(value: Uint8Array): string {
+        return utils.keccak256(value)
+    }
 }
 
-export function multiHash(arr: bigInt.BigInteger[]): bigInt.BigInteger {
-    // TODO: check bigints inside finite field
+export namespace Poseidon {
+    const Q = BigInt("21888242871839275222246405745257275088548364400416034343698204186575808495617")
 
-    let r = bigInt(1)
-    for (let i = 0; i < arr.length; i += T - 1) {
-        const toHash: bigInt.BigInteger[] = []
-        let j = 0
-        for (; j < T - 1; j++) {
-            if (i + j >= arr.length) break
-            toHash[j] = arr[i + j]
-        }
-        toHash[j] = r
-        j++
-        for (; j < T; j++) {
-            toHash[j] = bigInt(0)
-        }
-
-        const ph = hash(toHash)
-
-        r = r.add(ph)
-        r = r.mod(Q)
+    /** Computes the raw poseidon hash of an array of big integers */
+    export function hash(inputs: bigint[]): bigint {
+        const modInputs = inputs.map(value => value % Q)
+        return poseidon(modInputs)
     }
-    return r
+
+    /** Computes the poseidon hash of the uncompressed coordinates of a
+     * Baby JubJub public key
+     */
+    export function hashBabyJubJubPublicKey(x: bigint, y: bigint) {
+        return Poseidon.hash([x, y])
+    }
+
+    /** Computes the nullifier of a voter for a given process ID.
+     * The private key should be a decimal string containing a big number. */
+    export function getNullifier(privateKey: string, processId: bigint) {
+        const sKey = BigInt(privateKey)
+        return Poseidon.hash([sKey, processId])
+    }
 }
 
-export function hashBuffer(msgBuff: number[] | Uint8Array) {
-    const n = 31
-    const msgArray = []
-    const fullParts = Math.floor(msgBuff.length / n)
-
-    for (let i = 0; i < fullParts; i++) {
-        const v = leBuff2int(msgBuff.slice(n * i, n * (i + 1)))
-        msgArray.push(v)
-    }
-
-    if (msgBuff.length % n !== 0) {
-        const v = leBuff2int(msgBuff.slice(fullParts * n))
-        msgArray.push(v)
-    }
-    return multiHash(msgArray)
-}
