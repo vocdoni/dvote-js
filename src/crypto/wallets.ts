@@ -3,6 +3,7 @@ import * as createBlakeHash from "blake-hash"
 import * as eddsa from "circomlib/src/eddsa.js"
 import * as babyJub from "circomlib/src/babyjub.js"
 import { Scalar, utils as ffutils } from "ffjavascript"
+import { bufferToBigInt } from "../util/encoding"
 
 export class WalletUtil {
     /**
@@ -101,13 +102,14 @@ export class WalletBabyJub {
     public sign(msg: Buffer): { R8: [bigint, bigint], S: bigint } {
         if (!msg) throw new Error("Invalid message")
 
-        return eddsa.signPoseidon(this._rawPrivKey, msg)
+        const biMsg = bufferToBigInt(msg)
+        return eddsa.signPoseidon(this._rawPrivKey, biMsg)
     }
 
     static verify(msg: Buffer, sig: ReturnType<typeof WalletBabyJub.prototype.sign>, pubKey: PublicKeyBabyJub) {
-        return eddsa.verifyPoseidon(msg, sig, [pubKey.x, pubKey.y])
+        const biMsg = bufferToBigInt(msg)
+        return eddsa.verifyPoseidon(biMsg, sig, [pubKey.x, pubKey.y])
     }
-
 }
 
 export namespace SignerUtil {
