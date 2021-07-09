@@ -1,7 +1,7 @@
 import { providers, Wallet, utils } from "ethers"
 import * as createBlakeHash from "blake-hash"
 import * as eddsa from "circomlib/src/eddsa.js"
-import * as babyJubJub from "circomlib/src/babyjub.js"
+import * as babyJub from "circomlib/src/babyjub.js"
 import { Scalar, utils as ffutils } from "ffjavascript"
 
 export class WalletUtil {
@@ -38,29 +38,26 @@ export class WalletUtil {
     }
 }
 
-export class WalletBabyJubJub {
+export type PublicKeyBabyJub = { x: bigint, y: bigint }
+
+export class WalletBabyJub {
     private _rawPrivKey: Buffer
-    private _privKey: bigint
 
     constructor(rawPrivateKey: Buffer) {
         if (!(rawPrivateKey instanceof Uint8Array)) throw new Error("Invalid private key (buffer)")
         this._rawPrivKey = rawPrivateKey
-
-        const keyHashBytes = createBlakeHash("blake512").update(rawPrivateKey).digest().slice(0, 32)
-        const rawpvkHash = eddsa.pruneBuffer(keyHashBytes)
-        this._privKey = Scalar.shr(ffutils.leBuff2int(rawpvkHash), 3) as bigint
     }
 
     /** Concatenates the given login key and process ID with the UTF8 hex representation of the
-     * given secret string and returns a  Baby JubJub wallet using that as the private key
+     * given secret string and returns a  Baby Jub wallet using that as the private key
      */
-    static fromLogin(hexLoginKey: string, hexProcessId: string, userSecret: string) {
+    static fromProcessCredentials(hexLoginKey: string, hexProcessId: string, userSecret: string) {
         const hexSeed = hexLoginKey.replace(/^0x/, "") +
             hexProcessId.replace(/^0x/, "") +
             Buffer.from(userSecret, "utf8").toString("hex")
         const seedBytes = Buffer.from(hexSeed, "hex")
 
-        return new WalletBabyJubJub(seedBytes)
+        return new WalletBabyJub(seedBytes)
     }
 
     /** Returns the private key originally provided */
@@ -68,19 +65,38 @@ export class WalletBabyJubJub {
         return this._rawPrivKey
     }
 
+    private get hashedRawPrivateKey(): Buffer {
+        return createBlakeHash("blake512").update(this._rawPrivKey).digest()
+    }
+
     /** Returns the blake hash of the original private key, as a bigint.
      * Use this value to feed to the snarks circuit.
      */
     public get privateKey(): bigint {
-        return this._privKey
+        const h1 = this.hashedRawPrivateKey
+        const sBuff: Buffer = eddsa.pruneBuffer(h1.slice(0, 32))
+        const s: bigint = ffutils.leBuff2int(sBuff)
+        return Scalar.shr(s, 3) as bigint
     }
 
     /** Returns the two points of the public key coordinate as big integers */
-    public get publicKey(): { x: bigint, y: bigint } {
-        const [pubKeyX, pubKeyY] = babyJubJub.mulPointEscalar(babyJubJub.Base8, this.privateKey) as [bigint, bigint]
+    public get publicKey(): PublicKeyBabyJub {
+        const [pubKeyX, pubKeyY] = babyJub.mulPointEscalar(babyJub.Base8, this.privateKey) as [bigint, bigint]
 
         return { x: pubKeyX, y: pubKeyY }
     }
+
+    /** Returns the signature of the given message using the wallet's private key */
+    public sign(msg: Buffer): { R8: [bigint, bigint], S: bigint } {
+        if (!msg) throw new Error("Invalid message")
+
+        return eddsa.sign(this._rawPrivKey, msg)
+    }
+
+    static verify(msg: Buffer, sig: ReturnType<typeof WalletBabyJub.prototype.sign>, pubKey: PublicKeyBabyJub) {
+        return eddsa.verify(msg, sig, [pubKey.x, pubKey.y])
+    }
+
 }
 
 export namespace SignerUtil {
