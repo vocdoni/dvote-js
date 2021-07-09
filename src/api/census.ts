@@ -417,6 +417,7 @@ export class CensusErc20Api {
         const contractInstance = await gw.getTokenStorageProofInstance(walletOrSigner, customContractAddress)
 
         const balanceMappingPosition = await CensusErc20Api.findBalanceMappingPosition(tokenAddress, await walletOrSigner.getAddress(), gw.provider as providers.JsonRpcProvider)
+        if (balanceMappingPosition === null) throw new Error("The given token contract does not seem to have a defined mapping position for the holder balances")
 
         const tx = await contractInstance.registerToken(tokenAddress, balanceMappingPosition)
         return tx.wait()
