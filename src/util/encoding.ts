@@ -28,6 +28,8 @@ export function bigIntToBuffer(number: bigint): Buffer {
     return Buffer.from(resultBytes)
 }
 
-export function bufferToBigInt(bytes: Buffer): bigint {
+export function bufferToBigInt(bytes: Buffer | Uint8Array): bigint {
+    // Ensure that it is a buffer
+    bytes = Buffer.from(bytes)
     return BigInt("0x" + bytes.toString("hex"))
 }
