@@ -45,7 +45,19 @@ export class WalletBabyJub {
 
     constructor(rawPrivateKey: Buffer) {
         if (!(rawPrivateKey instanceof Uint8Array)) throw new Error("Invalid private key (buffer)")
+        else if (rawPrivateKey.length != 32) throw new Error("The raw private key buffer has to be 32 bytes long. Use fromHexSeed instead.")
+
         this._rawPrivKey = rawPrivateKey
+    }
+
+    /** Creates a given wallet by hashing the given hex seed into a 32 byte buffer
+     * and using it as a raw private key
+     */
+    static fromHexSeed(hexSeed: string) {
+        const seedBytes = Buffer.from(hexSeed.replace("0x", ""), "hex")
+        const hashedBytes = utils.keccak256(seedBytes).slice(2)
+
+        return new WalletBabyJub(Buffer.from(hashedBytes, "hex"))
     }
 
     /** Concatenates the given login key and process ID with the UTF8 hex representation of the
@@ -55,9 +67,8 @@ export class WalletBabyJub {
         const hexSeed = hexLoginKey.replace(/^0x/, "") +
             hexProcessId.replace(/^0x/, "") +
             Buffer.from(userSecret, "utf8").toString("hex")
-        const seedBytes = Buffer.from(hexSeed, "hex")
 
-        return new WalletBabyJub(seedBytes)
+        return WalletBabyJub.fromHexSeed(hexSeed)
     }
 
     /** Returns the private key originally provided */
@@ -90,11 +101,11 @@ export class WalletBabyJub {
     public sign(msg: Buffer): { R8: [bigint, bigint], S: bigint } {
         if (!msg) throw new Error("Invalid message")
 
-        return eddsa.sign(this._rawPrivKey, msg)
+        return eddsa.signPoseidon(this._rawPrivKey, msg)
     }
 
     static verify(msg: Buffer, sig: ReturnType<typeof WalletBabyJub.prototype.sign>, pubKey: PublicKeyBabyJub) {
-        return eddsa.verify(msg, sig, [pubKey.x, pubKey.y])
+        return eddsa.verifyPoseidon(msg, sig, [pubKey.x, pubKey.y])
     }
 
 }

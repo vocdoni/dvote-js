@@ -183,30 +183,30 @@ describe("Baby Jub wallets", () => {
 
         expect(wallet3.privateKey.toString()).to.not.eq(wallet4.privateKey.toString())
     })
-    it("Should compute the raw private key from the process credentials", () => {
+    it("Should compute the raw private key seed from the process credentials", () => {
         const loginKey = "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
         const processId = "0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0"
 
         const inputs = [
             {
                 chosenSecret: "1234ABCDE",
-                rawPrivKey: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0313233344142434445"
+                rawPrivKey: "9b1f1f3bfded922b13eeec06dbb2e8716959a99c5c8980e6e645dc8e6ac3f3b0"
             },
             {
                 chosenSecret: "&&QQ$$__",
-                rawPrivKey: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef02626515124245f5f"
+                rawPrivKey: "e421a941f5120f57e0f48c75c3f78f0b0929ec138233cbf041b06a69d87cf597"
             },
             {
                 chosenSecret: "verysupersecret",
-                rawPrivKey: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0766572797375706572736563726574"
+                rawPrivKey: "c87289a9e47f863834896d8d8b81543946fb4a6acb3327b63959853e3ba7ba09"
             },
             {
                 chosenSecret: "ULTRA_MAXI_SECRET",
-                rawPrivKey: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0554c5452415f4d4158495f534543524554"
+                rawPrivKey: "87f9315f93abbd233915ed36f259030116276d1392c82b809e439ecc68a3b8b7"
             },
             {
                 chosenSecret: "¡¡!!>>%%&&//",
-                rawPrivKey: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0c2a1c2a121213e3e252526262f2f"
+                rawPrivKey: "781fef45a55374c91b5aa38baad5c0e711204f944aa690df11264a38b1ecc037"
             },
         ]
 
@@ -216,34 +216,63 @@ describe("Baby Jub wallets", () => {
             expect(wallet.rawPrivateKey.toString("hex")).to.eq(input.rawPrivKey)
         }
     })
-    it("Should compute the hashed private key from the raw one", () => {
-        // TODO: Add the expected private keys computed from an external source
+    it("Should compute the raw private key from a hex seed", () => {
         const inputs = [
             {
-                rawPrivKey: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0313233344142434445",
-                privKey: ""
+                hexSeed: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0313233344142434445",
+                rawPrivKey: "9b1f1f3bfded922b13eeec06dbb2e8716959a99c5c8980e6e645dc8e6ac3f3b0"
             },
             {
-                rawPrivKey: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef02626515124245f5f",
-                privKey: ""
+                hexSeed: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef02626515124245f5f",
+                rawPrivKey: "e421a941f5120f57e0f48c75c3f78f0b0929ec138233cbf041b06a69d87cf597"
             },
             {
-                rawPrivKey: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0766572797375706572736563726574",
-                privKey: ""
+                hexSeed: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0766572797375706572736563726574",
+                rawPrivKey: "c87289a9e47f863834896d8d8b81543946fb4a6acb3327b63959853e3ba7ba09"
             },
             {
-                rawPrivKey: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0554c5452415f4d4158495f534543524554",
-                privKey: ""
+                hexSeed: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0554c5452415f4d4158495f534543524554",
+                rawPrivKey: "87f9315f93abbd233915ed36f259030116276d1392c82b809e439ecc68a3b8b7"
             },
             {
-                rawPrivKey: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0c2a1c2a121213e3e252526262f2f",
-                privKey: ""
+                hexSeed: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0c2a1c2a121213e3e252526262f2f",
+                rawPrivKey: "781fef45a55374c91b5aa38baad5c0e711204f944aa690df11264a38b1ecc037"
+            },
+        ]
+
+        for (let input of inputs) {
+            const wallet = WalletBabyJub.fromHexSeed(input.hexSeed)
+
+            expect(wallet.rawPrivateKey.toString("hex")).to.eq(input.rawPrivKey)
+        }
+    })
+    it("Should compute the hashed private key from the raw one", () => {
+        const inputs = [
+            {
+                rawPrivKey: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+                privKey: "5634430887631083315783016130888700067357795275280051593827143158352587490718"
+            },
+            {
+                rawPrivKey: "123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0",
+                privKey: "5035416475395287127593692370057652150855374392316196829321791977675687614178"
+            },
+            {
+                rawPrivKey: "23456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01",
+                privKey: "5717535079455143168181896768413240376947313423579186859608937093206000190547"
+            },
+            {
+                rawPrivKey: "3456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012",
+                privKey: "5369776774951030641578597209373721525835886482376591097000908090158561065268"
+            },
+            {
+                rawPrivKey: "456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123",
+                privKey: "3750943115417715871235750915600572657044180700843206948181226910723432259050"
             },
         ]
 
         for (let input of inputs) {
             const wallet = new WalletBabyJub(Buffer.from(input.rawPrivKey, "hex"))
-            
+
             expect(wallet.privateKey.toString()).to.eq(input.privKey)
         }
     })
