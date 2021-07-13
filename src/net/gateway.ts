@@ -47,7 +47,7 @@ export class Gateway {
      * @param networkId Either "mainnet", "rinkeby" or "goerli" (test)
      * @param requiredApis A list of the required APIs
      */
-    static randomFromDefault(networkId: EthNetworkID, requiredApis: (GatewayApiName | BackendApiName)[] = [], environment: VocdoniEnvironment): any {
+    static randomFromDefault(networkId: EthNetworkID, requiredApis: (GatewayApiName | BackendApiName)[] = [], environment: VocdoniEnvironment): Promise<Gateway> {
         return GatewayBootnode.getDefaultGateways(networkId, environment)
             .then(bootNodeData => {
                 if (!bootNodeData[networkId]) throw new Error("The bootnode doesn't define any gateway for " + networkId)
@@ -55,16 +55,17 @@ export class Gateway {
                 const gateways = GatewayBootnode.digestNetwork(bootNodeData, networkId, environment)
 
                 // TODO: Filter by required API's
-                // TODO Promise.allSettled is the correct one, should be used when target = ES2020 is fixed
-                return allSettled([
+                return Promise.all([
                     Promise.race(gateways.web3.map(w3 => w3.checkStatus().then(() => w3))),
                     Promise.race(gateways.dvote.map(dv => dv.checkStatus().then(() => dv)))
                 ])
-            }).then((results: Array<{"value": any, "status": string}>) => {
-                if (!results[0].value) throw new Error("Could not find an active Web3 Gateway")
-                else if (!results[1].value) throw new Error("Could not find an active DVote Gateway")
+            }).then(result => {
+                const [web3, dvote] = result
 
-                return new Gateway(results[1].value, results[0].value)
+                if (!web3) throw new Error("Could not find an active Web3 Gateway")
+                else if (!dvote) throw new Error("Could not find an active DVote Gateway")
+
+                return new Gateway(dvote, web3)
             })
     }
 
@@ -82,16 +83,17 @@ export class Gateway {
                 const gateways = GatewayBootnode.digestNetwork(bootNodeData, networkId, environment)
 
                 // TODO: Filter by required API's
-                // TODO Promise.allSettled is the correct one, should be used when target = ES2020 is fixed
-                return allSettled([
+                return Promise.all([
                     Promise.race(gateways.web3.map(w3 => w3.checkStatus().then(() => w3))),
                     Promise.race(gateways.dvote.map(dv => dv.checkStatus().then(() => dv)))
                 ])
-            }).then((results: Array<{"value": any, "status": string}>) => {
-                if (!results[0].value) throw new Error("Could not find an active Web3 Gateway")
-                else if (!results[1].value) throw new Error("Could not find an active DVote Gateway")
+            }).then(result => {
+                const [web3, dvote] = result
 
-                return new Gateway(results[1].value, results[0].value)
+                if (!web3) throw new Error("Could not find an active Web3 Gateway")
+                else if (!dvote) throw new Error("Could not find an active DVote Gateway")
+
+                return new Gateway(dvote, web3)
             })
     }
 

@@ -33,7 +33,6 @@ export * from "./util/providers"
 export * from "./util/random"
 export * from "./util/signers"
 export * from "./util/waiters"
-export * from "./util/promise"
 
 // WRAPPERS
 export * from "./wrappers/content-uri"

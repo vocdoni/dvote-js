@@ -329,6 +329,6 @@ export class GatewayDiscovery {
         })
 
         // TODO Promise.allSettled is the correct one, should be used when target = ES2020 is fixed
-        return allSettled(checks).then(() => activeNodes).catch(() => activeNodes)
+        return allSettled(checks).then(() => activeNodes)
     }
 }
