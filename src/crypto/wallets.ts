@@ -1,7 +1,6 @@
 import { providers, Wallet, utils } from "ethers"
 import * as createBlakeHash from "blake-hash"
-import * as eddsa from "circomlib/src/eddsa.js"
-import * as babyJub from "circomlib/src/babyjub.js"
+import { eddsa, babyJub } from "circomlib"
 import { Scalar, utils as ffutils } from "ffjavascript"
 import { bufferToBigInt } from "../util/encoding"
 

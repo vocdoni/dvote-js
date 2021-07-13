@@ -1,5 +1,5 @@
 import { utils } from "ethers"
-import * as poseidon from "circomlib/src/poseidon.js"
+import { poseidon } from "circomlib"
 import { Buffer } from "buffer/"
 
 export namespace Keccak256 {
