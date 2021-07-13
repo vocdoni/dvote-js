@@ -4,6 +4,7 @@
 
 import { parseURL } from 'universal-parse-url'
 import { Contract, ContractFactory, providers, Wallet, Signer, ContractInterface, BigNumber } from "ethers"
+import { allSettled } from "../util/promise";
 import { ProviderUtil } from "../util/providers"
 import { GatewayInfo } from "../wrappers/gateway-info"
 import {
@@ -109,27 +110,28 @@ export class Web3Gateway {
                 throw new Error("Invalid environment")
         }
 
-        this._initializingEns = Promise.all([
+        // TODO Promise.allSettled is the correct one, should be used when target = ES2020 is fixed
+        this._initializingEns = allSettled([
             this._provider.resolveName(ENTITY_RESOLVER_ENS_SUBDOMAIN + "." + rootDomain),
             this._provider.resolveName(GENESIS_ENS_SUBDOMAIN + "." + rootDomain),
             this._provider.resolveName(NAMESPACES_ENS_SUBDOMAIN + "." + rootDomain),
             this._provider.resolveName(PROCESSES_ENS_SUBDOMAIN + "." + rootDomain),
             this._provider.resolveName(RESULTS_ENS_SUBDOMAIN + "." + rootDomain),
             this._provider.resolveName(ERC20_STORAGE_PROOFS_ENS_SUBDOMAIN + "." + rootDomain),
-        ]).then(addresses => {
-            if (!addresses[0]) throw new Error("The ENS resolver address could not be fetched")
-            else if (!addresses[1]) throw new Error("The genesis contract address could not be fetched")
-            else if (!addresses[2]) throw new Error("The namespaces contract address could not be fetched")
-            else if (!addresses[3]) throw new Error("The processes contract address could not be fetched")
-            else if (!addresses[4]) throw new Error("The results contract address could not be fetched")
-            else if (!addresses[5]) throw new Error("The ERC20 proofs contract address could not be fetched")
+        ]).then((addresses: Array<{"value": string, "status": string}>) => {
+            if (!addresses[0].value) throw new Error("The ENS resolver address could not be fetched")
+            else if (!addresses[1].value) throw new Error("The genesis contract address could not be fetched")
+            else if (!addresses[2].value) throw new Error("The namespaces contract address could not be fetched")
+            else if (!addresses[3].value) throw new Error("The processes contract address could not be fetched")
+            else if (!addresses[4].value) throw new Error("The results contract address could not be fetched")
+            else if (!addresses[5].value) throw new Error("The ERC20 proofs contract address could not be fetched")
 
-            this.ensPublicResolverContractAddress = addresses[0]
-            this.genesisContractAddress = addresses[1]
-            this.namespacesContractAddress = addresses[2]
-            this.processesContractAddress = addresses[3]
-            this.resultsContractAddress = addresses[4]
-            this.tokenStorageProofContractAddress = addresses[5]
+            this.ensPublicResolverContractAddress = addresses[0].value
+            this.genesisContractAddress = addresses[1].value
+            this.namespacesContractAddress = addresses[2].value
+            this.processesContractAddress = addresses[3].value
+            this.resultsContractAddress = addresses[4].value
+            this.tokenStorageProofContractAddress = addresses[5].value
 
             this._initializingEns = null
         }).catch(err => {

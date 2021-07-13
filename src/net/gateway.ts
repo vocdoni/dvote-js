@@ -3,6 +3,7 @@
 // It provides a wrapper to use a Vocdoni Gateway, as well as a wrapper a Web3 one
 
 import { Contract, providers, utils, Wallet, Signer, ContractInterface } from "ethers"
+import { allSettled } from "../util/promise";
 import { GatewayInfo } from "../wrappers/gateway-info"
 import { GatewayApiName, BackendApiName, ApiMethod } from "../models/gateway"
 import { GatewayBootnode, EthNetworkID } from "./gateway-bootnode"
@@ -46,22 +47,24 @@ export class Gateway {
      * @param networkId Either "mainnet", "rinkeby" or "goerli" (test)
      * @param requiredApis A list of the required APIs
      */
-    static randomFromDefault(networkId: EthNetworkID, requiredApis: (GatewayApiName | BackendApiName)[] = [], environment: VocdoniEnvironment): Promise<Gateway> {
+    static randomFromDefault(networkId: EthNetworkID, requiredApis: (GatewayApiName | BackendApiName)[] = [], environment: VocdoniEnvironment): any {
         return GatewayBootnode.getDefaultGateways(networkId, environment)
-            .then(async bootNodeData => {
+            .then(bootNodeData => {
                 if (!bootNodeData[networkId]) throw new Error("The bootnode doesn't define any gateway for " + networkId)
 
                 const gateways = GatewayBootnode.digestNetwork(bootNodeData, networkId, environment)
 
                 // TODO: Filter by required API's
-                const [web3, dvote] = await Promise.all([
+                // TODO Promise.allSettled is the correct one, should be used when target = ES2020 is fixed
+                return allSettled([
                     Promise.race(gateways.web3.map(w3 => w3.checkStatus().then(() => w3))),
                     Promise.race(gateways.dvote.map(dv => dv.checkStatus().then(() => dv)))
                 ])
-                if (!web3) throw new Error("Could not find an active Web3 Gateway")
-                else if (!dvote) throw new Error("Could not find an active DVote Gateway")
+            }).then((results: Array<{"value": any, "status": string}>) => {
+                if (!results[0].value) throw new Error("Could not find an active Web3 Gateway")
+                else if (!results[1].value) throw new Error("Could not find an active DVote Gateway")
 
-                return new Gateway(dvote, web3)
+                return new Gateway(results[1].value, results[0].value)
             })
     }
 
@@ -73,20 +76,22 @@ export class Gateway {
      */
     static randomfromUri(networkId: EthNetworkID, bootnodesContentUri: string | ContentUri, requiredApis: (GatewayApiName | BackendApiName)[] = [], environment: VocdoniEnvironment): Promise<Gateway> {
         return GatewayBootnode.getGatewaysFromUri(bootnodesContentUri)
-            .then(async bootNodeData => {
+            .then(bootNodeData => {
                 if (!bootNodeData[networkId]) throw new Error("The bootnode doesn't define any gateway for " + networkId)
 
                 const gateways = GatewayBootnode.digestNetwork(bootNodeData, networkId, environment)
 
                 // TODO: Filter by required API's
-                const [web3, dvote] = await Promise.all([
+                // TODO Promise.allSettled is the correct one, should be used when target = ES2020 is fixed
+                return allSettled([
                     Promise.race(gateways.web3.map(w3 => w3.checkStatus().then(() => w3))),
                     Promise.race(gateways.dvote.map(dv => dv.checkStatus().then(() => dv)))
                 ])
-                if (!web3) throw new Error("Could not find an active Web3 Gateway")
-                else if (!dvote) throw new Error("Could not find an active DVote Gateway")
+            }).then((results: Array<{"value": any, "status": string}>) => {
+                if (!results[0].value) throw new Error("Could not find an active Web3 Gateway")
+                else if (!results[1].value) throw new Error("Could not find an active DVote Gateway")
 
-                return new Gateway(dvote, web3)
+                return new Gateway(results[1].value, results[0].value)
             })
     }
 
