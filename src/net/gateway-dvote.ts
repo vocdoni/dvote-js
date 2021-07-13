@@ -294,7 +294,7 @@ export class DVoteGateway {
         else if (allApis.raw.includes(method as RawApiMethod)) return true
 
         for (const api of this.supportedApis) {
-            if (api in allApis && allApis[api].includes(method as GatewayApiMethod | BackendApiMethod)) {
+            if (api in allApis && allApis[api].includes(method as never)) {
                 return true
             }
         }
