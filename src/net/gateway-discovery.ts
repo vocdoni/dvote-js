@@ -6,6 +6,7 @@ import { EthNetworkID, GatewayBootnode } from "./gateway-bootnode"
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
 import { JsonBootnodeData } from "../models/gateway"
 import { promiseWithTimeout } from "../util/timeout"
+import { allSettled } from "../util/promise";
 import { Random } from "../util/random"
 import { VocdoniEnvironment } from "../models/common"
 import { GatewayDiscoveryError, GatewayDiscoveryValidationError } from "../util/errors/gateway-discovery"
@@ -328,7 +329,6 @@ export class GatewayDiscovery {
         })
 
         // TODO Promise.allSettled is the correct one, should be used when target = ES2020 is fixed
-        return Promise.all(checks).then(() => activeNodes).catch(() => activeNodes)
-        // return Promise.allSettled(checks).then(() => activeNodes).catch(() => activeNodes)
+        return allSettled(checks).then(() => activeNodes).catch(() => activeNodes)
     }
 }

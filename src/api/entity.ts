@@ -2,6 +2,7 @@ import { Wallet, Signer, ContractTransaction } from "ethers"
 import { checkValidEntityMetadata, EntityMetadata } from "../models/entity"
 import { Gateway, IGateway } from "../net/gateway"
 import { TextRecordKeys } from "../models/entity"
+import { allSettled } from "../util/promise";
 import { FileApi } from "./file"
 import { IGatewayPool, GatewayPool } from "../net/gateway-pool"
 import { XDAI_CHAIN_ID, XDAI_GAS_PRICE, SOKOL_CHAIN_ID, SOKOL_GAS_PRICE } from "../constants"
@@ -103,7 +104,10 @@ export class Erc20TokensApi {
             }).then(count => {
                 const indexes = new Array(count).fill(0).map((_, i) => i)
 
-                return Promise.all(indexes.map(idx => CensusErc20Api.getTokenAddressAt(idx, gateway)))
+                // TODO Promise.allSettled is the correct one, should be used when target = ES2020 is fixed
+                return allSettled(indexes.map(idx => CensusErc20Api.getTokenAddressAt(idx, gateway)))
+            }).then((results: Array<{"value": any, "status": string}>) => {
+                return results.map((result: {"value": any, "status": string}) => result.value)
             })
     }
 }
