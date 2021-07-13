@@ -3,7 +3,7 @@
  *
  * @param proms
  */
-export function allSettled(proms: Array<Promise<any>>) {
+export function allSettled(proms: Array<Promise<any>>): Promise<Array<{ value: any, status: string } | { reason: Error, status: string }>> {
     return Promise.all(proms.map(reflect))
 }
 
