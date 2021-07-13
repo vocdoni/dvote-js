@@ -106,8 +106,10 @@ export class Erc20TokensApi {
 
                 // TODO Promise.allSettled is the correct one, should be used when target = ES2020 is fixed
                 return allSettled(indexes.map(idx => CensusErc20Api.getTokenAddressAt(idx, gateway)))
-            }).then((results: Array<{"value": any, "status": string}>) => {
-                return results.map((result: {"value": any, "status": string}) => result.value)
+            }).then(results => {
+                return results
+                    .filter(item => item.status === "fulfilled")
+                    .map((item: {status: string, value: any}) => item.value)
             })
     }
 }
