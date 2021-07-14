@@ -45,7 +45,7 @@ const BOOTNODES_URL_RW = "https://bootnodes.vocdoni.net/gateways.dev.json"
 
 // const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
 console.log("CHANGE ME PRIV_K")
-const PRIV_K = "0x0000000000000000000000000000000000000000"
+const PRIV_K = "0x0000000000000000000000000000000000000001"
 const wallet = new Wallet(PRIV_K)
 
 async function attachToEntityResolver() {

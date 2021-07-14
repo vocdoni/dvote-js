@@ -1,5 +1,8 @@
 # DVote JS changelog
 
+## 1.9.12
+- Upgrades the Ethereum Storage proofs dependency to account for the London hard fork
+
 ## 1.9.11
 - Reestablishes weight and random factor for gateway discovery (dvote and web3)
 - Changes ethers provider from `JsonRpcProvider` to `StaticJsonRpcProvider` in order to avoid unecessarry `eth_chainId` calls
