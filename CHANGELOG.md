@@ -1,5 +1,6 @@
 # DVote JS changelog
 
+## 1.9.14
 ## 1.9.13
 - Fixing a relative path that was causing issues with yarn
 
