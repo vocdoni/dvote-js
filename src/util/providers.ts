@@ -1,5 +1,5 @@
 import { providers } from "ethers"
-import { VocdoniEnvironment } from "models/common"
+import { VocdoniEnvironment } from "../models/common"
 import {
     XDAI_CHAIN_ID,
     XDAI_ENS_REGISTRY_ADDRESS,

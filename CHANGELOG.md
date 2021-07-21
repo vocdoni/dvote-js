@@ -1,5 +1,8 @@
 # DVote JS changelog
 
+## 1.9.13
+- Fixing a relative path that was causing issues with yarn
+
 ## 1.9.12
 - Upgrades the Ethereum Storage proofs dependency to account for the London hard fork
 
