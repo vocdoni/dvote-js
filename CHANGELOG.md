@@ -35,6 +35,9 @@ Breaking changes to support ZK Snarks and Baby JubJub wallets
         - Replace `CensusOffChainApi.digestPublicKey(..., CensusOffchainDigestType.RAW_PUBKEY)` by `CensusOffChain.Public.encodePublicKey` instead
     - `CensusOffchainDigestType` is no longer needed
     - [Breaking] `generateCensusId` and `generateCensusIdSuffix` are now part of `CensusOffChain`
+- [Breaking] Adding `CensusOnChain`
+    - `CensusErc20` is now `CensusOnChain.ERC20`
+    - Adding `CensusOnChain.MiniMe`
 - Adding the `WalletBabyJubJub` class
 - [Breaking] `CensusOffchainApi.getCensusSize` is now `CensusOffchainApi.getSize`
 - [Breaking] `SignerUtil.fromInjectedWeb3` is now `Web3Signer.fromInjected`
