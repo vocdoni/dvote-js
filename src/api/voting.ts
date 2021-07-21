@@ -1,9 +1,23 @@
+import { keccak256 } from "@ethersproject/keccak256";
 import { Wallet, Signer, utils, ContractTransaction, BigNumber, providers } from "ethers"
+import { TextRecordKeys } from "../models/entity";
 import { Gateway, IGateway } from "../net/gateway"
+import { ContentUri } from "../wrappers/content-uri";
 import { FileApi } from "./file"
 import { EntityApi } from "./entity"
 import { ProcessMetadata, checkValidProcessMetadata, DigestedProcessResults, DigestedProcessResultItem, INewProcessParams, IProofEVM, IProofCA, IProofGraviton, INewProcessErc20Params } from "../models/process"
-import { VOCHAIN_BLOCK_TIME, XDAI_GAS_PRICE, XDAI_CHAIN_ID, SOKOL_CHAIN_ID, SOKOL_GAS_PRICE } from "../constants"
+import {
+    VOCHAIN_BLOCK_TIME,
+    XDAI_GAS_PRICE,
+    XDAI_CHAIN_ID,
+    SOKOL_CHAIN_ID,
+    SOKOL_GAS_PRICE,
+    VOCDONI_MAINNET_ENTITY_ID,
+    VOCDONI_GOERLI_ENTITY_ID,
+    VOCDONI_RINKEBY_ENTITY_ID,
+    VOCDONI_XDAI_ENTITY_ID,
+    VOCDONI_XDAI_STG_ENTITY_ID, VOCDONI_SOKOL_ENTITY_ID
+} from "../constants"
 import { BytesSignature } from "../util/data-signing"
 import { Buffer } from "buffer/"  // Previously using "arraybuffer-to-string"
 import { Asymmetric } from "../util/encryption"
@@ -199,17 +213,85 @@ export class VotingApi {
                 if (!response.ok) throw new Error(response.message || null)
                 else if (typeof response.process !== 'object') throw new Error()
 
-                // Ensure 0x's
-                const result = response.process
-                result.censusRoot = "0x" + result.censusRoot
-                result.entityId = "0x" + result.entityId
-                result.processId = "0x" + result.processId
-                return result
+                return this.checkProcessInfoFromResult(response.process)
             })
             .catch((error) => {
                 const message = error.message ? "Could not retrieve the process info: " + error.message : "Could not retrieve the process info"
-                throw new Error(message)
+                return this.getArchiveProcessState(processId, gateway, message)
             })
+    }
+
+    /**
+     * Fetch the full state of the given processId on the IPFS archive
+     *
+     * @param processId
+     * @param gateway
+     * @param errorMessage
+     */
+    private static getArchiveProcessState(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<IProcessState> {
+        return this.getArchiveUri(gateway)
+            .then((archiveUri: ContentUri) => {
+                return FileApi.fetchString("ipfs:///ipns/" + archiveUri + "/" + processId.replace("0x", ""), gateway)
+            })
+            .then((result: string) => {
+                const processInfo = JSON.parse(result)
+                return processInfo.Process ? this.checkProcessInfoFromResult(processInfo.Process) : new Error(errorMessage)
+            })
+            .catch((error) => {
+                throw new Error(errorMessage)
+            })
+    }
+
+    /**
+     * Checks the process information received and transforms data if needed
+     *
+     * @param processInfo
+     */
+    private static checkProcessInfoFromResult(processInfo) {
+        // Ensure 0x's
+        processInfo.censusRoot = "0x" + processInfo.censusRoot
+        processInfo.entityId = "0x" + processInfo.entityId
+        processInfo.processId = "0x" + processInfo.processId
+
+        return processInfo
+    }
+
+    /**
+     * Gets the archive Uri from the given network id
+     *
+     * @param gateway
+     */
+    private static getArchiveUri(gateway: IGateway | IGatewayPool): Promise<ContentUri> {
+        return gateway.getEnsPublicResolverInstance().then(async instance => {
+            let entityEnsNode: string
+            switch (await gateway.networkId) {
+                case "mainnet":
+                    entityEnsNode = keccak256(VOCDONI_MAINNET_ENTITY_ID)
+                    break
+                case "goerli":
+                    entityEnsNode = keccak256(VOCDONI_GOERLI_ENTITY_ID)
+                    break
+                case "rinkeby":
+                    entityEnsNode = keccak256(VOCDONI_RINKEBY_ENTITY_ID)
+                    break
+                case "xdai":
+                    // if (environment === 'prod') {
+                    //     entityEnsNode = keccak256(VOCDONI_XDAI_ENTITY_ID)
+                    //     break
+                    // }
+                    entityEnsNode = keccak256(VOCDONI_XDAI_STG_ENTITY_ID)
+                    break
+                case "sokol":
+                    entityEnsNode = keccak256(VOCDONI_SOKOL_ENTITY_ID)
+                    break
+            }
+            return instance.text(entityEnsNode, TextRecordKeys.VOCDONI_ARCHIVE)
+        }).then((uri: string) => {
+            if (!uri) {
+                throw new Error()
+            }
+            return new ContentUri(uri)
+        })
     }
 
     /**
