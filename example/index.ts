@@ -22,7 +22,7 @@ import { EntityMetadataTemplate, EntityMetadata, TextRecordKeys } from "../src/m
 import { INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "../src/models/process"
 import { GatewayInfo } from "../src/wrappers/gateway-info"
 import { XDAI_CHAIN_ID, XDAI_ENS_REGISTRY_ADDRESS, VOCHAIN_BLOCK_TIME } from "../src/constants"
-import { JsonSignature, BytesSignature } from "../src/util/data-signing"
+import { JsonSignature, BytesSignature } from "../src/crypto/data-signing"
 import { GatewayApiMethod, BackendApiMethod, ApiMethod } from "../src/models/gateway"
 import { IGatewayDiscoveryParameters } from "../src/net/gateway-discovery"
 import { ProcessEnvelopeType, ProcessMode, ProcessStatus, ProcessCensusOrigin, ensHashAddress } from "../src/net/contracts"

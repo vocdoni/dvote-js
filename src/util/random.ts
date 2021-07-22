@@ -1,5 +1,4 @@
 import { utils } from "ethers"
-// import { Buffer } from "buffer/"
 
 export namespace Random {
     /**
