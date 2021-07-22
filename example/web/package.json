@@ -1,5 +1,5 @@
 {
-  "name": "bridge-ui",
+  "name": "example",
   "version": "1.0.0",
   "description": "Frontend for the Vocdoni Bridge voting client",
   "main": "index.js",
