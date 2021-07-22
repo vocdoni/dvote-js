@@ -1,4 +1,4 @@
-import { Wallet, Signer, utils } from "ethers"
+import { Wallet, Signer, utils, providers } from "ethers"
 import { compressPublicKey } from "./elliptic"
 
 export namespace JsonSignature {
@@ -13,6 +13,25 @@ export namespace JsonSignature {
 
         const sortedRequest = JsonSignature.sort(request)
         const msg = JSON.stringify(sortedRequest)
+
+        if (walletOrSigner instanceof Wallet) {
+            const msgBytes = utils.toUtf8Bytes(msg)
+            return walletOrSigner.signMessage(msgBytes)
+        }
+        else if (walletOrSigner instanceof providers.JsonRpcSigner) {
+            // Some providers will use eth_sign without prepending the Ethereum prefix.
+            // This will break signatures in some cases (Wallet Connect, Ledger, Trezor, etc).
+            // Using personal_sign instead
+            return walletOrSigner.getAddress()
+                .then(address => (
+                    walletOrSigner.provider.send("personal_sign", [
+                        msg,
+                        address.toLowerCase()
+                    ])
+                ))
+        }
+
+        // Unexpected case, try to sign with eth_sign, even if we would prefer `personal_sign`
         const msgBytes = utils.toUtf8Bytes(msg)
         return walletOrSigner.signMessage(msgBytes)
     }
@@ -98,6 +117,23 @@ export namespace BytesSignature {
     export function sign(request: Uint8Array, walletOrSigner: Wallet | Signer): Promise<string> {
         if (!walletOrSigner) throw new Error("Invalid wallet/signer")
 
+        if (walletOrSigner instanceof Wallet) {
+            return walletOrSigner.signMessage(request)
+        }
+        else if (walletOrSigner instanceof providers.JsonRpcSigner) {
+            // Some providers will use eth_sign without prepending the Ethereum prefix.
+            // This will break signatures in some cases (Wallet Connect, Ledger, Trezor, etc).
+            // Using personal_sign instead
+            return walletOrSigner.getAddress()
+                .then(address => (
+                    walletOrSigner.provider.send("personal_sign", [
+                        Buffer.from(request),
+                        address.toLowerCase()
+                    ])
+                ))
+        }
+
+        // Unexpected case, try to sign with eth_sign, even if we would prefer `personal_sign`
         return walletOrSigner.signMessage(request)
     }
 
@@ -106,9 +142,9 @@ export namespace BytesSignature {
      * sorted alphabetically
      * @param signature Hex encoded signature (created with the Ethereum prefix)
      * @param publicKey
-     * @param responseBody Uint8Array of the inner response JSON object
+     * @param messageBytes Uint8Array of the inner response JSON object
      */
-    export function isValid(signature: string, publicKey: string, responseBody: Uint8Array): boolean {
+    export function isValid(signature: string, publicKey: string, messageBytes: Uint8Array): boolean {
         if (!publicKey) return true
         else if (!signature) return false
 
@@ -116,7 +152,7 @@ export namespace BytesSignature {
         const expectedAddress = utils.computeAddress(gwPublicKey)
 
         if (!signature.startsWith("0x")) signature = "0x" + signature
-        const actualAddress = utils.verifyMessage(responseBody, signature)
+        const actualAddress = utils.verifyMessage(messageBytes, signature)
 
         return actualAddress && expectedAddress && (actualAddress == expectedAddress)
     }
