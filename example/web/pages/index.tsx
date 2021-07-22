@@ -34,6 +34,13 @@ export default function Home() {
             </a>
           </Link>
 
+          <Link href="/signing">
+            <a className={styles.card}>
+              <h2>Signing &rarr;</h2>
+              <p>Signing payloads using wallets and signers.</p>
+            </a>
+          </Link>
+
         </div>
       </main>
 
