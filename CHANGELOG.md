@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.11.0
+
+- Using `personal_sign` when signing payloads via a JSON RPC call. Solves signature mismatches when using Wallet Connect, Ledger, Trezor, etc through `useWallet`
+
 ## 1.10.0
 
 Breaking changes to support ZK Snarks and Baby JubJub wallets
