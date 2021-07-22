@@ -4,6 +4,7 @@
   "description": "Frontend for the Vocdoni Bridge voting client",
   "main": "index.js",
   "scripts": {
+    "preinstall": "npm uninstall dvote-js || true",
     "postinstall": "npm run pack-lib",
     "dev": "next dev -p 8080",
     "pack-lib": "rm -f dvote-js*.tgz & npm pack ../.. && npm i dvote-js*.tgz",
@@ -12,11 +13,12 @@
   },
   "homepage": "https://github.com/vocdoni/bridge-ui#readme",
   "dependencies": {
-    "dvote-js": "file:../../dvote-js-1.9.11.tgz",
+    "dvote-js": "file:dvote-js-1.11.0.tgz",
     "ethers": "^5.4.1",
     "next": "10.0.5",
     "react": "^17.0.1",
-    "react-dom": "^17.0.1"
+    "react-dom": "^17.0.1",
+    "use-wallet": "^0.9.0"
   },
   "devDependencies": {
     "@types/react": "^17.0.14",

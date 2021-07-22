@@ -1,9 +1,5 @@
 # DVote JS changelog
 
-## 1.11.0
-
-- Using `personal_sign` when signing payloads via a JSON RPC call. Solves signature mismatches when using Wallet Connect, Ledger, Trezor, etc through `useWallet`
-
 ## 1.10.0
 
 Breaking changes to support ZK Snarks and Baby JubJub wallets
@@ -25,6 +21,8 @@ Breaking changes to support ZK Snarks and Baby JubJub wallets
 - Adding `Random.getRandomBytes` and `Random.getBigInt`
 - `generateCensusIdSuffix` now uses keccak256 internally
 - Converting class groupings into `namespaces`
+- Using `personal_sign` when signing payloads via a JSON RPC call.
+    - Prevents signature mismatches when using Wallet Connect, Ledger, Trezor, etc through `useWallet`
 
 ## 1.9.14
 ## 1.9.13
