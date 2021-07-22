@@ -22,7 +22,6 @@ import {
     INewProcessErc20Params,
     IProcessState
 } from "../../src"
-// import { Buffer } from "buffer/"
 
 
 const CONFIG_PATH = "./config.yaml"

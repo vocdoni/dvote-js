@@ -19,7 +19,6 @@ import {
     IGatewayDiscoveryParameters,
     INewProcessParams
 } from "../../src"
-// import { Buffer } from "buffer/"
 
 
 const CONFIG_PATH = "./config.yaml"
