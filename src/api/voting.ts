@@ -1038,7 +1038,7 @@ export class VotingApi {
 
         try {
             const processState = await VotingApi.getProcessState(processId, gateway)
-            if (processState.status == ProcessStatus.CANCELED) return emptyResults
+            if (processState.status == VochainProcessStatus.CANCELED) return emptyResults
 
             // Encrypted?
             let procKeys: IProcessKeys, retries: number
@@ -1046,11 +1046,11 @@ export class VotingApi {
             if (processState.envelopeType.encryptedVotes) {
                 if (currentBlock < processState.startBlock) return emptyResults // not started
                 else if (processState.processMode["interruptible"]) {
-                    if (processState.status !== ProcessStatus.RESULTS &&
-                        processState.status !== ProcessStatus.ENDED &&
+                    if (processState.status !== VochainProcessStatus.RESULTS &&
+                        processState.status !== VochainProcessStatus.ENDED &&
                         (currentBlock < processState.endBlock)) return emptyResults // not ended
                 } else {
-                    if (processState.status !== ProcessStatus.RESULTS &&
+                    if (processState.status !== VochainProcessStatus.RESULTS &&
                         (currentBlock < processState.endBlock)) return emptyResults // not ended
                 }
 
