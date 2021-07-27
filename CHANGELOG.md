@@ -1,5 +1,8 @@
 # DVote JS changelog
 
+## 1.10.1
+- Addressing a problem that could prevent signing binary payloads on Chrome-based browsers
+
 ## 1.10.0
 
 Breaking changes to support ZK Snarks and Baby JubJub wallets

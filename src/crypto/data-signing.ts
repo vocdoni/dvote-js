@@ -127,7 +127,7 @@ export namespace BytesSignature {
             return walletOrSigner.getAddress()
                 .then(address => (
                     walletOrSigner.provider.send("personal_sign", [
-                        Buffer.from(request),
+                        uint8ArrayToArray(request),
                         address.toLowerCase()
                     ])
                 ))
@@ -155,5 +155,15 @@ export namespace BytesSignature {
         const actualAddress = utils.verifyMessage(messageBytes, signature)
 
         return actualAddress && expectedAddress && (actualAddress == expectedAddress)
+    }
+
+    // Helpers
+
+    function uint8ArrayToArray(buff: Uint8Array): number[] {
+        const result = []
+        for (let i = 0; i < buff.length; ++i) {
+            result.push(buff[i])
+        }
+        return result
     }
 }
