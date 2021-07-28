@@ -210,51 +210,33 @@ export class VotingApi {
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getProcessInfo", processId })
-            .then((response) => {
-                if (!response.ok) throw new Error(response.message || null)
-                else if (typeof response.process !== 'object') throw new Error()
-
-                return this.checkProcessInfoFromResult(response.process)
-            })
             .catch((error) => {
                 const message = error.message ? "Could not retrieve the process info: " + error.message : "Could not retrieve the process info"
+                // TODO Flag if archive needed here
                 return this.getArchiveProcessState(processId, gateway, message)
+            })
+            .then((response) => {
+                if (typeof response.process !== 'object') throw new Error()
+
+                // Ensure 0x's
+                const result = response.process
+                result.censusRoot = "0x" + result.censusRoot
+                result.entityId = "0x" + result.entityId
+                result.processId = "0x" + result.processId
+                return result
             })
     }
 
     /**
-     * Fetch the full state of the given processId on the IPFS archive
+     * Fetch the full state of the given processId on the process archive
      *
      * @param processId
      * @param gateway
      * @param errorMessage
      */
-    static getArchiveProcessState(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<IProcessState> {
-        return GatewayArchive.getArchiveUri(gateway)
-            .then((archiveUri: ContentUri) => {
-                return FileApi.fetchString("ipfs:///ipns/" + archiveUri + "/" + processId.replace("0x", ""), gateway)
-            })
-            .then((result: string) => {
-                const processInfo = JSON.parse(result)
-                return processInfo.process ? this.checkProcessInfoFromResult(processInfo.process) : new Error(errorMessage)
-            })
-            .catch((error) => {
-                throw new Error(errorMessage)
-            })
-    }
-
-    /**
-     * Checks the process information received and transforms data if needed
-     *
-     * @param processInfo
-     */
-    private static checkProcessInfoFromResult(processInfo) {
-        // Ensure 0x's
-        processInfo.censusRoot = "0x" + processInfo.censusRoot
-        processInfo.entityId = "0x" + processInfo.entityId
-        processInfo.processId = "0x" + processInfo.processId
-
-        return processInfo
+    private static getArchiveProcessState(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<DVoteGatewayResponseBody> {
+        return GatewayArchive.getProcessFromArchive(processId, gateway, errorMessage)
+            .then((response: DVoteGatewayResponseBody) => response)
     }
 
     /**
@@ -267,25 +249,25 @@ export class VotingApi {
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getProcessSummary", processId })
+            .catch((error) => {
+                const message = error.message ? "Could not retrieve the process info: " + error.message : "Could not retrieve the process info"
+                // TODO Flag if archive needed here
+                return this.getArchiveProcessSummary(processId, gateway, message)
+            })
             .then((response) => {
-                if (!response.ok) throw new Error(response.message || null)
                 const { processSummary } = response
 
                 return {
                     entityId: "0x" + processSummary.entityId,
                     envelopeHeight: processSummary.envelopeHeight,
-                    status: VochainProcessStatus[processSummary.state as string],
+                    status: processSummary.status ? processSummary.status : VochainProcessStatus[processSummary.state as string],
                     envelopeType: processSummary.envelopeType || {},
                     startBlock: processSummary.startBlock,
-                    endBlock: processSummary.startBlock + processSummary.blockCount,
+                    endBlock: processSummary.endBlock ? processSummary.endBlock : processSummary.startBlock + processSummary.blockCount,
                     entityIndex: processSummary.entityIndex,
                     metadata: processSummary.metadata,
                     sourceNetworkId: processSummary.sourceNetworkID || processSummary.sourceNetworkId,
                 } as IProcessSummary
-            })
-            .catch((error) => {
-                const message = error.message ? "Could not retrieve the process info: " + error.message : "Could not retrieve the process info"
-                return this.getArchiveProcessSummary(processId, gateway, message)
             })
     }
 
@@ -296,55 +278,25 @@ export class VotingApi {
      * @param gateway
      * @param errorMessage
      */
-    static getArchiveProcessSummary(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<IProcessSummary> {
-        if (!processId) return Promise.reject(new Error("Empty process ID"))
-        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
-
-        return GatewayArchive.getArchiveUri(gateway)
-            .then((archiveUri: ContentUri) => {
-                return FileApi.fetchString("ipfs:///ipns/" + archiveUri + "/" + processId.replace("0x", ""), gateway)
-            })
-            .then((result: string) => {
-                const processInfo = JSON.parse(result)
+    private static getArchiveProcessSummary(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<DVoteGatewayResponseBody> {
+        return GatewayArchive.getProcessFromArchive(processId, gateway, errorMessage)
+            .then((response: DVoteGatewayResponseBody) => {
+                // TODO add only `envelopeHeight`
                 return {
-                    entityId: "0x" + processInfo.process.entityId,
-                    envelopeHeight: processInfo.results.envelopeHeight,
-                    status: VochainProcessStatus[processInfo.process.status as string],
-                    envelopeType: processInfo.process.envelopeType || {},
-                    startBlock: processInfo.process.startBlock,
-                    endBlock: processInfo.process.endBlock,
-                    entityIndex: processInfo.process.entityIndex,
-                    metadata: processInfo.process.metadata,
-                    sourceNetworkId: processInfo.process.sourceNetworkID || processInfo.process.sourceNetworkId,
-                } as IProcessSummary
-            })
-            .catch((error) => {
-                throw new Error(errorMessage)
+                    processSummary: {
+                        entityId: response.process.entityId,
+                        envelopeHeight: response.results.envelopeHeight,
+                        status: response.process.status,
+                        envelopeType: response.process.envelopeType,
+                        startBlock: response.process.startBlock,
+                        endBlock: response.process.endBlock,
+                        entityIndex: response.process.entityIndex,
+                        metadata: response.process.metadata || undefined,
+                        sourceNetworkId: response.process.sourceNetworkId,
+                    }
+                } as unknown as DVoteGatewayResponseBody
             })
     }
-
-    /**
-     * Get the process from the archive.
-     *
-     * @param processId
-     * @param gateway
-     * @param errorMessage
-     */
-    // static getProcessFromArchive(processId: string, gateway: IGateway | IGatewayPool): Promise<DVoteGatewayResponseBody> {
-    //     return GatewayArchive.getArchiveUri(gateway)
-    //         .then((archiveUri: ContentUri) => {
-    //             return FileApi.fetchString("ipfs:///ipns/" + archiveUri + "/" + processId.replace("0x", ""), gateway)
-    //         })
-    //         .then((result: string) => {
-    //             return {
-    //                 ok: true,
-    //                 request: JSON.parse(result)
-    //             } as DVoteGatewayResponseBody
-    //         })
-    //         .catch((error) => {
-    //             throw new Error()
-    //         })
-    // }
 
     /**
      * Fetch the JSON metadata for the given processId using the given gateway
@@ -673,15 +625,16 @@ export class VotingApi {
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getResultsWeight", processId })
+            .catch((error) => {
+                const message = error.message ? "Could not retrieve the results weight: " + error.message : "Could not retrieve the results weight"
+                // TODO Flag if archive needed here
+                return this.getArchiveResultsWeight(processId, gateway, message)
+            })
             .then((response) => {
                 if (response.weight < 0) throw new Error("The weight value is not valid")
                 else if (typeof response.weight !== 'string' && !BigNumber.isBigNumber(response.weight)) throw new Error("The weight value is not valid")
 
                 return BigNumber.from(response.weight)
-            })
-            .catch((error) => {
-                const message = error.message ? "Could not retrieve the results weight: " + error.message : "Could not retrieve the results weight"
-                return this.getArchiveResultsWeight(processId, gateway, message)
             })
     }
 
@@ -692,22 +645,12 @@ export class VotingApi {
      * @param gateway
      * @param errorMessage
      */
-    static getArchiveResultsWeight(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<BigNumber> {
-        if (!processId) return Promise.reject(new Error("Empty process ID"))
-        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
-
-        return GatewayArchive.getArchiveUri(gateway)
-            .then((archiveUri: ContentUri) => {
-                return FileApi.fetchString("ipfs:///ipns/" + archiveUri + "/" + processId.replace("0x", ""), gateway)
-            })
-            .then((result: string) => {
-                const response = JSON.parse(result)
-                if (!response.results.weight || response.results.weight < 0) throw new Error("The weight value is not valid")
-
-                return BigNumber.from(response.results.weight)
-            })
-            .catch((error) => {
-                throw new Error(errorMessage)
+    private static getArchiveResultsWeight(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<DVoteGatewayResponseBody> {
+        return GatewayArchive.getProcessFromArchive(processId, gateway, errorMessage)
+            .then((response: DVoteGatewayResponseBody) => {
+                return {
+                    weight: response.results.weight.toString()
+                } as unknown as DVoteGatewayResponseBody
             })
     }
 
@@ -1061,13 +1004,13 @@ export class VotingApi {
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getEnvelopeHeight", processId })
-            .then((response) => {
-                if (!(typeof response.height === 'number') || response.height < 0) throw new Error("The gateway response is not correct")
-                return response.height
-            })
             .catch((error) => {
                 const message = (error.message) ? "Could not get the envelope height: " + error.message : "Could not get the envelope height"
                 return this.getArchiveEnvelopeHeight(processId, gateway, message)
+            })
+            .then((response) => {
+                if (!(typeof response.height === 'number') || response.height < 0) throw new Error("The gateway response is not correct")
+                return response.height
             })
     }
 
@@ -1078,21 +1021,12 @@ export class VotingApi {
      * @param gateway
      * @param errorMessage
      */
-    static getArchiveEnvelopeHeight(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<number> {
-        if (!processId) return Promise.reject(new Error("No process ID provided"))
-        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
-
-        return GatewayArchive.getArchiveUri(gateway)
-            .then((archiveUri: ContentUri) => {
-                return FileApi.fetchString("ipfs:///ipns/" + archiveUri + "/" + processId.replace("0x", ""), gateway)
-            })
-            .then((result: string) => {
-                const response = JSON.parse(result)
-                if (!(typeof response.results.envelopeHeight === 'number') || response.results.envelopeHeight < 0) throw new Error("The gateway response is not correct")
-                return response.results.envelopeHeight
-            })
-            .catch((error) => {
-                throw new Error(errorMessage)
+    private static getArchiveEnvelopeHeight(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<DVoteGatewayResponseBody> {
+        return GatewayArchive.getProcessFromArchive(processId, gateway, errorMessage)
+            .then((response: DVoteGatewayResponseBody) => {
+                return {
+                    height: response.results.envelopeHeight
+                } as unknown as DVoteGatewayResponseBody
             })
     }
 
@@ -1161,16 +1095,16 @@ export class VotingApi {
             return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getResults", processId })
+            .catch((error) => {
+                const message = (error.message) ? "Could not fetch the process results: " + error.message : "Could not fetch the process results"
+                return this.getArchiveRawResults(processId, gateway, message)
+            })
             .then((response) => {
                 if (response.results && !Array.isArray(response.results)) throw new Error("The gateway response is not valid")
                 const results = (Array.isArray(response.results) && response.results.length) ? response.results : []
                 const status = response.state || ""
                 const envelopHeight = response.height || 0
                 return { results, status, envelopHeight }
-            })
-            .catch((error) => {
-                const message = (error.message) ? "Could not fetch the process results: " + error.message : "Could not fetch the process results"
-                return this.getArchiveRawResults(processId, gateway, message)
             })
     }
 
@@ -1179,28 +1113,19 @@ export class VotingApi {
      *
      * @param processId
      * @param gateway
+     * @param errorMessage
      * @returns Results, vote process  type, vote process state
      */
-    static getArchiveRawResults(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<{ results: string[][], status: ProcessStatus, envelopHeight: number }> {
-        if (!processId)
-            return Promise.reject(new Error("No process ID provided"))
-        else if (!gateway)
-            return Promise.reject(new Error("Invalid Gateway object"))
-
-        return GatewayArchive.getArchiveUri(gateway)
-            .then((archiveUri: ContentUri) => {
-                return FileApi.fetchString("ipfs:///ipns/" + archiveUri + "/" + processId.replace("0x", ""), gateway)
-            })
-            .then((result: string) => {
-                const response = JSON.parse(result)
-                if (response.results.votes && !Array.isArray(response.results.votes)) throw new Error("The gateway response is not valid")
-                const results = (Array.isArray(response.results.votes) && response.results.votes.length) ? response.results.votes : []
-                const status = VochainProcessStatus[response.process.status as string] || ""
-                const envelopHeight = response.results.envelopeHeight || 0
-                return { results, status, envelopHeight }
-            })
-            .catch((error) => {
-                throw new Error(errorMessage)
+    private static getArchiveRawResults(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<DVoteGatewayResponseBody> {
+        return GatewayArchive.getProcessFromArchive(processId, gateway, errorMessage)
+            .then((response: DVoteGatewayResponseBody) => {
+                return {
+                    results: response.results.votes.map(votes => {
+                        return votes.map(vote => vote.toString())
+                    }),
+                    state: VochainProcessStatus[response.process.status as string] || "",
+                    height: response.results.envelopeHeight,
+                } as unknown as DVoteGatewayResponseBody
             })
     }
 
