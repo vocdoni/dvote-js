@@ -23,6 +23,7 @@ export type IGateway = InstanceType<typeof Gateway>
 export class Gateway {
     protected dvote: DVoteGateway = null
     protected web3: Web3Gateway = null
+    protected archiveIpnsId: string
     public get health() { return this.dvote.health }
     public get weight() { return this.dvote.weight }
     public get publicKey() { return this.dvote.publicKey }
@@ -32,14 +33,16 @@ export class Gateway {
      * Returns a new Gateway
      * @param dvoteGateway A DvoteGateway instance
      * @param web3Gateway A Web3Gateway instance
+     * @param archiveIpnsId The IPNS ID of the archive
      */
-    constructor(dvoteGateway: IDVoteGateway, web3Gateway: IWeb3Gateway) {
+    constructor(dvoteGateway: IDVoteGateway, web3Gateway: IWeb3Gateway, archiveIpnsId?: string) {
         if (!dvoteGateway || !web3Gateway ||
             !(dvoteGateway instanceof DVoteGateway) || !(web3Gateway instanceof Web3Gateway)) {
             throw new Error("Invalid gateways provided")
         }
         this.dvote = dvoteGateway
         this.web3 = web3Gateway
+        this.archiveIpnsId = archiveIpnsId
     }
 
     /**
@@ -141,6 +144,10 @@ export class Gateway {
 
     public get isReady(): boolean {
         return this.web3.isReady && this.dvote.isReady
+    }
+
+    public get archiveUri(): string {
+        return this.archiveIpnsId
     }
 
     // DVOTE

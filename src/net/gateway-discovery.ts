@@ -15,6 +15,7 @@ export interface IGatewayDiscoveryParameters {
     networkId: EthNetworkID,
     environment?: VocdoniEnvironment
     bootnodesContentUri: string | ContentUri
+    archiveIpnsId?: string
     numberOfGateways?: number
     /** Timeout in milliseconds */
     timeout?: number
@@ -84,7 +85,7 @@ export class GatewayDiscovery {
 
         return this.getWorkingGateways()
             .then((gateways: IGateway[]) => gateways.map(
-                (gw: IGateway) => new Gateway(gw.dvote, gw.web3)
+                (gw: IGateway) => new Gateway(gw.dvote, gw.web3, params.archiveIpnsId)
             ))
             .catch((error: Error | GatewayDiscoveryError) => {
                 if (error instanceof GatewayDiscoveryError) {

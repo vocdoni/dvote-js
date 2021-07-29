@@ -92,6 +92,10 @@ export class GatewayPool {
         return this.activeGateway.isReady
     }
 
+    public get archiveUri(): string {
+        return this.activeGateway.archiveUri
+    }
+
     // DVOTE
 
     public get dvoteUri(): string {

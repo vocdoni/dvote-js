@@ -1,5 +1,4 @@
-import {FileApi} from "../api/file";
-import {IProcessState} from "../api/voting";
+import { FileApi } from "../api/file";
 import { ContentUri } from "../wrappers/content-uri"
 import {
     VOCDONI_MAINNET_ENTITY_ID,VOCDONI_RINKEBY_ENTITY_ID, VOCDONI_GOERLI_ENTITY_ID, VOCDONI_XDAI_ENTITY_ID, VOCDONI_SOKOL_ENTITY_ID, XDAI_ENS_REGISTRY_ADDRESS, XDAI_PROVIDER_URI, XDAI_CHAIN_ID,
@@ -7,7 +6,7 @@ import {
 } from "../constants"
 import { TextRecordKeys } from "../models/entity"
 import { IGateway } from "./gateway";
-import {DVoteGatewayResponseBody} from "./gateway-dvote";
+import { DVoteGatewayResponseBody } from "./gateway-dvote";
 import { IGatewayPool } from "./gateway-pool";
 import { keccak256 } from "@ethersproject/keccak256"
 
@@ -41,6 +40,10 @@ export class GatewayArchive {
      * @param gateway
      */
     private static getArchiveUri(gateway: IGateway | IGatewayPool): Promise<ContentUri> {
+        if (gateway.archiveUri) {
+            return Promise.resolve(new ContentUri(gateway.archiveUri))
+        }
+
         return gateway.getEnsPublicResolverInstance().then(async instance => {
             let entityEnsNode: string
             switch (await gateway.networkId) {
