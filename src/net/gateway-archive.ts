@@ -1,22 +1,18 @@
 import { FileApi } from "../api/file";
-import { TextRecordKeys } from "../models/entity"
-import { getEnsPublicResolverByNetwork } from "../util/ens";
 import { ContentUri } from "../wrappers/content-uri"
+import {
+    VOCDONI_MAINNET_ENTITY_ID,VOCDONI_RINKEBY_ENTITY_ID, VOCDONI_GOERLI_ENTITY_ID, VOCDONI_XDAI_ENTITY_ID, VOCDONI_SOKOL_ENTITY_ID, XDAI_ENS_REGISTRY_ADDRESS, XDAI_PROVIDER_URI, XDAI_CHAIN_ID,
+    SOKOL_CHAIN_ID, SOKOL_PROVIDER_URI, SOKOL_ENS_REGISTRY_ADDRESS, XDAI_STG_ENS_REGISTRY_ADDRESS, VOCDONI_XDAI_STG_ENTITY_ID
+} from "../constants"
+import { TextRecordKeys } from "../models/entity"
 import { IGateway } from "./gateway";
+import { DVoteGatewayResponseBody } from "./gateway-dvote";
 import { IGatewayPool } from "./gateway-pool";
+import { keccak256 } from "@ethersproject/keccak256"
 
-export type EthNetworkID = "homestead" | "mainnet" | "rinkeby" | "goerli" | "xdai" | "sokol"
+export type EthNetworkID = "mainnet" | "rinkeby" | "goerli" | "xdai" | "sokol"
 
-export interface IArchiveResponseBody {
-    process?: {
-        [k: string]: any
-    }
-    results?: {
-        [k: string]: any
-    },
-}
-
-export namespace GatewayArchive {
+export class GatewayArchive {
 
     /**
      * Fetch the process data on the IPFS archive
@@ -25,39 +21,59 @@ export namespace GatewayArchive {
      * @param gateway
      * @param errorMessage
      */
-    export function getProcess(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<IArchiveResponseBody> {
-        return resolveArchiveUri(gateway, errorMessage)
+    public static getProcessFromArchive(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<DVoteGatewayResponseBody> {
+        return this.getArchiveUri(gateway)
             .then((archiveUri: ContentUri) => {
-                return getArchiveFile(archiveUri, processId, gateway)
+                return this.getArchiveFile(archiveUri, processId, gateway)
             })
-            .then((result: string) => JSON.parse(result))
+            .then((result: string) => {
+                return JSON.parse(result)
+            })
             .catch((error) => {
                 throw new Error(errorMessage)
             })
     }
 
     /**
-     * Resolves the archive Uri from the given network id
+     * Gets the archive Uri from the given network id
      *
      * @param gateway
-     * @param errorMessage
      */
-    async function resolveArchiveUri(gateway: IGateway | IGatewayPool, errorMessage: string): Promise<ContentUri> {
-        if (gateway.archiveIpnsId) {
-            return Promise.resolve(new ContentUri(gateway.archiveIpnsId))
+    private static getArchiveUri(gateway: IGateway | IGatewayPool): Promise<ContentUri> {
+        if (gateway.archiveUri) {
+            return Promise.resolve(new ContentUri(gateway.archiveUri))
         }
 
-        const networkId = await gateway.networkId as EthNetworkID
-
-        return getEnsPublicResolverByNetwork(gateway, { environment: gateway.environment, networkId })
-            .then(ens => ens.instance.text(ens.entityEnsNode, TextRecordKeys.VOCDONI_ARCHIVE))
-            .then((uri: string) => {
-                if (!uri) {
-                    throw new Error(errorMessage)
-                }
-                gateway.archiveIpnsId = uri
-                return new ContentUri(uri)
-            })
+        return gateway.getEnsPublicResolverInstance().then(async instance => {
+            let entityEnsNode: string
+            switch (await gateway.networkId) {
+                case "mainnet":
+                    entityEnsNode = keccak256(VOCDONI_MAINNET_ENTITY_ID)
+                    break
+                case "goerli":
+                    entityEnsNode = keccak256(VOCDONI_GOERLI_ENTITY_ID)
+                    break
+                case "rinkeby":
+                    entityEnsNode = keccak256(VOCDONI_RINKEBY_ENTITY_ID)
+                    break
+                case "xdai":
+                    // if (environment === 'prod') {
+                    //     entityEnsNode = keccak256(VOCDONI_XDAI_ENTITY_ID)
+                    //     break
+                    // }
+                    entityEnsNode = keccak256(VOCDONI_XDAI_STG_ENTITY_ID)
+                    break
+                case "sokol":
+                    entityEnsNode = keccak256(VOCDONI_SOKOL_ENTITY_ID)
+                    break
+            }
+            return instance.text(entityEnsNode, TextRecordKeys.VOCDONI_ARCHIVE)
+        }).then((uri: string) => {
+            if (!uri) {
+                throw new Error()
+            }
+            return new ContentUri(uri)
+        })
     }
 
     /**
@@ -67,7 +83,7 @@ export namespace GatewayArchive {
      * @param processId
      * @param gateway
      */
-    function getArchiveFile(archiveUri: ContentUri, processId: string, gateway: IGateway | IGatewayPool): Promise<string> {
+    private static getArchiveFile(archiveUri: ContentUri, processId: string, gateway: IGateway | IGatewayPool): Promise<string> {
         return FileApi.fetchString("ipfs:///ipns/" + archiveUri + "/" + processId.replace("0x", ""), gateway)
     }
 }

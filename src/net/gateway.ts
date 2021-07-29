@@ -21,6 +21,7 @@ import { IGatewayClient } from "../common"
 export class Gateway implements IGatewayClient {
     protected dvote: DVoteGateway = null
     protected web3: Web3Gateway = null
+    protected archiveIpnsId: string
     public get health() { return this.dvote.health }
     public get weight() { return this.dvote.weight }
     public get publicKey() { return this.dvote.publicKey }
@@ -30,6 +31,7 @@ export class Gateway implements IGatewayClient {
      * Returns a new Gateway
      * @param dvoteGateway A DVoteGateway instance
      * @param web3Gateway A Web3Gateway instance
+     * @param archiveIpnsId The IPNS ID of the archive
      */
     constructor(dvoteGateway: DVoteGateway, web3Gateway: Web3Gateway) {
         if (!dvoteGateway || !web3Gateway) {
@@ -37,6 +39,7 @@ export class Gateway implements IGatewayClient {
         }
         this.dvote = dvoteGateway
         this.web3 = web3Gateway
+        this.archiveIpnsId = archiveIpnsId
     }
 
     /**
@@ -138,6 +141,10 @@ export class Gateway implements IGatewayClient {
 
     public get isReady(): boolean {
         return this.web3.isReady && this.dvote.isReady
+    }
+
+    public get archiveUri(): string {
+        return this.archiveIpnsId
     }
 
     // DVOTE
