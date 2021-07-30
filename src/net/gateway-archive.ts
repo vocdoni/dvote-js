@@ -40,13 +40,13 @@ export class GatewayArchive {
      * @param gateway
      */
     private static getArchiveUri(gateway: IGateway | IGatewayPool): Promise<ContentUri> {
-        if (gateway.archiveUri) {
-            return Promise.resolve(new ContentUri(gateway.archiveUri))
+        if (gateway.getArchiveUri()) {
+            return Promise.resolve(new ContentUri(gateway.getArchiveUri()))
         }
 
         return gateway.getEnsPublicResolverInstance().then(async instance => {
             let entityEnsNode: string
-            switch (await gateway.networkId) {
+            switch (gateway.getNetwork()) {
                 case "mainnet":
                     entityEnsNode = keccak256(VOCDONI_MAINNET_ENTITY_ID)
                     break
@@ -57,10 +57,10 @@ export class GatewayArchive {
                     entityEnsNode = keccak256(VOCDONI_RINKEBY_ENTITY_ID)
                     break
                 case "xdai":
-                    // if (environment === 'prod') {
-                    //     entityEnsNode = keccak256(VOCDONI_XDAI_ENTITY_ID)
-                    //     break
-                    // }
+                    if (gateway.getEnvironment() === "prod") {
+                        entityEnsNode = keccak256(VOCDONI_XDAI_ENTITY_ID)
+                        break
+                    }
                     entityEnsNode = keccak256(VOCDONI_XDAI_STG_ENTITY_ID)
                     break
                 case "sokol":
@@ -72,6 +72,7 @@ export class GatewayArchive {
             if (!uri) {
                 throw new Error()
             }
+            gateway.setArchiveUri(uri)
             return new ContentUri(uri)
         })
     }

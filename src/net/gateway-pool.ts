@@ -1,4 +1,6 @@
+import { VocdoniEnvironment } from "../models/common";
 import { Gateway } from "./gateway"
+import { EthNetworkID } from "./gateway-bootnode";
 import { DVoteGatewayResponseBody, IRequestParameters } from "./gateway-dvote"
 // import { clientApis, GatewayApiName } from "../models/gateway"
 import { GatewayDiscovery, IGatewayDiscoveryParameters } from "./gateway-discovery"
@@ -90,8 +92,20 @@ export class GatewayPool implements IGatewayClient {
         return this.activeGateway.isReady
     }
 
-    public get archiveUri(): string {
-        return this.activeGateway.archiveUri
+    public getArchiveUri(): string {
+        return this.activeGateway.getArchiveUri()
+    }
+
+    public setArchiveUri(uri: string) {
+        this.activeGateway.setArchiveUri(uri)
+    }
+
+    public getEnvironment(): VocdoniEnvironment {
+        return this.activeGateway.getEnvironment()
+    }
+
+    public getNetwork(): EthNetworkID {
+        return this.activeGateway.getNetwork()
     }
 
     // DVOTE

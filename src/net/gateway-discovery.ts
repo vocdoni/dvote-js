@@ -85,8 +85,13 @@ export class GatewayDiscovery {
 
         return this.getWorkingGateways()
             .then((gateways: IGateway[]) => gateways.map(
-                (gw: IGateway) => new Gateway(gw.dvote, gw.web3, params.archiveIpnsId)
-            ))
+                (gw: IGateway) => new Gateway(gw.dvote, gw.web3, {
+                        archiveIpnsId: params.archiveIpnsId,
+                        environment: this.environment,
+                        networkId: this.networkId,
+                    })
+                )
+            )
             .catch((error: Error | GatewayDiscoveryError) => {
                 if (error instanceof GatewayDiscoveryError) {
                     throw error
