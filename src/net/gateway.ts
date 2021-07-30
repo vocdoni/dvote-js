@@ -3,7 +3,6 @@
 // It provides a wrapper to use a Vocdoni Gateway, as well as a wrapper a Web3 one
 
 import { Contract, providers, utils, Wallet, Signer, ContractInterface } from "ethers"
-import { allSettled } from "../util/promise";
 import { GatewayInfo } from "../wrappers/gateway-info"
 import { GatewayApiName, BackendApiName, ApiMethod } from "../models/gateway"
 import { GatewayBootnode, EthNetworkID } from "./gateway-bootnode"
@@ -24,6 +23,8 @@ export class Gateway {
     protected dvote: DVoteGateway = null
     protected web3: Web3Gateway = null
     protected archiveIpnsId: string
+    protected environment: VocdoniEnvironment
+    protected network: EthNetworkID
     public get health() { return this.dvote.health }
     public get weight() { return this.dvote.weight }
     public get publicKey() { return this.dvote.publicKey }
@@ -33,16 +34,22 @@ export class Gateway {
      * Returns a new Gateway
      * @param dvoteGateway A DvoteGateway instance
      * @param web3Gateway A Web3Gateway instance
-     * @param archiveIpnsId The IPNS ID of the archive
+     * @param params
      */
-    constructor(dvoteGateway: IDVoteGateway, web3Gateway: IWeb3Gateway, archiveIpnsId?: string) {
+    constructor(
+        dvoteGateway: IDVoteGateway,
+        web3Gateway: IWeb3Gateway,
+        params: { archiveIpnsId?: string, environment?: VocdoniEnvironment, networkId?: EthNetworkID } = {}
+    ) {
         if (!dvoteGateway || !web3Gateway ||
             !(dvoteGateway instanceof DVoteGateway) || !(web3Gateway instanceof Web3Gateway)) {
             throw new Error("Invalid gateways provided")
         }
         this.dvote = dvoteGateway
         this.web3 = web3Gateway
-        this.archiveIpnsId = archiveIpnsId
+        this.archiveIpnsId = params.archiveIpnsId
+        this.environment = params.environment
+        this.network = params.networkId
     }
 
     /**
@@ -68,7 +75,7 @@ export class Gateway {
                 if (!web3) throw new Error("Could not find an active Web3 Gateway")
                 else if (!dvote) throw new Error("Could not find an active DVote Gateway")
 
-                return new Gateway(dvote, web3)
+                return new Gateway(dvote, web3, {environment, networkId})
             })
     }
 
@@ -96,7 +103,7 @@ export class Gateway {
                 if (!web3) throw new Error("Could not find an active Web3 Gateway")
                 else if (!dvote) throw new Error("Could not find an active DVote Gateway")
 
-                return new Gateway(dvote, web3)
+                return new Gateway(dvote, web3, {environment, networkId})
             })
     }
 
@@ -121,7 +128,7 @@ export class Gateway {
             })
             web3Gateway = new Web3Gateway(gatewayOrParams.web3Uri, null, environment)
         }
-        const gateway = new Gateway(dvoteGateway, web3Gateway)
+        const gateway = new Gateway(dvoteGateway, web3Gateway, {environment})
         return gateway.init()
             .then(() => gateway)
             .catch(error => {
@@ -146,8 +153,20 @@ export class Gateway {
         return this.web3.isReady && this.dvote.isReady
     }
 
-    public get archiveUri(): string {
+    public getArchiveUri(): string {
         return this.archiveIpnsId
+    }
+
+    public setArchiveUri(uri: string) {
+        this.archiveIpnsId = uri
+    }
+
+    public getNetwork(): EthNetworkID {
+        return this.network
+    }
+
+    public getEnvironment(): VocdoniEnvironment {
+        return this.environment
     }
 
     // DVOTE
