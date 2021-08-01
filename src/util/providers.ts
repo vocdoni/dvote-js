@@ -1,5 +1,5 @@
 import { providers } from "ethers"
-import { VocdoniEnvironment } from "../models/common"
+import { VocdoniEnvironment } from "../common"
 import {
     XDAI_CHAIN_ID,
     XDAI_ENS_REGISTRY_ADDRESS,
@@ -7,7 +7,7 @@ import {
     SOKOL_ENS_REGISTRY_ADDRESS,
     XDAI_STG_ENS_REGISTRY_ADDRESS
 } from "../constants"
-import { EthNetworkID } from "../net/gateway-bootnode"
+import { EthNetworkID } from "../common"
 
 export class ProviderUtil {
     /**

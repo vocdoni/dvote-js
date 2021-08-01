@@ -1,15 +1,15 @@
 import { ContentUri } from "../wrappers/content-uri"
 import { Gateway } from "./gateway"
-import { IDVoteGateway } from "./gateway-dvote"
-import { IWeb3Gateway } from "./gateway-web3"
-import { EthNetworkID, GatewayBootnode } from "./gateway-bootnode"
+import { DVoteGateway } from "./gateway-dvote"
+import { Web3Gateway } from "./gateway-web3"
+import { GatewayBootnode } from "./gateway-bootnode"
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
 import { JsonBootnodeData } from "../models/gateway"
 import { promiseWithTimeout } from "../util/timeout"
 import { allSettled } from "../util/promise";
 import { Random } from "../util/random"
-import { VocdoniEnvironment } from "../models/common"
-import { GatewayDiscoveryError, GatewayDiscoveryValidationError } from "../util/errors/gateway-discovery"
+import { EthNetworkID, VocdoniEnvironment } from "../common"
+import { GatewayDiscoveryError, GatewayDiscoveryValidationError } from "../errors/gateway-discovery"
 
 export interface IGatewayDiscoveryParameters {
     networkId: EthNetworkID,
@@ -22,13 +22,13 @@ export interface IGatewayDiscoveryParameters {
 }
 
 interface IGatewayActiveNodes {
-    dvote: IDVoteGateway[],
-    web3: IWeb3Gateway[],
+    dvote: DVoteGateway[],
+    web3: Web3Gateway[],
 }
 
 interface IGateway {
-    dvote: IDVoteGateway,
-    web3: IWeb3Gateway,
+    dvote: DVoteGateway,
+    web3: Web3Gateway,
 }
 
 export class GatewayDiscovery {
@@ -172,13 +172,13 @@ export class GatewayDiscovery {
      * @returns A list of working and healthy DVote and Web3 Gateways
      */
     private static async filterHealthyNodes(
-        discoveredDvoteNodes: IDVoteGateway[],
-        discoveredWeb3Nodes: IWeb3Gateway[],
+        discoveredDvoteNodes: DVoteGateway[],
+        discoveredWeb3Nodes: Web3Gateway[],
         timeoutsToTest: number[],
     ): Promise<IGatewayActiveNodes> {
         const minNumberOfGateways = this.minNumberOfGateways
-        let dvoteGateways: IDVoteGateway[] = []
-        let web3Gateways: IWeb3Gateway[] = []
+        let dvoteGateways: DVoteGateway[] = []
+        let web3Gateways: Web3Gateway[] = []
 
         // Loop all timeouts as a check round
         do {
@@ -187,14 +187,14 @@ export class GatewayDiscovery {
             // The gateways to check in this round are filtered here
             // We take those unchecked or those who timed out the round before
             const dvoteNodes = discoveredDvoteNodes.filter(
-                (gw: IDVoteGateway) => !dvoteGateways.includes(gw) && (gw.hasTimeOutLastRequest === undefined || gw.hasTimeOutLastRequest)
+                (gw: DVoteGateway) => !dvoteGateways.includes(gw) && (gw.hasTimeOutLastRequest === undefined || gw.hasTimeOutLastRequest)
             )
             const web3Nodes = discoveredWeb3Nodes.filter(
-                (gw: IWeb3Gateway) => !web3Gateways.includes(gw) && (gw.hasTimeOutLastRequest === undefined || gw.hasTimeOutLastRequest)
+                (gw: Web3Gateway) => !web3Gateways.includes(gw) && (gw.hasTimeOutLastRequest === undefined || gw.hasTimeOutLastRequest)
             )
 
-            let testDvote: IDVoteGateway[]
-            let testWeb3: IWeb3Gateway[]
+            let testDvote: DVoteGateway[]
+            let testWeb3: Web3Gateway[]
 
             // Launch the checking process for this round split by the maximum parallel requests defined
             do {
@@ -224,9 +224,9 @@ export class GatewayDiscovery {
      * Helper functions that returns an array of dvote/web3 pairs merging the two input arrays in order
      */
     // TODO: @marcvelmer remove this function when refactoring pool
-    private static createNodePairs(dvoteGateways: IDVoteGateway[], web3Gateways: IWeb3Gateway[]): { dvote: IDVoteGateway, web3: IWeb3Gateway }[] {
+    private static createNodePairs(dvoteGateways: DVoteGateway[], web3Gateways: Web3Gateway[]): { dvote: DVoteGateway, web3: Web3Gateway }[] {
         let length = (dvoteGateways.length > web3Gateways.length) ? dvoteGateways.length : web3Gateways.length
-        let gatewayList: { dvote: IDVoteGateway, web3: IWeb3Gateway }[] = Array(length)
+        let gatewayList: { dvote: DVoteGateway, web3: Web3Gateway }[] = Array(length)
         for (let idx = 0; idx < gatewayList.length; idx++) {
             gatewayList[idx] = {
                 web3: (idx < web3Gateways.length) ? web3Gateways[idx] : web3Gateways[Math.floor(Math.random() * web3Gateways.length)],
@@ -255,14 +255,14 @@ export class GatewayDiscovery {
      */
     private static sortNodes(healthyNodes: IGatewayActiveNodes): IGatewayActiveNodes {
         // Sort DVote gateways by weight
-        healthyNodes.dvote.sort((a: IDVoteGateway, b: IDVoteGateway) => {
+        healthyNodes.dvote.sort((a: DVoteGateway, b: DVoteGateway) => {
             return (!!a && !!b) ? b.weight - a.weight : 0
         })
 
         // Get the block numbers frequency and select the most frequent if there is any
         let mostFrequentBlockNumber: number
         const blockNumbersByFrequency = Object.entries(
-            healthyNodes.web3.map((gw: IWeb3Gateway) => (gw.lastBlockNumber)).reduce((prev, cur: number) => {
+            healthyNodes.web3.map((gw: Web3Gateway) => (gw.lastBlockNumber)).reduce((prev, cur: number) => {
                 prev[cur] = prev[cur] ? prev[cur] + 1 : 1;
                 return prev;
             }, {})
@@ -272,7 +272,7 @@ export class GatewayDiscovery {
         }
 
         // Sort the Web3 Gateways by metrics
-        healthyNodes.web3.sort((a: IWeb3Gateway, b: IWeb3Gateway) => {
+        healthyNodes.web3.sort((a: Web3Gateway, b: Web3Gateway) => {
             switch (!!a && !!b) {
                 // Return the gateway which last block number is the most frequent
                 case Number.isInteger(mostFrequentBlockNumber) && Math.abs(mostFrequentBlockNumber - a.lastBlockNumber) !== Math.abs(mostFrequentBlockNumber - b.lastBlockNumber):
@@ -296,24 +296,24 @@ export class GatewayDiscovery {
      *
      * @returns A list of active and healthy DVote and Web3 Gateways
      */
-    private static selectActiveNodes(dvoteNodes: IDVoteGateway[], web3Nodes: IWeb3Gateway[], timeout: number): Promise<IGatewayActiveNodes> {
+    private static selectActiveNodes(dvoteNodes: DVoteGateway[], web3Nodes: Web3Gateway[], timeout: number): Promise<IGatewayActiveNodes> {
         const activeNodes: IGatewayActiveNodes = {
             dvote: [],
             web3: [],
         }
         const checks: Array<Promise<void>> = []
 
-        dvoteNodes.forEach((dvoteGw: IDVoteGateway) => {
+        dvoteNodes.forEach((dvoteGw: DVoteGateway) => {
             const prom = dvoteGw.checkStatus(timeout)
                 .then(() => { activeNodes.dvote.push(dvoteGw) })
             checks.push(prom)
         })
 
-        web3Nodes.forEach((web3Gw: IWeb3Gateway) => {
+        web3Nodes.forEach((web3Gw: Web3Gateway) => {
             const prom = web3Gw.checkStatus(timeout, this.resolveEnsDomains)
                 .then(() => {
                     // Skip adding to the list if there is no address resolved
-                    if  (this.resolveEnsDomains && !web3Gw.ensPublicResolverContractAddress) {
+                    if (this.resolveEnsDomains && !web3Gw.ensPublicResolverContractAddress) {
                         return
                     }
                     // Skip adding to the list if peer count is not enough

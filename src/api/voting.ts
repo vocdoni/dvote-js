@@ -1,5 +1,4 @@
 import { Wallet, Signer, utils, ContractTransaction, BigNumber, providers } from "ethers"
-import { Gateway, IGateway } from "../net/gateway"
 import { FileApi } from "./file"
 import { EntityApi } from "./entity"
 import { ProcessMetadata, checkValidProcessMetadata, DigestedProcessResults, DigestedProcessResultItem, INewProcessParams, IProofEVM, IProofCA, IProofGraviton, INewProcessErc20Params } from "../models/process"
@@ -7,7 +6,6 @@ import { VOCHAIN_BLOCK_TIME, XDAI_GAS_PRICE, XDAI_CHAIN_ID, SOKOL_CHAIN_ID, SOKO
 import { BytesSignature } from "../crypto/data-signing"
 import { Buffer } from "buffer/"  // Previously using "arraybuffer-to-string"
 import { Asymmetric } from "../crypto/encryption"
-import { GatewayPool, IGatewayPool } from "../net/gateway-pool"
 import { VochainWaiter } from "../util/waiters"
 import { Random } from "../util/random"
 import { IMethodOverrides, ProcessContractParameters, ProcessStatus, IProcessStatus, ProcessCensusOrigin, IProcessCensusOrigin } from "../net/contracts"
@@ -28,6 +26,7 @@ import { DVoteGateway, DVoteGatewayResponseBody, IRequestParameters } from "../n
 import { CensusErc20Api } from "./census"
 import { ProcessEnvelopeType } from "dvote-solidity"
 import { ApiMethod } from "../models/gateway"
+import { IGatewayClient, IGatewayDVoteClient, IGatewayWeb3Client } from "../common"
 
 export const CaBundleProtobuf: any = CAbundle
 
@@ -153,7 +152,7 @@ export namespace VotingApi {
      * @param processId
      * @param gateway
      */
-    export function getProcess(processId: string, gateway: IGateway | IGatewayPool): Promise<IProcessDetails> {
+    export function getProcess(processId: string, gateway: IGatewayClient): Promise<IProcessDetails> {
         if (!processId) throw new Error("Invalid processId")
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -191,7 +190,7 @@ export namespace VotingApi {
      * @param processId
      * @param gateway
      */
-    export function getProcessState(processId: string, gateway: IGateway | IGatewayPool): Promise<IProcessState> {
+    export function getProcessState(processId: string, gateway: IGatewayDVoteClient): Promise<IProcessState> {
         if (!processId) return Promise.reject(new Error("Empty process ID"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -218,7 +217,7 @@ export namespace VotingApi {
      * @param processId
      * @param gateway
      */
-    export function getProcessSummary(processId: string, gateway: IGateway | IGatewayPool): Promise<IProcessSummary> {
+    export function getProcessSummary(processId: string, gateway: IGatewayDVoteClient): Promise<IProcessSummary> {
         if (!processId) return Promise.reject(new Error("Empty process ID"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -250,7 +249,7 @@ export namespace VotingApi {
      * @param processId
      * @param gateway
      */
-    export function getProcessMetadata(processId: string, gateway: IGateway | IGatewayPool): Promise<ProcessMetadata> {
+    export function getProcessMetadata(processId: string, gateway: IGatewayClient): Promise<ProcessMetadata> {
         if (!processId) throw new Error("Invalid processId")
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -276,7 +275,7 @@ export namespace VotingApi {
      * @param processId
      * @param gateway
      */
-    export function getProcessContractParameters(processId: string, gateway: IGateway | IGatewayPool): Promise<ProcessContractParameters> {
+    export function getProcessContractParameters(processId: string, gateway: IGatewayWeb3Client): Promise<ProcessContractParameters> {
         if (!processId) throw new Error("Invalid processId")
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -293,7 +292,7 @@ export namespace VotingApi {
      * Retrieves the number of blocks on the Vochain
      * @param gateway
      */
-    export function getBlockHeight(gateway: IGateway | IGatewayPool): Promise<number> {
+    export function getBlockHeight(gateway: IGatewayDVoteClient): Promise<number> {
         return getBlockStatus(gateway)
             .then(status => {
                 if (!(typeof status.blockNumber === 'number') || status.blockNumber < 0) throw new Error("The retrieved block number is not valid")
@@ -311,7 +310,7 @@ export namespace VotingApi {
      * @see estimateBlockAtDateTime (date, gateway)
      * @see estimateDateAtBlock (blockNumber, gateway)
      */
-    export function getBlockStatus(gateway: IGateway | IGatewayPool): Promise<BlockStatus> {
+    export function getBlockStatus(gateway: IGatewayDVoteClient): Promise<BlockStatus> {
         if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getBlockStatus" })
@@ -337,7 +336,7 @@ export namespace VotingApi {
      * @param dateTime
      * @param gatewayClient
      */
-    export function estimateBlockAtDateTime(dateTime: Date, gateway: IGateway | IGatewayPool): Promise<number> {
+    export function estimateBlockAtDateTime(dateTime: Date, gateway: IGatewayDVoteClient): Promise<number> {
         if (typeof dateTime == "number") dateTime = new Date(dateTime)
         else if (!(dateTime instanceof Date)) return null
 
@@ -437,7 +436,7 @@ export namespace VotingApi {
      * @param blockNumber
      * @param gatewayClient
      */
-    export function estimateDateAtBlock(blockNumber: number, gateway: IGateway | IGatewayPool): Promise<Date> {
+    export function estimateDateAtBlock(blockNumber: number, gateway: IGatewayDVoteClient): Promise<Date> {
         if (!blockNumber || blockNumber < 0) return null
 
         return getBlockStatus(gateway)
@@ -527,7 +526,7 @@ export namespace VotingApi {
      * Retrieves the current price of process creation
      * @param gateway
      */
-    export function getProcessPrice(gateway: IGateway | IGatewayPool): Promise<BigNumber> {
+    export function getProcessPrice(gateway: IGatewayWeb3Client): Promise<BigNumber> {
         if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.getProcessesInstance()
@@ -539,7 +538,7 @@ export namespace VotingApi {
      * @param processId
      * @param gateway
      */
-    export function getProcessKeys(processId: string, gateway: IGateway | IGatewayPool): Promise<IProcessKeys> {
+    export function getProcessKeys(processId: string, gateway: IGatewayDVoteClient): Promise<IProcessKeys> {
         if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getProcessKeys", processId })
@@ -567,7 +566,7 @@ export namespace VotingApi {
      * @param processId
      * @param gateway
      */
-    export function getResultsWeight(processId: string, gateway: IGateway | IGatewayPool): Promise<BigNumber> {
+    export function getResultsWeight(processId: string, gateway: IGatewayDVoteClient): Promise<BigNumber> {
         if (!processId) return Promise.reject(new Error("Empty process ID"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -596,7 +595,7 @@ export namespace VotingApi {
      * @param gateway
      * @returns The process ID
      */
-    export function newProcess(processParameters: INewProcessParams, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
+    export function newProcess(processParameters: INewProcessParams, walletOrSigner: Wallet | Signer, gateway: IGatewayClient): Promise<string> {
         if (!processParameters) return Promise.reject(new Error("Invalid process metadata"))
         else if (!processParameters.metadata) return Promise.reject(new Error("Invalid process metadata"))
         else if (!walletOrSigner || !walletOrSigner._isSigner)
@@ -628,7 +627,7 @@ export namespace VotingApi {
      * @returns The process ID
      */
     async function newProcessOffchainCensus(processParameters: INewProcessParams,
-        walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
+        walletOrSigner: Wallet | Signer, gateway: IGatewayClient): Promise<string> {
         try {
             // throw if not valid
             const metadata = checkValidProcessMetadata(processParameters.metadata)
@@ -714,7 +713,7 @@ export namespace VotingApi {
     * @returns The process ID
     */
     async function newProcessEvmCensus(processParameters: INewProcessParams,
-        walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
+        walletOrSigner: Wallet | Signer, gateway: IGatewayClient): Promise<string> {
         try {
             // throw if not valid
             const metadata = checkValidProcessMetadata(processParameters.metadata)
@@ -790,7 +789,7 @@ export namespace VotingApi {
      * @param walletOrSigner
      * @param web3Gateway
      */
-    export async function setStatus(processId: string, newStatus: IProcessStatus, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<void> {
+    export async function setStatus(processId: string, newStatus: IProcessStatus, walletOrSigner: Wallet | Signer, gateway: IGatewayWeb3Client): Promise<void> {
         if (!processId) throw new Error("Invalid process ID")
         else if (!walletOrSigner) throw new Error("Invalid Wallet or Signer")
         else if (!gateway) throw new Error("Invalid Gateway object")
@@ -820,7 +819,7 @@ export namespace VotingApi {
      * @param walletOrSigner
      * @param web3Gateway
      */
-    export async function incrementQuestionIndex(processId: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<void> {
+    export async function incrementQuestionIndex(processId: string, walletOrSigner: Wallet | Signer, gateway: IGatewayWeb3Client): Promise<void> {
         if (!processId) throw new Error("Invalid process ID")
         else if (!walletOrSigner) throw new Error("Invalid Wallet or Signer")
         else if (!gateway) throw new Error("Invalid Gateway object")
@@ -850,7 +849,7 @@ export namespace VotingApi {
      * @param walletOrSigner
      * @param web3Gateway
      */
-    export async function setCensus(processId: string, censusRoot: string, censusUri: string, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<void> {
+    export async function setCensus(processId: string, censusRoot: string, censusUri: string, walletOrSigner: Wallet | Signer, gateway: IGatewayWeb3Client): Promise<void> {
         if (!processId) throw new Error("Invalid process ID")
         else if (!walletOrSigner) throw new Error("Invalid Wallet or Signer")
         else if (!gateway) throw new Error("Invalid Gateway object")
@@ -880,7 +879,7 @@ export namespace VotingApi {
      * @param walletOrSigner
      * @param web3Gateway
      */
-    export async function setResults(processId: string, results: number[][], envelopeCount: number, vochainId: number, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<void> {
+    export async function setResults(processId: string, results: number[][], envelopeCount: number, vochainId: number, walletOrSigner: Wallet | Signer, gateway: IGatewayWeb3Client): Promise<void> {
         if (!processId) throw new Error("Invalid process ID")
         else if (!walletOrSigner) throw new Error("Invalid Wallet or Signer")
         else if (!gateway) throw new Error("Invalid Gateway object")
@@ -908,7 +907,7 @@ export namespace VotingApi {
      * @param gateway
      * @param nullifier
      */
-    export async function getEnvelope(processId: string, gateway: IGateway | IGatewayPool, nullifier: string): Promise<string> {
+    export async function getEnvelope(processId: string, gateway: IGatewayDVoteClient, nullifier: string): Promise<string> {
         if (!processId) return Promise.reject(new Error("No process ID provided"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -929,7 +928,7 @@ export namespace VotingApi {
      * @param processId
      * @param gateway
      */
-    export function getEnvelopeHeight(processId: string, gateway: IGateway | IGatewayPool): Promise<number> {
+    export function getEnvelopeHeight(processId: string, gateway: IGatewayDVoteClient): Promise<number> {
         if (!processId) return Promise.reject(new Error("No process ID provided"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -949,7 +948,7 @@ export namespace VotingApi {
      * @param filters Optional criteria to filter the processes ID's given by the gateway
      * @param gateway
      */
-    export async function getProcessList(filters: { entityId?: string, namespace?: number, status?: VochainProcessStatus, withResults?: boolean, from?: number } = {}, gateway: IGateway | IGatewayPool): Promise<string[]> {
+    export async function getProcessList(filters: { entityId?: string, namespace?: number, status?: VochainProcessStatus, withResults?: boolean, from?: number } = {}, gateway: IGatewayDVoteClient): Promise<string[]> {
         if (!gateway) throw new Error("Invalid Gateway object")
         else if (typeof filters != "object") throw new Error("Invalid filters parameter")
 
@@ -981,7 +980,7 @@ export namespace VotingApi {
      * @returns List of submited votes nullifiers
      */
     export function getEnvelopeList(processId: string,
-        from: number, listSize: number, gateway: IGateway | IGatewayPool): Promise<string[]> {
+        from: number, listSize: number, gateway: IGatewayDVoteClient): Promise<string[]> {
         if (!processId || isNaN(from) || isNaN(listSize) || !gateway)
             return Promise.reject(new Error("Invalid parameters"))
 
@@ -1002,7 +1001,7 @@ export namespace VotingApi {
      * @param gateway
      * @returns Results, vote process  type, vote process state
      */
-    export function getRawResults(processId: string, gateway: IGateway | IGatewayPool): Promise<{ results: string[][], status: ProcessStatus, envelopHeight: number }> {
+    export function getRawResults(processId: string, gateway: IGatewayDVoteClient): Promise<{ results: string[][], status: ProcessStatus, envelopHeight: number }> {
         if (!processId)
             return Promise.reject(new Error("No process ID provided"))
         else if (!gateway)
@@ -1028,7 +1027,7 @@ export namespace VotingApi {
      * @param gateway
      * @returns Results, vote process  type, vote process state
      */
-    export async function getResultsDigest(processId: string, gateway: IGateway | IGatewayPool): Promise<DigestedProcessResults> {
+    export async function getResultsDigest(processId: string, gateway: IGatewayClient): Promise<DigestedProcessResults> {
         if (!processId)
             throw new Error("No process ID provided")
         else if (!gateway)
@@ -1098,7 +1097,7 @@ export namespace VotingApi {
      * @param {String} signature Hex encoded signature of the voteEnvelope
      * @param {Gateway|GatewayPool} gateway
      */
-    export async function submitEnvelope(voteEnvelope: VoteEnvelope, walletOrSigner: Wallet | Signer, gateway: IGateway | GatewayPool): Promise<DVoteGatewayResponseBody> {
+    export async function submitEnvelope(voteEnvelope: VoteEnvelope, walletOrSigner: Wallet | Signer, gateway: IGatewayDVoteClient): Promise<DVoteGatewayResponseBody> {
         if (typeof voteEnvelope != "object") return Promise.reject(new Error("The vote has to be a VoteEnvelope object"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -1125,7 +1124,7 @@ export namespace VotingApi {
      * @param nullifier
      * @param gateway
      */
-    export function getEnvelopeStatus(processId: string, nullifier: string, gateway: IGateway | IGatewayPool): Promise<{ registered: boolean, date?: Date, block?: number }> {
+    export function getEnvelopeStatus(processId: string, nullifier: string, gateway: IGatewayDVoteClient): Promise<{ registered: boolean, date?: Date, block?: number }> {
         if (!processId || !nullifier) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -1371,7 +1370,7 @@ export namespace VotingOracleApi {
     * @returns The process ID
     */
     export async function newProcessErc20(processParameters: INewProcessErc20Params,
-        walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool, oracleGw: DVoteGateway): Promise<string> {
+        walletOrSigner: Wallet | Signer, gateway: IGatewayClient, oracleGw: DVoteGateway): Promise<string> {
         if (!processParameters) return Promise.reject(new Error("Invalid process metadata"))
         else if (!processParameters.metadata) return Promise.reject(new Error("Invalid process metadata"))
         else if (!walletOrSigner || !walletOrSigner._isSigner)

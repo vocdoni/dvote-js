@@ -1,3 +1,5 @@
+export * from "./common"
+
 // API
 export * from "./api/census"
 export * from "./api/entity"
@@ -6,7 +8,6 @@ export * from "./api/namespace"
 export * from "./api/voting"
 
 // MODELS
-export * from "./models/common"
 export * from "./models/entity"
 export * from "./models/gateway"
 export * from "./models/json-feed"

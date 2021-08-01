@@ -11,13 +11,11 @@ import {
 import { TextRecordKeys } from "../models/entity"
 import { JsonBootnodeData } from "../models/gateway"
 // import { Gateway } from "./gateway"
-import { DVoteGateway, IDVoteGateway } from "./gateway-dvote"
-import { IWeb3Gateway, Web3Gateway } from "./gateway-web3"
+import { DVoteGateway } from "./gateway-dvote"
+import { Web3Gateway } from "./gateway-web3"
 import { getDefaultProvider, providers } from "ethers"
-import { VocdoniEnvironment } from "../models/common"
+import { EthNetworkID, VocdoniEnvironment } from "../common"
 import { keccak256 } from "@ethersproject/keccak256"
-
-export type EthNetworkID = "mainnet" | "rinkeby" | "goerli" | "xdai" | "sokol"
 
 
 export class GatewayBootnode {
@@ -113,10 +111,10 @@ export class GatewayBootnode {
     /**
      * Transform the data received from a bootnode and return gateway instances for each network.
      * @param bootnodeData A JsonBootnodeData objects that represents the ata derrived from a Bootnode Content URI.
-     * @returns An object with a list of IDVoteGateway(s) and IWeb3Gateway(s)
+     * @returns An object with a list of DVoteGateway(s) and Web3Gateway(s)
      */
-    static digest(bootnodeData: JsonBootnodeData, environment: VocdoniEnvironment = "prod"): { [networkId: string]: { dvote: IDVoteGateway[], web3: IWeb3Gateway[] } } {
-        const result: { [networkId: string]: { dvote: IDVoteGateway[], web3: IWeb3Gateway[] } } = {}
+    static digest(bootnodeData: JsonBootnodeData, environment: VocdoniEnvironment = "prod"): { [networkId: string]: { dvote: DVoteGateway[], web3: Web3Gateway[] } } {
+        const result: { [networkId: string]: { dvote: DVoteGateway[], web3: Web3Gateway[] } } = {}
         Object.keys(bootnodeData).forEach(networkId => {
             result[networkId] = GatewayBootnode.digestNetwork(bootnodeData, networkId, environment)
         })
@@ -126,9 +124,9 @@ export class GatewayBootnode {
     /**
      * Transform the data received from a bootnode and return the gateway instances for the given network.
      * @param bootnodeData A JsonBootnodeData objects that represents the ata derrived from a Bootnode Content URI.
-     * @returns An object with a list of IDVoteGateway(s) and IWeb3Gateway(s)
+     * @returns An object with a list of DVoteGateway(s) and Web3Gateway(s)
      */
-    static digestNetwork(bootnodeData: JsonBootnodeData, networkId: string, environment: VocdoniEnvironment = "prod"): { dvote: IDVoteGateway[], web3: IWeb3Gateway[] } {
+    static digestNetwork(bootnodeData: JsonBootnodeData, networkId: string, environment: VocdoniEnvironment = "prod"): { dvote: DVoteGateway[], web3: Web3Gateway[] } {
         if (!bootnodeData || typeof bootnodeData[networkId] != "object") return { dvote: [], web3: [] }
 
         return {

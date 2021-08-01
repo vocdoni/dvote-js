@@ -3,8 +3,8 @@ import { expect } from "chai"
 
 import { DVoteGateway } from "../../src/net/gateway-dvote"
 import { Web3Gateway } from "../../src/net/gateway-web3"
-import { EthNetworkID, GatewayBootnode } from "../../src/net/gateway-bootnode"
-import { VocdoniEnvironment } from "../../src/models/common"
+import { GatewayBootnode } from "../../src/net/gateway-bootnode"
+import { EthNetworkID, VocdoniEnvironment } from "../../src/common"
 
 const DEV_BOOTNODES_URL = "https://bootnodes.vocdoni.net/gateways.dev.json"
 const STAGE_BOOTNODES_URL = "https://bootnodes.vocdoni.net/gateways.stg.json"

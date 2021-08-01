@@ -1,5 +1,10 @@
 # DVote JS changelog
 
+## 1.11.0
+
+- Adding the `IGatewayClient`, `IGatewayDVoteClient` and `IGatewayWeb3Client` interfaces, so that methods don't depend on explicit class types
+- Internal arrangements for clarity and flexibility
+
 ## 1.10.1
 - Addressing a problem that could prevent signing binary payloads on Chrome-based browsers
 

@@ -1,7 +1,7 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
-import { DVoteGateway, IDVoteGateway } from "../../src/net/gateway-dvote"
+import { DVoteGateway } from "../../src/net/gateway-dvote"
 import { Web3Gateway } from "../../src/net/gateway-web3"
 import { FileApi } from "../../src/api/file"
 import DevServices, { TestAccount, TestResponseBody } from "../helpers/all-services"
@@ -267,7 +267,7 @@ describe("DVote gateway client", () => {
             dvoteServer.addResponse({ ok: false, message: "Invalid wallet" })
 
             // Client
-            let gw: IDVoteGateway
+            let gw: DVoteGateway
             try {
                 const gatewayInfo = dvoteServer.gatewayInfo
                 gw = new DVoteGateway(gatewayInfo)
