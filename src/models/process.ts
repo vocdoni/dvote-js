@@ -8,7 +8,7 @@ import {
     // HexString,
     MultiLanguage,
     ContentUriString,
-} from "./common"
+} from "../common"
 import { object, array, string, mixed, number } from "yup"
 import { by639_1 } from 'iso-language-codes'
 import { IProcessCreateParams } from "../net/contracts"

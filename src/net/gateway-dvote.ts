@@ -7,13 +7,11 @@ import axios, { AxiosInstance, AxiosResponse } from "axios"
 import { extractUint8ArrayJSONValue } from "../util/uint8array"
 import { promiseWithTimeout } from '../util/timeout'
 import { Random } from '../util/random'
+import { IGatewayDVoteClient } from "common"
 
 ///////////////////////////////////////////////////////////////////////////////
 // DVOTE GATEWAY
 ///////////////////////////////////////////////////////////////////////////////
-
-// Export the class typings as an interface
-export type IDVoteGateway = InstanceType<typeof DVoteGateway>
 
 /** Parameters sent by the function caller */
 export interface IRequestParameters {
@@ -46,7 +44,7 @@ export type DVoteGatewayResponseBody = {
  * This class provides access to Vocdoni Gateways sending JSON payloads over HTTP requests
  * intended to interact within voting processes
  */
-export class DVoteGateway {
+export class DVoteGateway implements IGatewayDVoteClient {
     private _supportedApis: (GatewayApiName | BackendApiName)[] = []
     private _pubKey: string = ""
     private _health: number = 0
@@ -113,6 +111,8 @@ export class DVoteGateway {
 
     /** Get the current URI of the Gateway */
     public get uri() { return this._uri || null }
+    public get dvoteUri() { return this.uri }  // alias to implement the interface
+
     public get supportedApis() { return this._supportedApis }
     public get publicKey() { return this._pubKey }
     public get health() { return this._health }
