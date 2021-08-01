@@ -1,5 +1,5 @@
 import { ProcessMetadataTemplate, ProcessMetadata } from "../../src/models/process"
-import { URI } from "../../src/models/common"
+import { URI } from "../../src/common"
 
 // BUILDER
 export default class ProcessMetadataBuilder {

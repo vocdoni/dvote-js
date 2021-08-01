@@ -1,8 +1,7 @@
 import { ContentUri } from "../wrappers/content-uri"
 import { ContentHashedUri } from "../wrappers/content-hashed-uri"
-import { IGateway } from "../net/gateway"
-import { IDVoteGateway, IRequestParameters } from "../net/gateway-dvote"
-import { IGatewayPool, GatewayPool } from "../net/gateway-pool"
+import { IRequestParameters } from "../net/gateway-dvote"
+import { IGatewayDVoteClient } from "../common"
 import { IPFS } from "../net/ipfs"
 import { Buffer } from 'buffer/'
 import axios from "axios"
@@ -20,7 +19,7 @@ export namespace FileApi {
      * @param contentUri
      * @param gateway (optional) A Vocdoni Gateway to use
      */
-    export function fetchString(contentUri: ContentUri | ContentHashedUri | string, gateway: IDVoteGateway | IGateway | IGatewayPool = null): Promise<string> {
+    export function fetchString(contentUri: ContentUri | ContentHashedUri | string, gateway: IGatewayDVoteClient = null): Promise<string> {
         let cUri: ContentUri | ContentHashedUri
         if (typeof contentUri == "string") cUri = new ContentUri(contentUri)
         else cUri = contentUri
@@ -38,7 +37,7 @@ export namespace FileApi {
      * @param contentUri
      * @param gateway (optional) A Vocdoni Gateway to use
      */
-    export async function fetchBytes(contentUri: ContentUri | ContentHashedUri | string, gateway: IDVoteGateway | IGateway | IGatewayPool = null): Promise<Buffer> {
+    export async function fetchBytes(contentUri: ContentUri | ContentHashedUri | string, gateway: IGatewayDVoteClient = null): Promise<Buffer> {
         if (!contentUri) throw new Error("Invalid contentUri")
 
         let cUri: ContentHashedUri
@@ -122,7 +121,7 @@ export namespace FileApi {
      * @param gateway A string with the Gateway URI or a Gateway object, set with a URI and a public key
      * @return The Content URI friendly URI of the newly added file (ipfs://<hash>)
      */
-    export async function add(buffer: Uint8Array | string, name: string, walletOrSigner: Wallet | Signer, gateway: IDVoteGateway | IGateway | GatewayPool): Promise<string> {
+    export async function add(buffer: Uint8Array | string, name: string, walletOrSigner: Wallet | Signer, gateway: IGatewayDVoteClient): Promise<string> {
         if (!buffer) return Promise.reject(new Error("Empty payload"))
         else if (!walletOrSigner) return Promise.reject(new Error("Wallet is required"))
 

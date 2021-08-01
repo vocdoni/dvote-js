@@ -18,7 +18,6 @@ import {
     NAMESPACES_ENS_SUBDOMAIN,
     ERC20_STORAGE_PROOFS_ENS_SUBDOMAIN
 } from "../constants"
-import { EthNetworkID } from "./gateway-bootnode"
 import { IProcessesContract, IEnsPublicResolverContract, INamespacesContract, ITokenStorageProofContract, IGenesisContract, IResultsContract } from "../net/contracts"
 import {
     PublicResolverContractDefinition,
@@ -36,22 +35,18 @@ import {
     Erc20StorageProofContractMethods
 } from "./contracts"
 import { promiseFuncWithTimeout, promiseWithTimeout } from '../util/timeout'
-import { VocdoniEnvironment } from '../models/common'
+import { EthNetworkID, IGatewayWeb3Client, VocdoniEnvironment } from '../common'
 
 const { JsonRpcProvider, Web3Provider, IpcProvider, InfuraProvider, FallbackProvider, EtherscanProvider } = providers
-
-// Export the class typings as an interface
-export type IWeb3Gateway = InstanceType<typeof Web3Gateway>
 
 /**
  * A Web3 wrapped client with utility methods to deploy and attach to Ethereum contracts.
  */
-export class Web3Gateway {
+export class Web3Gateway implements IGatewayWeb3Client {
     private _provider: providers.BaseProvider
     private _environment: VocdoniEnvironment
     private _initializingEns: Promise<any>
     private _hasTimeOutLastRequest: boolean
-    private _archiveIpnsId: string
     public performanceTime: number
     public weight: number
     public peerCount: number
@@ -149,12 +144,13 @@ export class Web3Gateway {
 
     public get hasTimeOutLastRequest() { return this._hasTimeOutLastRequest }
 
-    public get archiveIpnsId(): string {
-        return this._archiveIpnsId
+    public get web3Uri(): string { return this._provider["connection"].url }
+    public get chainId(): Promise<number> {
+        return this._provider.getNetwork().then(network => network.chainId)
     }
 
-    public set archiveIpnsId(ipnsId: string) {
-        this._archiveIpnsId = ipnsId
+    public get networkId(): Promise<string> {
+        return this._provider.getNetwork().then(network => network.name)
     }
 
     /**
@@ -224,8 +220,8 @@ export class Web3Gateway {
     public checkStatus(timeout: number = GATEWAY_SELECTION_TIMEOUT, resolveEnsDomains: boolean = false): Promise<void> {
         this._hasTimeOutLastRequest = false
         return promiseWithTimeout(
-                this.getMetrics(timeout, resolveEnsDomains), timeout, "The Web3 Gateway is too slow"
-            )
+            this.getMetrics(timeout, resolveEnsDomains), timeout, "The Web3 Gateway is too slow"
+        )
             .catch((error) => {
                 // TODO refactor errors
                 if (error && error.message == "The Web3 Gateway is too slow") {

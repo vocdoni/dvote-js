@@ -5,12 +5,9 @@
 
 import {
     HexString,
-    ContractAddress,
-    EntityId,
-    ProcessId,
     MultiLanguage,
     URI
-} from "./common"
+} from "../common"
 import { object, array, string } from "yup"
 import { by639_1 } from 'iso-language-codes'
 export { EntityMetadataTemplate } from "./templates/entity"
@@ -147,9 +144,10 @@ export interface EntityMetadata {
     description: MultiLanguage<string>,
 
     newsFeed: MultiLanguage<ContentUriString>,
-    votingProcesses: {
-        active: ProcessId[],  // Process ID's to query on the Voting Contract
-        ended: ProcessId[]
+    /** NOTE: This field is deprecated */
+    votingProcesses?: {
+        active?: string[],  // Process ID's to query on the Voting Contract
+        ended?: string[]
     },
     media: {
         avatar: ContentUriString,

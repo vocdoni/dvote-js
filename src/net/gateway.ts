@@ -3,23 +3,22 @@
 // It provides a wrapper to use a Vocdoni Gateway, as well as a wrapper a Web3 one
 
 import { Contract, providers, utils, Wallet, Signer, ContractInterface } from "ethers"
+// import { allSettled } from "../util/promise";
 import { GatewayInfo } from "../wrappers/gateway-info"
 import { GatewayApiName, BackendApiName, ApiMethod } from "../models/gateway"
-import { GatewayBootnode, EthNetworkID } from "./gateway-bootnode"
+import { GatewayBootnode } from "./gateway-bootnode"
 import { ContentUri } from "../wrappers/content-uri"
 import { IProcessesContract, IEnsPublicResolverContract, INamespacesContract, ITokenStorageProofContract, IGenesisContract, IResultsContract } from "../net/contracts"
-import { DVoteGateway, IDVoteGateway, IRequestParameters } from "./gateway-dvote"
-import { IWeb3Gateway, Web3Gateway } from "./gateway-web3"
-import { VocdoniEnvironment } from "../models/common"
+import { DVoteGateway, IRequestParameters } from "./gateway-dvote"
+import { Web3Gateway } from "./gateway-web3"
+import { EthNetworkID, VocdoniEnvironment } from "../common"
+import { IGatewayClient } from "../common"
 
-
-// Export the class typings as an interface
-export type IGateway = InstanceType<typeof Gateway>
 
 /**
  * This is class, addressed to the end user, is a wrapper of DvoteGateway and Web3Gateway
  */
-export class Gateway {
+export class Gateway implements IGatewayClient {
     protected dvote: DVoteGateway = null
     protected web3: Web3Gateway = null
     public get health() { return this.dvote.health }
@@ -29,12 +28,11 @@ export class Gateway {
 
     /**
      * Returns a new Gateway
-     * @param dvoteGateway A DvoteGateway instance
+     * @param dvoteGateway A DVoteGateway instance
      * @param web3Gateway A Web3Gateway instance
      */
-    constructor(dvoteGateway: IDVoteGateway, web3Gateway: IWeb3Gateway) {
-        if (!dvoteGateway || !web3Gateway ||
-            !(dvoteGateway instanceof DVoteGateway) || !(web3Gateway instanceof Web3Gateway)) {
+    constructor(dvoteGateway: DVoteGateway, web3Gateway: Web3Gateway) {
+        if (!dvoteGateway || !web3Gateway) {
             throw new Error("Invalid gateways provided")
         }
         this.dvote = dvoteGateway
@@ -113,8 +111,7 @@ export class Gateway {
             dvoteGateway = new DVoteGateway({
                 uri: gatewayOrParams.dvoteUri,
                 supportedApis: gatewayOrParams.supportedApis,
-                publicKey: gatewayOrParams.publicKey,
-                environment
+                publicKey: gatewayOrParams.publicKey
             })
             web3Gateway = new Web3Gateway(gatewayOrParams.web3Uri, null, environment)
         }
@@ -141,18 +138,6 @@ export class Gateway {
 
     public get isReady(): boolean {
         return this.web3.isReady && this.dvote.isReady
-    }
-
-    public get archiveIpnsId(): string {
-        return this.web3.archiveIpnsId
-    }
-
-    public set archiveIpnsId(ipnsId: string) {
-        this.web3.archiveIpnsId = ipnsId
-    }
-
-    public get environment(): VocdoniEnvironment {
-        return this.dvote.environment
     }
 
     // DVOTE
@@ -206,7 +191,7 @@ export class Gateway {
     }
 
     public get provider(): providers.BaseProvider { return this.web3.provider }
-    public get web3Uri(): string { return this.web3.provider["connection"].url }
+    public get web3Uri(): string { return this.web3.web3Uri }
 
     public deploy<CustomContractMethods>(abi: string | (string | utils.ParamType)[] | utils.Interface, bytecode: string,
         signParams: { signer?: Signer, wallet?: Wallet } = {}, deployArguments: any[] = []): Promise<(Contract & CustomContractMethods)> {

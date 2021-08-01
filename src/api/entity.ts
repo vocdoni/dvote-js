@@ -1,21 +1,20 @@
 import { Wallet, Signer, ContractTransaction } from "ethers"
 import { checkValidEntityMetadata, EntityMetadata } from "../models/entity"
-import { Gateway, IGateway } from "../net/gateway"
 import { TextRecordKeys } from "../models/entity"
 import { allSettled } from "../util/promise";
 import { FileApi } from "./file"
-import { IGatewayPool } from "../net/gateway-pool"
 import { XDAI_CHAIN_ID, XDAI_GAS_PRICE, SOKOL_CHAIN_ID, SOKOL_GAS_PRICE } from "../constants"
 import { IMethodOverrides, ensHashAddress, ITokenStorageProofContract } from "../net/contracts"
 import { CensusErc20Api } from "./census"
+import { IGatewayClient } from "../common"
 
 export namespace EntityApi {
     /**
      * Fetch the JSON metadata file for the given entity ID using the given gateway instances
      * @param address
-     * @param gateway Gateway or Gateway pool instance
+     * @param gateway A gateway client instance
      */
-    export async function getMetadata(address: string, gateway: Gateway | IGatewayPool): Promise<EntityMetadata> {
+    export async function getMetadata(address: string, gateway: IGatewayClient): Promise<EntityMetadata> {
         if (!address) return Promise.reject(new Error("Invalid address"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -35,7 +34,7 @@ export namespace EntityApi {
      * NOTE: The JSON metadata may need a few minutes before it can be generally fetched from IPFS
      * @return A content URI with the IPFS origin
      */
-    export async function setMetadata(address: string, metadata: EntityMetadata, walletOrSigner: Wallet | Signer, gateway: IGateway | IGatewayPool): Promise<string> {
+    export async function setMetadata(address: string, metadata: EntityMetadata, walletOrSigner: Wallet | Signer, gateway: IGatewayClient): Promise<string> {
         if (!address) return Promise.reject(new Error("Invalid address"))
         else if (!metadata) return Promise.reject(new Error("Invalid Entity metadata"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
@@ -92,9 +91,9 @@ export namespace EntityApi {
 export namespace Erc20TokensApi {
     /**
      * Retrieve the addresses of all the ERC20 tokens registered on the contract.
-     * @param gateway Gateway or GatewayPool instance
+     * @param gateway A gateway client instance
      */
-    export async function getTokenList(gateway: Gateway | IGatewayPool): Promise<string[]> {
+    export async function getTokenList(gateway: IGatewayClient): Promise<string[]> {
         let tokenInstance: ITokenStorageProofContract
         return gateway.getTokenStorageProofInstance()
             .then(instance => {
@@ -109,7 +108,7 @@ export namespace Erc20TokensApi {
             }).then(results => {
                 return results
                     .filter(item => item.status === "fulfilled")
-                    .map((item: {status: string, value: any}) => item.value)
+                    .map((item: { status: string, value: any }) => item.value)
             })
     }
 }

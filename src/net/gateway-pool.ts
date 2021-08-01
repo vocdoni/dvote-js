@@ -2,8 +2,9 @@ import { VocdoniEnvironment } from "../models/common";
 import { Gateway } from "./gateway"
 import { DVoteGatewayResponseBody, IRequestParameters } from "./gateway-dvote"
 import { GatewayDiscovery, IGatewayDiscoveryParameters } from "./gateway-discovery"
-import { Wallet, Signer, providers } from "ethers"
+import { Wallet, Signer, providers, utils, Contract, ContractInterface } from "ethers"
 import { IProcessesContract, IEnsPublicResolverContract, INamespacesContract, ITokenStorageProofContract, IGenesisContract, IResultsContract } from "./contracts"
+import { IGatewayClient } from "../common"
 
 const SEQUENTIAL_METHODS = ['addClaimBulk', 'publishCensus'] //generateProof and vote?
 const ERROR_SKIP_METHODS = ['getRoot']
@@ -15,16 +16,13 @@ const GATEWAY_UPDATE_ERRORS = [
     "not supported"
 ]
 const MAX_GW_POOL_SHIFT_COUNT = 5
-// const MAX_POOL_REFRESH_COUNT = 10
-
-export type IGatewayPool = InstanceType<typeof GatewayPool>
 
 // GLOBAL
 
 /**
  * This is wrapper class Gateway, pooling many gateways together and allowing for automatic recconection
  */
-export class GatewayPool {
+export class GatewayPool implements IGatewayClient {
     private pool: Gateway[] = []
     private params: IGatewayDiscoveryParameters = null
     private errorCount: number = 0
@@ -155,6 +153,16 @@ export class GatewayPool {
 
     public get networkId(): Promise<string> {
         return this.provider.getNetwork().then(network => network.name)
+    }
+
+    public deploy<CustomContractMethods>(abi: string | (string | utils.ParamType)[] | utils.Interface, bytecode: string,
+        signParams: { signer?: Signer, wallet?: Wallet } = {}, deployArguments: any[] = []): Promise<(Contract & CustomContractMethods)> {
+
+        return this.activeGateway.deploy<CustomContractMethods>(abi, bytecode, signParams, deployArguments)
+    }
+
+    public attach<CustomContractMethods>(address: string, abi: ContractInterface): (Contract & CustomContractMethods) {
+        return this.activeGateway.attach<CustomContractMethods>(address, abi)
     }
 
     public getEnsPublicResolverInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IEnsPublicResolverContract> {
