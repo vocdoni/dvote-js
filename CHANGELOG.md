@@ -1,5 +1,15 @@
 # DVote JS changelog
 
+##
+
+- Adding `registerVotingKey`
+- Renamed TS types
+    - `ISourceNetworkId` is now `SourceNetworkId`
+    - `IProcessDetails` is now `ProcessDetails`
+    - `IProcessState` is now `ProcessState`
+    - `IProcessSummary` is now `ProcessSummary`
+    - `IProcessKeys` is now `ProcessKeys`
+
 ## 1.11.0
 
 - Adding the `IGatewayClient`, `IGatewayDVoteClient` and `IGatewayWeb3Client` interfaces, so that methods don't depend on explicit class types

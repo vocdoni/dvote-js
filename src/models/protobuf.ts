@@ -11,7 +11,9 @@ export {
     CAbundle,
     Tx,
     SignedTx,
+    RegisterKeyTx,
     CensusOrigin as VochainCensusOrigin,
+    SourceNetworkId
 } from "./protobuf/build/ts/vochain/vochain"
 
 export {
