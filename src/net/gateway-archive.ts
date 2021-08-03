@@ -34,19 +34,19 @@ export namespace GatewayArchive {
      * @param gateway
      */
     async function resolveArchiveUri(gateway: IGateway | IGatewayPool): Promise<ContentUri> {
-        if (gateway.getArchiveUri()) {
-            return Promise.resolve(new ContentUri(gateway.getArchiveUri()))
+        if (gateway.archiveIpnsId) {
+            return Promise.resolve(new ContentUri(gateway.archiveIpnsId))
         }
 
         const networkId = await gateway.networkId as EthNetworkID
 
-        return getEnsPublicResolverByNetwork(gateway, { environment: gateway.getEnvironment(), networkId })
+        return getEnsPublicResolverByNetwork(gateway, { environment: gateway.environment, networkId })
             .then(ens => ens.instance.text(ens.entityEnsNode, TextRecordKeys.VOCDONI_ARCHIVE))
             .then((uri: string) => {
                 if (!uri) {
                     throw new Error()
                 }
-                gateway.setArchiveUri(uri)
+                gateway.archiveIpnsId = uri
                 return new ContentUri(uri)
             })
     }

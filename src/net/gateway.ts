@@ -22,8 +22,6 @@ export type IGateway = InstanceType<typeof Gateway>
 export class Gateway {
     protected dvote: DVoteGateway = null
     protected web3: Web3Gateway = null
-    protected archiveIpnsId: string
-    protected environment: VocdoniEnvironment
     public get health() { return this.dvote.health }
     public get weight() { return this.dvote.weight }
     public get publicKey() { return this.dvote.publicKey }
@@ -33,21 +31,14 @@ export class Gateway {
      * Returns a new Gateway
      * @param dvoteGateway A DvoteGateway instance
      * @param web3Gateway A Web3Gateway instance
-     * @param params
      */
-    constructor(
-        dvoteGateway: IDVoteGateway,
-        web3Gateway: IWeb3Gateway,
-        params: { archiveIpnsId?: string, environment?: VocdoniEnvironment} = {}
-    ) {
+    constructor(dvoteGateway: IDVoteGateway, web3Gateway: IWeb3Gateway) {
         if (!dvoteGateway || !web3Gateway ||
             !(dvoteGateway instanceof DVoteGateway) || !(web3Gateway instanceof Web3Gateway)) {
             throw new Error("Invalid gateways provided")
         }
         this.dvote = dvoteGateway
         this.web3 = web3Gateway
-        this.archiveIpnsId = params.archiveIpnsId
-        this.environment = params.environment
     }
 
     /**
@@ -73,7 +64,7 @@ export class Gateway {
                 if (!web3) throw new Error("Could not find an active Web3 Gateway")
                 else if (!dvote) throw new Error("Could not find an active DVote Gateway")
 
-                return new Gateway(dvote, web3, {environment})
+                return new Gateway(dvote, web3)
             })
     }
 
@@ -101,7 +92,7 @@ export class Gateway {
                 if (!web3) throw new Error("Could not find an active Web3 Gateway")
                 else if (!dvote) throw new Error("Could not find an active DVote Gateway")
 
-                return new Gateway(dvote, web3, {environment})
+                return new Gateway(dvote, web3)
             })
     }
 
@@ -122,11 +113,12 @@ export class Gateway {
             dvoteGateway = new DVoteGateway({
                 uri: gatewayOrParams.dvoteUri,
                 supportedApis: gatewayOrParams.supportedApis,
-                publicKey: gatewayOrParams.publicKey
+                publicKey: gatewayOrParams.publicKey,
+                environment
             })
             web3Gateway = new Web3Gateway(gatewayOrParams.web3Uri, null, environment)
         }
-        const gateway = new Gateway(dvoteGateway, web3Gateway, {environment})
+        const gateway = new Gateway(dvoteGateway, web3Gateway)
         return gateway.init()
             .then(() => gateway)
             .catch(error => {
@@ -151,16 +143,16 @@ export class Gateway {
         return this.web3.isReady && this.dvote.isReady
     }
 
-    public getArchiveUri(): string {
-        return this.archiveIpnsId
+    public get archiveIpnsId(): string {
+        return this.web3.archiveIpnsId
     }
 
-    public setArchiveUri(uri: string) {
-        this.archiveIpnsId = uri
+    public set archiveIpnsId(ipnsId: string) {
+        this.web3.archiveIpnsId = ipnsId
     }
 
-    public getEnvironment(): VocdoniEnvironment {
-        return this.environment
+    public get environment(): VocdoniEnvironment {
+        return this.dvote.environment
     }
 
     // DVOTE

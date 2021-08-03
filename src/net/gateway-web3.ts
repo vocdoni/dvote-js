@@ -51,6 +51,7 @@ export class Web3Gateway {
     private _environment: VocdoniEnvironment
     private _initializingEns: Promise<any>
     private _hasTimeOutLastRequest: boolean
+    private _archiveIpnsId: string
     public performanceTime: number
     public weight: number
     public peerCount: number
@@ -147,6 +148,14 @@ export class Web3Gateway {
     }
 
     public get hasTimeOutLastRequest() { return this._hasTimeOutLastRequest }
+
+    public get archiveIpnsId(): string {
+        return this._archiveIpnsId
+    }
+
+    public set archiveIpnsId(ipnsId: string) {
+        this._archiveIpnsId = ipnsId
+    }
 
     /**
      * Deploy the contract using the given signer or wallet.

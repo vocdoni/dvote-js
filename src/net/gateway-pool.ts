@@ -92,16 +92,16 @@ export class GatewayPool {
         return this.activeGateway.isReady
     }
 
-    public getArchiveUri(): string {
-        return this.activeGateway.getArchiveUri()
+    public get archiveIpnsId(): string {
+        return this.activeGateway.archiveIpnsId
     }
 
-    public setArchiveUri(uri: string) {
-        this.activeGateway.setArchiveUri(uri)
+    public set archiveIpnsId(ipnsId: string) {
+        this.pool.map((gateway: Gateway) => gateway.archiveIpnsId = ipnsId)
     }
 
-    public getEnvironment(): VocdoniEnvironment {
-        return this.activeGateway.getEnvironment()
+    public get environment(): VocdoniEnvironment {
+        return this.activeGateway.environment
     }
 
     // DVOTE
