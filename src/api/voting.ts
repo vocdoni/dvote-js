@@ -40,6 +40,8 @@ import { uintArrayToHex } from "../util/encoding"
 import { ResultsNotAvailableError } from "../errors/results";
 import { ApiMethod } from "../models/gateway"
 import { ProofArbo_Type } from "../models/protobuf/build/ts/vochain/vochain";
+import { ProofZkSNARK } from "../models/protobuf/build/ts/vochain/vochain"
+import { getZkProof } from "../crypto/snarks"
 
 export const CaBundleProtobuf: any = CAbundle
 
@@ -52,6 +54,14 @@ export type SignedEnvelopeParams = {
     censusOrigin: number | ProcessCensusOrigin,
     votes: number[], processId: string, walletOrSigner: Wallet | Signer,
     censusProof: IProofArbo | IProofCA | IProofEVM,
+    processKeys?: ProcessKeys
+}
+
+export type AnonymousEnvelopeParams = {
+    votes: number[],
+    processId: string,
+    /** The BabyJubJub private key */
+    privateKey: string,
     processKeys?: ProcessKeys
 }
 
@@ -1169,7 +1179,7 @@ export namespace VotingApi {
     /**
      * Get status of an envelope
      * @param processId
-     * @param proof A valid franchise proof. See `packageProof`.
+     * @param proof A valid franchise proof. See `packageSignedProof`.
      * @param secretKey The bytes of the secret key to use
      * @param weight Hex string (by default "0x1")
      * @param walletOrSigner
@@ -1219,13 +1229,9 @@ export namespace VotingApi {
      * If `encryptionPublicKey` is defined, it will be used to encrypt the vote package.
      * @param params
      */
-    export function packageAnonymousEnvelope(params: {
-        votes: number[], censusProof: string, processId: string, privateKey: string,
-        processKeys?: ProcessKeys
-    }): Promise<VoteEnvelope> {
-        if (!params) throw new Error("Invalid parameters");
-        if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
-        else if (typeof params.censusProof != "string" || !params.censusProof.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid Merkle Proof")
+    export function packageAnonymousEnvelope(params: AnonymousEnvelopeParams): Promise<VoteEnvelope> {
+        if (!params) throw new Error("Invalid parameters")
+        else if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
         else if (typeof params.processId != "string" || !params.processId.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid processId")
         else if (!params.privateKey || !params.privateKey.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid private key")
         else if (params.processKeys) {
@@ -1235,6 +1241,26 @@ export namespace VotingApi {
             }
         }
 
+        const censusOrigin = typeof params.censusOrigin == "number" ?
+            new ProcessCensusOrigin(params.censusOrigin as IProcessCensusOrigin) :
+            params.censusOrigin
+
+        try {
+            const proof = packageZkProof(params.processId, censusOrigin, params.censusProof)
+            // const nonce = Random.getHex().substr(2)
+            // const { votePackage, keyIndexes } = packageVoteContent(params.votes, params.processKeys)
+
+            // return VoteEnvelope.fromPartial({
+            //     proof,
+            //     processId: new Uint8Array(Buffer.from(params.processId.replace("0x", ""), "hex")),
+            //     nonce: new Uint8Array(Buffer.from(nonce, "hex")),
+            //     votePackage: new Uint8Array(votePackage),
+            //     encryptionKeyIndexes: keyIndexes ? keyIndexes : [],
+            //     nullifier: new Uint8Array()
+            // })
+        } catch (error) {
+            throw new Error("Poll vote Envelope could not be generated")
+        }
         // TODO: Use Graviton Proof
 
         // TODO: use packageVoteContent()
@@ -1279,6 +1305,54 @@ export namespace VotingApi {
             })
         } catch (error) {
             throw new Error("Poll vote Envelope could not be generated")
+        }
+    }
+
+    /**
+     * Packages the given votes into a buffer. If encryptionPubKeys is defined, the resulting buffer is encrypted with them.
+     * @param votes An array of numbers with the choices
+     * @param encryptionPubKeys An array of ed25519 public keys (https://ed25519.cr.yp.to/)
+     */
+    export function packageVoteContent(votes: number[], processKeys?: ProcessKeys): { votePackage: Buffer, keyIndexes?: number[] } {
+        if (!Array.isArray(votes)) throw new Error("Invalid votes")
+        else if (votes.some(vote => typeof vote != "number")) throw new Error("Votes needs to be an array of numbers")
+        else if (processKeys) {
+            if (!Array.isArray(processKeys.encryptionPubKeys) || !processKeys.encryptionPubKeys.every(
+                item => item && typeof item.idx == "number" && typeof item.key == "string" && item.key.match(/^(0x)?[0-9a-zA-Z]+$/))) {
+                throw new Error("Some encryption public keys are not valid")
+            }
+        }
+
+        // produce a 8 byte nonce
+        const nonce = Random.getHex().substr(2, 16)
+
+        const payload: VotePackage = {
+            nonce,
+            votes
+        }
+        const strPayload = JSON.stringify(payload)
+
+        if (processKeys && processKeys.encryptionPubKeys && processKeys.encryptionPubKeys.length) {
+            // Sort key indexes
+            processKeys.encryptionPubKeys.sort((a, b) => a.idx - b.idx)
+
+            const publicKeys: string[] = []
+            const publicKeysIdx: number[] = []
+            // NOTE: Using all keys by now
+            processKeys.encryptionPubKeys.forEach(entry => {
+                publicKeys.push(entry.key.replace(/^0x/, ""))
+                publicKeysIdx.push(entry.idx)
+            })
+
+            let votePackage: Buffer
+            for (let i = 0; i < publicKeys.length; i++) {
+                if (i > 0) votePackage = Asymmetric.encryptRaw(votePackage, publicKeys[i]) // reencrypt votePackage
+                else votePackage = Asymmetric.encryptRaw(Buffer.from(strPayload), publicKeys[i]) // encrypt the first
+            }
+            return { votePackage, keyIndexes: publicKeysIdx }
+        }
+        else {
+            return { votePackage: Buffer.from(strPayload) }
         }
     }
 
@@ -1347,6 +1421,25 @@ export namespace VotingApi {
         return proof
     }
 
+    function packageZkProof() {
+        const proof = Proof.fromPartial({})
+
+        // TODO: WIP
+
+        const { proof: zkProof, publicSignals } = getZkProof(inputs, circuitWasm, circuitKey)
+
+        const zkSnark = ProofZkSNARK.fromPartial({
+            a: null,
+            b: null,
+            c: null,
+            publicInputs: [],
+            // circuitParametersIndex: 0
+        })
+        proof.payload = { $case: "zkSnark", zkSnark }
+
+        return proof
+    }
+
     function resolveCaProof(proof: IProofArbo | IProofCA | IProofEVM): IProofCA {
         if (!proof || typeof proof == "string") return null
         // else if (proof["key"] || proof["proof"] || proof["value"]) return null
@@ -1359,54 +1452,6 @@ export namespace VotingApi {
         // else if (proof["type"] || proof["voterAddress"] || proof["signature"]) return null
         else if (typeof proof["key"] != "string" || !Array.isArray(proof["proof"]) || proof["proof"].some(item => typeof item != "string") || typeof proof["value"] != "string") return null
         return proof as IProofEVM
-    }
-
-    /**
-     * Packages the given votes into a buffer. If encryptionPubKeys is defined, the resulting buffer is encrypted with them.
-     * @param votes An array of numbers with the choices
-     * @param encryptionPubKeys An array of ed25519 public keys (https://ed25519.cr.yp.to/)
-     */
-    export function packageVoteContent(votes: number[], processKeys?: ProcessKeys): { votePackage: Buffer, keyIndexes?: number[] } {
-        if (!Array.isArray(votes)) throw new Error("Invalid votes")
-        else if (votes.some(vote => typeof vote != "number")) throw new Error("Votes needs to be an array of numbers")
-        else if (processKeys) {
-            if (!Array.isArray(processKeys.encryptionPubKeys) || !processKeys.encryptionPubKeys.every(
-                item => item && typeof item.idx == "number" && typeof item.key == "string" && item.key.match(/^(0x)?[0-9a-zA-Z]+$/))) {
-                throw new Error("Some encryption public keys are not valid")
-            }
-        }
-
-        // produce a 8 byte nonce
-        const nonce = Random.getHex().substr(2, 16)
-
-        const payload: VotePackage = {
-            nonce,
-            votes
-        }
-        const strPayload = JSON.stringify(payload)
-
-        if (processKeys && processKeys.encryptionPubKeys && processKeys.encryptionPubKeys.length) {
-            // Sort key indexes
-            processKeys.encryptionPubKeys.sort((a, b) => a.idx - b.idx)
-
-            const publicKeys: string[] = []
-            const publicKeysIdx: number[] = []
-            // NOTE: Using all keys by now
-            processKeys.encryptionPubKeys.forEach(entry => {
-                publicKeys.push(entry.key.replace(/^0x/, ""))
-                publicKeysIdx.push(entry.idx)
-            })
-
-            let votePackage: Buffer
-            for (let i = 0; i < publicKeys.length; i++) {
-                if (i > 0) votePackage = Asymmetric.encryptRaw(votePackage, publicKeys[i]) // reencrypt votePackage
-                else votePackage = Asymmetric.encryptRaw(Buffer.from(strPayload), publicKeys[i]) // encrypt the first
-            }
-            return { votePackage, keyIndexes: publicKeysIdx }
-        }
-        else {
-            return { votePackage: Buffer.from(strPayload) }
-        }
     }
 
     /**
