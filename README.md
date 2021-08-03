@@ -4,7 +4,7 @@ DVoteJS aims to provide utility classes and methods to invoke decentralized oper
 
 The intended functionality is to interact with a public Ethereum blockchain, to fetch data from a decentralized filesystem, to enforce data schema validity, to prepare vote packages and using decentralized messaging networks through Gateways.
 
-This library implements the protocol defined on https://vocdoni.io/docs/#/architecture/components
+This library implements the protocol defined on https://docs.vocdoni.io/architecture/components.html
 
 ## Getting started
 
