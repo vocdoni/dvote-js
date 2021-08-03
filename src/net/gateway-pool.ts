@@ -1,8 +1,6 @@
 import { VocdoniEnvironment } from "../models/common";
 import { Gateway } from "./gateway"
-import { EthNetworkID } from "./gateway-bootnode";
 import { DVoteGatewayResponseBody, IRequestParameters } from "./gateway-dvote"
-// import { clientApis, GatewayApiName } from "../models/gateway"
 import { GatewayDiscovery, IGatewayDiscoveryParameters } from "./gateway-discovery"
 import { Wallet, Signer, providers, utils, Contract, ContractInterface } from "ethers"
 import { IProcessesContract, IEnsPublicResolverContract, INamespacesContract, ITokenStorageProofContract, IGenesisContract, IResultsContract } from "./contracts"
@@ -102,10 +100,6 @@ export class GatewayPool implements IGatewayClient {
 
     public getEnvironment(): VocdoniEnvironment {
         return this.activeGateway.getEnvironment()
-    }
-
-    public getNetwork(): EthNetworkID {
-        return this.activeGateway.getNetwork()
     }
 
     // DVOTE
