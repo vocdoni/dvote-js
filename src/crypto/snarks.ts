@@ -4,6 +4,7 @@ import { groth16 } from "snarkjs"
 import { Scalar, utils as ffutils } from "ffjavascript"
 import { bufferToBigInt } from "../util/encoding"
 import { WalletBabyJub } from "./wallets"
+import { ensure0x } from "../util/hex"
 
 export type ZkInputs = {
   processId: string
@@ -17,19 +18,19 @@ export type ZkInputs = {
   nullifier: string
 }
 
-export function getZkProof(inputs: ZkInputs, circuitWasm: Uint8Array, circuitKey: Uint8Array): { proof, publicSignals } {
-  // TODO: WIP
+export function getZkProof(input: ZkInputs, circuitWasm: Uint8Array, circuitKey: Uint8Array): { proof, publicSignals } {
+  const voteValue = encodeVotes(input.votes)
 
-  const zkInputs = {
-    censusRoot: 10218369977673547523728355147149957098711008851521388639921026317490981642638n,
-    censusSiblings: [0n, 0n, 0n, 0n],
-    privateKey: 3876493977147089964395646989418653640709890493868463039177063670701706079087n,
-    voteValue: 2n,
-    electionId: 1n,
-    nullifier: 3186036676392928174548062723257977428484950876976874299082067205621815010072n
-  };
+  const proverInputs = {
+    censusRoot: BigInt(ensure0x(input.censusRoot)),
+    censusSiblings: input.censusSiblings.map(item => BigInt(ensure0x(item))),
+    privateKey: input.privateKey,
+    voteValue: BigInt(voteValue),
+    electionId: BigInt(ensure0x(input.processId)),
+    nullifier: BigInt(ensure0x(input.nullifier))
+  }
 
-  return groth16.fullProve(inputs, "circuit.wasm", "circuit_final.zkey");
+  return groth16.fullProve(proverInputs, circuitWasm, circuitKey);
 }
 
 export function verifyZkProof(verificationKey, publicSignals, proof) {
@@ -39,3 +40,15 @@ export function verifyZkProof(verificationKey, publicSignals, proof) {
 ///////////////////////////////////////////////////////////////////////////////
 // HELPERS
 ///////////////////////////////////////////////////////////////////////////////
+
+/** Encodes the following votes into a 2-byte item hex string */
+function encodeVotes(votes: number[]): string {
+  let result = "0x"
+  for (let vote of votes) {
+    if (vote < 0 || vote >= 65536) throw new Error("Vote value out of bounds")
+
+    const hexStr = "000" + vote.toString()
+    result += hexStr.substr(-4)  // the last 2 bytes
+  }
+  return result
+}

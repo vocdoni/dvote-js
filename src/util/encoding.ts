@@ -1,4 +1,5 @@
 import { Buffer } from "buffer/"
+import { ensure0x, strip0x } from "./hex"
 
 const BI_ZERO = BigInt("0")
 const BI_256 = BigInt("256")
@@ -6,7 +7,7 @@ const BI_256 = BigInt("256")
 export function hexStringToBuffer(hexString: string): Buffer {
     if (!/^(0x)?[0-9a-fA-F]+$/.test(hexString)) throw new Error("Invalid hex string")
     else if (hexString.length % 2 != 0) throw new Error("The hex string contains an odd length")
-    hexString = hexString.replace(/^0x/, "")
+    hexString = strip0x(hexString)
 
     const result = new Buffer(hexString.length / 2)
     for (let i = 0; i < result.length; i++) {
@@ -41,5 +42,5 @@ export function bigIntToBuffer(number: bigint): Buffer {
 export function bufferToBigInt(bytes: Buffer | Uint8Array): bigint {
     // Ensure that it is a buffer
     bytes = Buffer.from(bytes)
-    return BigInt("0x" + bytes.toString("hex"))
+    return BigInt(ensure0x(bytes.toString("hex")))
 }

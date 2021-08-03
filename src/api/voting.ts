@@ -42,6 +42,7 @@ import { ApiMethod } from "../models/gateway"
 import { ProofArbo_Type } from "../models/protobuf/build/ts/vochain/vochain";
 import { ProofZkSNARK } from "../models/protobuf/build/ts/vochain/vochain"
 import { getZkProof } from "../crypto/snarks"
+import { ensure0x, strip0x } from "../util/hex"
 
 export const CaBundleProtobuf: any = CAbundle
 
@@ -239,9 +240,9 @@ export namespace VotingApi {
 
                 // Ensure 0x's
                 const result = response.process
-                result.censusRoot = "0x" + result.censusRoot
-                result.entityId = "0x" + result.entityId
-                result.processId = "0x" + result.processId
+                result.censusRoot = ensure0x(result.censusRoot)
+                result.entityId = ensure0x(result.entityId)
+                result.processId = ensure0x(result.processId)
                 return result
             })
     }
@@ -269,7 +270,7 @@ export namespace VotingApi {
                 const { processSummary } = response
 
                 return {
-                    entityId: "0x" + processSummary.entityId,
+                    entityId: ensure0x(processSummary.entityId),
                     envelopeHeight: processSummary.envelopeHeight,
                     status: typeof processSummary.status === "number" ? processSummary.status : VochainProcessStatus[processSummary.state as string],
                     envelopeType: processSummary.envelopeType || {},
@@ -1070,17 +1071,12 @@ export namespace VotingApi {
         else if (!gateway)
             throw new Error("Invalid gateway client")
 
-        processId = processId.startsWith("0x") ? processId : "0x" + processId
-        const emptyResults = {
-            results: [[]] as string[][],
-            status: new ProcessStatus(ProcessStatus.READY),
-            envelopHeight: 0
-        }
+        processId = ensure0x(processId)
+        const emptyResults = { totalVotes: 0, questions: [] }
 
         try {
             const processState = await getProcessState(processId, gateway)
             if (processState.status == ProcessStatus.CANCELED) {
-                emptyResults.status = new ProcessStatus(ProcessStatus.CANCELED)
                 return emptyResults
             }
 
@@ -1459,13 +1455,13 @@ export namespace VotingApi {
      * Returns a hex string with kecak256(bytes(address) + bytes(processId))
      */
     export function getSignedVoteNullifier(address: string, processId: string): string {
-        address = address.replace(/^0x/, "")
-        processId = processId.replace(/^0x/, "")
+        address = strip0x(address)
+        processId = strip0x(processId)
 
         if (address.length != 40) return null
         else if (processId.length != 64) return null
 
-        return utils.keccak256(utils.arrayify("0x" + address + processId))
+        return utils.keccak256(utils.arrayify(ensure0x(address + processId)))
     }
 }
 
@@ -1611,7 +1607,7 @@ export namespace VotingOracleApi {
             if (!response.ok) throw new Error(response.message || null)
             else if (!response.processId) throw new Error()
 
-            return "0x" + response.processId
+            return ensure0x(response.processId)
         }
         catch (err) {
             const message = err.message ? "Could not register the process: " + err.message : "Could not register the process"

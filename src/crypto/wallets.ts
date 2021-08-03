@@ -6,6 +6,7 @@ import { eddsa, babyJub } from "circomlib"
 // const { Scalar, utils: ffutils } = require("../../node_modules/ffjavascript/build/main.cjs")
 const { Scalar, utils: ffutils } = require("ffjavascript")
 import { bufferToBigInt } from "../util/encoding"
+import { ensure0x, strip0x } from "../util/hex"
 
 export class WalletUtil {
     /**
@@ -154,7 +155,7 @@ function isStrongPassphrase(passphrase: string): boolean {
 function digestSeededPassphrase(passphrase: string, hexSeed: string, rounds: number = 10): string {
     if (typeof passphrase != "string" || typeof hexSeed != "string") throw new Error("Invalid parameters")
 
-    if (hexSeed.startsWith("0x")) hexSeed = hexSeed.substr(2)
+    hexSeed = strip0x(hexSeed)
     if (hexSeed.length != 64) throw new Error("The hashed passphrase should be 64 characters long instead of " + hexSeed.length)
 
     // Conver the passphrase into UTF8 bytes and hash them
@@ -165,7 +166,7 @@ function digestSeededPassphrase(passphrase: string, hexSeed: string, rounds: num
         throw new Error("Internal error: The hashed passphrase should be 64 characters long instead of " + passphraseBytesHashed.length)
 
     // Concatenating the bytes of the hashed passphrase + the seed's
-    const sourceBytes = utils.arrayify("0x" + passphraseBytesHashed + hexSeed)
+    const sourceBytes = utils.arrayify(ensure0x(passphraseBytesHashed + hexSeed))
     if (sourceBytes.length != 64)
         throw new Error("Internal error: The sourceBytes array should be 64 bytes long instead of " + sourceBytes.length)
 

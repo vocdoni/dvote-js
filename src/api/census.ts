@@ -9,6 +9,8 @@ import { blind as _blind, unblind as _unblind, verify as _verify, signatureFromH
 import { hexZeroPad } from "ethers/lib/utils"
 import { IGatewayClient, IGatewayWeb3Client } from "../common"
 import { Census_Type } from "../models/protobuf/build/ts/vochain/vochain"
+import { ensure0x } from "../util/hex"
+
 // import ContentURI from "../wrappers/content-uri"
 
 export namespace CensusOffChain {
@@ -17,7 +19,7 @@ export namespace CensusOffChain {
      * This function returns the full Census ID
      */
     export function generateCensusId(censusName: string, entityAddress: string) {
-        const prefix = "0x" + entityAddress.toLowerCase().substr(2)
+        const prefix = entityAddress.toLowerCase()
         const suffix = generateCensusIdSuffix(censusName)
         return prefix + "/" + suffix
     }
@@ -363,7 +365,7 @@ export namespace CensusCaApi {
         const msg = BigInteger.fromHex(hexMessage)
         const { mBlinded, userSecretData } = _blind(msg, signerR)
 
-        return { hexBlinded: hexZeroPad("0x" + mBlinded.toString(16), 32).slice(2), userSecretData }
+        return { hexBlinded: hexZeroPad(ensure0x(mBlinded.toString(16)), 32).slice(2), userSecretData }
     }
 
     /** Unblinds the given blinded signature and returns it as a hex string */

@@ -1,4 +1,5 @@
 import { Wallet, Signer, utils, providers } from "ethers"
+import { ensure0x } from "../util/hex"
 import { compressPublicKey } from "./elliptic"
 
 export namespace JsonSignature {
@@ -47,13 +48,13 @@ export namespace JsonSignature {
         if (!publicKey) return true
         else if (!signature) return false
 
-        const gwPublicKey = publicKey.startsWith("0x") ? publicKey : "0x" + publicKey
+        const gwPublicKey = ensure0x(publicKey)
         const expectedAddress = utils.computeAddress(gwPublicKey)
 
         const sortedResponseBody = JsonSignature.sort(responseBody)
         const bodyBytes = utils.toUtf8Bytes(JSON.stringify(sortedResponseBody))
 
-        if (!signature.startsWith("0x")) signature = "0x" + signature
+        signature = ensure0x(signature)
         const actualAddress = utils.verifyMessage(bodyBytes, signature)
 
         return actualAddress && expectedAddress && (actualAddress == expectedAddress)
@@ -148,10 +149,10 @@ export namespace BytesSignature {
         if (!publicKey) return true
         else if (!signature) return false
 
-        const gwPublicKey = publicKey.startsWith("0x") ? publicKey : "0x" + publicKey
+        const gwPublicKey = ensure0x(publicKey)
         const expectedAddress = utils.computeAddress(gwPublicKey)
 
-        if (!signature.startsWith("0x")) signature = "0x" + signature
+        signature = ensure0x(signature)
         const actualAddress = utils.verifyMessage(messageBytes, signature)
 
         return actualAddress && expectedAddress && (actualAddress == expectedAddress)
