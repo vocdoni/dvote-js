@@ -12,15 +12,15 @@ import { DevWeb3Service, TestAccount } from "../helpers/web3-service"
 import { GenesisContractMethods, ProcessCensusOrigin, ProcessesContractMethods, ProcessContractParameters, ProcessStatus } from "../../src/net/contracts"
 import { Buffer } from "buffer/"
 
-import { VotingApi, IVotePackage } from "../../src/api/voting"
+import { VotingApi, VotePackage } from "../../src/api/voting"
 import { Asymmetric } from "../../src/crypto/encryption"
 import { checkValidProcessMetadata, IProofCA, IProofEVM, ProofCaSignatureTypes } from "../../src/models/process"
 import ProcessMetadataBuilder from "../builders/process-metadata"
 // import { BytesSignature } from "../../src/crypto/data-signing"
 // import { compressPublicKey } from "../../dist"
 import {
-    VoteEnvelope,
-    Proof,
+    // VoteEnvelope,
+    // Proof,
     ProofGraviton,
     ProofCA,
     ProofEthereumStorage,
@@ -89,6 +89,22 @@ describe("Governance Process", () => {
             })
         })
 
+        describe("Proofs", () => {
+            it("Should package graviton proofs", () => {
+                let processId = "0x8b35e10045faa886bd2e18636cd3cb72e80203a04e568c47205bf0313a0f60d1"
+                let siblings = "0x0003000000000000000000000000000000000000000000000000000000000006f0d72fbd8b3a637488107b0d8055410180ec017a4d76dbb97bee1c3086a25e25b1a6134dbd323c420d6fc2ac3aaf8fff5f9ac5bc0be5949be64b7cfd1bcc5f1f"
+
+                const proof1 = VotingApi.packageProof(processId, new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), siblings)
+                expect(Buffer.from((proof1.payload as ProofGravitonPayload).graviton.siblings).toString("hex")).to.eq(siblings.slice(2))
+
+                processId = "0x36c886bd2e18605bf03a0428be100313a0f6e568c470d135d3cb72e802045faa"
+                siblings = "0x0003000000100000000002000000000300000000000400000000000050000006f0d72fbd8b3a637488107b0d8055410180ec017a4d76dbb97bee1c3086a25e25b1a6134dbd323c420d6fc2ac3aaf8fff5f9ac5bc0be5949be64b7cfd1bcc5f1f"
+
+                const proof2 = VotingApi.packageProof(processId, new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), siblings)
+                expect(Buffer.from((proof2.payload as ProofGravitonPayload).graviton.siblings).toString("hex")).to.eq(siblings.slice(2))
+            })
+        })
+
         describe("Vote Package and Vote Envelope", () => {
             it("Should bundle a Vote Package into a valid Vote Envelope (Graviton)", async () => {
                 const wallet = Wallet.fromMnemonic("seven family better journey display approve crack burden run pattern filter topple")
@@ -99,7 +115,7 @@ describe("Governance Process", () => {
                 const envelope1 = await VotingApi.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), votes: [1, 2, 3], censusProof: siblings, processId, walletOrSigner: wallet })
                 expect(Buffer.from(envelope1.processId).toString("hex")).to.eq(processId.slice(2))
                 expect(Buffer.from((envelope1.proof.payload as ProofGravitonPayload).graviton.siblings).toString("hex")).to.eq(siblings.slice(2))
-                const pkg1: IVotePackage = JSON.parse(Buffer.from(envelope1.votePackage).toString())
+                const pkg1: VotePackage = JSON.parse(Buffer.from(envelope1.votePackage).toString())
                 expect(pkg1.votes.length).to.eq(3)
                 expect(pkg1.votes).to.deep.equal([1, 2, 3])
 
@@ -109,7 +125,7 @@ describe("Governance Process", () => {
                 const envelope2 = await VotingApi.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), votes: [5, 6, 7], censusProof: siblings, processId, walletOrSigner: wallet })
                 expect(Buffer.from(envelope2.processId).toString("hex")).to.eq(processId.slice(2))
                 expect(Buffer.from((envelope2.proof.payload as ProofGravitonPayload).graviton.siblings).toString("hex")).to.eq(siblings.slice(2))
-                const pkg2: IVotePackage = JSON.parse(Buffer.from(envelope2.votePackage).toString())
+                const pkg2: VotePackage = JSON.parse(Buffer.from(envelope2.votePackage).toString())
                 expect(pkg2.votes.length).to.eq(3)
                 expect(pkg2.votes).to.deep.equal([5, 6, 7])
 
@@ -134,7 +150,7 @@ describe("Governance Process", () => {
                 expect(Buffer.from((envelope1.proof.payload as ProofCaPayload).ca.bundle.processId).toString("hex")).to.eq(processId.slice(2))
                 expect(Buffer.from((envelope1.proof.payload as ProofCaPayload).ca.bundle.address).toString("hex")).to.eq(proof.voterAddress.toLowerCase().slice(2))
                 expect(Buffer.from((envelope1.proof.payload as ProofCaPayload).ca.signature).toString("hex")).to.eq(proof.signature.slice(2))
-                const pkg1: IVotePackage = JSON.parse(Buffer.from(envelope1.votePackage).toString())
+                const pkg1: VotePackage = JSON.parse(Buffer.from(envelope1.votePackage).toString())
                 expect(pkg1.votes.length).to.eq(3)
                 expect(pkg1.votes).to.deep.equal([1, 2, 3])
 
@@ -151,7 +167,7 @@ describe("Governance Process", () => {
                 expect(Buffer.from((envelope2.proof.payload as ProofCaPayload).ca.bundle.processId).toString("hex")).to.eq(processId.slice(2))
                 expect(Buffer.from((envelope2.proof.payload as ProofCaPayload).ca.bundle.address).toString("hex")).to.eq(proof.voterAddress.toLowerCase().slice(2))
                 expect(Buffer.from((envelope2.proof.payload as ProofCaPayload).ca.signature).toString("hex")).to.eq(proof.signature.slice(2))
-                const pkg2: IVotePackage = JSON.parse(Buffer.from(envelope2.votePackage).toString())
+                const pkg2: VotePackage = JSON.parse(Buffer.from(envelope2.votePackage).toString())
                 expect(pkg2.votes.length).to.eq(3)
                 expect(pkg2.votes).to.deep.equal([5, 6, 7])
 
@@ -176,7 +192,7 @@ describe("Governance Process", () => {
                 expect(Buffer.from((envelope1.proof.payload as ProofEthereumStoragePayload).ethereumStorage.value).toString("hex")).to.eq(proof.value.slice(2))
                 let encodedSiblings = (envelope1.proof.payload as ProofEthereumStoragePayload).ethereumStorage.siblings.map(item => "0x" + Buffer.from(item).toString("hex"))
                 expect(encodedSiblings).to.deep.eq(proof.proof)
-                const pkg1: IVotePackage = JSON.parse(Buffer.from(envelope1.votePackage).toString())
+                const pkg1: VotePackage = JSON.parse(Buffer.from(envelope1.votePackage).toString())
                 expect(pkg1.votes.length).to.eq(3)
                 expect(pkg1.votes).to.deep.equal([1, 2, 3])
 
@@ -193,7 +209,7 @@ describe("Governance Process", () => {
                 expect(Buffer.from((envelope2.proof.payload as ProofEthereumStoragePayload).ethereumStorage.value).toString("hex")).to.eq(proof.value.slice(2))
                 encodedSiblings = (envelope2.proof.payload as ProofEthereumStoragePayload).ethereumStorage.siblings.map(item => "0x" + Buffer.from(item).toString("hex"))
                 expect(encodedSiblings).to.deep.eq(proof.proof)
-                const pkg2: IVotePackage = JSON.parse(Buffer.from(envelope2.votePackage).toString())
+                const pkg2: VotePackage = JSON.parse(Buffer.from(envelope2.votePackage).toString())
                 expect(pkg2.votes.length).to.eq(3)
                 expect(pkg2.votes).to.deep.equal([5, 6, 7])
 
@@ -238,7 +254,7 @@ describe("Governance Process", () => {
                     const pkgBytes = Buffer.from(envelope.votePackage)
                     expect(pkgBytes.length).to.be.greaterThan(0)
 
-                    const pkg: IVotePackage = JSON.parse(Asymmetric.decryptRaw(pkgBytes, votePrivateKey).toString())
+                    const pkg: VotePackage = JSON.parse(Asymmetric.decryptRaw(pkgBytes, votePrivateKey).toString())
                     expect(pkg.votes).to.deep.equal(item.votes)
                 }
             })
@@ -313,7 +329,7 @@ describe("Governance Process", () => {
                         else decryptedBuff = Asymmetric.decryptRaw(pkgBytes, encryptionKeys[i].privateKey)
                     }
 
-                    const pkg: IVotePackage = JSON.parse(decryptedBuff.toString())
+                    const pkg: VotePackage = JSON.parse(decryptedBuff.toString())
                     expect(pkg.votes).to.deep.equal(item.votes)
                 }
             })
