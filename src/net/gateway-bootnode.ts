@@ -118,7 +118,7 @@ export class GatewayBootnode {
 
         return {
             dvote: (bootnodeData[networkId].dvote || []).map(item => {
-                return new DVoteGateway({ uri: item.uri, supportedApis: item.apis, publicKey: item.pubKey })
+                return new DVoteGateway({ uri: item.uri, supportedApis: item.apis, publicKey: item.pubKey, environment })
             }),
             web3: (bootnodeData[networkId].web3 || []).map(item => {
                 return new Web3Gateway(item.uri, networkId as EthNetworkID, environment)

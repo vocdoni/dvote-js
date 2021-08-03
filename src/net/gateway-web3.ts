@@ -47,6 +47,7 @@ export class Web3Gateway implements IGatewayWeb3Client {
     private _environment: VocdoniEnvironment
     private _initializingEns: Promise<any>
     private _hasTimeOutLastRequest: boolean
+    private _archiveIpnsId: string
     public performanceTime: number
     public weight: number
     public peerCount: number
