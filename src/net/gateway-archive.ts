@@ -3,10 +3,44 @@ import { TextRecordKeys } from "../models/entity"
 import { getEnsPublicResolverByNetwork } from "../util/ens";
 import { ContentUri } from "../wrappers/content-uri"
 import { IGateway } from "./gateway";
-import { DVoteGatewayResponseBody } from "./gateway-dvote";
 import { IGatewayPool } from "./gateway-pool";
 
 export type EthNetworkID = "homestead" | "mainnet" | "rinkeby" | "goerli" | "xdai" | "sokol"
+
+interface IArchiveResponseBodyProcess {
+    process?: {
+        [k: string]: any
+    }
+    results?: {
+        [k: string]: any
+    },
+}
+
+interface IArchiveResponseBodyProcessSummary {
+    processSummary?: {
+        [k: string]: any
+    },
+}
+
+interface IArchiveResponseBodyResultsWeight {
+    weight?: string,
+}
+
+interface IArchiveResponseBodyEnvelopeHeight {
+    height?: number,
+}
+
+interface IArchiveResponseBodyRawResults {
+    state?: string,
+    height?: number,
+}
+
+export interface IArchiveResponseBody extends
+    IArchiveResponseBodyProcess,
+    IArchiveResponseBodyProcessSummary,
+    IArchiveResponseBodyResultsWeight,
+    IArchiveResponseBodyEnvelopeHeight,
+    IArchiveResponseBodyRawResults {}
 
 export namespace GatewayArchive {
 
@@ -17,8 +51,8 @@ export namespace GatewayArchive {
      * @param gateway
      * @param errorMessage
      */
-    export function getProcess(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<DVoteGatewayResponseBody> {
-        return resolveArchiveUri(gateway)
+    export function getProcess(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<IArchiveResponseBody> {
+        return resolveArchiveUri(gateway, errorMessage)
             .then((archiveUri: ContentUri) => {
                 return getArchiveFile(archiveUri, processId, gateway)
             })
@@ -32,8 +66,9 @@ export namespace GatewayArchive {
      * Resolves the archive Uri from the given network id
      *
      * @param gateway
+     * @param errorMessage
      */
-    async function resolveArchiveUri(gateway: IGateway | IGatewayPool): Promise<ContentUri> {
+    async function resolveArchiveUri(gateway: IGateway | IGatewayPool, errorMessage: string): Promise<ContentUri> {
         if (gateway.archiveIpnsId) {
             return Promise.resolve(new ContentUri(gateway.archiveIpnsId))
         }
@@ -44,7 +79,7 @@ export namespace GatewayArchive {
             .then(ens => ens.instance.text(ens.entityEnsNode, TextRecordKeys.VOCDONI_ARCHIVE))
             .then((uri: string) => {
                 if (!uri) {
-                    throw new Error()
+                    throw new Error(errorMessage)
                 }
                 gateway.archiveIpnsId = uri
                 return new ContentUri(uri)
