@@ -88,7 +88,6 @@ export class GatewayDiscovery {
                 (gw: IGateway) => new Gateway(gw.dvote, gw.web3, {
                         archiveIpnsId: params.archiveIpnsId,
                         environment: this.environment,
-                        networkId: this.networkId,
                     })
                 )
             )

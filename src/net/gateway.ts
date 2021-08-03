@@ -24,7 +24,6 @@ export class Gateway {
     protected web3: Web3Gateway = null
     protected archiveIpnsId: string
     protected environment: VocdoniEnvironment
-    protected network: EthNetworkID
     public get health() { return this.dvote.health }
     public get weight() { return this.dvote.weight }
     public get publicKey() { return this.dvote.publicKey }
@@ -39,7 +38,7 @@ export class Gateway {
     constructor(
         dvoteGateway: IDVoteGateway,
         web3Gateway: IWeb3Gateway,
-        params: { archiveIpnsId?: string, environment?: VocdoniEnvironment, networkId?: EthNetworkID } = {}
+        params: { archiveIpnsId?: string, environment?: VocdoniEnvironment} = {}
     ) {
         if (!dvoteGateway || !web3Gateway ||
             !(dvoteGateway instanceof DVoteGateway) || !(web3Gateway instanceof Web3Gateway)) {
@@ -49,7 +48,6 @@ export class Gateway {
         this.web3 = web3Gateway
         this.archiveIpnsId = params.archiveIpnsId
         this.environment = params.environment
-        this.network = params.networkId
     }
 
     /**
@@ -75,7 +73,7 @@ export class Gateway {
                 if (!web3) throw new Error("Could not find an active Web3 Gateway")
                 else if (!dvote) throw new Error("Could not find an active DVote Gateway")
 
-                return new Gateway(dvote, web3, {environment, networkId})
+                return new Gateway(dvote, web3, {environment})
             })
     }
 
@@ -103,7 +101,7 @@ export class Gateway {
                 if (!web3) throw new Error("Could not find an active Web3 Gateway")
                 else if (!dvote) throw new Error("Could not find an active DVote Gateway")
 
-                return new Gateway(dvote, web3, {environment, networkId})
+                return new Gateway(dvote, web3, {environment})
             })
     }
 
@@ -159,10 +157,6 @@ export class Gateway {
 
     public setArchiveUri(uri: string) {
         this.archiveIpnsId = uri
-    }
-
-    public getNetwork(): EthNetworkID {
-        return this.network
     }
 
     public getEnvironment(): VocdoniEnvironment {

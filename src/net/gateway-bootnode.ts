@@ -2,22 +2,26 @@
 // This component is meant to be a simple communication wrapper.
 // It provides a wrapper to use a Vocdoni Gateway, as well as a wrapper a Web3 one
 
+import { getEnsPublicResolverByNetwork } from "../util/ens";
 import { ContentUri } from "../wrappers/content-uri"
 import { FileApi } from "../api/file"
 import {
-    VOCDONI_MAINNET_ENTITY_ID, VOCDONI_RINKEBY_ENTITY_ID, VOCDONI_GOERLI_ENTITY_ID, VOCDONI_XDAI_ENTITY_ID, VOCDONI_SOKOL_ENTITY_ID, XDAI_ENS_REGISTRY_ADDRESS, XDAI_PROVIDER_URI, XDAI_CHAIN_ID,
-    SOKOL_CHAIN_ID, SOKOL_PROVIDER_URI, SOKOL_ENS_REGISTRY_ADDRESS, XDAI_STG_ENS_REGISTRY_ADDRESS, VOCDONI_XDAI_STG_ENTITY_ID
+    XDAI_ENS_REGISTRY_ADDRESS,
+    XDAI_PROVIDER_URI,
+    XDAI_CHAIN_ID,
+    SOKOL_CHAIN_ID,
+    SOKOL_PROVIDER_URI,
+    SOKOL_ENS_REGISTRY_ADDRESS,
+    XDAI_STG_ENS_REGISTRY_ADDRESS,
 } from "../constants"
 import { TextRecordKeys } from "../models/entity"
 import { JsonBootnodeData } from "../models/gateway"
-// import { Gateway } from "./gateway"
 import { DVoteGateway, IDVoteGateway } from "./gateway-dvote"
 import { IWeb3Gateway, Web3Gateway } from "./gateway-web3"
 import { getDefaultProvider, providers } from "ethers"
 import { VocdoniEnvironment } from "../models/common"
-import { keccak256 } from "@ethersproject/keccak256"
 
-export type EthNetworkID = "mainnet" | "rinkeby" | "goerli" | "xdai" | "sokol"
+export type EthNetworkID = "homestead" | "mainnet" | "rinkeby" | "goerli" | "xdai" | "sokol"
 
 
 export class GatewayBootnode {
@@ -63,34 +67,15 @@ export class GatewayBootnode {
         }
 
         const gw = new Web3Gateway(provider, networkId, environment)
-        return gw.getEnsPublicResolverInstance().then(instance => {
-            let entityEnsNode: string
-            switch (networkId) {
-                case "mainnet":
-                    entityEnsNode = keccak256(VOCDONI_MAINNET_ENTITY_ID)
-                    break
-                case "goerli":
-                    entityEnsNode = keccak256(VOCDONI_GOERLI_ENTITY_ID)
-                    break
-                case "rinkeby":
-                    entityEnsNode = keccak256(VOCDONI_RINKEBY_ENTITY_ID)
-                    break
-                case "xdai":
-                    if (environment === 'prod') {
-                        entityEnsNode = keccak256(VOCDONI_XDAI_ENTITY_ID)
-                        break
-                    }
-                    entityEnsNode = keccak256(VOCDONI_XDAI_STG_ENTITY_ID)
-                    break
-                case "sokol":
-                    entityEnsNode = keccak256(VOCDONI_SOKOL_ENTITY_ID)
-                    break
-            }
-            return instance.text(entityEnsNode, TextRecordKeys.VOCDONI_BOOT_NODES)
-        }).then(uri => {
-            if (!uri) throw new Error("The boot nodes Content URI is not defined on " + networkId)
-            else return new ContentUri(uri)
-        })
+
+        return getEnsPublicResolverByNetwork(gw, { environment, networkId })
+            .then(ens => ens.instance.text(ens.entityEnsNode, TextRecordKeys.VOCDONI_BOOT_NODES))
+            .then((uri: string) => {
+                if (!uri) {
+                    throw new Error("The boot nodes Content URI is not defined on " + networkId)
+                }
+                return new ContentUri(uri)
+            })
     }
 
     /**

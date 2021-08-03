@@ -166,14 +166,14 @@ export class VotingApi {
      * Fetch the Ethereum parameters and metadata for the given processId using the given gateway
      * @param processId
      * @param gateway
-     * @param checkArchive
+     * @param params
      */
-    static getProcess(processId: string, gateway: IGateway | IGatewayPool, checkArchive: boolean = false): Promise<IProcessDetails> {
+    static getProcess(processId: string, gateway: IGateway | IGatewayPool, params: { skipArchive?: boolean } = {}): Promise<IProcessDetails> {
         if (!processId) throw new Error("Invalid processId")
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         let state: IProcessState
-        return VotingApi.getProcessState(processId, gateway, checkArchive)
+        return VotingApi.getProcessState(processId, gateway, params)
             .then(result => {
                 state = result
 
@@ -205,17 +205,17 @@ export class VotingApi {
      * Fetch the full state of the given processId on the Vochain
      * @param processId
      * @param gateway
-     * @param checkArchive
+     * @param params
      */
-    static getProcessState(processId: string, gateway: IGateway | IGatewayPool, checkArchive: boolean = false): Promise<IProcessState> {
+    static getProcessState(processId: string, gateway: IGateway | IGatewayPool, params: { skipArchive?: boolean } = {}): Promise<IProcessState> {
         if (!processId) return Promise.reject(new Error("Empty process ID"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getProcessInfo", processId })
             .catch((error) => {
                 const message = error.message ? "Could not retrieve the process info: " + error.message : "Could not retrieve the process info"
-                if (checkArchive && message.includes("No data found for this key")) {
-                    return this.getArchiveProcessState(processId, gateway, message)
+                if (!params.skipArchive && message.includes("No data found for this key")) {
+                    return this.getProcessStateArchive(processId, gateway, message)
                 }
                 throw new Error(message)
             })
@@ -238,8 +238,8 @@ export class VotingApi {
      * @param gateway
      * @param errorMessage
      */
-    private static getArchiveProcessState(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<DVoteGatewayResponseBody> {
-        return GatewayArchive.getProcessFromArchive(processId, gateway, errorMessage)
+    private static getProcessStateArchive(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<DVoteGatewayResponseBody> {
+        return GatewayArchive.getProcess(processId, gateway, errorMessage)
             .then((response: DVoteGatewayResponseBody) => response)
     }
 
@@ -247,17 +247,17 @@ export class VotingApi {
      * Fetch the Vochain headers of the given processId on the Vochain. This operation is more lightweight than getProcessInfo
      * @param processId
      * @param gateway
-     * @param checkArchive
+     * @param params
      */
-    static getProcessSummary(processId: string, gateway: IGateway | IGatewayPool, checkArchive: boolean = false): Promise<IProcessSummary> {
+    static getProcessSummary(processId: string, gateway: IGateway | IGatewayPool, params: { skipArchive?: boolean } = {}): Promise<IProcessSummary> {
         if (!processId) return Promise.reject(new Error("Empty process ID"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getProcessSummary", processId })
             .catch((error) => {
                 const message = error.message ? "Could not retrieve the process info: " + error.message : "Could not retrieve the process info"
-                if (checkArchive && message.includes("No data found for this key")) {
-                    return this.getArchiveProcessSummary(processId, gateway, message)
+                if (!params.skipArchive && message.includes("No data found for this key")) {
+                    return this.getProcessSummaryArchive(processId, gateway, message)
                 }
                 throw new Error(message)
             })
@@ -267,7 +267,7 @@ export class VotingApi {
                 return {
                     entityId: "0x" + processSummary.entityId,
                     envelopeHeight: processSummary.envelopeHeight,
-                    status: processSummary.status ? processSummary.status : VochainProcessStatus[processSummary.state as string],
+                    status: typeof processSummary.status === "number" ? processSummary.status : VochainProcessStatus[processSummary.state as string],
                     envelopeType: processSummary.envelopeType || {},
                     startBlock: processSummary.startBlock,
                     endBlock: processSummary.endBlock ? processSummary.endBlock : processSummary.startBlock + processSummary.blockCount,
@@ -285,8 +285,8 @@ export class VotingApi {
      * @param gateway
      * @param errorMessage
      */
-    private static getArchiveProcessSummary(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<DVoteGatewayResponseBody> {
-        return GatewayArchive.getProcessFromArchive(processId, gateway, errorMessage)
+    private static getProcessSummaryArchive(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<DVoteGatewayResponseBody> {
+        return GatewayArchive.getProcess(processId, gateway, errorMessage)
             .then((response: DVoteGatewayResponseBody) => {
                 // TODO add only `envelopeHeight`
                 return {
@@ -626,17 +626,17 @@ export class VotingApi {
      * Retrieves the cumulative weight that has been casted in votes for the given process ID.
      * @param processId
      * @param gateway
-     * @param checkArchive
+     * @param params
      */
-    static getResultsWeight(processId: string, gateway: IGateway | IGatewayPool, checkArchive: boolean = false): Promise<BigNumber> {
+    static getResultsWeight(processId: string, gateway: IGateway | IGatewayPool, params: { skipArchive?: boolean } = {}): Promise<BigNumber> {
         if (!processId) return Promise.reject(new Error("Empty process ID"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getResultsWeight", processId })
             .catch((error) => {
                 const message = error.message ? "Could not retrieve the results weight: " + error.message : "Could not retrieve the results weight"
-                if (checkArchive && message.includes("No data found for this key")) {
-                    return this.getArchiveResultsWeight(processId, gateway, message)
+                if (!params.skipArchive && message.includes("No data found for this key")) {
+                    return this.getResultsWeightArchive(processId, gateway, message)
                 }
                 throw new Error(message)
             })
@@ -655,8 +655,8 @@ export class VotingApi {
      * @param gateway
      * @param errorMessage
      */
-    private static getArchiveResultsWeight(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<DVoteGatewayResponseBody> {
-        return GatewayArchive.getProcessFromArchive(processId, gateway, errorMessage)
+    private static getResultsWeightArchive(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<DVoteGatewayResponseBody> {
+        return GatewayArchive.getProcess(processId, gateway, errorMessage)
             .then((response: DVoteGatewayResponseBody) => {
                 return {
                     weight: response.results.weight.toString()
@@ -1008,17 +1008,17 @@ export class VotingApi {
      * Fetches the number of vote envelopes for a given processId
      * @param processId
      * @param gateway
-     * @param checkArchive
+     * @param params
      */
-    static getEnvelopeHeight(processId: string, gateway: IGateway | IGatewayPool, checkArchive: boolean = false): Promise<number> {
+    static getEnvelopeHeight(processId: string, gateway: IGateway | IGatewayPool, params: { skipArchive?: boolean } = {}): Promise<number> {
         if (!processId) return Promise.reject(new Error("No process ID provided"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getEnvelopeHeight", processId })
             .catch((error) => {
                 const message = (error.message) ? "Could not get the envelope height: " + error.message : "Could not get the envelope height"
-                if (checkArchive && message.includes("No data found for this key")) {
-                    return this.getArchiveEnvelopeHeight(processId, gateway, message)
+                if (!params.skipArchive && message.includes("No data found for this key")) {
+                    return this.getEnvelopeHeightArchive(processId, gateway, message)
                 }
                 throw new Error(message)
             })
@@ -1035,8 +1035,8 @@ export class VotingApi {
      * @param gateway
      * @param errorMessage
      */
-    private static getArchiveEnvelopeHeight(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<DVoteGatewayResponseBody> {
-        return GatewayArchive.getProcessFromArchive(processId, gateway, errorMessage)
+    private static getEnvelopeHeightArchive(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<DVoteGatewayResponseBody> {
+        return GatewayArchive.getProcess(processId, gateway, errorMessage)
             .then((response: DVoteGatewayResponseBody) => {
                 return {
                     height: response.results.envelopeHeight
@@ -1100,10 +1100,10 @@ export class VotingApi {
      * Fetches the results for a given processId
      * @param processId
      * @param gateway
-     * @param checkArchive
+     * @param params
      * @returns Results, vote process  type, vote process state
      */
-    static getRawResults(processId: string, gateway: IGateway | IGatewayPool, checkArchive: boolean = false): Promise<{ results: string[][], status: ProcessStatus, envelopHeight: number }> {
+    static getRawResults(processId: string, gateway: IGateway | IGatewayPool, params: { skipArchive?: boolean } = {}): Promise<{ results: string[][], status: ProcessStatus, envelopHeight: number }> {
         if (!processId)
             return Promise.reject(new Error("No process ID provided"))
         else if (!gateway)
@@ -1112,8 +1112,8 @@ export class VotingApi {
         return gateway.sendRequest({ method: "getResults", processId })
             .catch((error) => {
                 const message = (error.message) ? "Could not fetch the process results: " + error.message : "Could not fetch the process results"
-                if (checkArchive && message.includes("No data found for this key")) {
-                    return this.getArchiveRawResults(processId, gateway, message)
+                if (!params.skipArchive && message.includes("No data found for this key")) {
+                    return this.getRawResultsArchive(processId, gateway, message)
                 }
                 throw new Error(message)
             })
@@ -1134,8 +1134,8 @@ export class VotingApi {
      * @param errorMessage
      * @returns Results, vote process  type, vote process state
      */
-    private static getArchiveRawResults(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<DVoteGatewayResponseBody> {
-        return GatewayArchive.getProcessFromArchive(processId, gateway, errorMessage)
+    private static getRawResultsArchive(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<DVoteGatewayResponseBody> {
+        return GatewayArchive.getProcess(processId, gateway, errorMessage)
             .then((response: DVoteGatewayResponseBody) => {
                 return {
                     results: response.results.votes.map(votes => {
