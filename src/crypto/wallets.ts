@@ -58,7 +58,7 @@ export class WalletBabyJub {
      * and using it as a raw private key
      */
     static fromHexSeed(hexSeed: string) {
-        const seedBytes = Buffer.from(hexSeed.replace("0x", ""), "hex")
+        const seedBytes = Buffer.from(strip0x(hexSeed), "hex")
         const hashedBytes = utils.keccak256(seedBytes).slice(2)
 
         return new WalletBabyJub(Buffer.from(hashedBytes, "hex"))
@@ -68,8 +68,8 @@ export class WalletBabyJub {
      * given secret string and returns a  Baby Jub wallet using that as the private key
      */
     static fromProcessCredentials(hexLoginKey: string, hexProcessId: string, userSecret: string) {
-        const hexSeed = hexLoginKey.replace(/^0x/, "") +
-            hexProcessId.replace(/^0x/, "") +
+        const hexSeed = strip0x(hexLoginKey) +
+            strip0x(hexProcessId) +
             Buffer.from(userSecret, "utf8").toString("hex")
 
         return WalletBabyJub.fromHexSeed(hexSeed)
@@ -160,7 +160,7 @@ function digestSeededPassphrase(passphrase: string, hexSeed: string, rounds: num
 
     // Conver the passphrase into UTF8 bytes and hash them
     const passphraseBytes = utils.toUtf8Bytes(passphrase)
-    const passphraseBytesHashed = utils.keccak256(passphraseBytes).substr(2) // skip 0x
+    const passphraseBytesHashed = strip0x(utils.keccak256(passphraseBytes))
 
     if (passphraseBytesHashed.length != 64)
         throw new Error("Internal error: The hashed passphrase should be 64 characters long instead of " + passphraseBytesHashed.length)

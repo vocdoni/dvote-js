@@ -16,7 +16,7 @@ import { Random } from "../../src/util/random"
 import { Buffer } from "buffer"
 import { IGatewayDiscoveryParameters } from "../../src"
 import { EthNetworkID, VocdoniEnvironment } from "../../dist"
-// import { DVoteGateway } from "../../src/net/gateway-dvote"
+import { strip0x } from "../../src/util/hex"
 
 const CONFIG_PATH = "./config.yaml"
 const config = getConfig()
@@ -216,8 +216,8 @@ async function launchPlainVotes() {
 
         const wallet = Wallet.createRandom()
         const caBundle = CaBundleProtobuf.fromPartial({
-            processId: new Uint8Array(Buffer.from((processId).replace("0x", ""), "hex")),
-            address: new Uint8Array(Buffer.from((wallet.address).replace("0x", ""), "hex"))
+            processId: new Uint8Array(Buffer.from(strip0x(processId), "hex")),
+            address: new Uint8Array(Buffer.from(strip0x(wallet.address), "hex"))
         })
         const baCundleBytes = CaBundleProtobuf.encode(caBundle).finish()
         const b64CaBundle = Buffer.from(baCundleBytes).toString("base64")

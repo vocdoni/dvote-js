@@ -1130,7 +1130,7 @@ export namespace VotingApi {
         const txBytes = tx.finish()
 
         const hexSignature = await BytesSignature.sign(txBytes, walletOrSigner)
-        const signature = new Uint8Array(Buffer.from(hexSignature.replace("0x", ""), "hex"))
+        const signature = new Uint8Array(Buffer.from(strip0x(hexSignature), "hex"))
 
         const signedTx = SignedTx.encode({ tx: txBytes, signature })
         const signedTxBytes = signedTx.finish()
@@ -1191,17 +1191,17 @@ export namespace VotingApi {
 
         const registerKey: RegisterKeyTx = {
             newKey,
-            processId: Buffer.from(processId.replace("0x", ""), "hex"),
+            processId: Buffer.from(strip0x(processId), "hex"),
             nonce: Random.getBytes(32),
             proof,
-            weight: Buffer.from(weight.replace("0x", ""), "hex")
+            weight: Buffer.from(strip0x(weight), "hex")
         }
 
         const tx = Tx.encode({ payload: { $case: "registerKey", registerKey } })
         const txBytes = tx.finish()
 
         return BytesSignature.sign(txBytes, walletOrSigner).then(hexSignature => {
-            const signature = new Uint8Array(Buffer.from(hexSignature.replace("0x", ""), "hex"))
+            const signature = new Uint8Array(Buffer.from(strip0x(hexSignature), "hex"))
             const signedTx = SignedTx.encode({ tx: txBytes, signature })
             const signedTxBytes = signedTx.finish()
             const base64Payload = Buffer.from(signedTxBytes).toString("base64")
@@ -1237,18 +1237,16 @@ export namespace VotingApi {
             }
         }
 
-        const censusOrigin = typeof params.censusOrigin == "number" ?
-            new ProcessCensusOrigin(params.censusOrigin as IProcessCensusOrigin) :
-            params.censusOrigin
+        // TODO: WIP
 
         try {
-            const proof = packageZkProof(params.processId, censusOrigin, params.censusProof)
-            // const nonce = Random.getHex().substr(2)
+            const proof = packageZkProof(inputs)
+            // const nonce = strip0x(Random.getHex())
             // const { votePackage, keyIndexes } = packageVoteContent(params.votes, params.processKeys)
 
             // return VoteEnvelope.fromPartial({
             //     proof,
-            //     processId: new Uint8Array(Buffer.from(params.processId.replace("0x", ""), "hex")),
+            //     processId: new Uint8Array(Buffer.from(strip0x(params.processId), "hex")),
             //     nonce: new Uint8Array(Buffer.from(nonce, "hex")),
             //     votePackage: new Uint8Array(votePackage),
             //     encryptionKeyIndexes: keyIndexes ? keyIndexes : [],
@@ -1288,12 +1286,12 @@ export namespace VotingApi {
 
         try {
             const proof = packageProof(params.processId, censusOrigin, params.censusProof)
-            const nonce = Random.getHex().substr(2)
+            const nonce = strip0x(Random.getHex())
             const { votePackage, keyIndexes } = packageVoteContent(params.votes, params.processKeys)
 
             return VoteEnvelope.fromPartial({
                 proof,
-                processId: new Uint8Array(Buffer.from(params.processId.replace("0x", ""), "hex")),
+                processId: new Uint8Array(Buffer.from(strip0x(params.processId), "hex")),
                 nonce: new Uint8Array(Buffer.from(nonce, "hex")),
                 votePackage: new Uint8Array(votePackage),
                 encryptionKeyIndexes: keyIndexes ? keyIndexes : [],
@@ -1336,7 +1334,7 @@ export namespace VotingApi {
             const publicKeysIdx: number[] = []
             // NOTE: Using all keys by now
             processKeys.encryptionPubKeys.forEach(entry => {
-                publicKeys.push(entry.key.replace(/^0x/, ""))
+                publicKeys.push(strip0x(entry.key))
                 publicKeysIdx.push(entry.idx)
             })
 
@@ -1362,7 +1360,7 @@ export namespace VotingApi {
                 throw new Error("Invalid census proof (must be a hex string)")
 
             const aProof = ProofArbo.fromPartial({
-                siblings: new Uint8Array(Buffer.from((censusProof as string).replace("0x", ""), "hex")),
+                siblings: new Uint8Array(Buffer.from(strip0x(censusProof as string), "hex")),
                 type: ProofArbo_Type.BLAKE2B
             })
             proof.payload = { $case: "arbo", arbo: aProof }
@@ -1373,14 +1371,14 @@ export namespace VotingApi {
             if (!resolvedProof) throw new Error("The proof is not valid")
 
             const caBundle = CAbundle.fromPartial({
-                processId: new Uint8Array(Buffer.from((processId).replace("0x", ""), "hex")),
-                address: new Uint8Array(Buffer.from((resolvedProof.voterAddress).replace("0x", ""), "hex")),
+                processId: new Uint8Array(Buffer.from(strip0x(processId), "hex")),
+                address: new Uint8Array(Buffer.from(strip0x(resolvedProof.voterAddress), "hex")),
             })
 
             // Populate the proof
             const caProof = ProofCA.fromPartial({
                 type: resolvedProof.type,
-                signature: new Uint8Array(Buffer.from((resolvedProof.signature).replace("0x", ""), "hex")),
+                signature: new Uint8Array(Buffer.from(strip0x(resolvedProof.signature), "hex")),
                 bundle: caBundle
             })
 
@@ -1401,11 +1399,11 @@ export namespace VotingApi {
                 hexValue = resolvedProof.value.replace("0x", "0x0")
             }
 
-            const siblings = resolvedProof.proof.map(sibling => new Uint8Array(Buffer.from(sibling.replace("0x", ""), "hex")))
+            const siblings = resolvedProof.proof.map(sibling => new Uint8Array(Buffer.from(strip0x(sibling), "hex")))
 
             const esProof = ProofEthereumStorage.fromPartial({
-                key: new Uint8Array(Buffer.from(resolvedProof.key.replace("0x", ""), "hex")),
-                value: Buffer.from(hexValue.replace("0x", ""), "hex"),
+                key: new Uint8Array(Buffer.from(strip0x(resolvedProof.key), "hex")),
+                value: Buffer.from(strip0x(hexValue), "hex"),
                 siblings: siblings
             })
 
