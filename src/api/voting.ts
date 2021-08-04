@@ -42,6 +42,8 @@ import { CensusErc20Api } from "./census"
 import { ProcessEnvelopeType } from "dvote-solidity"
 import { ApiMethod } from "../models/gateway"
 import { IGatewayClient, IGatewayDVoteClient, IGatewayWeb3Client } from "../common"
+import { Poseidon } from "../crypto/hashing"
+import { uintArrayToHex } from "../util/encoding"
 
 export const CaBundleProtobuf: any = CAbundle
 
@@ -1176,14 +1178,18 @@ export namespace VotingApi {
      * Get status of an envelope
      * @param processId
      * @param proof A valid franchise proof. See `packageProof`.
-     * @param newKey The bytes of the new BabyJub public key to use
+     * @param secretKey The bytes of the secret key to use
      * @param weight Hex string (by default "0x1")
      * @param walletOrSigner
      * @param gateway
      */
-    export function registerVoterKey(processId: string, proof: Proof, newKey: Uint8Array, weight: string = "0x1", walletOrSigner: Wallet | Signer, gateway: IGatewayDVoteClient): Promise<any> {
-        if (!processId || !proof || !newKey) return Promise.reject(new Error("Invalid parameters"))
+    export function registerVoterKey(processId: string, proof: Proof, secretKey: Uint8Array, weight: string = "0x1", walletOrSigner: Wallet | Signer, gateway: IGatewayDVoteClient): Promise<any> {
+        if (!processId || !proof || !secretKey) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
+
+        const biKey = BigInt(uintArrayToHex(secretKey))
+        const hexHashedKey = Poseidon.hash([biKey]).toString(16)
+        const newKey = utils.zeroPad("0x" + hexHashedKey, 32)
 
         const registerKey: RegisterKeyTx = {
             newKey,
