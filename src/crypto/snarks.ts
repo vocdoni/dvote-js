@@ -16,13 +16,13 @@ export type ZkInputs = {
   nullifier: string
 }
 
-export function getZkProof(input: ZkInputs, circuitWasm: Uint8Array, circuitKey: Uint8Array): { proof, publicSignals } {
+export function getZkProof(input: ZkInputs, circuitWasm: Uint8Array, circuitKey: Uint8Array) {
   const voteValue = digestVotevalue(input.votes)
 
   const proverInputs = {
     censusRoot: BigInt(ensure0x(input.censusRoot)),
     censusSiblings: input.censusSiblings.map(item => BigInt(ensure0x(item))),
-    privateKey: input.secretKey,
+    secretKey: input.secretKey,
     voteValue: BigInt(voteValue),
     electionId: BigInt(ensure0x(input.processId)),
     nullifier: BigInt(ensure0x(input.nullifier))
@@ -32,24 +32,24 @@ export function getZkProof(input: ZkInputs, circuitWasm: Uint8Array, circuitKey:
 
   return {
     proof: {
-      a: <string>proof.pi_a,
-      b: <string>proof.pi_b,
-      c: <string>proof.pi_c,
+      a: <string[]>proof.pi_a,
+      b: <string[][]>proof.pi_b,
+      c: <string[]>proof.pi_c,
       protocol: <string>proof.protocol,
-      curve: <string>proof.curve,
+      // curve: <string>proof.curve || "BN254",
     },
-    publicSignals: <Array<bigint>>publicSignals
+    publicSignals: <string[]>publicSignals
   }
 }
 
 export function verifyZkProof(verificationKey: { [k: string]: any }, publicSignals: Array<bigint>,
-  proof: { a: string, b: string, c: string, protocol: string, curve: string }): Promise<boolean> {
+  proof: { a: string, b: string, c: string, protocol: string }): Promise<boolean> {
   const gProof = {
     pi_a: proof.a,
     pi_b: proof.b,
     pi_c: proof.c,
     protocol: proof.protocol,
-    curve: proof.curve,
+    // curve: proof.curve,
   }
 
   return groth16.verify(verificationKey, publicSignals, gProof)
