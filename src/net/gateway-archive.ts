@@ -2,11 +2,16 @@ import { FileApi } from "../api/file";
 import { TextRecordKeys } from "../models/entity"
 import { getEnsPublicResolverByNetwork } from "../util/ens";
 import { ContentUri } from "../wrappers/content-uri"
-import { IGateway } from "./gateway";
-import { DVoteGatewayResponseBody } from "./gateway-dvote";
-import { IGatewayPool } from "./gateway-pool";
+import { EthNetworkID, IGatewayClient, IGatewayDVoteClient } from "../common";
 
-export type EthNetworkID = "homestead" | "mainnet" | "rinkeby" | "goerli" | "xdai" | "sokol"
+export interface IArchiveResponseBody {
+    process?: {
+        [k: string]: any
+    }
+    results?: {
+        [k: string]: any
+    },
+}
 
 export namespace GatewayArchive {
 
@@ -17,8 +22,8 @@ export namespace GatewayArchive {
      * @param gateway
      * @param errorMessage
      */
-    export function getProcess(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<DVoteGatewayResponseBody> {
-        return resolveArchiveUri(gateway)
+    export function getProcess(processId: string, gateway: IGatewayClient, errorMessage: string): Promise<IArchiveResponseBody> {
+        return resolveArchiveUri(gateway, errorMessage)
             .then((archiveUri: ContentUri) => {
                 return getArchiveFile(archiveUri, processId, gateway)
             })
@@ -32,8 +37,9 @@ export namespace GatewayArchive {
      * Resolves the archive Uri from the given network id
      *
      * @param gateway
+     * @param errorMessage
      */
-    async function resolveArchiveUri(gateway: IGateway | IGatewayPool): Promise<ContentUri> {
+    async function resolveArchiveUri(gateway: IGatewayClient, errorMessage: string): Promise<ContentUri> {
         if (gateway.archiveIpnsId) {
             return Promise.resolve(new ContentUri(gateway.archiveIpnsId))
         }
@@ -44,7 +50,7 @@ export namespace GatewayArchive {
             .then(ens => ens.instance.text(ens.entityEnsNode, TextRecordKeys.VOCDONI_ARCHIVE))
             .then((uri: string) => {
                 if (!uri) {
-                    throw new Error()
+                    throw new Error(errorMessage)
                 }
                 gateway.archiveIpnsId = uri
                 return new ContentUri(uri)
@@ -58,7 +64,7 @@ export namespace GatewayArchive {
      * @param processId
      * @param gateway
      */
-    function getArchiveFile(archiveUri: ContentUri, processId: string, gateway: IGateway | IGatewayPool): Promise<string> {
+    function getArchiveFile(archiveUri: ContentUri, processId: string, gateway: IGatewayDVoteClient): Promise<string> {
         return FileApi.fetchString("ipfs:///ipns/" + archiveUri + "/" + processId.replace("0x", ""), gateway)
     }
 }

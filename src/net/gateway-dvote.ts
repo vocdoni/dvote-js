@@ -1,5 +1,5 @@
 import { Wallet, Signer } from "ethers"
-import { VocdoniEnvironment } from "../models/common";
+import { VocdoniEnvironment } from "../common";
 import { GatewayInfo } from "../wrappers/gateway-info"
 import { GatewayApiMethod, BackendApiMethod, allApis, registryApiMethods, ApiMethod, GatewayApiName, BackendApiName, InfoApiMethod, RawApiMethod } from "../models/gateway"
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"

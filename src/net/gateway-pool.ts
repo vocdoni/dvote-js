@@ -1,4 +1,4 @@
-import { VocdoniEnvironment } from "../models/common";
+import { VocdoniEnvironment } from "../common";
 import { Gateway } from "./gateway"
 import { DVoteGatewayResponseBody, IRequestParameters } from "./gateway-dvote"
 import { GatewayDiscovery, IGatewayDiscoveryParameters } from "./gateway-discovery"

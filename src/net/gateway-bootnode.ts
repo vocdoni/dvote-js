@@ -21,9 +21,6 @@ import { Web3Gateway } from "./gateway-web3"
 import { getDefaultProvider, providers } from "ethers"
 import { EthNetworkID, VocdoniEnvironment } from "../common"
 
-export type EthNetworkID = "homestead" | "mainnet" | "rinkeby" | "goerli" | "xdai" | "sokol"
-
-
 export class GatewayBootnode {
     /**
      * Retrieve the list of gateways provided by default by Vocdoni in the network

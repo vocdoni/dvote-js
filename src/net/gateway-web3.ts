@@ -34,7 +34,7 @@ import {
     ResultsContractMethods,
     Erc20StorageProofContractMethods
 } from "./contracts"
-import { promiseFuncWithTimeout, promiseWithTimeout } from '../util/timeout'
+import { promiseWithTimeout } from '../util/timeout'
 import { EthNetworkID, IGatewayWeb3Client, VocdoniEnvironment } from '../common'
 
 const { JsonRpcProvider, Web3Provider, IpcProvider, InfuraProvider, FallbackProvider, EtherscanProvider } = providers
@@ -144,6 +144,14 @@ export class Web3Gateway implements IGatewayWeb3Client {
     }
 
     public get hasTimeOutLastRequest() { return this._hasTimeOutLastRequest }
+
+    public get archiveIpnsId(): string {
+        return this._archiveIpnsId
+    }
+
+    public set archiveIpnsId(ipnsId: string) {
+        this._archiveIpnsId = ipnsId
+    }
 
     public get web3Uri(): string { return this._provider["connection"].url }
     public get chainId(): Promise<number> {

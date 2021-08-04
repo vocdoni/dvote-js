@@ -1,19 +1,15 @@
-import {keccak256} from "@ethersproject/keccak256"
+import { keccak256 } from "@ethersproject/keccak256"
+import { EthNetworkID, IGatewayWeb3Client, VocdoniEnvironment } from "../common";
 import {
     VOCDONI_GOERLI_ENTITY_ID,
     VOCDONI_MAINNET_ENTITY_ID,
     VOCDONI_RINKEBY_ENTITY_ID, VOCDONI_SOKOL_ENTITY_ID,
     VOCDONI_XDAI_ENTITY_ID, VOCDONI_XDAI_STG_ENTITY_ID
 } from "../constants"
-import {VocdoniEnvironment} from "../models/common";
-import {IEnsPublicResolverContract} from "../net/contracts";
-import {IGateway} from "../net/gateway"
-import {EthNetworkID} from "../net/gateway-bootnode";
-import {IGatewayPool} from "../net/gateway-pool"
-import {IWeb3Gateway} from "../net/gateway-web3";
+import { IEnsPublicResolverContract } from "../net/contracts";
 
 export function getEnsPublicResolverByNetwork(
-    gateway: IGateway | IGatewayPool | IWeb3Gateway,
+    gateway: IGatewayWeb3Client,
     params: { environment: VocdoniEnvironment, networkId: EthNetworkID } = { environment: "prod", networkId: "mainnet" },
 ): Promise<{ instance: IEnsPublicResolverContract, entityEnsNode: string }> {
     return gateway.getEnsPublicResolverInstance()
