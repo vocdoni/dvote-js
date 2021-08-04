@@ -50,6 +50,7 @@
 ## 1.11.0
 
 - Adding `registerVotingKey`
+- Implementing `packageAnonymousEnvelope`
 - Renamed TS types
     - `ISourceNetworkId` is now `SourceNetworkId`
     - `IProcessDetails` is now `ProcessDetails`

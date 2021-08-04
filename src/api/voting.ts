@@ -34,35 +34,39 @@ import {
 import { DVoteGateway, DVoteGatewayResponseBody, IRequestParameters } from "../net/gateway-dvote"
 import { CensusErc20Api } from "./census"
 import { ProcessEnvelopeType } from "dvote-solidity"
-import { IGatewayClient, IGatewayDVoteClient, IGatewayWeb3Client } from "../common"
-import { Poseidon } from "../crypto/hashing"
-import { uintArrayToHex } from "../util/encoding"
 import { ResultsNotAvailableError } from "../errors/results";
 import { ApiMethod } from "../models/gateway"
 import { ProofArbo_Type } from "../models/protobuf/build/ts/vochain/vochain";
 import { ProofZkSNARK } from "../models/protobuf/build/ts/vochain/vochain"
-import { getZkProof } from "../crypto/snarks"
+import { IGatewayClient, IGatewayDVoteClient, IGatewayWeb3Client, VoteValues } from "../common"
+import { Poseidon } from "../crypto/hashing"
+import { uintArrayToHex } from "../util/encoding"
+import { getZkProof, ZkInputs } from "../crypto/snarks"
 import { ensure0x, strip0x } from "../util/hex"
 
 export const CaBundleProtobuf: any = CAbundle
 
 export type VotePackage = {
     nonce: string, // (optional) random number to prevent guessing the encrypted payload before the key is revealed
-    votes: number[]  // Directly mapped to the `questions` field of the metadata
+    votes: VoteValues  // Directly mapped to the `questions` field of the metadata
 }
 
 export type SignedEnvelopeParams = {
     censusOrigin: number | ProcessCensusOrigin,
-    votes: number[], processId: string, walletOrSigner: Wallet | Signer,
+    votes: VoteValues,
+    processId: string,
+    walletOrSigner: Wallet | Signer,
     censusProof: IProofArbo | IProofCA | IProofEVM,
     processKeys?: ProcessKeys
 }
 
 export type AnonymousEnvelopeParams = {
-    votes: number[],
+    votes: VoteValues,
     processId: string,
-    /** The BabyJubJub private key */
-    privateKey: string,
+    /** The BabyJubJub secret key registered early */
+    secretKey: bigint,
+    /** Hex string */
+    censusRoot: string,
     processKeys?: ProcessKeys
 }
 
@@ -1181,12 +1185,11 @@ export namespace VotingApi {
      * @param walletOrSigner
      * @param gateway
      */
-    export function registerVoterKey(processId: string, proof: Proof, secretKey: Uint8Array, weight: string = "0x1", walletOrSigner: Wallet | Signer, gateway: IGatewayDVoteClient): Promise<any> {
-        if (!processId || !proof || !secretKey) return Promise.reject(new Error("Invalid parameters"))
+    export function registerVoterKey(processId: string, proof: Proof, secretKey: bigint, weight: string = "0x1", walletOrSigner: Wallet | Signer, gateway: IGatewayDVoteClient): Promise<any> {
+        if (!processId || !proof || typeof secretKey !== "bigint") return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
 
-        const biKey = BigInt(uintArrayToHex(secretKey))
-        const hexHashedKey = Poseidon.hash([biKey]).toString(16)
+        const hexHashedKey = Poseidon.hash([secretKey]).toString(16)
         const newKey = utils.zeroPad("0x" + hexHashedKey, 32)
 
         const registerKey: RegisterKeyTx = {
@@ -1217,7 +1220,7 @@ export namespace VotingApi {
     // HELPERS
     ///////////////////////////////////////////////////////////////////////////////
 
-    // TODO: SEE https://vocdoni.io/docs/#/architecture/components/process?id=vote-envelope
+    // See https://docs.vocdoni.io/architecture/data-schemes/process.html#vote-envelope
 
     /**
      * Packages the given vote array into a JSON payload that can be sent to Vocdoni Gateways.
@@ -1229,7 +1232,7 @@ export namespace VotingApi {
         if (!params) throw new Error("Invalid parameters")
         else if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
         else if (typeof params.processId != "string" || !params.processId.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid processId")
-        else if (!params.privateKey || !params.privateKey.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid private key")
+        else if (typeof params.secretKey != "bigint") throw new Error("Invalid private key")
         else if (params.processKeys) {
             if (!Array.isArray(params.processKeys.encryptionPubKeys) || !params.processKeys.encryptionPubKeys.every(
                 item => item && typeof item.idx == "number" && typeof item.key == "string" && item.key.match(/^(0x)?[0-9a-zA-Z]+$/))) {
@@ -1240,7 +1243,7 @@ export namespace VotingApi {
         // TODO: WIP
 
         try {
-            const proof = packageZkProof(inputs)
+            const proof = packageZkProof(params.processId, params.secretKey, params.censusRoot, params.votes, circuitWasm, circuitKey)
             // const nonce = strip0x(Random.getHex())
             // const { votePackage, keyIndexes } = packageVoteContent(params.votes, params.processKeys)
 
@@ -1253,11 +1256,8 @@ export namespace VotingApi {
             //     nullifier: new Uint8Array()
             // })
         } catch (error) {
-            throw new Error("Poll vote Envelope could not be generated")
+            throw new Error("The anonymous vote envelope could not be generated")
         }
-        // TODO: Use Graviton Proof
-
-        // TODO: use packageVoteContent()
 
         throw new Error("TODO: unimplemented")
     }
@@ -1298,7 +1298,7 @@ export namespace VotingApi {
                 nullifier: new Uint8Array()
             })
         } catch (error) {
-            throw new Error("Poll vote Envelope could not be generated")
+            throw new Error("The poll vote envelope could not be generated")
         }
     }
 
@@ -1307,7 +1307,7 @@ export namespace VotingApi {
      * @param votes An array of numbers with the choices
      * @param encryptionPubKeys An array of ed25519 public keys (https://ed25519.cr.yp.to/)
      */
-    export function packageVoteContent(votes: number[], processKeys?: ProcessKeys): { votePackage: Buffer, keyIndexes?: number[] } {
+    export function packageVoteContent(votes: VoteValues, processKeys?: ProcessKeys): { votePackage: Buffer, keyIndexes?: number[] } {
         if (!Array.isArray(votes)) throw new Error("Invalid votes")
         else if (votes.some(vote => typeof vote != "number")) throw new Error("Votes needs to be an array of numbers")
         else if (processKeys) {
@@ -1415,19 +1415,29 @@ export namespace VotingApi {
         return proof
     }
 
-    function packageZkProof() {
+    function packageZkProof(processId: string, secretKey: bigint, censusRoot: string,
+        votes: VoteValues, circuitWasm: Uint8Array, circuitKey: Uint8Array) {
         const proof = Proof.fromPartial({})
 
-        // TODO: WIP
+        const nullifier = Poseidon.getNullifier(secretKey, processId).toString(16)
+
+        const inputs: ZkInputs = {
+            censusRoot,
+            censusSiblings: [],
+            nullifier,
+            secretKey,
+            processId: strip0x(processId),
+            votes
+        }
 
         const { proof: zkProof, publicSignals } = getZkProof(inputs, circuitWasm, circuitKey)
 
         const zkSnark = ProofZkSNARK.fromPartial({
-            a: null,
-            b: null,
-            c: null,
-            publicInputs: [],
-            // circuitParametersIndex: 0
+            a: zkProof.a,
+            b: zkProof.b,
+            c: zkProof.c,
+            publicInputs: publicSignals,
+            // type: ProofZkSNARK_Type.UNKNOWN
         })
         proof.payload = { $case: "zkSnark", zkSnark }
 

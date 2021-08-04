@@ -195,5 +195,22 @@ describe("Census", () => {
                 expect(buff.length).to.eq(input.len)
             }
         })
+
+        it("Should compute the nullifier of a voter", () => {
+            const items = [
+                { secretKey: BigInt("0"), processId: "0x56570de287d73cd1cb6092bb8fdee6173974955fdef345ae579ee9f475ea7432", output: BigInt("21029119938920402823289225231094035575121500316958810468419719209605340602890") },
+                { secretKey: BigInt("10000000000"), processId: "0x56570de287d73cd1cb6092bb8fdee6173974955fdef345ae579ee9f475ea7432", output: BigInt("11194256241523234156305615917115373157978066737678862668963538528803126308533") },
+                { secretKey: BigInt("200000000000"), processId: "0x56570de287d73cd1cb6092bb8fdee6173974955fdef345ae579ee9f475ea7432", output: BigInt("5279980695004264984266350646253776034530587659867528722664559271201161326985") },
+                { secretKey: BigInt("3000000000000"), processId: "0x56570de287d73cd1cb6092bb8fdee6173974955fdef345ae579ee9f475ea7432", output: BigInt("9959692283643749157637685455294419263498038570287434381795051229329793346861") },
+                { secretKey: BigInt("40000000000000"), processId: "0x56570de287d73cd1cb6092bb8fdee6173974955fdef345ae579ee9f475ea7432", output: BigInt("13511251974325421249269768892848954933461021242113484189771945365775240853163") },
+                { secretKey: BigInt("10000000000"), processId: "0x6adf031833174bbe4c85eafe59ddb54e6584648c2c962c6f94791ab49caa0ad4", output: BigInt("21518911625487722963839401343210863646208384500701040282399958979340362216276") },
+                { secretKey: BigInt("200000000000"), processId: "0x6adf031833174bbe4c85eafe59ddb54e6584648c2c962c6f94791ab49caa0ad4", output: BigInt("13755882410572506878744986832084512007661054932372452788618940441614637968610") },
+            ]
+
+            for (let item of items) {
+                const output = Poseidon.getNullifier(item.secretKey, item.processId)
+                expect(output).to.eq(item.output)
+            }
+        })
     })
 })

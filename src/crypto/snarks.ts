@@ -1,10 +1,8 @@
-import * as createBlakeHash from "blake-hash"
-import { eddsa, babyJub } from "circomlib"
 import { groth16 } from "snarkjs"
-import { Scalar, utils as ffutils } from "ffjavascript"
-import { bufferToBigInt } from "../util/encoding"
-import { WalletBabyJub } from "./wallets"
+import { utils } from "ethers"
+import { Poseidon } from "./hashing"
 import { ensure0x } from "../util/hex"
+import { VoteValues } from "../common"
 
 export type ZkInputs = {
   processId: string
@@ -12,43 +10,59 @@ export type ZkInputs = {
   censusRoot: string
   /** hex strings */
   censusSiblings: string[]
-  privateKey: BigInt
-  votes: number[]
+  secretKey: BigInt
+  votes: VoteValues
   /** hex string */
   nullifier: string
 }
 
 export function getZkProof(input: ZkInputs, circuitWasm: Uint8Array, circuitKey: Uint8Array): { proof, publicSignals } {
-  const voteValue = encodeVotes(input.votes)
+  const voteValue = digestVotevalue(input.votes)
 
   const proverInputs = {
     censusRoot: BigInt(ensure0x(input.censusRoot)),
     censusSiblings: input.censusSiblings.map(item => BigInt(ensure0x(item))),
-    privateKey: input.privateKey,
+    privateKey: input.secretKey,
     voteValue: BigInt(voteValue),
     electionId: BigInt(ensure0x(input.processId)),
     nullifier: BigInt(ensure0x(input.nullifier))
   }
 
-  return groth16.fullProve(proverInputs, circuitWasm, circuitKey);
+  const { proof, publicSignals } = groth16.fullProve(proverInputs, circuitWasm, circuitKey)
+
+  return {
+    proof: {
+      a: <string>proof.pi_a,
+      b: <string>proof.pi_b,
+      c: <string>proof.pi_c,
+      protocol: <string>proof.protocol,
+      curve: <string>proof.curve,
+    },
+    publicSignals: <Array<bigint>>publicSignals
+  }
 }
 
-export function verifyZkProof(verificationKey, publicSignals, proof) {
-  return Promise.resolve(false)
+export function verifyZkProof(verificationKey: { [k: string]: any }, publicSignals: Array<bigint>,
+  proof: { a: string, b: string, c: string, protocol: string, curve: string }): Promise<boolean> {
+  const gProof = {
+    pi_a: proof.a,
+    pi_b: proof.b,
+    pi_c: proof.c,
+    protocol: proof.protocol,
+    curve: proof.curve,
+  }
+
+  return groth16.verify(verificationKey, publicSignals, gProof)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // HELPERS
 ///////////////////////////////////////////////////////////////////////////////
 
-/** Encodes the following votes into a 2-byte item hex string */
-function encodeVotes(votes: number[]): string {
-  let result = "0x"
-  for (let vote of votes) {
-    if (vote < 0 || vote >= 65536) throw new Error("Vote value out of bounds")
+function digestVotevalue(votes: VoteValues): bigint {
+  if (!Array.isArray(votes)) throw new Error("Votes should be an array of numbers")
+  const str = "[" + votes.map(value => value.toString(10)).join(",") + "]"
+  const hexHash = utils.keccak256(str)
 
-    const hexStr = "000" + vote.toString()
-    result += hexStr.substr(-4)  // the last 2 bytes
-  }
-  return result
+  return BigInt(hexHash) % Poseidon.Q
 }

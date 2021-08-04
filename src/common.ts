@@ -23,6 +23,8 @@ export type VocdoniEnvironment = "prod" | "stg" | "dev"
 
 export type EthNetworkID = "homestead" | "mainnet" | "rinkeby" | "goerli" | "xdai" | "sokol"
 
+export type VoteValues = Array<number | bigint>
+
 // GATEWAY INTERFACES
 
 export interface IGatewayDVoteClient {

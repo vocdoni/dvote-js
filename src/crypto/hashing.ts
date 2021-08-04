@@ -1,5 +1,6 @@
 import { utils } from "ethers"
 import { poseidon } from "circomlib"
+import { ensure0x } from "../util/hex"
 
 export namespace Keccak256 {
     export function hashText(value: string): string {
@@ -30,10 +31,9 @@ export namespace Poseidon {
     }
 
     /** Computes the nullifier of a voter for a given process ID.
-     * The private key should be a decimal string containing a big number. */
-    export function getNullifier(privateKey: string, processId: bigint) {
-        const sKey = BigInt(privateKey)
-        return Poseidon.hash([sKey, processId])
+     * The private key should be a bigint. */
+    export function getNullifier(secretKey: bigint, processId: string) {
+        const pid = BigInt(ensure0x(processId))
+        return Poseidon.hash([secretKey, pid])
     }
 }
-
