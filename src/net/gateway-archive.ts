@@ -7,7 +7,7 @@ import { IGatewayPool } from "./gateway-pool";
 
 export type EthNetworkID = "homestead" | "mainnet" | "rinkeby" | "goerli" | "xdai" | "sokol"
 
-interface IArchiveResponseBodyProcess {
+export interface IArchiveResponseBody {
     process?: {
         [k: string]: any
     }
@@ -15,32 +15,6 @@ interface IArchiveResponseBodyProcess {
         [k: string]: any
     },
 }
-
-interface IArchiveResponseBodyProcessSummary {
-    processSummary?: {
-        [k: string]: any
-    },
-}
-
-interface IArchiveResponseBodyResultsWeight {
-    weight?: string,
-}
-
-interface IArchiveResponseBodyEnvelopeHeight {
-    height?: number,
-}
-
-interface IArchiveResponseBodyRawResults {
-    state?: string,
-    height?: number,
-}
-
-export interface IArchiveResponseBody extends
-    IArchiveResponseBodyProcess,
-    IArchiveResponseBodyProcessSummary,
-    IArchiveResponseBodyResultsWeight,
-    IArchiveResponseBodyEnvelopeHeight,
-    IArchiveResponseBodyRawResults {}
 
 export namespace GatewayArchive {
 

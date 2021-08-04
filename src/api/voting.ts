@@ -1,9 +1,6 @@
-import { keccak256 } from "@ethersproject/keccak256";
 import { Wallet, Signer, utils, ContractTransaction, BigNumber, providers } from "ethers"
-import { TextRecordKeys } from "../models/entity";
 import { Gateway, IGateway } from "../net/gateway"
-import {GatewayArchive, IArchiveResponseBody} from "../net/gateway-archive";
-import { ContentUri } from "../wrappers/content-uri";
+import { GatewayArchive, IArchiveResponseBody } from "../net/gateway-archive";
 import { FileApi } from "./file"
 import { EntityApi } from "./entity"
 import { ProcessMetadata, checkValidProcessMetadata, DigestedProcessResults, DigestedProcessResultItem, INewProcessParams, IProofEVM, IProofCA, IProofGraviton, INewProcessErc20Params } from "../models/process"
@@ -238,7 +235,7 @@ export class VotingApi {
      * @param gateway
      * @param errorMessage
      */
-    private static getProcessStateArchive(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<IArchiveResponseBody> {
+    private static getProcessStateArchive(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string) {
         return GatewayArchive.getProcess(processId, gateway, errorMessage)
             .then((response: IArchiveResponseBody) => response)
     }
@@ -285,7 +282,7 @@ export class VotingApi {
      * @param gateway
      * @param errorMessage
      */
-    private static getProcessSummaryArchive(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<IArchiveResponseBody> {
+    private static getProcessSummaryArchive(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string) {
         return GatewayArchive.getProcess(processId, gateway, errorMessage)
             .then((response: IArchiveResponseBody) => {
                 response.process.envelopeHeight = response.results.envelopeHeight
@@ -645,11 +642,11 @@ export class VotingApi {
      * @param gateway
      * @param errorMessage
      */
-    private static getResultsWeightArchive(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<IArchiveResponseBody> {
+    private static getResultsWeightArchive(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string) {
         return GatewayArchive.getProcess(processId, gateway, errorMessage)
             .then((response: IArchiveResponseBody) => {
                 return {
-                    weight: response.results.weight.toString()
+                    weight: "0x" + response.results.weight.toString(16)
                 }
             })
     }
@@ -1025,7 +1022,7 @@ export class VotingApi {
      * @param gateway
      * @param errorMessage
      */
-    private static getEnvelopeHeightArchive(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<IArchiveResponseBody> {
+    private static getEnvelopeHeightArchive(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string) {
         return GatewayArchive.getProcess(processId, gateway, errorMessage)
             .then((response: IArchiveResponseBody) => {
                 return {
@@ -1124,7 +1121,7 @@ export class VotingApi {
      * @param errorMessage
      * @returns Results, vote process  type, vote process state
      */
-    private static getRawResultsArchive(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string): Promise<IArchiveResponseBody> {
+    private static getRawResultsArchive(processId: string, gateway: IGateway | IGatewayPool, errorMessage: string) {
         return GatewayArchive.getProcess(processId, gateway, errorMessage)
             .then((response: IArchiveResponseBody) => {
                 return {
