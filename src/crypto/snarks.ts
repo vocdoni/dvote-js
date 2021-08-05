@@ -1,6 +1,5 @@
+// @ts-ignore  
 import { groth16 } from "snarkjs"
-import { utils } from "ethers"
-import { Poseidon } from "./hashing"
 import { ensure0x } from "../util/hex"
 import { VoteValues } from "../common"
 
@@ -17,13 +16,13 @@ export type ZkInputs = {
 }
 
 export function getZkProof(input: ZkInputs, circuitWasm: Uint8Array, circuitKey: Uint8Array) {
-  const voteValue = digestVotevalue(input.votes)
+  const voteValues = input.votes.map(num => typeof num == "bigint" ? num : BigInt(num))
 
   const proverInputs = {
     censusRoot: BigInt(ensure0x(input.censusRoot)),
     censusSiblings: input.censusSiblings.map(item => BigInt(ensure0x(item))),
     secretKey: input.secretKey,
-    voteValue: BigInt(voteValue),
+    voteValues,
     electionId: BigInt(ensure0x(input.processId)),
     nullifier: BigInt(ensure0x(input.nullifier))
   }
@@ -36,7 +35,7 @@ export function getZkProof(input: ZkInputs, circuitWasm: Uint8Array, circuitKey:
       b: <string[][]>proof.pi_b,
       c: <string[]>proof.pi_c,
       protocol: <string>proof.protocol,
-      // curve: <string>proof.curve || "BN254",
+      // curve: <string>proof.curve || "bn128",
     },
     publicSignals: <string[]>publicSignals
   }
@@ -58,11 +57,3 @@ export function verifyZkProof(verificationKey: { [k: string]: any }, publicSigna
 ///////////////////////////////////////////////////////////////////////////////
 // HELPERS
 ///////////////////////////////////////////////////////////////////////////////
-
-function digestVotevalue(votes: VoteValues): bigint {
-  if (!Array.isArray(votes)) throw new Error("Votes should be an array of numbers")
-  const str = "[" + votes.map(value => value.toString(10)).join(",") + "]"
-  const hexHash = utils.keccak256(str)
-
-  return BigInt(hexHash) % Poseidon.Q
-}
