@@ -15,16 +15,6 @@ export function hexStringToBuffer(hexString: string): Buffer {
     return result
 }
 
-export function uintArrayToHex(buff: Uint8Array, prepend0x?: boolean): string {
-    const bytes: string[] = []
-    for (let byte of buff) {
-        if (byte >= 16) bytes.push(byte.toString(16))
-        else bytes.push("0" + byte.toString(16))
-    }
-    if (prepend0x) return "0x" + bytes.join("")
-    return bytes.join("")
-}
-
 export function bigIntToBuffer(number: bigint): Buffer {
     const resultBytes: number[] = []
 

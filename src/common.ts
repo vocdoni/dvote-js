@@ -21,7 +21,7 @@ export type MessagingUriString = string
 
 export type VocdoniEnvironment = "prod" | "stg" | "dev"
 
-export type EthNetworkID = "mainnet" | "rinkeby" | "goerli" | "xdai" | "sokol"
+export type EthNetworkID = "homestead" | "mainnet" | "rinkeby" | "goerli" | "xdai" | "sokol"
 
 // GATEWAY INTERFACES
 
@@ -32,6 +32,7 @@ export interface IGatewayDVoteClient {
 
     get isReady(): boolean
     get dvoteUri(): string
+    get environment(): VocdoniEnvironment
 
     sendRequest(requestBody: IRequestParameters, wallet?: Wallet | Signer, params?: { timeout: number }): Promise<DVoteGatewayResponseBody>
 }
@@ -41,6 +42,8 @@ export interface IGatewayWeb3Client {
     get networkId(): Promise<string>
     get provider(): providers.BaseProvider
     get web3Uri(): string
+    get archiveIpnsId(): string
+    set archiveIpnsId(ipnsId: string)
     disconnect(): void
 
     deploy<CustomContractMethods>(abi: string | (string | utils.ParamType)[] | utils.Interface, bytecode: string,

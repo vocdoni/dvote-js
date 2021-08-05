@@ -3,7 +3,6 @@
 // It provides a wrapper to use a Vocdoni Gateway, as well as a wrapper a Web3 one
 
 import { Contract, providers, utils, Wallet, Signer, ContractInterface } from "ethers"
-// import { allSettled } from "../util/promise";
 import { GatewayInfo } from "../wrappers/gateway-info"
 import { GatewayApiName, BackendApiName, ApiMethod } from "../models/gateway"
 import { GatewayBootnode } from "./gateway-bootnode"
@@ -111,7 +110,8 @@ export class Gateway implements IGatewayClient {
             dvoteGateway = new DVoteGateway({
                 uri: gatewayOrParams.dvoteUri,
                 supportedApis: gatewayOrParams.supportedApis,
-                publicKey: gatewayOrParams.publicKey
+                publicKey: gatewayOrParams.publicKey,
+                environment
             })
             web3Gateway = new Web3Gateway(gatewayOrParams.web3Uri, null, environment)
         }
@@ -138,6 +138,18 @@ export class Gateway implements IGatewayClient {
 
     public get isReady(): boolean {
         return this.web3.isReady && this.dvote.isReady
+    }
+
+    public get archiveIpnsId(): string {
+        return this.web3.archiveIpnsId
+    }
+
+    public set archiveIpnsId(ipnsId: string) {
+        this.web3.archiveIpnsId = ipnsId
+    }
+
+    public get environment(): VocdoniEnvironment {
+        return this.dvote.environment
     }
 
     // DVOTE

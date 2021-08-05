@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { useState } from 'react'
-import { VotingApi, EntityApi, ProcessDetails, EntityMetadata } from 'dvote-js'
+import { VotingApi, EntityApi, IProcessDetails, EntityMetadata } from 'dvote-js'
 import { getClient } from "../lib/net"
 
 const ENTITY_ID = "0x6047d71960cefbe27239a202e48dc7a76094fd6d"
@@ -14,7 +14,7 @@ const PROCESS_IDS = [
 const Page = () => {
   const [loading, setLoading] = useState(false)
   const [entity, setEntity] = useState<EntityMetadata>(null as any)
-  const [processDetails, setProcessDetails] = useState<ProcessDetails>(null as any)
+  const [processDetails, setProcessDetails] = useState<IProcessDetails>(null as any)
 
   const loadMetadata = () => {
     setLoading(true)
