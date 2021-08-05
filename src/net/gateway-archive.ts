@@ -1,5 +1,7 @@
 import { FileApi } from "../api/file";
+import { GatewayArchiveError } from "../errors/gateway-archive";
 import { TextRecordKeys } from "../models/entity"
+import { VochainProcessStatus } from "../models/protobuf";
 import { getEnsPublicResolverByNetwork } from "../util/ens";
 import { ContentUri } from "../wrappers/content-uri"
 import { EthNetworkID, IGatewayClient, IGatewayDVoteClient } from "../common";
@@ -16,20 +18,102 @@ export interface IArchiveResponseBody {
 export namespace GatewayArchive {
 
     /**
+     * Fetch the full state of the given processId on the process archive
+     *
+     * @param processId
+     * @param gateway
+     * @param errorMessage
+     */
+    export function getProcessStateArchive(processId: string, gateway: IGatewayClient, errorMessage: string) {
+        return getProcess(processId, gateway, errorMessage)
+            .then((response: IArchiveResponseBody) => response)
+    }
+
+    /**
+     * Fetch the headers of the given processId on the archive.
+     *
+     * @param processId
+     * @param gateway
+     * @param errorMessage
+     */
+    export function getProcessSummaryArchive(processId: string, gateway: IGatewayClient, errorMessage: string) {
+        return getProcess(processId, gateway, errorMessage)
+            .then((response: IArchiveResponseBody) => {
+                response.process.envelopeHeight = response.results.envelopeHeight
+                return {
+                    processSummary: response.process
+                }
+            })
+    }
+
+    /**
+     * Retrieves the archive cumulative weight that has been casted in votes for the given process ID.
+     *
+     * @param processId
+     * @param gateway
+     * @param errorMessage
+     */
+    export function getResultsWeightArchive(processId: string, gateway: IGatewayClient, errorMessage: string) {
+        return getProcess(processId, gateway, errorMessage)
+            .then((response: IArchiveResponseBody) => {
+                return {
+                    weight: "0x" + response.results.weight.toString(16)
+                }
+            })
+    }
+
+    /**
+     * Fetches the archive number of vote envelopes for a given processId
+     *
+     * @param processId
+     * @param gateway
+     * @param errorMessage
+     */
+    export function getEnvelopeHeightArchive(processId: string, gateway: IGatewayClient, errorMessage: string) {
+        return getProcess(processId, gateway, errorMessage)
+            .then((response: IArchiveResponseBody) => {
+                return {
+                    height: response.results.envelopeHeight
+                }
+            })
+    }
+
+    /**
+     * Fetches the archive results for a given processId
+     *
+     * @param processId
+     * @param gateway
+     * @param errorMessage
+     * @returns Results, vote process  type, vote process state
+     */
+    export function getRawResultsArchive(processId: string, gateway: IGatewayClient, errorMessage: string) {
+        return getProcess(processId, gateway, errorMessage)
+            .then((response: IArchiveResponseBody) => {
+                return {
+                    results: response.results.votes.map(votes => {
+                        return votes.map(vote => vote.toString())
+                    }),
+                    state: VochainProcessStatus[response.process.status as string] || "",
+                    height: response.results.envelopeHeight,
+                }
+            })
+    }
+
+    /**
      * Fetch the process data on the IPFS archive
      *
      * @param processId
      * @param gateway
      * @param errorMessage
      */
-    export function getProcess(processId: string, gateway: IGatewayClient, errorMessage: string): Promise<IArchiveResponseBody> {
+    function getProcess(processId: string, gateway: IGatewayClient, errorMessage: string): Promise<IArchiveResponseBody> {
         return resolveArchiveUri(gateway, errorMessage)
             .then((archiveUri: ContentUri) => {
                 return getArchiveFile(archiveUri, processId, gateway)
             })
             .then((result: string) => JSON.parse(result))
             .catch((error) => {
-                throw new Error(errorMessage)
+                throw new GatewayArchiveError(errorMessage)
             })
     }
 
@@ -50,7 +134,7 @@ export namespace GatewayArchive {
             .then(ens => ens.instance.text(ens.entityEnsNode, TextRecordKeys.VOCDONI_ARCHIVE))
             .then((uri: string) => {
                 if (!uri) {
-                    throw new Error(errorMessage)
+                    throw new GatewayArchiveError(errorMessage)
                 }
                 gateway.archiveIpnsId = uri
                 return new ContentUri(uri)

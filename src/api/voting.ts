@@ -1,6 +1,6 @@
 import { Wallet, Signer, utils, ContractTransaction, BigNumber, providers } from "ethers"
 import { Gateway } from "../net/gateway"
-import { GatewayArchive, IArchiveResponseBody } from "../net/gateway-archive";
+import { GatewayArchive } from "../net/gateway-archive";
 import { FileApi } from "./file"
 import { EntityApi } from "./entity"
 import { ProcessMetadata, checkValidProcessMetadata, DigestedProcessResults, DigestedProcessResultItem, INewProcessParams, IProofEVM, IProofCA, IProofGraviton, INewProcessErc20Params } from "../models/process"
@@ -213,7 +213,7 @@ export namespace VotingApi {
             .catch((error) => {
                 const message = error.message ? "Could not retrieve the process info: " + error.message : "Could not retrieve the process info"
                 if (!params.skipArchive && message.includes("No data found for this key")) {
-                    return getProcessStateArchive(processId, gateway, message)
+                    return GatewayArchive.getProcessStateArchive(processId, gateway, message)
                 }
                 throw new Error(message)
             })
@@ -230,18 +230,6 @@ export namespace VotingApi {
     }
 
     /**
-     * Fetch the full state of the given processId on the process archive
-     *
-     * @param processId
-     * @param gateway
-     * @param errorMessage
-     */
-    function getProcessStateArchive(processId: string, gateway: IGatewayClient, errorMessage: string) {
-        return GatewayArchive.getProcess(processId, gateway, errorMessage)
-            .then((response: IArchiveResponseBody) => response)
-    }
-
-    /**
      * Fetch the Vochain headers of the given processId on the Vochain. This operation is more lightweight than getProcessInfo
      * @param processId
      * @param gateway
@@ -255,7 +243,7 @@ export namespace VotingApi {
             .catch((error) => {
                 const message = error.message ? "Could not retrieve the process info: " + error.message : "Could not retrieve the process info"
                 if (!params.skipArchive && message.includes("No data found for this key")) {
-                    return getProcessSummaryArchive(processId, gateway, message)
+                    return GatewayArchive.getProcessSummaryArchive(processId, gateway, message)
                 }
                 throw new Error(message)
             })
@@ -273,23 +261,6 @@ export namespace VotingApi {
                     metadata: processSummary.metadata,
                     sourceNetworkId: processSummary.sourceNetworkID || processSummary.sourceNetworkId,
                 } as IProcessSummary
-            })
-    }
-
-    /**
-     * Fetch the headers of the given processId on the archive.
-     *
-     * @param processId
-     * @param gateway
-     * @param errorMessage
-     */
-    function getProcessSummaryArchive(processId: string, gateway: IGatewayClient, errorMessage: string) {
-        return GatewayArchive.getProcess(processId, gateway, errorMessage)
-            .then((response: IArchiveResponseBody) => {
-                response.process.envelopeHeight = response.results.envelopeHeight
-                return {
-                    processSummary: response.process
-                }
             })
     }
 
@@ -624,7 +595,7 @@ export namespace VotingApi {
             .catch((error) => {
                 const message = error.message ? "Could not retrieve the results weight: " + error.message : "Could not retrieve the results weight"
                 if (!params.skipArchive && message.includes("No data found for this key")) {
-                    return getResultsWeightArchive(processId, gateway, message)
+                    return GatewayArchive.getResultsWeightArchive(processId, gateway, message)
                 }
                 throw new Error(message)
             })
@@ -633,22 +604,6 @@ export namespace VotingApi {
                 else if (typeof response.weight !== 'string' && !BigNumber.isBigNumber(response.weight)) throw new Error("The weight value is not valid")
 
                 return BigNumber.from(response.weight)
-            })
-    }
-
-    /**
-     * Retrieves the archive cumulative weight that has been casted in votes for the given process ID.
-     *
-     * @param processId
-     * @param gateway
-     * @param errorMessage
-     */
-    function getResultsWeightArchive(processId: string, gateway: IGatewayClient, errorMessage: string) {
-        return GatewayArchive.getProcess(processId, gateway, errorMessage)
-            .then((response: IArchiveResponseBody) => {
-                return {
-                    weight: "0x" + response.results.weight.toString(16)
-                }
             })
     }
 
@@ -1006,29 +961,13 @@ export namespace VotingApi {
             .catch((error) => {
                 const message = (error.message) ? "Could not get the envelope height: " + error.message : "Could not get the envelope height"
                 if (!params.skipArchive && message.includes("No data found for this key")) {
-                    return getEnvelopeHeightArchive(processId, gateway, message)
+                    return GatewayArchive.getEnvelopeHeightArchive(processId, gateway, message)
                 }
                 throw new Error(message)
             })
             .then((response) => {
                 if (!(typeof response.height === 'number') || response.height < 0) throw new Error("The gateway response is not correct")
                 return response.height
-            })
-    }
-
-    /**
-     * Fetches the archive number of vote envelopes for a given processId
-     *
-     * @param processId
-     * @param gateway
-     * @param errorMessage
-     */
-    function getEnvelopeHeightArchive(processId: string, gateway: IGatewayClient, errorMessage: string) {
-        return GatewayArchive.getProcess(processId, gateway, errorMessage)
-            .then((response: IArchiveResponseBody) => {
-                return {
-                    height: response.results.envelopeHeight
-                }
             })
     }
 
@@ -1101,7 +1040,7 @@ export namespace VotingApi {
             .catch((error) => {
                 const message = (error.message) ? "Could not fetch the process results: " + error.message : "Could not fetch the process results"
                 if (!params.skipArchive && message.includes("No data found for this key")) {
-                    return getRawResultsArchive(processId, gateway, message)
+                    return GatewayArchive.getRawResultsArchive(processId, gateway, message)
                 }
                 throw new Error(message)
             })
@@ -1111,27 +1050,6 @@ export namespace VotingApi {
                 const status = response.state || ""
                 const envelopHeight = response.height || 0
                 return { results, status, envelopHeight }
-            })
-    }
-
-    /**
-     * Fetches the archive results for a given processId
-     *
-     * @param processId
-     * @param gateway
-     * @param errorMessage
-     * @returns Results, vote process  type, vote process state
-     */
-    function getRawResultsArchive(processId: string, gateway: IGatewayClient, errorMessage: string) {
-        return GatewayArchive.getProcess(processId, gateway, errorMessage)
-            .then((response: IArchiveResponseBody) => {
-                return {
-                    results: response.results.votes.map(votes => {
-                        return votes.map(vote => vote.toString())
-                    }),
-                    state: VochainProcessStatus[response.process.status as string] || "",
-                    height: response.results.envelopeHeight,
-                }
             })
     }
 
