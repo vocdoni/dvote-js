@@ -20,14 +20,14 @@ import {
     DVoteGateway,
     VotingOracleApi,
     INewProcessErc20Params,
-    ProcessState
+    IProcessState
 } from "../../src"
 
 
 const CONFIG_PATH = "./config.yaml"
 const config = getConfig(CONFIG_PATH)
 
-let pool: GatewayPool | Gateway, creatorWallet: Wallet, processId: string, processState: ProcessState, accounts: Account[]
+let pool: GatewayPool | Gateway, creatorWallet: Wallet, processId: string, processState: IProcessState, accounts: Account[]
 let oracleClient: DVoteGateway
 
 async function main() {

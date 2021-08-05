@@ -119,8 +119,9 @@ type ProtocolVersion = "1.0"
  */
 export const TextRecordKeys = {
     JSON_METADATA_CONTENT_URI: "vnd.vocdoni.meta",
+    VOCDONI_ARCHIVE: "vnd.vocdoni.archive",
     VOCDONI_BOOT_NODES: "vnd.vocdoni.boot-nodes",
-    VOCDONI_GATEWAY_HEARTBEAT: "vnd.vocdoni.gateway-heartbeat"
+    VOCDONI_GATEWAY_HEARTBEAT: "vnd.vocdoni.gateway-heartbeat",
 }
 
 /**

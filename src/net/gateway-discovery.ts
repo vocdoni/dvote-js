@@ -15,6 +15,7 @@ export interface IGatewayDiscoveryParameters {
     networkId: EthNetworkID,
     environment?: VocdoniEnvironment
     bootnodesContentUri: string | ContentUri
+    archiveIpnsId?: string
     numberOfGateways?: number
     /** Timeout in milliseconds */
     timeout?: number
@@ -53,6 +54,7 @@ export class GatewayDiscovery {
     public static minNumberOfGateways: number
     public static timeout: number
     public static resolveEnsDomains: boolean
+    public static archiveIpnsId: string
 
     /**
      * Retrieve a **connected and live** gateway, choosing based on the info provided by the metrics of the Gateway
@@ -81,11 +83,13 @@ export class GatewayDiscovery {
         this.minNumberOfGateways = params.numberOfGateways || this.MIN_NUMBER_GATEWAYS
         this.timeout = params.timeout || GATEWAY_SELECTION_TIMEOUT
         this.resolveEnsDomains = params.resolveEnsDomains || false
+        this.archiveIpnsId = params.archiveIpnsId
 
         return this.getWorkingGateways()
             .then((gateways: IGateway[]) => gateways.map(
-                (gw: IGateway) => new Gateway(gw.dvote, gw.web3)
-            ))
+                    (gw: IGateway) => new Gateway(gw.dvote, gw.web3)
+                )
+            )
             .catch((error: Error | GatewayDiscoveryError) => {
                 if (error instanceof GatewayDiscoveryError) {
                     throw error
@@ -115,6 +119,11 @@ export class GatewayDiscovery {
             .then((healthyNodes: IGatewayActiveNodes) => {
                 // Sort nodes
                 const sortedNodes = this.sortNodes(healthyNodes)
+
+                // Set the archive IPNS Id if given
+                if (this.archiveIpnsId) {
+                    sortedNodes.web3.map((web3Gateway: Web3Gateway) => web3Gateway.archiveIpnsId = this.archiveIpnsId)
+                }
 
                 // Create pairs of DVote and Web3 gateways
                 return this.createNodePairs(sortedNodes.dvote, sortedNodes.web3)

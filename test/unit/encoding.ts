@@ -5,12 +5,12 @@ import { Buffer } from "buffer/"
 
 import { AccountBackup } from "../../src/models/backup"
 import { Wallet_AuthMethod } from "../../src"
-import { bigIntToBuffer, bufferToBigInt, hexStringToBuffer, uintArrayToHex } from "../../src/util/encoding"
+import { bigIntToBuffer, bufferToBigInt, hexStringToBuffer } from "../../src/util/encoding"
 
 addCompletionHooks()
 
 describe("Value encoding", () => {
-  it("Should convert hex strings to a buffer", () => {
+  it("It should convert hex strings to a buffer", () => {
     const inputs = [
       { hex: "0x00", serializedBuffer: "0" },
       { hex: "0x10", serializedBuffer: "16" },
@@ -25,29 +25,7 @@ describe("Value encoding", () => {
     }
   })
 
-  it("Should convert Uint8Array's into hex strings", () => {
-    const items = [
-      { buffer: new Uint8Array([]), with0x: false, output: "" },
-      { buffer: new Uint8Array([]), with0x: true, output: "0x" },
-      { buffer: new Uint8Array([0]), with0x: false, output: "00" },
-      { buffer: new Uint8Array([0]), with0x: true, output: "0x00" },
-      { buffer: new Uint8Array([1]), with0x: false, output: "01" },
-      { buffer: new Uint8Array([1]), with0x: true, output: "0x01" },
-      { buffer: new Uint8Array([10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 200, 250, 255]), with0x: false, output: "0a141e28323c46505a64c8faff" },
-      { buffer: new Uint8Array([10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 200, 250, 255]), with0x: true, output: "0x0a141e28323c46505a64c8faff" },
-      { buffer: new Uint8Array([100, 100, 100, 100, 100, 100]), with0x: false, output: "646464646464" },
-      { buffer: new Uint8Array([100, 100, 100, 100, 100, 100]), with0x: true, output: "0x646464646464" },
-      { buffer: new Uint8Array([0, 255]), with0x: false, output: "00ff" },
-      { buffer: new Uint8Array([0, 255]), with0x: true, output: "0x00ff" },
-    ]
-
-    for (let item of items) {
-      const hex = uintArrayToHex(item.buffer, item.with0x)
-      expect(hex).to.eq(item.output)
-    }
-  })
-
-  it("Should convert big integers into a buffer", () => {
+  it("It should convert big integers into a buffer", () => {
     const inputs = [
       { bigint: BigInt("0"), hexBuffer: "00" },
       { bigint: BigInt("1"), hexBuffer: "01" },
@@ -70,7 +48,7 @@ describe("Value encoding", () => {
     }
   })
 
-  it("Should convert buffers into big integers", () => {
+  it("It should convert buffers into big integers", () => {
     const inputs = [
       { bigint: BigInt("0"), hexBuffer: "00" },
       { bigint: BigInt("1"), hexBuffer: "01" },

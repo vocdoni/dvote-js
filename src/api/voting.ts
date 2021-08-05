@@ -1,8 +1,21 @@
 import { Wallet, Signer, utils, ContractTransaction, BigNumber, providers } from "ethers"
+import { Gateway } from "../net/gateway"
+import { GatewayArchive } from "../net/gateway-archive";
 import { FileApi } from "./file"
 import { EntityApi } from "./entity"
 import { ProcessMetadata, checkValidProcessMetadata, DigestedProcessResults, DigestedProcessResultItem, INewProcessParams, IProofEVM, IProofCA, IProofGraviton, INewProcessErc20Params } from "../models/process"
-import { VOCHAIN_BLOCK_TIME, XDAI_GAS_PRICE, XDAI_CHAIN_ID, SOKOL_CHAIN_ID, SOKOL_GAS_PRICE } from "../constants"
+import {
+    VOCHAIN_BLOCK_TIME,
+    XDAI_GAS_PRICE,
+    XDAI_CHAIN_ID,
+    SOKOL_CHAIN_ID,
+    SOKOL_GAS_PRICE,
+    VOCDONI_MAINNET_ENTITY_ID,
+    VOCDONI_GOERLI_ENTITY_ID,
+    VOCDONI_RINKEBY_ENTITY_ID,
+    VOCDONI_XDAI_ENTITY_ID,
+    VOCDONI_XDAI_STG_ENTITY_ID, VOCDONI_SOKOL_ENTITY_ID
+} from "../constants"
 import { BytesSignature } from "../crypto/data-signing"
 import { Buffer } from "buffer/"  // Previously using "arraybuffer-to-string"
 import { Asymmetric } from "../crypto/encryption"
@@ -21,20 +34,19 @@ import {
     CAbundle,
     VochainCensusOrigin,
     VochainProcessStatus,
-    RegisterKeyTx,
-    SourceNetworkId
 } from "../models/protobuf"
 import { DVoteGateway, DVoteGatewayResponseBody, IRequestParameters } from "../net/gateway-dvote"
 import { CensusErc20Api } from "./census"
 import { ProcessEnvelopeType } from "dvote-solidity"
 import { ApiMethod } from "../models/gateway"
 import { IGatewayClient, IGatewayDVoteClient, IGatewayWeb3Client } from "../common"
-import { Poseidon } from "../crypto/hashing"
-import { uintArrayToHex } from "../util/encoding"
 
 export const CaBundleProtobuf: any = CAbundle
 
-export type VotePackage = {
+/** The origin from which a process was created */
+export type ISourceNetworkId = "UNKNOWN" | "ETH_MAINNET" | "ETH_RINKEBY" | "ETH_GOERLI" | "POA_XDAI" | "POA_SOKOL" | "POLYGON" | "BSC" | "ETH_MAINNET_SIGNALING" | "ETH_RINKEBY_SIGNALING"
+
+export type IVotePackage = {
     nonce: string, // (optional) random number to prevent guessing the encrypted payload before the key is revealed
     votes: number[]  // Directly mapped to the `questions` field of the metadata
 }
@@ -43,7 +55,7 @@ export type SignedEnvelopeParams = {
     censusOrigin: number | ProcessCensusOrigin,
     votes: number[], processId: string, walletOrSigner: Wallet | Signer,
     censusProof: IProofGraviton | IProofCA | IProofEVM,
-    processKeys?: ProcessKeys
+    processKeys?: IProcessKeys
 }
 
 export type BlockStatus = {
@@ -56,14 +68,14 @@ export type BlockStatus = {
 }
 
 /** Contains the full details of a process, including the human readable metadata and the on-chain flags */
-export type ProcessDetails = {
+export type IProcessDetails = {
     id: string
     metadata: ProcessMetadata
-    state: ProcessState
+    state: IProcessState
 }
 
 /** Contains the current state of a process on the Vochain */
-export type ProcessState = {
+export type IProcessState = {
     censusOrigin: VochainCensusOrigin,
     censusRoot: string,
     censusURI: string,
@@ -99,17 +111,23 @@ export type ProcessState = {
 }
 
 /** Contains a summary of the most relevant process details */
-export type ProcessSummary =
-    Pick<ProcessState, "entityId" | "status" | "startBlock" | "endBlock" | "envelopeType" | "entityIndex"> & {
-        /** The amount of votes registered */
-        envelopeHeight: number
-        /** The IPFS URI pointing to the JSON metadata file */
-        metadata: string
-        /** The origin from which the process was created */
-        sourceNetworkId: keyof typeof SourceNetworkId
-    }
+export type IProcessSummary = Pick<IProcessState,
+    "entityId" |
+    "status" |
+    "startBlock" |
+    "endBlock" |
+    "envelopeType" |
+    "entityIndex"
+> & {
+    /** The amount of votes registered */
+    envelopeHeight: number
+    /** The IPFS URI pointing to the JSON metadata file */
+    metadata: string
+    /** The origin from which the process was created */
+    sourceNetworkId: ISourceNetworkId
+}
 
-export type ProcessKeys = {
+export type IProcessKeys = {
     encryptionPubKeys: { idx: number, key: string }[],
     encryptionPrivKeys?: { idx: number, key: string }[],
     commitmentKeys?: { idx: number, key: string }[],
@@ -146,13 +164,14 @@ export namespace VotingApi {
      * Fetch the Ethereum parameters and metadata for the given processId using the given gateway
      * @param processId
      * @param gateway
+     * @param params
      */
-    export function getProcess(processId: string, gateway: IGatewayClient): Promise<ProcessDetails> {
+    export function getProcess(processId: string, gateway: IGatewayClient, params: { skipArchive?: boolean } = {}): Promise<IProcessDetails> {
         if (!processId) throw new Error("Invalid processId")
-        else if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
-        let state: ProcessState
-        return getProcessState(processId, gateway)
+        let state: IProcessState
+        return getProcessState(processId, gateway, params)
             .then(result => {
                 state = result
 
@@ -184,15 +203,22 @@ export namespace VotingApi {
      * Fetch the full state of the given processId on the Vochain
      * @param processId
      * @param gateway
+     * @param params
      */
-    export function getProcessState(processId: string, gateway: IGatewayDVoteClient): Promise<ProcessState> {
+    export function getProcessState(processId: string, gateway: IGatewayClient, params: { skipArchive?: boolean } = {}): Promise<IProcessState> {
         if (!processId) return Promise.reject(new Error("Empty process ID"))
-        else if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getProcessInfo", processId })
+            .catch((error) => {
+                const message = error.message ? "Could not retrieve the process info: " + error.message : "Could not retrieve the process info"
+                if (!params.skipArchive && message.includes("No data found for this key")) {
+                    return GatewayArchive.getProcessStateArchive(processId, gateway, message)
+                }
+                throw new Error(message)
+            })
             .then((response) => {
-                if (!response.ok) throw new Error(response.message || null)
-                else if (typeof response.process !== 'object') throw new Error()
+                if (typeof response.process !== 'object') throw new Error()
 
                 // Ensure 0x's
                 const result = response.process
@@ -201,41 +227,40 @@ export namespace VotingApi {
                 result.processId = "0x" + result.processId
                 return result
             })
-            .catch((error) => {
-                const message = error.message ? "Could not retrieve the process info: " + error.message : "Could not retrieve the process info"
-                throw new Error(message)
-            })
     }
 
     /**
      * Fetch the Vochain headers of the given processId on the Vochain. This operation is more lightweight than getProcessInfo
      * @param processId
      * @param gateway
+     * @param params
      */
-    export function getProcessSummary(processId: string, gateway: IGatewayDVoteClient): Promise<ProcessSummary> {
+    export function getProcessSummary(processId: string, gateway: IGatewayClient, params: { skipArchive?: boolean } = {}): Promise<IProcessSummary> {
         if (!processId) return Promise.reject(new Error("Empty process ID"))
-        else if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getProcessSummary", processId })
+            .catch((error) => {
+                const message = error.message ? "Could not retrieve the process info: " + error.message : "Could not retrieve the process info"
+                if (!params.skipArchive && message.includes("No data found for this key")) {
+                    return GatewayArchive.getProcessSummaryArchive(processId, gateway, message)
+                }
+                throw new Error(message)
+            })
             .then((response) => {
-                if (!response.ok) throw new Error(response.message || null)
                 const { processSummary } = response
 
                 return {
                     entityId: "0x" + processSummary.entityId,
                     envelopeHeight: processSummary.envelopeHeight,
-                    status: VochainProcessStatus[processSummary.state as string],
+                    status: typeof processSummary.status === "number" ? processSummary.status : VochainProcessStatus[processSummary.state as string],
                     envelopeType: processSummary.envelopeType || {},
                     startBlock: processSummary.startBlock,
-                    endBlock: processSummary.startBlock + processSummary.blockCount,
+                    endBlock: processSummary.endBlock ? processSummary.endBlock : processSummary.startBlock + processSummary.blockCount,
                     entityIndex: processSummary.entityIndex,
                     metadata: processSummary.metadata,
                     sourceNetworkId: processSummary.sourceNetworkID || processSummary.sourceNetworkId,
-                } as ProcessSummary
-            })
-            .catch((error) => {
-                const message = error.message ? "Could not retrieve the process info: " + error.message : "Could not retrieve the process info"
-                throw new Error(message)
+                } as IProcessSummary
             })
     }
 
@@ -246,7 +271,7 @@ export namespace VotingApi {
      */
     export function getProcessMetadata(processId: string, gateway: IGatewayClient): Promise<ProcessMetadata> {
         if (!processId) throw new Error("Invalid processId")
-        else if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return getProcessSummary(processId, gateway)
             .then(processInfo => {
@@ -272,7 +297,7 @@ export namespace VotingApi {
      */
     export function getProcessContractParameters(processId: string, gateway: IGatewayWeb3Client): Promise<ProcessContractParameters> {
         if (!processId) throw new Error("Invalid processId")
-        else if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.getProcessesInstance()
             .then(processInstance => processInstance.get(processId))
@@ -306,7 +331,7 @@ export namespace VotingApi {
      * @see estimateDateAtBlock (blockNumber, gateway)
      */
     export function getBlockStatus(gateway: IGatewayDVoteClient): Promise<BlockStatus> {
-        if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
+        if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getBlockStatus" })
             .then((response) => {
@@ -329,7 +354,7 @@ export namespace VotingApi {
     /**
      * Returns the block number that is expected to be current at the given date and time
      * @param dateTime
-     * @param gatewayClient
+     * @param gateway
      */
     export function estimateBlockAtDateTime(dateTime: Date, gateway: IGatewayDVoteClient): Promise<number> {
         if (typeof dateTime == "number") dateTime = new Date(dateTime)
@@ -429,7 +454,7 @@ export namespace VotingApi {
     /**
      * Returns the DateTime at which the given block number is expected to be mined
      * @param blockNumber
-     * @param gatewayClient
+     * @param gateway
      */
     export function estimateDateAtBlock(blockNumber: number, gateway: IGatewayDVoteClient): Promise<Date> {
         if (!blockNumber || blockNumber < 0) return null
@@ -522,7 +547,7 @@ export namespace VotingApi {
      * @param gateway
      */
     export function getProcessPrice(gateway: IGatewayWeb3Client): Promise<BigNumber> {
-        if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
+        if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.getProcessesInstance()
             .then(procInstance => procInstance.processPrice())
@@ -533,13 +558,13 @@ export namespace VotingApi {
      * @param processId
      * @param gateway
      */
-    export function getProcessKeys(processId: string, gateway: IGatewayDVoteClient): Promise<ProcessKeys> {
-        if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
+    export function getProcessKeys(processId: string, gateway: IGatewayDVoteClient): Promise<IProcessKeys> {
+        if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getProcessKeys", processId })
             .then((response) => {
                 if (!response) throw new Error("The gateway response is not correct")
-                const result: ProcessKeys = { encryptionPubKeys: [], encryptionPrivKeys: [], commitmentKeys: [], revealKeys: [] }
+                const result: IProcessKeys = { encryptionPubKeys: [], encryptionPrivKeys: [], commitmentKeys: [], revealKeys: [] }
                 if (Array.isArray(response.encryptionPubKeys) && response.encryptionPubKeys.every(item => typeof item.idx == "number" && typeof item.key == "string"))
                     result.encryptionPubKeys = response.encryptionPubKeys
                 if (Array.isArray(response.encryptionPrivKeys) && response.encryptionPrivKeys.every(item => typeof item.idx == "number" && typeof item.key == "string"))
@@ -560,21 +585,25 @@ export namespace VotingApi {
      * Retrieves the cumulative weight that has been casted in votes for the given process ID.
      * @param processId
      * @param gateway
+     * @param params
      */
-    export function getResultsWeight(processId: string, gateway: IGatewayDVoteClient): Promise<BigNumber> {
+    export function getResultsWeight(processId: string, gateway: IGatewayClient, params: { skipArchive?: boolean } = {}): Promise<BigNumber> {
         if (!processId) return Promise.reject(new Error("Empty process ID"))
-        else if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getResultsWeight", processId })
+            .catch((error) => {
+                const message = error.message ? "Could not retrieve the results weight: " + error.message : "Could not retrieve the results weight"
+                if (!params.skipArchive && message.includes("No data found for this key")) {
+                    return GatewayArchive.getResultsWeightArchive(processId, gateway, message)
+                }
+                throw new Error(message)
+            })
             .then((response) => {
                 if (response.weight < 0) throw new Error("The weight value is not valid")
                 else if (typeof response.weight !== 'string' && !BigNumber.isBigNumber(response.weight)) throw new Error("The weight value is not valid")
 
                 return BigNumber.from(response.weight)
-            })
-            .catch((error) => {
-                const message = error.message ? "Could not retrieve the results weight: " + error.message : "Could not retrieve the results weight"
-                throw new Error(message)
             })
     }
 
@@ -596,7 +625,7 @@ export namespace VotingApi {
         else if (!walletOrSigner || !walletOrSigner._isSigner)
             return Promise.reject(new Error("Invalid Wallet or Signer"))
         else if (!gateway)
-            return Promise.reject(new Error("Invalid gateway client"))
+            return Promise.reject(new Error("Invalid Gateway object"))
         const censusOrigin = ((typeof processParameters.censusOrigin) === "number") ? processParameters.censusOrigin : (processParameters.censusOrigin as ProcessCensusOrigin).value
         switch (censusOrigin) {
             case ProcessCensusOrigin.OFF_CHAIN_TREE:
@@ -787,7 +816,7 @@ export namespace VotingApi {
     export async function setStatus(processId: string, newStatus: IProcessStatus, walletOrSigner: Wallet | Signer, gateway: IGatewayWeb3Client): Promise<void> {
         if (!processId) throw new Error("Invalid process ID")
         else if (!walletOrSigner) throw new Error("Invalid Wallet or Signer")
-        else if (!gateway) throw new Error("Invalid gateway client")
+        else if (!gateway) throw new Error("Invalid Gateway object")
 
         try {
             let processInstance = await gateway.getProcessesInstance(walletOrSigner)
@@ -817,7 +846,7 @@ export namespace VotingApi {
     export async function incrementQuestionIndex(processId: string, walletOrSigner: Wallet | Signer, gateway: IGatewayWeb3Client): Promise<void> {
         if (!processId) throw new Error("Invalid process ID")
         else if (!walletOrSigner) throw new Error("Invalid Wallet or Signer")
-        else if (!gateway) throw new Error("Invalid gateway client")
+        else if (!gateway) throw new Error("Invalid Gateway object")
 
         try {
             let processInstance = await gateway.getProcessesInstance(walletOrSigner)
@@ -847,7 +876,7 @@ export namespace VotingApi {
     export async function setCensus(processId: string, censusRoot: string, censusUri: string, walletOrSigner: Wallet | Signer, gateway: IGatewayWeb3Client): Promise<void> {
         if (!processId) throw new Error("Invalid process ID")
         else if (!walletOrSigner) throw new Error("Invalid Wallet or Signer")
-        else if (!gateway) throw new Error("Invalid gateway client")
+        else if (!gateway) throw new Error("Invalid Gateway object")
 
         try {
             let processInstance = await gateway.getProcessesInstance(walletOrSigner)
@@ -877,7 +906,7 @@ export namespace VotingApi {
     export async function setResults(processId: string, results: number[][], envelopeCount: number, vochainId: number, walletOrSigner: Wallet | Signer, gateway: IGatewayWeb3Client): Promise<void> {
         if (!processId) throw new Error("Invalid process ID")
         else if (!walletOrSigner) throw new Error("Invalid Wallet or Signer")
-        else if (!gateway) throw new Error("Invalid gateway client")
+        else if (!gateway) throw new Error("Invalid Gateway object")
 
         try {
             const resultsInstance = await gateway.getResultsInstance(walletOrSigner)
@@ -904,7 +933,7 @@ export namespace VotingApi {
      */
     export async function getEnvelope(processId: string, gateway: IGatewayDVoteClient, nullifier: string): Promise<string> {
         if (!processId) return Promise.reject(new Error("No process ID provided"))
-        else if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getEnvelope", nullifier, processId })
             .then((response) => {
@@ -922,19 +951,23 @@ export namespace VotingApi {
      * Fetches the number of vote envelopes for a given processId
      * @param processId
      * @param gateway
+     * @param params
      */
-    export function getEnvelopeHeight(processId: string, gateway: IGatewayDVoteClient): Promise<number> {
+    export function getEnvelopeHeight(processId: string, gateway: IGatewayClient, params: { skipArchive?: boolean } = {}): Promise<number> {
         if (!processId) return Promise.reject(new Error("No process ID provided"))
-        else if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getEnvelopeHeight", processId })
+            .catch((error) => {
+                const message = (error.message) ? "Could not get the envelope height: " + error.message : "Could not get the envelope height"
+                if (!params.skipArchive && message.includes("No data found for this key")) {
+                    return GatewayArchive.getEnvelopeHeightArchive(processId, gateway, message)
+                }
+                throw new Error(message)
+            })
             .then((response) => {
                 if (!(typeof response.height === 'number') || response.height < 0) throw new Error("The gateway response is not correct")
                 return response.height
-            })
-            .catch((error) => {
-                const message = (error.message) ? "Could not get the envelope height: " + error.message : "Could not get the envelope height"
-                throw new Error(message)
             })
     }
 
@@ -944,7 +977,7 @@ export namespace VotingApi {
      * @param gateway
      */
     export async function getProcessList(filters: { entityId?: string, namespace?: number, status?: VochainProcessStatus, withResults?: boolean, from?: number } = {}, gateway: IGatewayDVoteClient): Promise<string[]> {
-        if (!gateway) throw new Error("Invalid gateway client")
+        if (!gateway) throw new Error("Invalid Gateway object")
         else if (typeof filters != "object") throw new Error("Invalid filters parameter")
 
         const req: IRequestParameters = {
@@ -994,25 +1027,29 @@ export namespace VotingApi {
      * Fetches the results for a given processId
      * @param processId
      * @param gateway
+     * @param params
      * @returns Results, vote process  type, vote process state
      */
-    export function getRawResults(processId: string, gateway: IGatewayDVoteClient): Promise<{ results: string[][], status: ProcessStatus, envelopHeight: number }> {
+    export function getRawResults(processId: string, gateway: IGatewayClient, params: { skipArchive?: boolean } = {}): Promise<{ results: string[][], status: ProcessStatus, envelopHeight: number }> {
         if (!processId)
             return Promise.reject(new Error("No process ID provided"))
         else if (!gateway)
-            return Promise.reject(new Error("Invalid gateway client"))
+            return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getResults", processId })
+            .catch((error) => {
+                const message = (error.message) ? "Could not fetch the process results: " + error.message : "Could not fetch the process results"
+                if (!params.skipArchive && message.includes("No data found for this key")) {
+                    return GatewayArchive.getRawResultsArchive(processId, gateway, message)
+                }
+                throw new Error(message)
+            })
             .then((response) => {
                 if (response.results && !Array.isArray(response.results)) throw new Error("The gateway response is not valid")
                 const results = (Array.isArray(response.results) && response.results.length) ? response.results : []
                 const status = response.state || ""
                 const envelopHeight = response.height || 0
                 return { results, status, envelopHeight }
-            })
-            .catch((error) => {
-                const message = (error.message) ? "Could not fetch the process results: " + error.message : "Could not fetch the process results"
-                throw new Error(message)
             })
     }
 
@@ -1026,7 +1063,7 @@ export namespace VotingApi {
         if (!processId)
             throw new Error("No process ID provided")
         else if (!gateway)
-            throw new Error("Invalid gateway client")
+            throw new Error("Invalid Gateway object")
 
         processId = processId.startsWith("0x") ? processId : "0x" + processId
         const emptyResults = { totalVotes: 0, questions: [] }
@@ -1036,7 +1073,7 @@ export namespace VotingApi {
             if (processState.status == ProcessStatus.CANCELED) return emptyResults
 
             // Encrypted?
-            let procKeys: ProcessKeys, retries: number
+            let procKeys: IProcessKeys, retries: number
             const currentBlock = await getBlockHeight(gateway)
             if (processState.envelopeType.encryptedVotes) {
                 if (currentBlock < processState.startBlock) return emptyResults // not started
@@ -1094,7 +1131,7 @@ export namespace VotingApi {
      */
     export async function submitEnvelope(voteEnvelope: VoteEnvelope, walletOrSigner: Wallet | Signer, gateway: IGatewayDVoteClient): Promise<DVoteGatewayResponseBody> {
         if (typeof voteEnvelope != "object") return Promise.reject(new Error("The vote has to be a VoteEnvelope object"))
-        else if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         const tx = Tx.encode({ payload: { $case: "vote", vote: voteEnvelope } })
         const txBytes = tx.finish()
@@ -1121,7 +1158,7 @@ export namespace VotingApi {
      */
     export function getEnvelopeStatus(processId: string, nullifier: string, gateway: IGatewayDVoteClient): Promise<{ registered: boolean, date?: Date, block?: number }> {
         if (!processId || !nullifier) return Promise.reject(new Error("Invalid parameters"))
-        else if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({ method: "getEnvelopeStatus", processId, nullifier })
             .then((response) => {
@@ -1142,47 +1179,6 @@ export namespace VotingApi {
             })
     }
 
-    /**
-     * Get status of an envelope
-     * @param processId
-     * @param proof A valid franchise proof. See `packageProof`.
-     * @param secretKey The bytes of the secret key to use
-     * @param weight Hex string (by default "0x1")
-     * @param walletOrSigner
-     * @param gateway
-     */
-    export function registerVoterKey(processId: string, proof: Proof, secretKey: Uint8Array, weight: string = "0x1", walletOrSigner: Wallet | Signer, gateway: IGatewayDVoteClient): Promise<any> {
-        if (!processId || !proof || !secretKey) return Promise.reject(new Error("Invalid parameters"))
-        else if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
-
-        const biKey = BigInt(uintArrayToHex(secretKey))
-        const hexHashedKey = Poseidon.hash([biKey]).toString(16)
-        const newKey = utils.zeroPad("0x" + hexHashedKey, 32)
-
-        const registerKey: RegisterKeyTx = {
-            newKey,
-            processId: Buffer.from(processId.replace("0x", ""), "hex"),
-            nonce: Random.getBytes(32),
-            proof,
-            weight: Buffer.from(weight.replace("0x", ""), "hex")
-        }
-
-        const tx = Tx.encode({ payload: { $case: "registerKey", registerKey } })
-        const txBytes = tx.finish()
-
-        return BytesSignature.sign(txBytes, walletOrSigner).then(hexSignature => {
-            const signature = new Uint8Array(Buffer.from(hexSignature.replace("0x", ""), "hex"))
-            const signedTx = SignedTx.encode({ tx: txBytes, signature })
-            const signedTxBytes = signedTx.finish()
-            const base64Payload = Buffer.from(signedTxBytes).toString("base64")
-
-            return gateway.sendRequest({ method: "submitRawTx", payload: base64Payload })
-        }).catch((error) => {
-            const message = (error.message) ? "The key cannot be registered: " + error.message : "The key cannot be registered"
-            throw new Error(message)
-        })
-    }
-
     ///////////////////////////////////////////////////////////////////////////////
     // HELPERS
     ///////////////////////////////////////////////////////////////////////////////
@@ -1197,7 +1193,7 @@ export namespace VotingApi {
      */
     export function packageAnonymousEnvelope(params: {
         votes: number[], censusProof: string, processId: string, privateKey: string,
-        processKeys?: ProcessKeys
+        processKeys?: IProcessKeys
     }): Promise<VoteEnvelope> {
         if (!params) throw new Error("Invalid parameters");
         if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
@@ -1241,7 +1237,66 @@ export namespace VotingApi {
             params.censusOrigin
 
         try {
-            const proof = packageProof(params.processId, censusOrigin, params.censusProof)
+            const proof = Proof.fromPartial({})
+
+            if (censusOrigin.isOffChain || censusOrigin.isOffChainWeighted) {
+                // Check census proof
+                if (typeof params.censusProof != "string" || !params.censusProof.match(/^(0x)?[0-9a-zA-Z]+$/))
+                    throw new Error("Invalid census proof (must be a hex string)")
+
+                const gProof = ProofGraviton.fromPartial({
+                    siblings: new Uint8Array(Buffer.from((params.censusProof as string).replace("0x", ""), "hex"))
+                })
+                proof.payload = { $case: "graviton", graviton: gProof }
+            }
+            else if (censusOrigin.isOffChainCA) {
+                // Check census proof
+                const resolvedProof = resolveCaProof(params.censusProof)
+                if (!resolvedProof) throw new Error("The proof is not valid")
+
+                const caBundle = CAbundle.fromPartial({
+                    processId: new Uint8Array(Buffer.from((params.processId).replace("0x", ""), "hex")),
+                    address: new Uint8Array(Buffer.from((resolvedProof.voterAddress).replace("0x", ""), "hex")),
+                })
+
+                // Populate the proof
+                const caProof = ProofCA.fromPartial({
+                    type: resolvedProof.type,
+                    signature: new Uint8Array(Buffer.from((resolvedProof.signature).replace("0x", ""), "hex")),
+                    bundle: caBundle
+                })
+
+                proof.payload = { $case: "ca", ca: caProof }
+            }
+            else if (censusOrigin.isErc20 || censusOrigin.isErc721 || censusOrigin.isErc1155 || censusOrigin.isErc777) {
+                // Check census proof
+                const resolvedProof = resolveEvmProof(params.censusProof)
+                if (!resolvedProof) throw new Error("The proof is not valid")
+
+                if (typeof resolvedProof == "string") throw new Error("Invalid census proof for an EVM process")
+                else if (typeof resolvedProof.key != "string" ||
+                    !Array.isArray(resolvedProof.proof) || typeof resolvedProof.value != "string")
+                    throw new Error("Invalid census proof (must be an object)")
+
+                let hexValue = resolvedProof.value
+                if (resolvedProof.value.length % 2 !== 0) {
+                    hexValue = resolvedProof.value.replace("0x", "0x0")
+                }
+
+                const siblings = resolvedProof.proof.map(sibling => new Uint8Array(Buffer.from(sibling.replace("0x", ""), "hex")))
+
+                const esProof = ProofEthereumStorage.fromPartial({
+                    key: new Uint8Array(Buffer.from(resolvedProof.key.replace("0x", ""), "hex")),
+                    value: utils.zeroPad(hexValue, 32),
+                    siblings: siblings
+                })
+
+                proof.payload = { $case: "ethereumStorage", ethereumStorage: esProof }
+            }
+            else {
+                throw new Error("This process type is not supported yet")
+            }
+
             const nonce = Random.getHex().substr(2)
             const { votePackage, keyIndexes } = packageVoteContent(params.votes, params.processKeys)
 
@@ -1256,70 +1311,6 @@ export namespace VotingApi {
         } catch (error) {
             throw new Error("Poll vote Envelope could not be generated")
         }
-    }
-
-    /** Packages the given parameters into a proof that can be submitted to the Vochain */
-    export function packageProof(processId: string, censusOrigin: ProcessCensusOrigin, censusProof: IProofGraviton | IProofCA | IProofEVM) {
-        const proof = Proof.fromPartial({})
-
-        if (censusOrigin.isOffChain || censusOrigin.isOffChainWeighted) {
-            // Check census proof
-            if (typeof censusProof != "string" || !censusProof.match(/^(0x)?[0-9a-zA-Z]+$/))
-                throw new Error("Invalid census proof (must be a hex string)")
-
-            const gProof = ProofGraviton.fromPartial({
-                siblings: new Uint8Array(Buffer.from((censusProof as string).replace("0x", ""), "hex"))
-            })
-            proof.payload = { $case: "graviton", graviton: gProof }
-        }
-        else if (censusOrigin.isOffChainCA) {
-            // Check census proof
-            const resolvedProof = resolveCaProof(censusProof)
-            if (!resolvedProof) throw new Error("The proof is not valid")
-
-            const caBundle = CAbundle.fromPartial({
-                processId: new Uint8Array(Buffer.from((processId).replace("0x", ""), "hex")),
-                address: new Uint8Array(Buffer.from((resolvedProof.voterAddress).replace("0x", ""), "hex")),
-            })
-
-            // Populate the proof
-            const caProof = ProofCA.fromPartial({
-                type: resolvedProof.type,
-                signature: new Uint8Array(Buffer.from((resolvedProof.signature).replace("0x", ""), "hex")),
-                bundle: caBundle
-            })
-
-            proof.payload = { $case: "ca", ca: caProof }
-        }
-        else if (censusOrigin.isErc20 || censusOrigin.isErc721 || censusOrigin.isErc1155 || censusOrigin.isErc777) {
-            // Check census proof
-            const resolvedProof = resolveEvmProof(censusProof)
-            if (!resolvedProof) throw new Error("The proof is not valid")
-
-            if (typeof resolvedProof == "string") throw new Error("Invalid census proof for an EVM process")
-            else if (typeof resolvedProof.key != "string" ||
-                !Array.isArray(resolvedProof.proof) || typeof resolvedProof.value != "string")
-                throw new Error("Invalid census proof (must be an object)")
-
-            let hexValue = resolvedProof.value
-            if (resolvedProof.value.length % 2 !== 0) {
-                hexValue = resolvedProof.value.replace("0x", "0x0")
-            }
-
-            const siblings = resolvedProof.proof.map(sibling => new Uint8Array(Buffer.from(sibling.replace("0x", ""), "hex")))
-
-            const esProof = ProofEthereumStorage.fromPartial({
-                key: new Uint8Array(Buffer.from(resolvedProof.key.replace("0x", ""), "hex")),
-                value: utils.zeroPad(hexValue, 32),
-                siblings: siblings
-            })
-
-            proof.payload = { $case: "ethereumStorage", ethereumStorage: esProof }
-        }
-        else {
-            throw new Error("This process type is not supported yet")
-        }
-        return proof
     }
 
     function resolveCaProof(proof: IProofGraviton | IProofCA | IProofEVM): IProofCA {
@@ -1341,7 +1332,7 @@ export namespace VotingApi {
      * @param votes An array of numbers with the choices
      * @param encryptionPubKeys An array of ed25519 public keys (https://ed25519.cr.yp.to/)
      */
-    export function packageVoteContent(votes: number[], processKeys?: ProcessKeys): { votePackage: Buffer, keyIndexes?: number[] } {
+    export function packageVoteContent(votes: number[], processKeys?: IProcessKeys): { votePackage: Buffer, keyIndexes?: number[] } {
         if (!Array.isArray(votes)) throw new Error("Invalid votes")
         else if (votes.some(vote => typeof vote != "number")) throw new Error("Votes needs to be an array of numbers")
         else if (processKeys) {
@@ -1354,7 +1345,7 @@ export namespace VotingApi {
         // produce a 8 byte nonce
         const nonce = Random.getHex().substr(2, 16)
 
-        const payload: VotePackage = {
+        const payload: IVotePackage = {
             nonce,
             votes
         }
@@ -1416,7 +1407,7 @@ export namespace VotingOracleApi {
         else if (!processParameters.metadata) return Promise.reject(new Error("Invalid process metadata"))
         else if (!walletOrSigner || !walletOrSigner._isSigner)
             return Promise.reject(new Error("Invalid Wallet or Signer"))
-        else if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!oracleGw) return Promise.reject(new Error("Invalid oracle client"))
 
         try {

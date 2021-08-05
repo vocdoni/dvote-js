@@ -1,4 +1,5 @@
 import { Wallet, Signer } from "ethers"
+import { VocdoniEnvironment } from "../common";
 import { GatewayInfo } from "../wrappers/gateway-info"
 import { GatewayApiMethod, BackendApiMethod, allApis, registryApiMethods, ApiMethod, GatewayApiName, BackendApiName, InfoApiMethod, RawApiMethod } from "../models/gateway"
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
@@ -53,25 +54,28 @@ export class DVoteGateway implements IGatewayDVoteClient {
     private _performanceTime: number
     private client: AxiosInstance = null
     private _hasTimeOutLastRequest: boolean
+    private _environment: VocdoniEnvironment
 
     /**
      * Returns a new DVote Gateway web socket client
      * @param gatewayOrParams Either a GatewayInfo instance or a JSON object with the service URI, the supported API's and the public key
      */
-    constructor(gatewayOrParams: GatewayInfo | { uri: string, supportedApis?: (GatewayApiName | BackendApiName)[], publicKey?: string }) {
+    constructor(gatewayOrParams: GatewayInfo | { uri: string, supportedApis?: (GatewayApiName | BackendApiName)[], publicKey?: string, environment?: VocdoniEnvironment }) {
         if (gatewayOrParams instanceof GatewayInfo) {
             this.client = axios.create({ baseURL: gatewayOrParams.dvote, method: "post", responseType: "arraybuffer" })
             this._uri = gatewayOrParams.dvote
             this._supportedApis = gatewayOrParams.supportedApis || []
             this._pubKey = gatewayOrParams.publicKey
+            this._environment = gatewayOrParams.environment
         } else {
-            const { uri, supportedApis, publicKey } = gatewayOrParams
+            const { uri, supportedApis, publicKey, environment } = gatewayOrParams
             if (!uri) throw new Error("Invalid gateway URI")
 
             this.client = axios.create({ baseURL: uri, method: "post", responseType: "arraybuffer" })
             this._uri = uri
             this._supportedApis = supportedApis || []
             this._pubKey = publicKey || ""
+            this._environment = environment || "prod"
         }
     }
 
@@ -120,6 +124,7 @@ export class DVoteGateway implements IGatewayDVoteClient {
     public get weight() { return this._weight }
     public get performanceTime() { return this._performanceTime }
     public get hasTimeOutLastRequest() { return this._hasTimeOutLastRequest }
+    public get environment() { return this._environment }
 
     /**
      * Send a message to a Vocdoni Gateway and return the checked response

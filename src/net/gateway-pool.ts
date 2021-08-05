@@ -1,6 +1,6 @@
+import { VocdoniEnvironment } from "../common";
 import { Gateway } from "./gateway"
 import { DVoteGatewayResponseBody, IRequestParameters } from "./gateway-dvote"
-// import { clientApis, GatewayApiName } from "../models/gateway"
 import { GatewayDiscovery, IGatewayDiscoveryParameters } from "./gateway-discovery"
 import { Wallet, Signer, providers, utils, Contract, ContractInterface } from "ethers"
 import { IProcessesContract, IEnsPublicResolverContract, INamespacesContract, ITokenStorageProofContract, IGenesisContract, IResultsContract } from "./contracts"
@@ -88,6 +88,18 @@ export class GatewayPool implements IGatewayClient {
 
     public get isReady(): boolean {
         return this.activeGateway.isReady
+    }
+
+    public get archiveIpnsId(): string {
+        return this.activeGateway.archiveIpnsId
+    }
+
+    public set archiveIpnsId(ipnsId: string) {
+        this.pool.map((gateway: Gateway) => gateway.archiveIpnsId = ipnsId)
+    }
+
+    public get environment(): VocdoniEnvironment {
+        return this.activeGateway.environment
     }
 
     // DVOTE
