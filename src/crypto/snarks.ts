@@ -1,7 +1,8 @@
 // @ts-ignore  
 import { groth16 } from "snarkjs"
-import { ensure0x } from "../util/hex"
+import { ensure0x, strip0x } from "../util/hex"
 import { VoteValues } from "../common"
+import { utils } from "ethers"
 
 export type ZkInputs = {
   processId: string
@@ -15,19 +16,18 @@ export type ZkInputs = {
   nullifier: string
 }
 
-export function getZkProof(input: ZkInputs, circuitWasm: Uint8Array, circuitKey: Uint8Array) {
-  const voteValues = input.votes.map(num => typeof num == "bigint" ? num : BigInt(num))
+export function getZkProof(input: ZkInputs, circuitWasm: Uint8Array, zKey: Uint8Array) {
+  const voteValue = digestVoteValue(input.votes)
 
   const proverInputs = {
     censusRoot: BigInt(ensure0x(input.censusRoot)),
     censusSiblings: input.censusSiblings.map(item => BigInt(ensure0x(item))),
     secretKey: input.secretKey,
-    voteValues,
+    voteValue,
     electionId: BigInt(ensure0x(input.processId)),
     nullifier: BigInt(ensure0x(input.nullifier))
   }
-
-  const { proof, publicSignals } = groth16.fullProve(proverInputs, circuitWasm, circuitKey)
+  const { proof, publicSignals } = groth16.fullProve(proverInputs, circuitWasm, zKey)
 
   return {
     proof: {
@@ -57,3 +57,14 @@ export function verifyZkProof(verificationKey: { [k: string]: any }, publicSigna
 ///////////////////////////////////////////////////////////////////////////////
 // HELPERS
 ///////////////////////////////////////////////////////////////////////////////
+
+function digestVoteValue(votes: VoteValues): [bigint, bigint] {
+  // TODO: confirm serialization method
+  const strVotes = votes.map(v => v.toString()).join(",")
+
+  const hexHashed = strip0x(utils.keccak256(Buffer.from(strVotes)))
+  const b1 = BigInt(ensure0x(hexHashed.substr(0, 32)))
+  const b2 = BigInt(ensure0x(hexHashed.substr(32)))
+
+  return [b1, b2]
+}

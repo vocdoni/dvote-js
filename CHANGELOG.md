@@ -49,8 +49,9 @@
 
 ## 1.11.0
 
-- Adding `registerVotingKey`
-- Implementing `packageAnonymousEnvelope`
+- Adding `VotingApi.registerVotingKey`
+- Implementing `Voting.packageAnonymousEnvelope`
+- Adding `Voting.getAnonymousVoteNullifier()`
 - Renamed TS types
     - `ISourceNetworkId` is now `SourceNetworkId`
     - `IProcessDetails` is now `ProcessDetails`
@@ -60,6 +61,8 @@
     - `IVotePackage` is now `VotePackage`
 - Added archive support as a fallback in `VotingApi` for `getProcess`, `getProcessState`, `getProcessSummary`, `getResultsWeight`, `getEnvelopeHeight` and `getRawResults` when the process has expired on the Vochain
 - Supporting the `getStats` and `getBlockList` gateway methods
+- [Breaking]
+    - `VotingApi.getProcessId`,  `VotingApi.packageAnonymousEnvelope`, `VotingApi.packageVoteContent`, `VotingApi.packageSignedProof` and `VotingApi.getSignedVoteNullifier` are moved from `VotingApi` to the `Voting` namespace
 - Adding the `IGatewayClient`, `IGatewayDVoteClient` and `IGatewayWeb3Client` interfaces, so that methods don't depend on explicit class types
 - Internal arrangements for clarity and flexibility
 

@@ -1,15 +1,10 @@
 import { Wallet, Signer, utils, ContractTransaction, BigNumber, providers } from "ethers"
 import { GatewayArchive, GatewayArchiveApi } from "../net/gateway-archive";
+import axios from "axios"
 import { FileApi } from "./file"
 import { EntityApi } from "./entity"
 import { ProcessMetadata, checkValidProcessMetadata, INewProcessParams, IProofEVM, IProofCA, IProofArbo, INewProcessErc20Params, ProcessResultsSingleChoice, SingleChoiceQuestionResults, ProcessResultsSingleQuestion } from "../models/process"
-import {
-    VOCHAIN_BLOCK_TIME,
-    XDAI_GAS_PRICE,
-    XDAI_CHAIN_ID,
-    SOKOL_CHAIN_ID,
-    SOKOL_GAS_PRICE,
-} from "../constants"
+import { VOCHAIN_BLOCK_TIME, XDAI_GAS_PRICE, XDAI_CHAIN_ID, SOKOL_CHAIN_ID, SOKOL_GAS_PRICE, ZK_VOTING_CIRCUIT_WASM_URI, ZK_VOTING_PROVING_KEY_URI, ZK_VOTING_VERIFICATION_KEY_URI } from "../constants"
 import { BytesSignature } from "../crypto/data-signing"
 import { Buffer } from "buffer/"  // Previously using "arraybuffer-to-string"
 import { Asymmetric } from "../crypto/encryption"
@@ -67,6 +62,10 @@ export type AnonymousEnvelopeParams = {
     secretKey: bigint,
     /** Hex string */
     censusRoot: string,
+    /** The raw bytes of the wasm file implementing the circuit */
+    circuitWasm: Uint8Array,
+    /** The raw bytes of the circuit key */
+    zKey: Uint8Array,
     processKeys?: ProcessKeys
 }
 
@@ -167,20 +166,6 @@ export namespace VotingApi {
     ///////////////////////////////////////////////////////////////////////////////
     // CONTRACT GETTERS
     ///////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * Compute the process ID of an Entity at a given index and namespace
-     * @param entityAddress
-     * @param processCountIndex
-     * @param namespace
-     */
-    export function getProcessId(entityAddress: string, processCountIndex: number, namespace: number, chainId: number): string {
-        if (!entityAddress) throw new Error("Invalid address")
-
-        return utils.keccak256(
-            utils.solidityPack(["address", "uint256", "uint32", "uint32"], [entityAddress, processCountIndex, namespace, chainId])
-        )
-    }
 
     /**
      * Fetch the Ethereum parameters and metadata for the given processId using the given gateway
@@ -1116,9 +1101,86 @@ export namespace VotingApi {
         }
     }
 
+    /** Fetches the raw bytes of the Voting circuit WASM file.
+     * Depending on the census size, if chooses the right circuit to fetch.
+     */
+    export function fetchAnonymousVotingCircuit(censusSize: number) {
+        // TODO: Choose the circuit to use depending on the census size
+
+        return axios.get(ZK_VOTING_CIRCUIT_WASM_URI, { responseType: "arraybuffer" })
+            .then(response => {
+                if (response.status < 200 || response.status >= 400) throw new Error("Fetching failed")
+
+                // TODO: hash and verify the data integrity
+                return Buffer.from(response.data)
+            })
+    }
+
+    /** Fetches the raw bytes of the Proving key */
+    export function fetchAnonymousVotingZKey() {
+        return axios.get(ZK_VOTING_PROVING_KEY_URI, { responseType: "arraybuffer" })
+            .then(response => {
+                if (response.status < 200 || response.status >= 400) throw new Error("Fetching failed")
+
+                // TODO: hash and verify the data integrity
+                return Buffer.from(response.data)
+            })
+    }
+
+    /** Fetches the raw bytes of the Verification key */
+    export function fetchAnonymousVotingVerificationKey() {
+        return axios.get(ZK_VOTING_VERIFICATION_KEY_URI, { responseType: "arraybuffer" })
+            .then(response => {
+                if (response.status < 200 || response.status >= 400) throw new Error("Fetching failed")
+
+                // TODO: hash and verify the data integrity
+                return Buffer.from(response.data)
+            })
+    }
+
     ///////////////////////////////////////////////////////////////////////////////
     // VOCHAIN SETTERS
     ///////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Get status of an envelope
+     * @param processId
+     * @param proof A valid franchise proof. See `packageSignedProof`.
+     * @param secretKey The bytes of the secret key to use
+     * @param weight Hex string (by default "0x1")
+     * @param walletOrSigner
+     * @param gateway
+     */
+    export function registerVoterKey(processId: string, proof: Proof, secretKey: bigint, weight: string = "0x1", walletOrSigner: Wallet | Signer, gateway: IGatewayDVoteClient): Promise<any> {
+        if (!processId || !proof || typeof secretKey !== "bigint") return Promise.reject(new Error("Invalid parameters"))
+        else if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
+
+        const hexHashedKey = Poseidon.hash([secretKey]).toString(16)
+        const newKey = utils.zeroPad("0x" + hexHashedKey, 32)
+
+        const registerKey: RegisterKeyTx = {
+            newKey,
+            processId: Buffer.from(strip0x(processId), "hex"),
+            nonce: Random.getBytes(32),
+            proof,
+            weight: Buffer.from(strip0x(weight), "hex")
+        }
+
+        const tx = Tx.encode({ payload: { $case: "registerKey", registerKey } })
+        const txBytes = tx.finish()
+
+        return BytesSignature.sign(txBytes, walletOrSigner).then(hexSignature => {
+            const signature = new Uint8Array(Buffer.from(strip0x(hexSignature), "hex"))
+            const signedTx = SignedTx.encode({ tx: txBytes, signature })
+            const signedTxBytes = signedTx.finish()
+            const base64Payload = Buffer.from(signedTxBytes).toString("base64")
+
+            return gateway.sendRequest({ method: "submitRawTx", payload: base64Payload })
+        }).catch((error) => {
+            const message = (error.message) ? "The key cannot be registered: " + error.message : "The key cannot be registered"
+            throw new Error(message)
+        })
+    }
 
     /**
      * Submit the vote envelope to a Gateway
@@ -1175,92 +1237,24 @@ export namespace VotingApi {
                 throw new Error(message)
             })
     }
+}
 
+export namespace Voting {
     /**
-     * Get status of an envelope
-     * @param processId
-     * @param proof A valid franchise proof. See `packageSignedProof`.
-     * @param secretKey The bytes of the secret key to use
-     * @param weight Hex string (by default "0x1")
-     * @param walletOrSigner
-     * @param gateway
+     * Compute the process ID of an Entity at a given index and namespace
+     * @param entityAddress
+     * @param processCountIndex
+     * @param namespace
      */
-    export function registerVoterKey(processId: string, proof: Proof, secretKey: bigint, weight: string = "0x1", walletOrSigner: Wallet | Signer, gateway: IGatewayDVoteClient): Promise<any> {
-        if (!processId || !proof || typeof secretKey !== "bigint") return Promise.reject(new Error("Invalid parameters"))
-        else if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
+    export function getProcessId(entityAddress: string, processCountIndex: number, namespace: number, chainId: number): string {
+        if (!entityAddress) throw new Error("Invalid address")
 
-        const hexHashedKey = Poseidon.hash([secretKey]).toString(16)
-        const newKey = utils.zeroPad("0x" + hexHashedKey, 32)
-
-        const registerKey: RegisterKeyTx = {
-            newKey,
-            processId: Buffer.from(strip0x(processId), "hex"),
-            nonce: Random.getBytes(32),
-            proof,
-            weight: Buffer.from(strip0x(weight), "hex")
-        }
-
-        const tx = Tx.encode({ payload: { $case: "registerKey", registerKey } })
-        const txBytes = tx.finish()
-
-        return BytesSignature.sign(txBytes, walletOrSigner).then(hexSignature => {
-            const signature = new Uint8Array(Buffer.from(strip0x(hexSignature), "hex"))
-            const signedTx = SignedTx.encode({ tx: txBytes, signature })
-            const signedTxBytes = signedTx.finish()
-            const base64Payload = Buffer.from(signedTxBytes).toString("base64")
-
-            return gateway.sendRequest({ method: "submitRawTx", payload: base64Payload })
-        }).catch((error) => {
-            const message = (error.message) ? "The key cannot be registered: " + error.message : "The key cannot be registered"
-            throw new Error(message)
-        })
+        return utils.keccak256(
+            utils.solidityPack(["address", "uint256", "uint32", "uint32"], [entityAddress, processCountIndex, namespace, chainId])
+        )
     }
-
-    ///////////////////////////////////////////////////////////////////////////////
-    // HELPERS
-    ///////////////////////////////////////////////////////////////////////////////
 
     // See https://docs.vocdoni.io/architecture/data-schemes/process.html#vote-envelope
-
-    /**
-     * Packages the given vote array into a JSON payload that can be sent to Vocdoni Gateways.
-     * The voter's signature will be included on the vote, so the voter's anonymity may be public.
-     * If `encryptionPublicKey` is defined, it will be used to encrypt the vote package.
-     * @param params
-     */
-    export function packageAnonymousEnvelope(params: AnonymousEnvelopeParams): Promise<VoteEnvelope> {
-        if (!params) throw new Error("Invalid parameters")
-        else if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
-        else if (typeof params.processId != "string" || !params.processId.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid processId")
-        else if (typeof params.secretKey != "bigint") throw new Error("Invalid private key")
-        else if (params.processKeys) {
-            if (!Array.isArray(params.processKeys.encryptionPubKeys) || !params.processKeys.encryptionPubKeys.every(
-                item => item && typeof item.idx == "number" && typeof item.key == "string" && item.key.match(/^(0x)?[0-9a-zA-Z]+$/))) {
-                throw new Error("Some encryption public keys are not valid")
-            }
-        }
-
-        // TODO: WIP
-
-        try {
-            const proof = packageZkProof(params.processId, params.secretKey, params.censusRoot, params.votes, circuitWasm, circuitKey)
-            // const nonce = strip0x(Random.getHex())
-            // const { votePackage, keyIndexes } = packageVoteContent(params.votes, params.processKeys)
-
-            // return VoteEnvelope.fromPartial({
-            //     proof,
-            //     processId: new Uint8Array(Buffer.from(strip0x(params.processId), "hex")),
-            //     nonce: new Uint8Array(Buffer.from(nonce, "hex")),
-            //     votePackage: new Uint8Array(votePackage),
-            //     encryptionKeyIndexes: keyIndexes ? keyIndexes : [],
-            //     nullifier: new Uint8Array()
-            // })
-        } catch (error) {
-            throw new Error("The anonymous vote envelope could not be generated")
-        }
-
-        throw new Error("TODO: unimplemented")
-    }
 
     /**
      * Packages the given vote array into a protobuf message that can be sent to Vocdoni Gateways.
@@ -1285,7 +1279,7 @@ export namespace VotingApi {
             params.censusOrigin
 
         try {
-            const proof = packageProof(params.processId, censusOrigin, params.censusProof)
+            const proof = packageSignedProof(params.processId, censusOrigin, params.censusProof)
             const nonce = strip0x(Random.getHex())
             const { votePackage, keyIndexes } = packageVoteContent(params.votes, params.processKeys)
 
@@ -1299,6 +1293,44 @@ export namespace VotingApi {
             })
         } catch (error) {
             throw new Error("The poll vote envelope could not be generated")
+        }
+    }
+
+    /**
+     * Packages the given vote array into a JSON payload that can be sent to Vocdoni Gateways.
+     * The voter's signature will be included on the vote, so the voter's anonymity may be public.
+     * If `encryptionPublicKey` is defined, it will be used to encrypt the vote package.
+     * @param params
+     */
+    export function packageAnonymousEnvelope(params: AnonymousEnvelopeParams): VoteEnvelope {
+        if (!params) throw new Error("Invalid parameters")
+        else if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
+        else if (typeof params.processId != "string" || !params.processId.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid processId")
+        else if (typeof params.secretKey != "bigint") throw new Error("Invalid private key")
+        else if (params.processKeys) {
+            if (!Array.isArray(params.processKeys.encryptionPubKeys) || !params.processKeys.encryptionPubKeys.every(
+                item => item && typeof item.idx == "number" && typeof item.key == "string" && item.key.match(/^(0x)?[0-9a-zA-Z]+$/))) {
+                throw new Error("Some encryption public keys are not valid")
+            }
+        }
+
+        try {
+            const proof = packageZkProof(params.processId, params.secretKey, params.censusRoot, params.votes,
+                params.circuitWasm, params.zKey)
+            const nonce = strip0x(Random.getHex())
+            const { votePackage, keyIndexes } = packageVoteContent(params.votes, params.processKeys)
+            const hexNullifier = getAnonymousVoteNullifier(params.secretKey, params.processId)
+
+            return VoteEnvelope.fromPartial({
+                proof,
+                processId: new Uint8Array(Buffer.from(strip0x(params.processId), "hex")),
+                nonce: new Uint8Array(Buffer.from(nonce, "hex")),
+                votePackage: new Uint8Array(votePackage),
+                encryptionKeyIndexes: keyIndexes ? keyIndexes : [],
+                nullifier: Buffer.from(hexNullifier)
+            })
+        } catch (error) {
+            throw new Error("The anonymous vote envelope could not be generated")
         }
     }
 
@@ -1351,7 +1383,7 @@ export namespace VotingApi {
     }
 
     /** Packages the given parameters into a proof that can be submitted to the Vochain */
-    export function packageProof(processId: string, censusOrigin: ProcessCensusOrigin, censusProof: IProofArbo | IProofCA | IProofEVM) {
+    export function packageSignedProof(processId: string, censusOrigin: ProcessCensusOrigin, censusProof: IProofArbo | IProofCA | IProofEVM) {
         const proof = Proof.fromPartial({})
 
         if (censusOrigin.isOffChain || censusOrigin.isOffChainWeighted) {
@@ -1416,10 +1448,10 @@ export namespace VotingApi {
     }
 
     function packageZkProof(processId: string, secretKey: bigint, censusRoot: string,
-        votes: VoteValues, circuitWasm: Uint8Array, circuitKey: Uint8Array) {
+        votes: VoteValues, circuitWasm: Uint8Array, zKey: Uint8Array) {
         const proof = Proof.fromPartial({})
 
-        const nullifier = Poseidon.getNullifier(secretKey, processId).toString(16)
+        const nullifier = strip0x(getAnonymousVoteNullifier(secretKey, processId))
 
         const inputs: ZkInputs = {
             censusRoot,
@@ -1430,7 +1462,7 @@ export namespace VotingApi {
             votes
         }
 
-        const { proof: zkProof, publicSignals } = getZkProof(inputs, circuitWasm, circuitKey)
+        const { proof: zkProof, publicSignals } = getZkProof(inputs, circuitWasm, zKey)
 
         const zkSnark = ProofZkSNARK.fromPartial({
             a: zkProof.a,
@@ -1459,7 +1491,7 @@ export namespace VotingApi {
     }
 
     /**
-     * Computes the nullifier of the user's vote within a process where `envelopeType.ANONYMOUS` is disabled.
+     * Computes the nullifier of the vote within a process where `envelopeType.ANONYMOUS` is disabled.
      * Returns a hex string with kecak256(bytes(address) + bytes(processId))
      */
     export function getSignedVoteNullifier(address: string, processId: string): string {
@@ -1470,6 +1502,14 @@ export namespace VotingApi {
         else if (processId.length != 64) return null
 
         return utils.keccak256(utils.arrayify(ensure0x(address + processId)))
+    }
+
+    /** Computes the nullifier of the vote within a process where `envelopeType.ANONYMOUS` is enabled.
+     * @param secretKey BigInt that has been registered on the Vochain for the given proposal
+     * @param processId */
+    export function getAnonymousVoteNullifier(secretKey: bigint, processId: string) {
+        const pid = BigInt(ensure0x(processId))
+        return ensure0x(Poseidon.hash([secretKey, pid]).toString(16))
     }
 }
 

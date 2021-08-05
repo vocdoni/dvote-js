@@ -36,3 +36,7 @@ export const SOKOL_ENS_REGISTRY_ADDRESS = "0xDb6C74071116D17a47D9c191cbE6d640111
 export const VOCHAIN_BLOCK_TIME = 12 // seconds
 export const CENSUS_MAX_BULK_SIZE = 400 // # of claims per addClaimBulk request
 export const GATEWAY_SELECTION_TIMEOUT = 4000  // milliseconds
+
+export const ZK_VOTING_CIRCUIT_WASM_URI = "https://github.com/vocdoni/zk-snarks/tree/master/public/voting-circuit.wasm"
+export const ZK_VOTING_PROVING_KEY_URI = "https://github.com/vocdoni/zk-snarks/tree/master/public/voting-circuit-proving-key.json"
+export const ZK_VOTING_VERIFICATION_KEY_URI = "https://github.com/vocdoni/zk-snarks/tree/master/public/voting-circuit-verification-key.json"

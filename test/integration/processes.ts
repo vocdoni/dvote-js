@@ -152,7 +152,7 @@ describe("Process", () => {
 
             for (let account of accounts.filter(() => Math.random() >= 0.5)) {
                 for (let index of indexes) {
-                    let expected = VotingApi.getProcessId(account.address, index, DEFAULT_NAMESPACE, chainId)
+                    let expected = Voting.getProcessId(account.address, index, DEFAULT_NAMESPACE, chainId)
                     let received = await contractInstance.getProcessId(account.address, index, DEFAULT_NAMESPACE, chainId)
                     expect(received).to.equal(expected)
                 }

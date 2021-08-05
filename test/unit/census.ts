@@ -5,7 +5,7 @@ import { Wallet, utils } from "ethers"
 import { Buffer } from "buffer/"
 
 import { CensusOffChain } from "../../src/api/census"
-import { compressPublicKey } from "../../dist"
+import { compressPublicKey, Voting } from "../../dist"
 import { Poseidon } from "../../src/crypto/hashing"
 
 addCompletionHooks()
@@ -208,7 +208,7 @@ describe("Census", () => {
             ]
 
             for (let item of items) {
-                const output = Poseidon.getNullifier(item.secretKey, item.processId)
+                const output = Voting.getAnonymousVoteNullifier(item.secretKey, item.processId)
                 expect(output).to.eq(item.output)
             }
         })

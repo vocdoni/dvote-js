@@ -29,11 +29,4 @@ export namespace Poseidon {
     export function hashBabyJubJubPublicKey(x: bigint, y: bigint) {
         return Poseidon.hash([x, y])
     }
-
-    /** Computes the nullifier of a voter for a given process ID.
-     * The private key should be a bigint. */
-    export function getNullifier(secretKey: bigint, processId: string) {
-        const pid = BigInt(ensure0x(processId))
-        return Poseidon.hash([secretKey, pid])
-    }
 }

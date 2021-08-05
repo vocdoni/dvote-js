@@ -12,7 +12,7 @@ import { DevWeb3Service, TestAccount } from "../helpers/web3-service"
 import { GenesisContractMethods, ProcessCensusOrigin, ProcessesContractMethods, ProcessContractParameters, ProcessStatus } from "../../src/net/contracts"
 import { Buffer } from "buffer/"
 
-import { VotingApi, VotePackage } from "../../src/api/voting"
+import { Voting, VotePackage } from "../../src/api/voting"
 import { Asymmetric } from "../../src/crypto/encryption"
 import { checkValidProcessMetadata, IProofCA, IProofEVM, ProofCaSignatureTypes } from "../../src/models/process"
 import ProcessMetadataBuilder from "../builders/process-metadata"
@@ -28,6 +28,7 @@ import {
     // ProofEthereumStorage,
     // ProofEthereumAccount
 } from "../../src/models/protobuf"
+import { strip0x } from "../../src/util/hex"
 
 let accounts: TestAccount[]
 let baseAccount: TestAccount
@@ -75,16 +76,16 @@ describe("Governance Process", () => {
                 expect(wallet.privateKey).to.eq("0xdc44bf8c260abe06a7265c5775ea4fb68ecd1b1940cfa76c1726141ec0da5ddc")
                 expect(wallet.address).to.eq("0xaDDAa28Fb1fe87362A6dFdC9d3EEA03d0C221d81")
 
-                let nullifier = VotingApi.getSignedVoteNullifier(wallet.address, processId)
+                let nullifier = Voting.getSignedVoteNullifier(wallet.address, processId)
                 expect(nullifier).to.eq("0xf6e3fe2d68f3ccc3af2a7835b302e42c257e2de6539c264542f11e5588e8c162")
 
-                nullifier = VotingApi.getSignedVoteNullifier(baseAccount.address, processId)
+                nullifier = Voting.getSignedVoteNullifier(baseAccount.address, processId)
                 expect(nullifier).to.eq("0x13bf966813b5299110d34b1e565d62d8c26ecb1f76f92ca8bd21fd91600360bc")
 
-                nullifier = VotingApi.getSignedVoteNullifier(randomAccount.address, processId)
+                nullifier = Voting.getSignedVoteNullifier(randomAccount.address, processId)
                 expect(nullifier).to.eq("0x25e1ec205509664e2433b9f9930c901eb1f2e31e851468a6ef7329dd9ada3bc8")
 
-                nullifier = VotingApi.getSignedVoteNullifier(randomAccount1.address, processId)
+                nullifier = Voting.getSignedVoteNullifier(randomAccount1.address, processId)
                 expect(nullifier).to.eq("0x419761e28c5103fa4ddac3d575a940c683aa647c31a8ac1073c8780f4664efcb")
             })
         })
@@ -94,14 +95,14 @@ describe("Governance Process", () => {
                 let processId = "0x8b35e10045faa886bd2e18636cd3cb72e80203a04e568c47205bf0313a0f60d1"
                 let siblings = "0x0003000000000000000000000000000000000000000000000000000000000006f0d72fbd8b3a637488107b0d8055410180ec017a4d76dbb97bee1c3086a25e25b1a6134dbd323c420d6fc2ac3aaf8fff5f9ac5bc0be5949be64b7cfd1bcc5f1f"
 
-                const proof1 = VotingApi.packageProof(processId, new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), siblings)
-                expect(Buffer.from((proof1.payload as ProofArboPayload).arbo.siblings).toString("hex")).to.eq(siblings.slice(2))
+                const proof1 = Voting.packageProof(processId, new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), siblings)
+                expect(Buffer.from((proof1.payload as ProofArboPayload).arbo.siblings).toString("hex")).to.eq(strip0x(siblings))
 
                 processId = "0x36c886bd2e18605bf03a0428be100313a0f6e568c470d135d3cb72e802045faa"
                 siblings = "0x0003000000100000000002000000000300000000000400000000000050000006f0d72fbd8b3a637488107b0d8055410180ec017a4d76dbb97bee1c3086a25e25b1a6134dbd323c420d6fc2ac3aaf8fff5f9ac5bc0be5949be64b7cfd1bcc5f1f"
 
-                const proof2 = VotingApi.packageProof(processId, new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), siblings)
-                expect(Buffer.from((proof2.payload as ProofArboPayload).arbo.siblings).toString("hex")).to.eq(siblings.slice(2))
+                const proof2 = Voting.packageProof(processId, new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), siblings)
+                expect(Buffer.from((proof2.payload as ProofArboPayload).arbo.siblings).toString("hex")).to.eq(strip0x(siblings))
             })
         })
 
@@ -112,7 +113,7 @@ describe("Governance Process", () => {
                 let processId = "0x8b35e10045faa886bd2e18636cd3cb72e80203a04e568c47205bf0313a0f60d1"
                 let siblings = "0x0003000000000000000000000000000000000000000000000000000000000006f0d72fbd8b3a637488107b0d8055410180ec017a4d76dbb97bee1c3086a25e25b1a6134dbd323c420d6fc2ac3aaf8fff5f9ac5bc0be5949be64b7cfd1bcc5f1f"
 
-                const envelope1 = await VotingApi.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), votes: [1, 2, 3], censusProof: siblings, processId, walletOrSigner: wallet })
+                const envelope1 = await Voting.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), votes: [1, 2, 3], censusProof: siblings, processId, walletOrSigner: wallet })
                 expect(Buffer.from(envelope1.processId).toString("hex")).to.eq(processId.slice(2))
                 expect(Buffer.from((envelope1.proof.payload as ProofArboPayload).arbo.siblings).toString("hex")).to.eq(siblings.slice(2))
                 const pkg1: VotePackage = JSON.parse(Buffer.from(envelope1.votePackage).toString())
@@ -122,7 +123,7 @@ describe("Governance Process", () => {
                 processId = "0x36c886bd2e18605bf03a0428be100313a0f6e568c470d135d3cb72e802045faa"
                 siblings = "0x0003000000100000000002000000000300000000000400000000000050000006f0d72fbd8b3a637488107b0d8055410180ec017a4d76dbb97bee1c3086a25e25b1a6134dbd323c420d6fc2ac3aaf8fff5f9ac5bc0be5949be64b7cfd1bcc5f1f"
 
-                const envelope2 = await VotingApi.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), votes: [5, 6, 7], censusProof: siblings, processId, walletOrSigner: wallet })
+                const envelope2 = await Voting.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), votes: [5, 6, 7], censusProof: siblings, processId, walletOrSigner: wallet })
                 expect(Buffer.from(envelope2.processId).toString("hex")).to.eq(processId.slice(2))
                 expect(Buffer.from((envelope2.proof.payload as ProofArboPayload).arbo.siblings).toString("hex")).to.eq(siblings.slice(2))
                 const pkg2: VotePackage = JSON.parse(Buffer.from(envelope2.votePackage).toString())
@@ -130,7 +131,7 @@ describe("Governance Process", () => {
                 expect(pkg2.votes).to.deep.equal([5, 6, 7])
 
                 expect(async () => {
-                    await VotingApi.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), votes: ["1", "2", "3"], censusProof: siblings, processId, walletOrSigner: wallet } as any)
+                    await Voting.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), votes: ["1", "2", "3"], censusProof: siblings, processId, walletOrSigner: wallet } as any)
                 }).to.throw
             })
 
@@ -144,7 +145,7 @@ describe("Governance Process", () => {
                     signature: "0x1234",
                 }
 
-                const envelope1 = await VotingApi.packageSignedEnvelope({ censusOrigin: ProcessCensusOrigin.OFF_CHAIN_CA, votes: [1, 2, 3], censusProof: proof, processId, walletOrSigner: wallet })
+                const envelope1 = await Voting.packageSignedEnvelope({ censusOrigin: ProcessCensusOrigin.OFF_CHAIN_CA, votes: [1, 2, 3], censusProof: proof, processId, walletOrSigner: wallet })
                 expect(Buffer.from(envelope1.processId).toString("hex")).to.eq(processId.slice(2))
                 expect((envelope1.proof.payload as ProofCaPayload).ca.type).to.eq(proof.type)
                 expect(Buffer.from((envelope1.proof.payload as ProofCaPayload).ca.bundle.processId).toString("hex")).to.eq(processId.slice(2))
@@ -161,7 +162,7 @@ describe("Governance Process", () => {
                     signature: "0x1234",
                 }
 
-                const envelope2 = await VotingApi.packageSignedEnvelope({ censusOrigin: ProcessCensusOrigin.OFF_CHAIN_CA, votes: [5, 6, 7], censusProof: proof, processId, walletOrSigner: wallet })
+                const envelope2 = await Voting.packageSignedEnvelope({ censusOrigin: ProcessCensusOrigin.OFF_CHAIN_CA, votes: [5, 6, 7], censusProof: proof, processId, walletOrSigner: wallet })
                 expect(Buffer.from(envelope2.processId).toString("hex")).to.eq(processId.slice(2))
                 expect((envelope2.proof.payload as ProofCaPayload).ca.type).to.eq(proof.type)
                 expect(Buffer.from((envelope2.proof.payload as ProofCaPayload).ca.bundle.processId).toString("hex")).to.eq(processId.slice(2))
@@ -172,7 +173,7 @@ describe("Governance Process", () => {
                 expect(pkg2.votes).to.deep.equal([5, 6, 7])
 
                 expect(async () => {
-                    await VotingApi.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), votes: ["1", "2", "3"], censusProof: proof, processId, walletOrSigner: wallet } as any)
+                    await Voting.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), votes: ["1", "2", "3"], censusProof: proof, processId, walletOrSigner: wallet } as any)
                 }).to.throw
             })
 
@@ -186,7 +187,7 @@ describe("Governance Process", () => {
                     value: "0x0000000000000000000000000000000000000000000000000000000000023456"
                 }
 
-                const envelope1 = await VotingApi.packageSignedEnvelope({ censusOrigin: ProcessCensusOrigin.ERC20, votes: [1, 2, 3], censusProof: proof, processId, walletOrSigner: wallet })
+                const envelope1 = await Voting.packageSignedEnvelope({ censusOrigin: ProcessCensusOrigin.ERC20, votes: [1, 2, 3], censusProof: proof, processId, walletOrSigner: wallet })
                 expect(Buffer.from(envelope1.processId).toString("hex")).to.eq(processId.slice(2))
                 expect(Buffer.from((envelope1.proof.payload as ProofEthereumStoragePayload).ethereumStorage.key).toString("hex")).to.eq(proof.key.slice(2))
                 expect(Buffer.from((envelope1.proof.payload as ProofEthereumStoragePayload).ethereumStorage.value).toString("hex")).to.eq(proof.value.slice(2))
@@ -203,7 +204,7 @@ describe("Governance Process", () => {
                     value: "0x0000000000000000000000000000000000000000000000000000000078901234"
                 }
 
-                const envelope2 = await VotingApi.packageSignedEnvelope({ censusOrigin: ProcessCensusOrigin.ERC20, votes: [5, 6, 7], censusProof: proof, processId, walletOrSigner: wallet })
+                const envelope2 = await Voting.packageSignedEnvelope({ censusOrigin: ProcessCensusOrigin.ERC20, votes: [5, 6, 7], censusProof: proof, processId, walletOrSigner: wallet })
                 expect(Buffer.from(envelope2.processId).toString("hex")).to.eq(processId.slice(2))
                 expect(Buffer.from((envelope2.proof.payload as ProofEthereumStoragePayload).ethereumStorage.key).toString("hex")).to.eq(proof.key.slice(2))
                 expect(Buffer.from((envelope2.proof.payload as ProofEthereumStoragePayload).ethereumStorage.value).toString("hex")).to.eq(proof.value.slice(2))
@@ -214,7 +215,7 @@ describe("Governance Process", () => {
                 expect(pkg2.votes).to.deep.equal([5, 6, 7])
 
                 expect(async () => {
-                    await VotingApi.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), votes: ["1", "2", "3"], censusProof: proof, processId, walletOrSigner: wallet } as any)
+                    await Voting.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), votes: ["1", "2", "3"], censusProof: proof, processId, walletOrSigner: wallet } as any)
                 }).to.throw
             })
 
@@ -245,7 +246,7 @@ describe("Governance Process", () => {
                 // one key
                 for (let item of processes) {
                     const processKeys = { encryptionPubKeys: [{ idx: 1, key: votePublicKey }] }
-                    const envelope = await VotingApi.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), votes: item.votes, censusProof: item.siblings, processId: item.processId, walletOrSigner: wallet, processKeys })
+                    const envelope = await Voting.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), votes: item.votes, censusProof: item.siblings, processId: item.processId, walletOrSigner: wallet, processKeys })
 
                     expect(Buffer.from(envelope.processId).toString("hex")).to.eq(item.processId.slice(2))
                     expect(Buffer.from((envelope.proof.payload as ProofArboPayload).arbo.siblings).toString("hex")).to.eq(item.siblings.slice(2))
@@ -303,7 +304,7 @@ describe("Governance Process", () => {
                 for (let item of processes) {
                     const processKeys = { encryptionPubKeys: encryptionKeys.map((kp, idx) => ({ idx, key: kp.publicKey })) }
 
-                    const envelope = await VotingApi.packageSignedEnvelope({
+                    const envelope = await Voting.packageSignedEnvelope({
                         censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE),
                         votes: item.votes,
                         censusProof: item.siblings,
