@@ -1463,10 +1463,12 @@ export namespace Voting {
         }
 
         const { proof: zkProof, publicSignals } = getZkProof(inputs, circuitWasm, zKey)
+        // [w, x, y, z] => [[w, x], [y, z]]
+        const b = [zkProof.b[0][0], zkProof.b[0][1], zkProof.b[1][0], zkProof.b[1][1]]
 
         const zkSnark = ProofZkSNARK.fromPartial({
             a: zkProof.a,
-            b: zkProof.b,
+            b,
             c: zkProof.c,
             publicInputs: publicSignals,
             // type: ProofZkSNARK_Type.UNKNOWN

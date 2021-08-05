@@ -60,7 +60,7 @@ export function verifyZkProof(verificationKey: { [k: string]: any }, publicSigna
 
 function digestVoteValue(votes: VoteValues): [bigint, bigint] {
   // TODO: confirm serialization method
-  const strVotes = votes.map(v => v.toString()).join(",")
+  const strVotes = votes.map(v => v.toString()).join(",")  // 1234,2345,3456,4567,5678
 
   const hexHashed = strip0x(utils.keccak256(Buffer.from(strVotes)))
   const b1 = BigInt(ensure0x(hexHashed.substr(0, 32)))
