@@ -26,7 +26,6 @@ export namespace GatewayArchive {
      */
     export function getProcessStateArchive(processId: string, gateway: IGatewayClient, errorMessage: string) {
         return getProcess(processId, gateway, errorMessage)
-            .then((response: IArchiveResponseBody) => response)
     }
 
     /**
@@ -38,7 +37,7 @@ export namespace GatewayArchive {
      */
     export function getProcessSummaryArchive(processId: string, gateway: IGatewayClient, errorMessage: string) {
         return getProcess(processId, gateway, errorMessage)
-            .then((response: IArchiveResponseBody) => {
+            .then((response) => {
                 response.process.envelopeHeight = response.results.envelopeHeight
                 return {
                     processSummary: response.process
@@ -55,7 +54,7 @@ export namespace GatewayArchive {
      */
     export function getResultsWeightArchive(processId: string, gateway: IGatewayClient, errorMessage: string) {
         return getProcess(processId, gateway, errorMessage)
-            .then((response: IArchiveResponseBody) => {
+            .then((response) => {
                 return {
                     weight: "0x" + response.results.weight.toString(16)
                 }
@@ -71,7 +70,7 @@ export namespace GatewayArchive {
      */
     export function getEnvelopeHeightArchive(processId: string, gateway: IGatewayClient, errorMessage: string) {
         return getProcess(processId, gateway, errorMessage)
-            .then((response: IArchiveResponseBody) => {
+            .then((response) => {
                 return {
                     height: response.results.envelopeHeight
                 }
@@ -88,7 +87,7 @@ export namespace GatewayArchive {
      */
     export function getRawResultsArchive(processId: string, gateway: IGatewayClient, errorMessage: string) {
         return getProcess(processId, gateway, errorMessage)
-            .then((response: IArchiveResponseBody) => {
+            .then((response) => {
                 return {
                     results: response.results.votes.map(votes => {
                         return votes.map(vote => vote.toString())
