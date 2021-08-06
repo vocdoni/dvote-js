@@ -56,7 +56,7 @@ export namespace GatewayArchive {
         return getProcess(processId, gateway, errorMessage)
             .then((response) => {
                 return {
-                    weight: "0x" + response.results.weight.toString(16)
+                    weight: response.results.weight
                 }
             })
     }
@@ -89,9 +89,7 @@ export namespace GatewayArchive {
         return getProcess(processId, gateway, errorMessage)
             .then((response) => {
                 return {
-                    results: response.results.votes.map(votes => {
-                        return votes.map(vote => vote.toString())
-                    }),
+                    results: response.results.votes,
                     state: VochainProcessStatus[response.process.status as string] || "",
                     height: response.results.envelopeHeight,
                 }

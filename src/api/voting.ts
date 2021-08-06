@@ -10,11 +10,6 @@ import {
     XDAI_CHAIN_ID,
     SOKOL_CHAIN_ID,
     SOKOL_GAS_PRICE,
-    VOCDONI_MAINNET_ENTITY_ID,
-    VOCDONI_GOERLI_ENTITY_ID,
-    VOCDONI_RINKEBY_ENTITY_ID,
-    VOCDONI_XDAI_ENTITY_ID,
-    VOCDONI_XDAI_STG_ENTITY_ID, VOCDONI_SOKOL_ENTITY_ID
 } from "../constants"
 import { BytesSignature } from "../crypto/data-signing"
 import { Buffer } from "buffer/"  // Previously using "arraybuffer-to-string"
