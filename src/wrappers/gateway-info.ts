@@ -8,13 +8,13 @@ export class GatewayInfo {
     private supportedApiList: GatewayApiName[] | BackendApiName[]
     private web3Uri: string
     private pubKey: string
-    private env: VocdoniEnvironment
+    private _environment: VocdoniEnvironment
 
     public get dvote() { return this.dvoteUri }
     public get supportedApis() { return this.supportedApiList }
     public get web3() { return this.web3Uri }
     public get publicKey() { return this.pubKey }
-    public get environment() { return this.env }
+    public get environment() { return this._environment }
 
     /** Bundles the given coordinates into an object containing the details of a Gateway */
     constructor(dvoteUri: string = null, supportedApis: GatewayApiName[] | BackendApiName[] = [], web3Uri: string, pubKey?: string, environment?: VocdoniEnvironment) {
@@ -32,6 +32,6 @@ export class GatewayInfo {
         this.supportedApiList = supportedApis || []
         this.web3Uri = web3Uri || null
         this.pubKey = pubKey || ""
-        this.env = environment || "prod"
+        this._environment = environment || "prod"
     }
 }

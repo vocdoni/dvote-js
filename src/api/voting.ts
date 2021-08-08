@@ -1,6 +1,6 @@
 import { Wallet, Signer, utils, ContractTransaction, BigNumber, providers } from "ethers"
 import { Gateway } from "../net/gateway"
-import { GatewayArchive } from "../net/gateway-archive";
+import { GatewayArchive, GatewayArchiveApi } from "../net/gateway-archive";
 import { FileApi } from "./file"
 import { EntityApi } from "./entity"
 import { ProcessMetadata, checkValidProcessMetadata, DigestedProcessResults, DigestedProcessResultItem, INewProcessParams, IProofEVM, IProofCA, IProofGraviton, INewProcessErc20Params } from "../models/process"
@@ -202,10 +202,10 @@ export namespace VotingApi {
         return gateway.sendRequest({ method: "getProcessInfo", processId })
             .catch((error) => {
                 const message = error.message ? "Could not retrieve the process info: " + error.message : "Could not retrieve the process info"
-                if (!params.skipArchive && message.includes("No data found for this key")) {
-                    return GatewayArchive.getProcessStateArchive(processId, gateway, message)
+                if (params.skipArchive || !message.includes("No data found for this key")) {
+                    throw new Error(message)
                 }
-                throw new Error(message)
+                return GatewayArchiveApi.getProcess(processId, gateway, message)
             })
             .then((response) => {
                 if (typeof response.process !== 'object') throw new Error()
@@ -232,10 +232,11 @@ export namespace VotingApi {
         return gateway.sendRequest({ method: "getProcessSummary", processId })
             .catch((error) => {
                 const message = error.message ? "Could not retrieve the process info: " + error.message : "Could not retrieve the process info"
-                if (!params.skipArchive && message.includes("No data found for this key")) {
-                    return GatewayArchive.getProcessSummaryArchive(processId, gateway, message)
+                if (params.skipArchive || !message.includes("No data found for this key")) {
+                    throw new Error(message)
                 }
-                throw new Error(message)
+                return GatewayArchiveApi.getProcess(processId, gateway, message)
+                    .then(processArchiveData => GatewayArchive.mapToGetProcessSummary(processArchiveData))
             })
             .then((response) => {
                 const { processSummary } = response
@@ -584,10 +585,11 @@ export namespace VotingApi {
         return gateway.sendRequest({ method: "getResultsWeight", processId })
             .catch((error) => {
                 const message = error.message ? "Could not retrieve the results weight: " + error.message : "Could not retrieve the results weight"
-                if (!params.skipArchive && message.includes("No data found for this key")) {
-                    return GatewayArchive.getResultsWeightArchive(processId, gateway, message)
+                if (params.skipArchive || !message.includes("No data found for this key")) {
+                    throw new Error(message)
                 }
-                throw new Error(message)
+                return GatewayArchiveApi.getProcess(processId, gateway, message)
+                    .then(processArchiveData => GatewayArchive.mapToGetResultsWeight(processArchiveData))
             })
             .then((response) => {
                 if (response.weight < 0) throw new Error("The weight value is not valid")
@@ -950,10 +952,11 @@ export namespace VotingApi {
         return gateway.sendRequest({ method: "getEnvelopeHeight", processId })
             .catch((error) => {
                 const message = (error.message) ? "Could not get the envelope height: " + error.message : "Could not get the envelope height"
-                if (!params.skipArchive && message.includes("No data found for this key")) {
-                    return GatewayArchive.getEnvelopeHeightArchive(processId, gateway, message)
+                if (params.skipArchive || !message.includes("No data found for this key")) {
+                    throw new Error(message)
                 }
-                throw new Error(message)
+                return GatewayArchiveApi.getProcess(processId, gateway, message)
+                    .then(processArchiveData => GatewayArchive.mapToGetEnvelopeHeight(processArchiveData))
             })
             .then((response) => {
                 if (!(typeof response.height === 'number') || response.height < 0) throw new Error("The gateway response is not correct")
@@ -1029,10 +1032,11 @@ export namespace VotingApi {
         return gateway.sendRequest({ method: "getResults", processId })
             .catch((error) => {
                 const message = (error.message) ? "Could not fetch the process results: " + error.message : "Could not fetch the process results"
-                if (!params.skipArchive && message.includes("No data found for this key")) {
-                    return GatewayArchive.getRawResultsArchive(processId, gateway, message)
+                if (params.skipArchive || !message.includes("No data found for this key")) {
+                    throw new Error(message)
                 }
-                throw new Error(message)
+                return GatewayArchiveApi.getProcess(processId, gateway, message)
+                    .then(processArchiveData => GatewayArchive.mapToGetResults(processArchiveData))
             })
             .then((response) => {
                 if (response.results && !Array.isArray(response.results)) throw new Error("The gateway response is not valid")
