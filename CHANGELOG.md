@@ -10,6 +10,8 @@
     - `IProcessSummary` is now `ProcessSummary`
     - `IProcessKeys` is now `ProcessKeys`
     - `IVotePackage` is now `VotePackage`
+- Added archive support as a fallback in `VotingApi` for `getProcess`, `getProcessState`, `getProcessSummary`, `getResultsWeight`, `getEnvelopeHeight` and `getRawResults` when the process has expired on the Vochain
+
 ## 1.11.0
 
 - Adding the `IGatewayClient`, `IGatewayDVoteClient` and `IGatewayWeb3Client` interfaces, so that methods don't depend on explicit class types
