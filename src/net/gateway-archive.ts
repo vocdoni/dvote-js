@@ -3,8 +3,7 @@ import { ProcessSummary } from "../api/voting";
 import { GatewayArchiveError } from "../errors/gateway-archive";
 import { TextRecordKeys } from "../models/entity"
 import { VochainProcessStatus } from "../models/protobuf";
-import { strip0x } from "../util/encoding";
-import { getEnsPublicResolverByNetwork } from "../util/ens";
+import { getEnsTextRecord } from "../util/ens";
 import { ContentUri } from "../wrappers/content-uri"
 import { EthNetworkID, IGatewayClient, IGatewayDVoteClient } from "../common";
 
@@ -40,6 +39,7 @@ export namespace GatewayArchive {
      */
     export function mapToGetProcessSummary(processArchiveData: IArchiveResponseBody) {
         processArchiveData.process.envelopeHeight = processArchiveData.results.envelopeHeight
+        if (!processArchiveData.process.metadata) delete processArchiveData.process.metadata
         return {
             processSummary: processArchiveData.process
         }
@@ -106,15 +106,13 @@ export namespace GatewayArchiveApi {
      * @param gateway
      * @param errorMessage
      */
-    async function resolveArchiveUri(gateway: IGatewayClient, errorMessage: string): Promise<ContentUri> {
+    function resolveArchiveUri(gateway: IGatewayClient, errorMessage: string): Promise<ContentUri> {
         if (gateway.archiveIpnsId) {
             return Promise.resolve(new ContentUri(gateway.archiveIpnsId))
         }
 
-        const networkId = await gateway.networkId as EthNetworkID
-
-        return getEnsPublicResolverByNetwork(gateway, { environment: gateway.environment, networkId })
-            .then(ens => ens.instance.text(ens.entityEnsNode, TextRecordKeys.VOCDONI_ARCHIVE))
+        return gateway.networkId
+            .then(networkId => getEnsTextRecord(gateway, TextRecordKeys.VOCDONI_ARCHIVE, { environment: gateway.environment, networkId: networkId as EthNetworkID }))
             .then((uri: string) => {
                 if (!uri) {
                     throw new GatewayArchiveError(errorMessage)
@@ -132,7 +130,8 @@ export namespace GatewayArchiveApi {
      * @param gateway
      */
     function fetchArchivedProcess(archiveUri: ContentUri, processId: string, gateway: IGatewayDVoteClient): Promise<IArchiveResponseBody> {
-        return FileApi.fetchString("ipfs:///ipns/" + archiveUri + "/" + strip0x(processId), gateway)
+        // TODO Replacing should be done with `strip0x` function
+        return FileApi.fetchString("ipfs:///ipns/" + archiveUri + "/" + processId.replace("0x", ""), gateway)
             .then((result: string) => JSON.parse(result))
     }
 }

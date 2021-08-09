@@ -201,11 +201,11 @@ export namespace VotingApi {
 
         return gateway.sendRequest({ method: "getProcessInfo", processId })
             .catch((error) => {
-                const message = error.message ? "Could not retrieve the process info: " + error.message : "Could not retrieve the process info"
-                if (params.skipArchive || !message.includes("No data found for this key")) {
-                    throw new Error(message)
+                // TODO Refactor errors
+                if (params.skipArchive || !error.message.includes("No data found for this key")) {
+                    throw error
                 }
-                return GatewayArchiveApi.getProcess(processId, gateway, message)
+                return GatewayArchiveApi.getProcess(processId, gateway, error.message)
             })
             .then((response) => {
                 if (typeof response.process !== 'object') throw new Error()
@@ -231,11 +231,11 @@ export namespace VotingApi {
 
         return gateway.sendRequest({ method: "getProcessSummary", processId })
             .catch((error) => {
-                const message = error.message ? "Could not retrieve the process info: " + error.message : "Could not retrieve the process info"
-                if (params.skipArchive || !message.includes("No data found for this key")) {
-                    throw new Error(message)
+                // TODO Refactor errors
+                if (params.skipArchive || !error.message.includes("No data found for this key")) {
+                    throw error
                 }
-                return GatewayArchiveApi.getProcess(processId, gateway, message)
+                return GatewayArchiveApi.getProcess(processId, gateway, error.message)
                     .then(processArchiveData => GatewayArchive.mapToGetProcessSummary(processArchiveData))
             })
             .then((response) => {
@@ -584,11 +584,11 @@ export namespace VotingApi {
 
         return gateway.sendRequest({ method: "getResultsWeight", processId })
             .catch((error) => {
-                const message = error.message ? "Could not retrieve the results weight: " + error.message : "Could not retrieve the results weight"
-                if (params.skipArchive || !message.includes("No data found for this key")) {
-                    throw new Error(message)
+                // TODO Refactor errors
+                if (params.skipArchive || !error.message.includes("No data found for this key")) {
+                    throw error
                 }
-                return GatewayArchiveApi.getProcess(processId, gateway, message)
+                return GatewayArchiveApi.getProcess(processId, gateway, error.message)
                     .then(processArchiveData => GatewayArchive.mapToGetResultsWeight(processArchiveData))
             })
             .then((response) => {
@@ -951,11 +951,11 @@ export namespace VotingApi {
 
         return gateway.sendRequest({ method: "getEnvelopeHeight", processId })
             .catch((error) => {
-                const message = (error.message) ? "Could not get the envelope height: " + error.message : "Could not get the envelope height"
-                if (params.skipArchive || !message.includes("No data found for this key")) {
-                    throw new Error(message)
+                // TODO Refactor errors
+                if (params.skipArchive || !error.message.includes("No data found for this key")) {
+                    throw error
                 }
-                return GatewayArchiveApi.getProcess(processId, gateway, message)
+                return GatewayArchiveApi.getProcess(processId, gateway, error.message)
                     .then(processArchiveData => GatewayArchive.mapToGetEnvelopeHeight(processArchiveData))
             })
             .then((response) => {
@@ -1031,11 +1031,11 @@ export namespace VotingApi {
 
         return gateway.sendRequest({ method: "getResults", processId })
             .catch((error) => {
-                const message = (error.message) ? "Could not fetch the process results: " + error.message : "Could not fetch the process results"
-                if (params.skipArchive || !message.includes("No data found for this key")) {
-                    throw new Error(message)
+                // TODO Refactor errors
+                if (params.skipArchive || !error.message.includes("No data found for this key")) {
+                    throw error
                 }
-                return GatewayArchiveApi.getProcess(processId, gateway, message)
+                return GatewayArchiveApi.getProcess(processId, gateway, error.message)
                     .then(processArchiveData => GatewayArchive.mapToGetResults(processArchiveData))
             })
             .then((response) => {

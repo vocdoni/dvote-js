@@ -43,7 +43,3 @@ export function bufferToBigInt(bytes: Buffer | Uint8Array): bigint {
     bytes = Buffer.from(bytes)
     return BigInt("0x" + bytes.toString("hex"))
 }
-
-export function strip0x(str: string): string {
-    return str.replace("0x", "")
-}

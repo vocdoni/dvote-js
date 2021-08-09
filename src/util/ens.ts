@@ -6,12 +6,12 @@ import {
     VOCDONI_RINKEBY_ENTITY_ID, VOCDONI_SOKOL_ENTITY_ID,
     VOCDONI_XDAI_ENTITY_ID, VOCDONI_XDAI_STG_ENTITY_ID
 } from "../constants"
-import { IEnsPublicResolverContract } from "../net/contracts";
 
-export function getEnsPublicResolverByNetwork(
+export function getEnsTextRecord(
     gateway: IGatewayWeb3Client,
+    recordKey: string,
     params: { environment: VocdoniEnvironment, networkId: EthNetworkID } = { environment: "prod", networkId: "mainnet" },
-): Promise<{ instance: IEnsPublicResolverContract, entityEnsNode: string }> {
+): Promise<string> {
     return gateway.getEnsPublicResolverInstance()
         .then(async instance => {
             let entityEnsNode: string
@@ -37,6 +37,6 @@ export function getEnsPublicResolverByNetwork(
                     entityEnsNode = keccak256(VOCDONI_SOKOL_ENTITY_ID)
                     break
             }
-            return { instance, entityEnsNode }
+            return instance.text(entityEnsNode, recordKey)
         })
 }

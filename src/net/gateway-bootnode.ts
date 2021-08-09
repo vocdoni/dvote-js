@@ -2,7 +2,7 @@
 // This component is meant to be a simple communication wrapper.
 // It provides a wrapper to use a Vocdoni Gateway, as well as a wrapper a Web3 one
 
-import { getEnsPublicResolverByNetwork } from "../util/ens";
+import { getEnsTextRecord } from "../util/ens";
 import { ContentUri } from "../wrappers/content-uri"
 import { FileApi } from "../api/file"
 import {
@@ -65,8 +65,7 @@ export class GatewayBootnode {
 
         const gw = new Web3Gateway(provider, networkId, environment)
 
-        return getEnsPublicResolverByNetwork(gw, { environment, networkId })
-            .then(ens => ens.instance.text(ens.entityEnsNode, TextRecordKeys.VOCDONI_BOOT_NODES))
+        return getEnsTextRecord(gw, TextRecordKeys.VOCDONI_BOOT_NODES, { environment, networkId })
             .then((uri: string) => {
                 if (!uri) {
                     throw new Error("The boot nodes Content URI is not defined on " + networkId)

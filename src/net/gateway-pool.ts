@@ -95,7 +95,9 @@ export class GatewayPool implements IGatewayClient {
     }
 
     public set archiveIpnsId(ipnsId: string) {
-        this.pool.map((gateway: Gateway) => gateway.archiveIpnsId = ipnsId)
+        for (const gw of this.pool) {
+            gw.archiveIpnsId = ipnsId
+        }
     }
 
     public get environment(): VocdoniEnvironment {
