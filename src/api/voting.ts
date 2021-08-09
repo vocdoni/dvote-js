@@ -32,10 +32,9 @@ import { ProcessEnvelopeType } from "dvote-solidity"
 import { ResultsNotAvailableError } from "../errors/results";
 import { ApiMethod } from "../models/gateway"
 import { ProofArbo_Type } from "../models/protobuf/build/ts/vochain/vochain";
-import { ProofZkSNARK } from "../models/protobuf/build/ts/vochain/vochain"
 import { IGatewayClient, IGatewayDVoteClient, IGatewayWeb3Client, VoteValues } from "../common"
 import { Poseidon } from "../crypto/hashing"
-import { uintArrayToHex } from "../util/encoding"
+import { ProofZkSNARK } from "../models/protobuf/build/ts/vochain/vochain"
 import { getZkProof, ZkInputs } from "../crypto/snarks"
 import { ensure0x, strip0x } from "../util/hex"
 
