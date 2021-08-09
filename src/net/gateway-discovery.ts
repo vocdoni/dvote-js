@@ -122,7 +122,7 @@ export class GatewayDiscovery {
 
                 // Set the archive IPNS Id if given
                 if (this.archiveIpnsId) {
-                    sortedNodes.web3.map((web3Gateway: Web3Gateway) => web3Gateway.archiveIpnsId = this.archiveIpnsId)
+                    sortedNodes.web3.forEach((web3Gateway: Web3Gateway) => web3Gateway.archiveIpnsId = this.archiveIpnsId)
                 }
 
                 // Create pairs of DVote and Web3 gateways
