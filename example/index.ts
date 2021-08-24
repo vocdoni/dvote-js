@@ -555,7 +555,7 @@ async function useVoteApi() {
     const envelopeList = await VotingApi.getEnvelopeList(processId, 0, 100, pool)
     console.log("- Envelope list:", envelopeList)
     if (envelopeList.length > 0)
-        console.log("- Retrieved Vote:", await VotingApi.getEnvelope(processId, pool, envelopeList[envelopeList.length - 1]))
+        console.log("- Retrieved Vote:", await VotingApi.getEnvelope(envelopeList[envelopeList.length - 1].nullifier, pool))
 
     console.log("getRawResults", await VotingApi.getRawResults(processId, pool))
     console.log("getResultsDigest", JSON.stringify(await VotingApi.getResultsDigest(processId, pool), null, 2))

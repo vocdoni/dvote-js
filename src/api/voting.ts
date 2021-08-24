@@ -124,6 +124,22 @@ export type ProcessKeys = {
     revealKeys?: { idx: number, key: string }[]
 }
 
+export type ProcessEnvelope = {
+    height: number,
+    nullifier: string,
+    process_id: string,
+    tx_hash: string,
+    tx_index: number
+}
+
+export type ProcessEnvelopeDetail = {
+    meta: ProcessEnvelope,
+    nonce: string,
+    signature: string,
+    vote_package: string,
+    weight: string
+}
+
 const blocksPerM = 60 / VOCHAIN_BLOCK_TIME
 const blocksPer10m = 10 * blocksPerM
 const blocksPerH = blocksPerM * 60
@@ -918,20 +934,17 @@ export namespace VotingApi {
     ///////////////////////////////////////////////////////////////////////////////
 
     /**
-     * Fetches the vote envelope for a given processId
-     * @param processId
-     * @param gateway
+     * Fetches the vote envelope for a given nullifier
      * @param nullifier
+     * @param gateway
      */
-    export async function getEnvelope(processId: string, gateway: IGatewayDVoteClient, nullifier: string): Promise<string> {
-        if (!processId) return Promise.reject(new Error("No process ID provided"))
-        else if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
+    export async function getEnvelope(nullifier: string, gateway: IGatewayDVoteClient): Promise<ProcessEnvelopeDetail> {
+        if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
 
-        return gateway.sendRequest({ method: "getEnvelope", nullifier, processId })
+        return gateway.sendRequest({ method: "getEnvelope", nullifier })
             .then((response) => {
-                if (!response.payload) throw new Error("The envelope could not be retrieved")
-                // if (!(response.payload instanceof String)) return Promise.reject(new Error("Envlope content not correct"))
-                return response.payload
+                if (!response.envelope) throw new Error("The envelope could not be retrieved")
+                return response.envelope
             })
             .catch((error) => {
                 const message = (error.message) ? "Could not get the envelope data: " + error.message : "Could not get the envelope data"
@@ -998,17 +1011,16 @@ export namespace VotingApi {
      * @param from
      * @param listSize
      * @param gateway
-     * @returns List of submited votes nullifiers
+     * @returns List of submitted votes envelopes
      */
     export function getEnvelopeList(processId: string,
-        from: number, listSize: number, gateway: IGatewayDVoteClient): Promise<string[]> {
+        from: number, listSize: number, gateway: IGatewayDVoteClient): Promise<ProcessEnvelope[]> {
         if (!processId || isNaN(from) || isNaN(listSize) || !gateway)
             return Promise.reject(new Error("Invalid parameters"))
 
         return gateway.sendRequest({ method: "getEnvelopeList", processId, from, listSize })
             .then((response) => {
-                if (!Array.isArray(response.nullifiers)) throw new Error("The gateway response is not correct")
-                return response.nullifiers
+                return Array.isArray(response.envelopes) ? response.envelopes : []
             })
             .catch((error) => {
                 const message = (error.message) ? "Could not retrieve the envelope list: " + error.message : "Could not retrieve the envelope list"
