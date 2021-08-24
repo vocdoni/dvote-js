@@ -124,7 +124,7 @@ export type ProcessKeys = {
     revealKeys?: { idx: number, key: string }[]
 }
 
-export type ProcessEnvelope = {
+type EnvelopeMeta = {
     height: number,
     nullifier: string,
     process_id: string,
@@ -132,8 +132,8 @@ export type ProcessEnvelope = {
     tx_index: number
 }
 
-export type ProcessEnvelopeDetail = {
-    meta: ProcessEnvelope,
+type EnvelopeFull = {
+    meta: EnvelopeMeta,
     nonce: string,
     signature: string,
     vote_package: string,
@@ -938,7 +938,7 @@ export namespace VotingApi {
      * @param nullifier
      * @param gateway
      */
-    export async function getEnvelope(nullifier: string, gateway: IGatewayDVoteClient): Promise<ProcessEnvelopeDetail> {
+    export async function getEnvelope(nullifier: string, gateway: IGatewayDVoteClient): Promise<EnvelopeFull> {
         if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
 
         return gateway.sendRequest({ method: "getEnvelope", nullifier })
@@ -1014,7 +1014,7 @@ export namespace VotingApi {
      * @returns List of submitted votes envelopes
      */
     export function getEnvelopeList(processId: string,
-        from: number, listSize: number, gateway: IGatewayDVoteClient): Promise<ProcessEnvelope[]> {
+        from: number, listSize: number, gateway: IGatewayDVoteClient): Promise<EnvelopeMeta[]> {
         if (!processId || isNaN(from) || isNaN(listSize) || !gateway)
             return Promise.reject(new Error("Invalid parameters"))
 
