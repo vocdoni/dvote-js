@@ -1,5 +1,10 @@
 # DVote JS changelog
 
+## 
+
+- Adding support for MiniMe tokens
+- Upgrading the ERC20 proof methods
+
 ## 1.12.0
 
 - Adding `registerVotingKey`
