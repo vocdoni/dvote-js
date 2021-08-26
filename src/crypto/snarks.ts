@@ -10,7 +10,7 @@ export type ZkInputs = {
   censusRoot: string
   /** hex strings */
   censusSiblings: string[]
-  secretKey: BigInt
+  secretKey: bigint
   votes: VoteValues
   /** hex string */
   nullifier: string
@@ -61,10 +61,11 @@ export function verifyZkProof(verificationKey: { [k: string]: any }, publicSigna
 function digestVoteValue(votes: VoteValues): [bigint, bigint] {
   // TODO: confirm serialization method
   const strVotes = votes.map(v => v.toString()).join(",")  // 1234,2345,3456,4567,5678
-
-  const hexHashed = strip0x(utils.keccak256(Buffer.from(strVotes)))
-  const b1 = BigInt(ensure0x(hexHashed.substr(0, 32)))
-  const b2 = BigInt(ensure0x(hexHashed.substr(32)))
-
-  return [b1, b2]
+  const strVotesBytes = Buffer.from(strVotes, "utf-8")
+  const hexHashed = strip0x(utils.keccak256(strVotesBytes))
+  return [
+    // little-endian BigInt representations
+    BigInt("0x" + hexHashed.slice(0, 32).match(/.{2}/g).reverse().join("")),
+    BigInt("0x" + hexHashed.slice(32, 64).match(/.{2}/g).reverse().join(""))
+  ]
 }
