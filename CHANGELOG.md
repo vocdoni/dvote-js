@@ -1,6 +1,11 @@
 # DVote JS changelog
 
-##
+## 
+
+- Adding support for MiniMe tokens
+- Upgrading the ERC20 proof methods
+
+## 1.12.0
 
 - Adding `registerVotingKey`
 - Renamed TS types
@@ -11,6 +16,13 @@
     - `IProcessKeys` is now `ProcessKeys`
     - `IVotePackage` is now `VotePackage`
 - Added archive support as a fallback in `VotingApi` for `getProcess`, `getProcessState`, `getProcessSummary`, `getResultsWeight`, `getEnvelopeHeight` and `getRawResults` when the process has expired on the Vochain
+
+## Adding support for MiniMe tokens
+- [Breaking] `CensusErc20Api` is now `CensusOnChain.ERC20`
+- [Breaking] `CensusErc20Api.generateProof` now does not need the computed `[balanceSlot]`
+    - Instead, the holder address and the token balance mapping slot are handled
+- [Breaking] `CensusErc20Api.getHolderBalanceSlot` is no longer needed (removed)
+- Adding `CensusOnChain.ERC20.getProofRaw` for lighter proof requesting
 
 ## 1.11.0
 
@@ -35,6 +47,9 @@ Breaking changes to support ZK Snarks and Baby JubJub wallets
         - Replace `CensusOffChainApi.digestPublicKey(..., CensusOffchainDigestType.RAW_PUBKEY)` by `CensusOffChain.Public.encodePublicKey` instead
     - `CensusOffchainDigestType` is no longer needed
     - [Breaking] `generateCensusId` and `generateCensusIdSuffix` are now part of `CensusOffChain`
+- [Breaking] Adding `CensusOnChain`
+    - `CensusErc20` is now `CensusOnChain.ERC20`
+    - Adding `CensusOnChain.MiniMe`
 - Adding the `WalletBabyJubJub` class
 - [Breaking] `CensusOffchainApi.getCensusSize` is now `CensusOffchainApi.getSize`
 - [Breaking] `SignerUtil.fromInjectedWeb3` is now `Web3Signer.fromInjected`

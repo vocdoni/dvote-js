@@ -3,11 +3,10 @@ import { IRequestParameters } from "../net/gateway-dvote"
 import { Keccak256, Poseidon } from "../crypto/hashing"
 import { hexStringToBuffer } from "../util/encoding"
 import { CENSUS_MAX_BULK_SIZE } from "../constants"
-import { ERC20Prover } from "@vocdoni/storage-proofs-eth"
+import { ERC20Proof, MiniMeProof } from "@vocdoni/storage-proofs-eth"
 import { compressPublicKey } from "../crypto/elliptic"
 import { blind as _blind, unblind as _unblind, verify as _verify, signatureFromHex as _signatureFromHex, signatureToHex as _signatureToHex, pointFromHex as _pointFromHex, pointToHex as _pointToHex, UserSecretData, UnblindedSignature, BigInteger, Point } from "blindsecp256k1"
 import { hexZeroPad } from "ethers/lib/utils"
-import { ERC20_ABI } from "../util/erc"
 import { IGatewayClient, IGatewayWeb3Client } from "../common"
 // import ContentURI from "../wrappers/content-uri"
 
@@ -73,7 +72,7 @@ export namespace CensusOffChainApi {
      * @param walletOrSigner
      * @returns Promise resolving with the new censusRoot
      */
-    export async function addCensus(censusName: string, managerPublicKeys: string[], walletOrSigner: Wallet | Signer, gateway: IGatewayClient): Promise<{ censusId: string, censusRoot: string }> {
+    export async function addCensus(censusName: string, managerPublicKeys: string[], walletOrSigner: Signer, gateway: IGatewayClient): Promise<{ censusId: string, censusRoot: string }> {
         if (!censusName || !managerPublicKeys || !managerPublicKeys.length || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!walletOrSigner || !walletOrSigner._isSigner) return Promise.reject(new Error("Invalid WalletOrSinger object"))
@@ -113,7 +112,7 @@ export namespace CensusOffChainApi {
      * @param walletOrSigner
      * @returns Promise resolving with the new censusRoot
      */
-    export function addClaim(censusId: string, claim: { key: string, value?: string }, digested: boolean, walletOrSigner: Wallet | Signer, gateway: IGatewayClient): Promise<string> {
+    export function addClaim(censusId: string, claim: { key: string, value?: string }, digested: boolean, walletOrSigner: Signer, gateway: IGatewayClient): Promise<string> {
         if (!censusId || !claim || !claim.key || !claim.key.length || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!walletOrSigner || !walletOrSigner._isSigner) return Promise.reject(new Error("Invalid WalletOrSinger object"))
@@ -140,7 +139,7 @@ export namespace CensusOffChainApi {
      * @param walletOrSigner
      * @returns Promise resolving with the new censusRoot
      */
-    export async function addClaimBulk(censusId: string, claimList: { key: string, value?: string }[], digested: boolean, walletOrSigner: Wallet | Signer, gateway: IGatewayClient): Promise<{ censusRoot: string, invalidClaims: any[] }> {
+    export async function addClaimBulk(censusId: string, claimList: { key: string, value?: string }[], digested: boolean, walletOrSigner: Signer, gateway: IGatewayClient): Promise<{ censusRoot: string, invalidClaims: any[] }> {
         if (!censusId || !claimList || !claimList.length || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!walletOrSigner || !walletOrSigner._isSigner) return Promise.reject(new Error("Invalid WalletOrSinger object"))
@@ -159,7 +158,7 @@ export namespace CensusOffChainApi {
         return { censusRoot, invalidClaims }
     }
 
-    function addClaimChunk(censusId: string, claimList: { key: string, value?: string }[], digested: boolean, walletOrSigner: Wallet | Signer, gateway: IGatewayClient): Promise<any[]> {
+    function addClaimChunk(censusId: string, claimList: { key: string, value?: string }[], digested: boolean, walletOrSigner: Signer, gateway: IGatewayClient): Promise<any[]> {
         if (!censusId || !claimList || claimList.length > CENSUS_MAX_BULK_SIZE || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!claimList.length) return Promise.resolve([])
@@ -226,7 +225,7 @@ export namespace CensusOffChainApi {
      * @param walletOrSigner
      * @returns Promise resolving with the a hex array dump of the census claims
     */
-    export function dump(censusId: string, walletOrSigner: Wallet | Signer, gateway: IGatewayClient, rootHash?: String): Promise<string[]> {
+    export function dump(censusId: string, walletOrSigner: Signer, gateway: IGatewayClient, rootHash?: String): Promise<string[]> {
         if (!censusId || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -248,7 +247,7 @@ export namespace CensusOffChainApi {
      * @param walletOrSigner
      * @returns Promise resolving with the a raw string dump of the census claims
     */
-    export function dumpPlain(censusId: string, walletOrSigner: Wallet | Signer, gateway: IGatewayClient, rootHash?: String): Promise<{ key: string, value?: string }[]> {
+    export function dumpPlain(censusId: string, walletOrSigner: Signer, gateway: IGatewayClient, rootHash?: String): Promise<{ key: string, value?: string }[]> {
         if (!censusId || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -287,7 +286,7 @@ export namespace CensusOffChainApi {
     }
 
     /** Exports and publish the entire census on the storage of the backend (usually IPFS). Returns the URI of the set of claims */
-    export function publishCensus(censusId: string, walletOrSigner: Wallet | Signer, gateway: IGatewayClient): Promise<string> {
+    export function publishCensus(censusId: string, walletOrSigner: Signer, gateway: IGatewayClient): Promise<string> {
         if (!censusId || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!walletOrSigner || !walletOrSigner._isSigner) return Promise.reject(new Error("Invalid WalletOrSinger object"))
@@ -389,134 +388,160 @@ export namespace CensusCaApi {
     }
 }
 
-export namespace CensusErc20Api {
-    export function generateProof(tokenAddress: string, storageKeys: string[], blockNumber: number | "latest", provider: string | providers.JsonRpcProvider | providers.Web3Provider | providers.IpcProvider | providers.InfuraProvider, options?: { verify?: boolean }) {
-        const prover = new ERC20Prover(provider)
-        const verify = options && options.verify || false
-        return prover.getProof(tokenAddress, storageKeys, blockNumber, verify)
-    }
+export namespace CensusOnChain {
+    export namespace ERC20 {
+        /** Fetches the account and storage proofs, along with the block header data of the given keys within the given contract */
+        export const generateProof = ERC20Proof.getFull
+        /** Fetches the storage proof of the given keys within the given contract */
+        export const generateProofRaw = ERC20Proof.get
 
-    export function verifyProof(stateRoot: string, address: string, proof: any, provider: string | providers.JsonRpcProvider | providers.Web3Provider | providers.IpcProvider | providers.InfuraProvider) {
-        const prover = new ERC20Prover(provider)
-        return prover.verify(stateRoot, address, proof)
-    }
+        /** Does nothing if the given proof conforms to the given block stateRoot and contract address. Throws an error otherwise. */
+        export const verifyProof = ERC20Proof.verify
 
-    /** Computes the balance slot that the given holder address has, given the balance mapping position within the contract */
-    export function getHolderBalanceSlot(holderAddress: string, balanceMappingPosition: number) {
-        return ERC20Prover.getHolderBalanceSlot(holderAddress, balanceMappingPosition)
-    }
+        /** Finds the balance mapping position of the given ERC20 token address and attempts to register it on the blockchain */
+        export async function registerTokenAuto(tokenAddress: string, walletOrSigner: Signer, gw: IGatewayWeb3Client, customContractAddress?: string): Promise<ContractReceipt> {
+            const contractInstance = await gw.getTokenStorageProofInstance(walletOrSigner, customContractAddress)
 
-    /** Finds the balance mapping position of the given ERC20 token address and attempts to register it on the blockchain */
-    export async function registerTokenAuto(tokenAddress: string, walletOrSigner: Wallet | Signer, gw: IGatewayWeb3Client, customContractAddress?: string): Promise<ContractReceipt> {
-        const contractInstance = await gw.getTokenStorageProofInstance(walletOrSigner, customContractAddress)
+            const balanceMappingPosition = await ERC20Proof.findMapSlot(tokenAddress, await walletOrSigner.getAddress(), gw.provider as providers.JsonRpcProvider)
+            if (balanceMappingPosition === null) throw new Error("The given token contract does not seem to have a defined mapping position for the holder balances")
 
-        const balanceMappingPosition = await CensusErc20Api.findBalanceMappingPosition(tokenAddress, await walletOrSigner.getAddress(), gw.provider as providers.JsonRpcProvider)
-        if (balanceMappingPosition === null) throw new Error("The given token contract does not seem to have a defined mapping position for the holder balances")
+            const tx = await contractInstance.registerToken(tokenAddress, balanceMappingPosition)
+            return tx.wait()
+        }
 
-        const tx = await contractInstance.registerToken(tokenAddress, balanceMappingPosition)
-        return tx.wait()
-    }
-
-    /** Associates the given balance mapping position to the given ERC20 token address  */
-    export function registerToken(tokenAddress: string, balanceMappingPosition: number | BigNumber, walletOrSigner: Wallet | Signer, gw: IGatewayWeb3Client, customContractAddress?: string): Promise<ContractReceipt> {
-        return gw.getTokenStorageProofInstance(walletOrSigner, customContractAddress)
-            .then((contractInstance) =>
-                contractInstance.registerToken(tokenAddress,
-                    balanceMappingPosition
+        /** Associates the given balance mapping position to the given ERC20 token address  */
+        export function registerToken(tokenAddress: string, balanceMappingPosition: number | BigNumber, walletOrSigner: Signer, gw: IGatewayWeb3Client, customContractAddress?: string): Promise<ContractReceipt> {
+            return gw.getTokenStorageProofInstance(walletOrSigner, customContractAddress)
+                .then((contractInstance) =>
+                    contractInstance.registerToken(tokenAddress,
+                        balanceMappingPosition
+                    )
                 )
-            )
-            .then(tx => tx.wait())
-    }
+                .then(tx => tx.wait())
+        }
 
-    /** Overwrites the token's balance mapping position as long as the provided proof is valid */
-    export function setVerifiedBalanceMappingPosition(tokenAddress: string, balanceMappingPosition: number | BigNumber, blockNumber: number | BigNumber, blockHeaderRLP: Buffer, accountStateProof: Buffer, storageProof: Buffer, walletOrSigner: Wallet | Signer, gw: IGatewayWeb3Client, customContractAddress?: string): Promise<ContractReceipt> {
-        return gw.getTokenStorageProofInstance(walletOrSigner, customContractAddress)
-            .then((contractInstance) =>
-                contractInstance.setVerifiedBalanceMappingPosition(tokenAddress,
-                    balanceMappingPosition,
-                    blockNumber,
-                    blockHeaderRLP,
-                    accountStateProof,
-                    storageProof
+        /** Overwrites the token's balance mapping position as long as the provided proof is valid */
+        export function setVerifiedBalanceMappingPosition(tokenAddress: string, balanceMappingPosition: number | BigNumber, blockNumber: number | BigNumber, blockHeaderRLP: Buffer, accountStateProof: Buffer, storageProof: Buffer, walletOrSigner: Signer, gw: IGatewayWeb3Client, customContractAddress?: string): Promise<ContractReceipt> {
+            return gw.getTokenStorageProofInstance(walletOrSigner, customContractAddress)
+                .then((contractInstance) =>
+                    contractInstance.setVerifiedBalanceMappingPosition(tokenAddress,
+                        balanceMappingPosition,
+                        blockNumber,
+                        blockHeaderRLP,
+                        accountStateProof,
+                        storageProof
+                    )
                 )
-            )
-            .then(tx => tx.wait())
+                .then(tx => tx.wait())
+        }
+
+        export function getTokenInfo(tokenAddress: string, gw: IGatewayWeb3Client, customContractAddress?: string): Promise<{ isRegistered: boolean, isVerified: boolean, balanceMappingPosition: number }> {
+            return gw.getTokenStorageProofInstance(null, customContractAddress)
+                .then((contractInstance) => contractInstance.tokens(tokenAddress))
+                .then((tokenDataTuple) => {
+                    const balanceMappingPosition = BigNumber.isBigNumber(tokenDataTuple[2]) ?
+                        tokenDataTuple[2].toNumber() : tokenDataTuple[2]
+
+                    return {
+                        isRegistered: tokenDataTuple[0],
+                        isVerified: tokenDataTuple[1],
+                        balanceMappingPosition
+                    }
+                })
+        }
+
+        export function isRegistered(tokenAddress: string, gw: IGatewayWeb3Client, customContractAddress?: string) {
+            return gw.getTokenStorageProofInstance(null, customContractAddress)
+                .then((contractInstance) => contractInstance.isRegistered(tokenAddress))
+        }
+
+        export function getTokenAddressAt(index: number, gw: IGatewayWeb3Client, customContractAddress?: string): Promise<string> {
+            return gw.getTokenStorageProofInstance(null, customContractAddress)
+                .then((contractInstance) => contractInstance.tokenAddresses(index))
+        }
+
+        export function getTokenCount(gw: IGatewayWeb3Client, customContractAddress?: string): Promise<number> {
+            return gw.getTokenStorageProofInstance(null, customContractAddress)
+                .then((contractInstance) => contractInstance.tokenCount())
+        }
     }
 
-    export function getTokenInfo(tokenAddress: string, gw: IGatewayWeb3Client, customContractAddress?: string): Promise<{ isRegistered: boolean, isVerified: boolean, balanceMappingPosition: number }> {
-        return gw.getTokenStorageProofInstance(null, customContractAddress)
-            .then((contractInstance) => contractInstance.tokens(tokenAddress))
-            .then((tokenDataTuple) => {
-                const balanceMappingPosition = BigNumber.isBigNumber(tokenDataTuple[2]) ?
-                    tokenDataTuple[2].toNumber() : tokenDataTuple[2]
+    export namespace MiniMe {
+        /* TODO */
 
-                return {
-                    isRegistered: tokenDataTuple[0],
-                    isVerified: tokenDataTuple[1],
-                    balanceMappingPosition
-                }
-            })
-    }
+        /** Fetches the account and storage proofs, along with the block header data of the given keys within the given contract */
+        export const generateProof = MiniMeProof.getFull
+        /** Fetches the storage proof of the given keys within the given contract */
+        export const generateProofRaw = MiniMeProof.get
 
-    export function isRegistered(tokenAddress: string, gw: IGatewayWeb3Client, customContractAddress?: string) {
-        return gw.getTokenStorageProofInstance(null, customContractAddress)
-            .then((contractInstance) => contractInstance.isRegistered(tokenAddress))
-    }
+        /** Does nothing if the given proof conforms to the given block stateRoot and contract address. Throws an error otherwise. */
+        export const verifyProof = MiniMeProof.verify
 
-    export function getTokenAddressAt(index: number, gw: IGatewayWeb3Client, customContractAddress?: string): Promise<string> {
-        return gw.getTokenStorageProofInstance(null, customContractAddress)
-            .then((contractInstance) => contractInstance.tokenAddresses(index))
-    }
+        /** Finds the balance mapping position of the given ERC20 token address and attempts to register it on the blockchain */
+        export async function registerTokenAuto(tokenAddress: string, walletOrSigner: Signer, gw: IGatewayWeb3Client, customContractAddress?: string): Promise<ContractReceipt> {
+            const contractInstance = await gw.getMiniMeProofInstance(walletOrSigner, customContractAddress)
 
-    export function getTokenCount(gw: IGatewayWeb3Client, customContractAddress?: string): Promise<number> {
-        return gw.getTokenStorageProofInstance(null, customContractAddress)
-            .then((contractInstance) => contractInstance.tokenCount())
-    }
+            const balanceMappingPosition = await MiniMeProof.findMapSlot(tokenAddress, await walletOrSigner.getAddress(), gw.provider as providers.JsonRpcProvider)
+            if (balanceMappingPosition === null) throw new Error("The given token contract does not seem to have a defined mapping position for the holder balances")
 
-    // Helpers
+            const tx = await contractInstance.registerToken(tokenAddress, balanceMappingPosition)
+            return tx.wait()
+        }
 
-    /**
-     * Attempts to find the index at which the holder balances are stored within the token contract.
-     * If the position cannot be found among the 50 first ones, `null` is returned.
-     */
-    export async function findBalanceMappingPosition(tokenAddress: string, holderAddress: string, provider: providers.JsonRpcProvider) {
-        const verify = true
-        try {
-            const blockNumber = await provider.getBlockNumber()
-            const tokenInstance = new Contract(tokenAddress, ERC20_ABI, provider)
-            const balance = await tokenInstance.balanceOf(holderAddress) as BigNumber
-            if (balance.isZero()) throw new Error("The holder has a zero balance")
-
-            for (let i = 0; i < 50; i++) {
-                const tokenBalanceMappingPosition = i
-
-                const balanceSlot = CensusErc20Api.getHolderBalanceSlot(
-                    holderAddress,
-                    tokenBalanceMappingPosition
+        /** Associates the given balance mapping position to the given ERC20 token address  */
+        export function registerToken(tokenAddress: string, balanceMappingPosition: number | BigNumber, walletOrSigner: Signer, gw: IGatewayWeb3Client, customContractAddress?: string): Promise<ContractReceipt> {
+            return gw.getMiniMeProofInstance(walletOrSigner, customContractAddress)
+                .then((contractInstance) =>
+                    contractInstance.registerToken(tokenAddress,
+                        balanceMappingPosition
+                    )
                 )
+                .then(tx => tx.wait())
+        }
 
-                const result = await CensusErc20Api.generateProof(
-                    tokenAddress,
-                    [balanceSlot],
-                    blockNumber,
-                    provider,
-                    { verify }
-                ).catch(() => null) // Failed => ignore
+        /** Overwrites the token's balance mapping position as long as the provided proof is valid */
+        export function setVerifiedBalanceMappingPosition(tokenAddress: string, balanceMappingPosition: number | BigNumber, blockNumber: number | BigNumber, blockHeaderRLP: Buffer, accountStateProof: Buffer, storageProof: Buffer, walletOrSigner: Signer, gw: IGatewayWeb3Client, customContractAddress?: string): Promise<ContractReceipt> {
+            return gw.getMiniMeProofInstance(walletOrSigner, customContractAddress)
+                .then((contractInstance) =>
+                    contractInstance.setVerifiedBalanceMappingPosition(tokenAddress,
+                        balanceMappingPosition,
+                        blockNumber,
+                        blockHeaderRLP,
+                        accountStateProof,
+                        storageProof
+                    )
+                )
+                .then(tx => tx.wait())
+        }
 
-                if (result == null || !result.proof) continue
+        export function getTokenInfo(tokenAddress: string, gw: IGatewayWeb3Client, customContractAddress?: string): Promise<{ isRegistered: boolean, isVerified: boolean, balanceMappingPosition: number }> {
+            return gw.getMiniMeProofInstance(null, customContractAddress)
+                .then((contractInstance) => contractInstance.tokens(tokenAddress))
+                .then((tokenDataTuple) => {
+                    const balanceMappingPosition = BigNumber.isBigNumber(tokenDataTuple[2]) ?
+                        tokenDataTuple[2].toNumber() : tokenDataTuple[2]
 
-                const onChainBalance = BigNumber.from(result.proof.storageProof[0].value)
-                if (!onChainBalance.eq(balance)) {
-                    // keep searching
-                    continue
-                }
+                    return {
+                        isRegistered: tokenDataTuple[0],
+                        isVerified: tokenDataTuple[1],
+                        balanceMappingPosition
+                    }
+                })
+        }
 
-                // FOUND
-                return tokenBalanceMappingPosition
-            }
-            return null
-        } catch (err) {
-            throw err
+        export function isRegistered(tokenAddress: string, gw: IGatewayWeb3Client, customContractAddress?: string) {
+            return gw.getMiniMeProofInstance(null, customContractAddress)
+                .then((contractInstance) => contractInstance.isRegistered(tokenAddress))
+        }
+
+        export function getTokenAddressAt(index: number, gw: IGatewayWeb3Client, customContractAddress?: string): Promise<string> {
+            return gw.getMiniMeProofInstance(null, customContractAddress)
+                .then((contractInstance) => contractInstance.tokenAddresses(index))
+        }
+
+        export function getTokenCount(gw: IGatewayWeb3Client, customContractAddress?: string): Promise<number> {
+            return gw.getMiniMeProofInstance(null, customContractAddress)
+                .then((contractInstance) => contractInstance.tokenCount())
         }
     }
 }
