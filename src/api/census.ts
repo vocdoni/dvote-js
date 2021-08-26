@@ -3,7 +3,7 @@ import { IRequestParameters } from "../net/gateway-dvote"
 import { Keccak256, Poseidon } from "../crypto/hashing"
 import { hexStringToBuffer } from "../util/encoding"
 import { CENSUS_MAX_BULK_SIZE } from "../constants"
-import { ERC20Prover } from "@vocdoni/storage-proofs-eth"
+import { ERC20Proof } from "@vocdoni/storage-proofs-eth"
 import { compressPublicKey } from "../crypto/elliptic"
 import { blind as _blind, unblind as _unblind, verify as _verify, signatureFromHex as _signatureFromHex, signatureToHex as _signatureToHex, pointFromHex as _pointFromHex, pointToHex as _pointToHex, UserSecretData, UnblindedSignature, BigInteger, Point } from "blindsecp256k1"
 import { hexZeroPad } from "ethers/lib/utils"
@@ -72,7 +72,7 @@ export namespace CensusOffChainApi {
      * @param walletOrSigner
      * @returns Promise resolving with the new censusRoot
      */
-    export async function addCensus(censusName: string, managerPublicKeys: string[], walletOrSigner: Wallet | Signer, gateway: IGatewayClient): Promise<{ censusId: string, censusRoot: string }> {
+    export async function addCensus(censusName: string, managerPublicKeys: string[], walletOrSigner: Signer, gateway: IGatewayClient): Promise<{ censusId: string, censusRoot: string }> {
         if (!censusName || !managerPublicKeys || !managerPublicKeys.length || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!walletOrSigner || !walletOrSigner._isSigner) return Promise.reject(new Error("Invalid WalletOrSinger object"))
@@ -112,7 +112,7 @@ export namespace CensusOffChainApi {
      * @param walletOrSigner
      * @returns Promise resolving with the new censusRoot
      */
-    export function addClaim(censusId: string, claim: { key: string, value?: string }, digested: boolean, walletOrSigner: Wallet | Signer, gateway: IGatewayClient): Promise<string> {
+    export function addClaim(censusId: string, claim: { key: string, value?: string }, digested: boolean, walletOrSigner: Signer, gateway: IGatewayClient): Promise<string> {
         if (!censusId || !claim || !claim.key || !claim.key.length || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!walletOrSigner || !walletOrSigner._isSigner) return Promise.reject(new Error("Invalid WalletOrSinger object"))
@@ -139,7 +139,7 @@ export namespace CensusOffChainApi {
      * @param walletOrSigner
      * @returns Promise resolving with the new censusRoot
      */
-    export async function addClaimBulk(censusId: string, claimList: { key: string, value?: string }[], digested: boolean, walletOrSigner: Wallet | Signer, gateway: IGatewayClient): Promise<{ censusRoot: string, invalidClaims: any[] }> {
+    export async function addClaimBulk(censusId: string, claimList: { key: string, value?: string }[], digested: boolean, walletOrSigner: Signer, gateway: IGatewayClient): Promise<{ censusRoot: string, invalidClaims: any[] }> {
         if (!censusId || !claimList || !claimList.length || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!walletOrSigner || !walletOrSigner._isSigner) return Promise.reject(new Error("Invalid WalletOrSinger object"))
@@ -158,7 +158,7 @@ export namespace CensusOffChainApi {
         return { censusRoot, invalidClaims }
     }
 
-    function addClaimChunk(censusId: string, claimList: { key: string, value?: string }[], digested: boolean, walletOrSigner: Wallet | Signer, gateway: IGatewayClient): Promise<any[]> {
+    function addClaimChunk(censusId: string, claimList: { key: string, value?: string }[], digested: boolean, walletOrSigner: Signer, gateway: IGatewayClient): Promise<any[]> {
         if (!censusId || !claimList || claimList.length > CENSUS_MAX_BULK_SIZE || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!claimList.length) return Promise.resolve([])
@@ -225,7 +225,7 @@ export namespace CensusOffChainApi {
      * @param walletOrSigner
      * @returns Promise resolving with the a hex array dump of the census claims
     */
-    export function dump(censusId: string, walletOrSigner: Wallet | Signer, gateway: IGatewayClient, rootHash?: String): Promise<string[]> {
+    export function dump(censusId: string, walletOrSigner: Signer, gateway: IGatewayClient, rootHash?: String): Promise<string[]> {
         if (!censusId || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -247,7 +247,7 @@ export namespace CensusOffChainApi {
      * @param walletOrSigner
      * @returns Promise resolving with the a raw string dump of the census claims
     */
-    export function dumpPlain(censusId: string, walletOrSigner: Wallet | Signer, gateway: IGatewayClient, rootHash?: String): Promise<{ key: string, value?: string }[]> {
+    export function dumpPlain(censusId: string, walletOrSigner: Signer, gateway: IGatewayClient, rootHash?: String): Promise<{ key: string, value?: string }[]> {
         if (!censusId || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -286,7 +286,7 @@ export namespace CensusOffChainApi {
     }
 
     /** Exports and publish the entire census on the storage of the backend (usually IPFS). Returns the URI of the set of claims */
-    export function publishCensus(censusId: string, walletOrSigner: Wallet | Signer, gateway: IGatewayClient): Promise<string> {
+    export function publishCensus(censusId: string, walletOrSigner: Signer, gateway: IGatewayClient): Promise<string> {
         if (!censusId || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!walletOrSigner || !walletOrSigner._isSigner) return Promise.reject(new Error("Invalid WalletOrSinger object"))
@@ -389,30 +389,20 @@ export namespace CensusCaApi {
 }
 
 export namespace CensusOnChain {
-    type Providerish = string | providers.JsonRpcProvider | providers.Web3Provider | providers.IpcProvider | providers.InfuraProvider
-
     export namespace ERC20 {
-        export function generateProof(tokenAddress: string, storageKeys: string[], blockNumber: number | "latest", provider: Providerish, options?: { verify?: boolean }) {
-            const prover = new ERC20Prover(provider)
-            const verify = options && options.verify || false
-            return prover.getProof(tokenAddress, storageKeys, blockNumber, verify)
-        }
+        /** Fetches the account and storage proofs, along with the block header data of the given keys within the given contract */
+        export const generateProof = ERC20Proof.getFull
+        /** Fetches the storage proof of the given keys within the given contract */
+        export const generateProofRaw = ERC20Proof.get
 
-        export function verifyProof(stateRoot: string, address: string, proof: any, provider: Providerish) {
-            const prover = new ERC20Prover(provider)
-            return prover.verify(stateRoot, address, proof)
-        }
-
-        /** Computes the balance slot that the given holder address has, given the balance mapping position within the contract */
-        export function getHolderBalanceSlot(holderAddress: string, balanceMappingPosition: number) {
-            return ERC20Prover.getHolderBalanceSlot(holderAddress, balanceMappingPosition)
-        }
+        /** Does nothing if the given proof conforms to the given block stateRoot and contract address. Throws an error otherwise. */
+        export const verifyProof = ERC20Proof.verify
 
         /** Finds the balance mapping position of the given ERC20 token address and attempts to register it on the blockchain */
-        export async function registerTokenAuto(tokenAddress: string, walletOrSigner: Wallet | Signer, gw: IGatewayWeb3Client, customContractAddress?: string): Promise<ContractReceipt> {
+        export async function registerTokenAuto(tokenAddress: string, walletOrSigner: Signer, gw: IGatewayWeb3Client, customContractAddress?: string): Promise<ContractReceipt> {
             const contractInstance = await gw.getTokenStorageProofInstance(walletOrSigner, customContractAddress)
 
-            const balanceMappingPosition = await findBalanceMappingPosition(tokenAddress, await walletOrSigner.getAddress(), gw.provider as providers.JsonRpcProvider)
+            const balanceMappingPosition = await ERC20Proof.findMapSlot(tokenAddress, await walletOrSigner.getAddress(), gw.provider as providers.JsonRpcProvider)
             if (balanceMappingPosition === null) throw new Error("The given token contract does not seem to have a defined mapping position for the holder balances")
 
             const tx = await contractInstance.registerToken(tokenAddress, balanceMappingPosition)
@@ -420,7 +410,7 @@ export namespace CensusOnChain {
         }
 
         /** Associates the given balance mapping position to the given ERC20 token address  */
-        export function registerToken(tokenAddress: string, balanceMappingPosition: number | BigNumber, walletOrSigner: Wallet | Signer, gw: IGatewayWeb3Client, customContractAddress?: string): Promise<ContractReceipt> {
+        export function registerToken(tokenAddress: string, balanceMappingPosition: number | BigNumber, walletOrSigner: Signer, gw: IGatewayWeb3Client, customContractAddress?: string): Promise<ContractReceipt> {
             return gw.getTokenStorageProofInstance(walletOrSigner, customContractAddress)
                 .then((contractInstance) =>
                     contractInstance.registerToken(tokenAddress,
@@ -431,7 +421,7 @@ export namespace CensusOnChain {
         }
 
         /** Overwrites the token's balance mapping position as long as the provided proof is valid */
-        export function setVerifiedBalanceMappingPosition(tokenAddress: string, balanceMappingPosition: number | BigNumber, blockNumber: number | BigNumber, blockHeaderRLP: Buffer, accountStateProof: Buffer, storageProof: Buffer, walletOrSigner: Wallet | Signer, gw: IGatewayWeb3Client, customContractAddress?: string): Promise<ContractReceipt> {
+        export function setVerifiedBalanceMappingPosition(tokenAddress: string, balanceMappingPosition: number | BigNumber, blockNumber: number | BigNumber, blockHeaderRLP: Buffer, accountStateProof: Buffer, storageProof: Buffer, walletOrSigner: Signer, gw: IGatewayWeb3Client, customContractAddress?: string): Promise<ContractReceipt> {
             return gw.getTokenStorageProofInstance(walletOrSigner, customContractAddress)
                 .then((contractInstance) =>
                     contractInstance.setVerifiedBalanceMappingPosition(tokenAddress,
@@ -474,9 +464,6 @@ export namespace CensusOnChain {
             return gw.getTokenStorageProofInstance(null, customContractAddress)
                 .then((contractInstance) => contractInstance.tokenCount())
         }
-
-        export const findBalanceMappingPosition = ERC20Prover.findBalanceMappingPosition
-
     }
 
     export namespace MiniMe {

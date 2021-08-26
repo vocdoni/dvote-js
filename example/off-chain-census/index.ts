@@ -1,10 +1,9 @@
 import * as Bluebird from "bluebird"
-import { Wallet, utils } from "ethers"
+import { Wallet } from "ethers"
 import * as assert from "assert"
 import { readFileSync, writeFileSync } from "fs"
 import * as YAML from 'yaml'
 import { GatewayPool } from "../../src/net/gateway-pool"
-import { EthNetworkID } from "../../src/net/gateway-bootnode"
 import { EntityMetadataTemplate } from "../../src/models/entity"
 import { EntityApi } from "../../src/api/entity"
 import { VotingApi } from "../../src/api/voting"
@@ -13,7 +12,7 @@ import { INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "../
 import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../../src/net/contracts"
 import { VochainWaiter, EthWaiter } from "../../src/util/waiters"
 import { compressPublicKey } from "../../dist"
-import { IGatewayDiscoveryParameters, VocdoniEnvironment } from "../../src"
+import { EthNetworkID, IGatewayDiscoveryParameters, VocdoniEnvironment } from "../../src"
 
 
 const CONFIG_PATH = "./config.yaml"

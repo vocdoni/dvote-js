@@ -5,7 +5,7 @@ import { allSettled } from "../util/promise";
 import { FileApi } from "./file"
 import { XDAI_CHAIN_ID, XDAI_GAS_PRICE, SOKOL_CHAIN_ID, SOKOL_GAS_PRICE } from "../constants"
 import { IMethodOverrides, ensHashAddress, ITokenStorageProofContract } from "../net/contracts"
-import { CensusErc20Api } from "./census"
+import { CensusOnChain } from "./census"
 import { IGatewayClient } from "../common"
 
 export namespace EntityApi {
@@ -104,7 +104,7 @@ export namespace Erc20TokensApi {
                 const indexes = new Array(count).fill(0).map((_, i) => i)
 
                 // TODO Promise.allSettled is the correct one, should be used when target = ES2020 is fixed
-                return allSettled(indexes.map(idx => CensusErc20Api.getTokenAddressAt(idx, gateway)))
+                return allSettled(indexes.map(idx => CensusOnChain.ERC20.getTokenAddressAt(idx, gateway)))
             }).then(results => {
                 return results
                     .filter(item => item.status === "fulfilled")

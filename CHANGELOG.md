@@ -1,6 +1,6 @@
 # DVote JS changelog
 
-##
+## 1.12.0
 
 - Adding `registerVotingKey`
 - Renamed TS types
@@ -11,6 +11,13 @@
     - `IProcessKeys` is now `ProcessKeys`
     - `IVotePackage` is now `VotePackage`
 - Added archive support as a fallback in `VotingApi` for `getProcess`, `getProcessState`, `getProcessSummary`, `getResultsWeight`, `getEnvelopeHeight` and `getRawResults` when the process has expired on the Vochain
+
+## Adding support for MiniMe tokens
+- [Breaking] `CensusErc20Api` is now `CensusOnChain.ERC20`
+- [Breaking] `CensusErc20Api.generateProof` now does not need the computed `[balanceSlot]`
+    - Instead, the holder address and the token balance mapping slot are handled
+- [Breaking] `CensusErc20Api.getHolderBalanceSlot` is no longer needed (removed)
+- Adding `CensusOnChain.ERC20.getProofRaw` for lighter proof requesting
 
 ## 1.11.0
 

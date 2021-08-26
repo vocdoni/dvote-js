@@ -33,7 +33,7 @@ import {
     SourceNetworkId
 } from "../models/protobuf"
 import { DVoteGateway, DVoteGatewayResponseBody, IRequestParameters } from "../net/gateway-dvote"
-import { CensusErc20Api } from "./census"
+import { CensusOnChain } from "./census"
 import { ProcessEnvelopeType } from "dvote-solidity"
 import { ApiMethod } from "../models/gateway"
 import { IGatewayClient, IGatewayDVoteClient, IGatewayWeb3Client } from "../common"
@@ -752,7 +752,7 @@ export namespace VotingApi {
             // const holderAddress = await walletOrSigner.getAddress()
 
             // CHECK THAT THE TOKEN EXISTS
-            if (!await CensusErc20Api.isRegistered(processParameters.tokenAddress, gateway)) {
+            if (!await CensusOnChain.ERC20.isRegistered(processParameters.tokenAddress, gateway)) {
                 return Promise.reject(new Error("The token is not yet registered"))
             }
 
@@ -1468,12 +1468,11 @@ export namespace VotingOracleApi {
             const holderAddress = await walletOrSigner.getAddress()
 
             // CHECK THAT THE TOKEN EXISTS
-            const tokenInfo = await CensusErc20Api.getTokenInfo(processParameters.tokenAddress, gateway)
+            const tokenInfo = await CensusOnChain.ERC20.getTokenInfo(processParameters.tokenAddress, gateway)
             if (!tokenInfo.isRegistered) return Promise.reject(new Error("The token is not yet registered"))
 
             // Generate the census proof
-            const balanceSlot = CensusErc20Api.getHolderBalanceSlot(holderAddress, tokenInfo.balanceMappingPosition)
-            const { proof } = await CensusErc20Api.generateProof(processParameters.tokenAddress, [balanceSlot], processParameters.sourceBlockHeight, gateway.provider as providers.JsonRpcProvider)
+            const { proof } = await CensusOnChain.ERC20.generateProof(processParameters.tokenAddress, holderAddress, tokenInfo.balanceMappingPosition, processParameters.sourceBlockHeight, gateway.provider as providers.JsonRpcProvider)
             if (!proof?.storageProof?.length)
                 return Promise.reject(new Error("Invalid storage proof"))
 

@@ -5,7 +5,7 @@ import { readFileSync, writeFileSync } from "fs"
 import * as YAML from 'yaml'
 import {
     VotingApi,
-    CensusErc20Api,
+    CensusOnChain,
     GatewayPool,
     Gateway, GatewayInfo,
     EthNetworkID,
@@ -126,14 +126,14 @@ async function connectGateways(accounts: Account[]): Promise<GatewayPool | Gatew
 async function launchNewVote() {
     console.log("Computing the storage proof of creator the account")
 
-    if (!await CensusErc20Api.isRegistered(config.tokenAddress, pool)) {
-        await CensusErc20Api.registerTokenAuto(
+    if (!await CensusOnChain.ERC20.isRegistered(config.tokenAddress, pool)) {
+        await CensusOnChain.ERC20.registerTokenAuto(
             config.tokenAddress,
             creatorWallet,
             pool
         )
 
-        assert((await CensusErc20Api.getTokenInfo(config.tokenAddress, pool)).isRegistered)
+        assert((await CensusOnChain.ERC20.getTokenInfo(config.tokenAddress, pool)).isRegistered)
     }
 
     console.log("Preparing the new vote metadata")
@@ -204,7 +204,7 @@ async function submitVotes(accounts: Account[]) {
     console.log("Launching votes")
 
     const processKeys = processState.envelopeType.encryptedVotes ? await VotingApi.getProcessKeys(processId, pool) : null
-    const balanceMappingPosition = (await CensusErc20Api.getTokenInfo(config.tokenAddress, pool)).balanceMappingPosition
+    const balanceMappingPosition = (await CensusOnChain.ERC20.getTokenInfo(config.tokenAddress, pool)).balanceMappingPosition
 
     await Bluebird.map(accounts, async (account: Account, idx: number) => {
         process.stdout.write(`Starting [${idx}] ; `)
@@ -213,8 +213,7 @@ async function submitVotes(accounts: Account[]) {
 
         process.stdout.write(`Gen Proof [${idx}] ; `)
 
-        const balanceSlot = CensusErc20Api.getHolderBalanceSlot(wallet.address, balanceMappingPosition)
-        const result = await CensusErc20Api.generateProof(config.tokenAddress, [balanceSlot], processState.sourceBlockHeight, pool.provider as providers.JsonRpcProvider)
+        const result = await CensusOnChain.ERC20.generateProof(config.tokenAddress, wallet.address, balanceMappingPosition, processState.sourceBlockHeight, pool.provider as providers.JsonRpcProvider)
 
         process.stdout.write(`Pkg Envelope [${idx}] ; `)
 
