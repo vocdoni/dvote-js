@@ -3,9 +3,8 @@ export type GatewayApiName = "file" | "vote" | "census" | "results"
 export type BackendApiName = "registry" | "oracle"
 export type ApiName = GatewayApiName | BackendApiName | "info" | "raw"
 
-const GET_INFO_METHOD_NAME = "getInfo"
-
 // API method enum's
+export const infoApiMethods = ["getInfo", "getStats", "getBlockList"] as const
 export const rawApiMethods = ["submitRawTx"] as const
 export const fileApiMethods = ["fetchFile", "addFile", "pinList", "pinFile", "unpinFile"] as const
 export const voteApiMethods = ["submitEnvelope", "getEnvelopeStatus", "getEnvelope", "getEnvelopeHeight", "getProcessKeys", "getProcessList", "getEnvelopeList", "getBlockHeight", "getBlockStatus", "getProcessInfo", "getProcessSummary"] as const
@@ -15,10 +14,11 @@ export const resultsApiMethods = ["getResults", "getResultsWeight", "getEntityLi
 export const registryApiMethods = ["signUp", "getEntity", "updateEntity", "countMembers", "listMembers", "getMember", "updateMember", "deleteMembers", "generateTokens", "exportTokens", "importMembers", "countTargets", "listTargets", "getTarget", "dumpTarget", "dumpCensus", "addCensus", "updateCensus", "getCensus", "countCensus", "listCensus", "deleteCensus", "sendValidationLinks", "sendVotingLinks", "createTag", "listTags", "deleteTag", "addTag", "removeTag"] as const
 export const oracleApiMethods = ["newERC20process"] as const
 
-export const gatewayApiMethods: GatewayApiMethod[] = [].concat(rawApiMethods).concat(fileApiMethods).concat(voteApiMethods).concat(censusApiMethods).concat(resultsApiMethods)
+export const gatewayApiMethods: GatewayApiMethod[] = [].concat(infoApiMethods).concat(rawApiMethods).concat(fileApiMethods).concat(voteApiMethods).concat(censusApiMethods).concat(resultsApiMethods)
 export const backendApiMethods: RegistryApiMethod[] = [].concat(registryApiMethods)
 
 // API method families
+export type InfoApiMethod = typeof infoApiMethods[number]
 export type RawApiMethod = typeof rawApiMethods[number]
 export type FileApiMethod = typeof fileApiMethods[number]
 export type VoteApiMethod = typeof voteApiMethods[number]
@@ -27,8 +27,6 @@ export type ResultsApiMethod = typeof resultsApiMethods[number]
 
 export type RegistryApiMethod = typeof registryApiMethods[number]
 export type OracleApiMethod = typeof oracleApiMethods[number]
-
-export type InfoApiMethod = typeof GET_INFO_METHOD_NAME
 
 export type GatewayApiMethod = RawApiMethod | FileApiMethod | VoteApiMethod | CensusApiMethod | ResultsApiMethod
 export type BackendApiMethod = RegistryApiMethod | OracleApiMethod
@@ -47,7 +45,7 @@ export const allApis = {
     oracle: oracleApiMethods,
 
     // Other
-    info: [GET_INFO_METHOD_NAME],
+    info: infoApiMethods,
     raw: rawApiMethods,
 }
 

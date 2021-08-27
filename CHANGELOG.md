@@ -11,6 +11,7 @@
     - `IProcessKeys` is now `ProcessKeys`
     - `IVotePackage` is now `VotePackage`
 - Added archive support as a fallback in `VotingApi` for `getProcess`, `getProcessState`, `getProcessSummary`, `getResultsWeight`, `getEnvelopeHeight` and `getRawResults` when the process has expired on the Vochain
+- Supporting the `getStats` and `getBlockList` gateway methods
 
 ## 1.11.0
 
