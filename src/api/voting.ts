@@ -608,8 +608,9 @@ export namespace VotingApi {
                     .then(processArchiveData => GatewayArchive.mapToGetResultsWeight(processArchiveData))
             })
             .then((response) => {
-                if (response.weight < 0) throw new Error("The weight value is not valid")
-                else if (typeof response.weight !== 'string' && !BigNumber.isBigNumber(response.weight)) throw new Error("The weight value is not valid")
+                if (typeof response.weight !== 'string' || !BigNumber.isBigNumber(response.weight)) {
+                    throw new Error("The weight value is not valid")
+                }
 
                 return BigNumber.from(response.weight)
             })
