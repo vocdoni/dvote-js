@@ -8,7 +8,7 @@ import {
     MultiLanguage,
     URI
 } from "../common"
-import { object, array, string } from "yup"
+import { object, array, string, mixed } from "yup"
 import { by639_1 } from 'iso-language-codes'
 export { EntityMetadataTemplate } from "./templates/entity"
 
@@ -74,8 +74,9 @@ const entityMetadataSchema = object().shape({
     media: object().shape({
         avatar: string().required(),
         header: string().required(),
+        logo: string()
     }),
-
+    meta: mixed().optional(),
     actions: array().of(
         object().shape({
             // Common
@@ -151,9 +152,12 @@ export interface EntityMetadata {
     },
     media: {
         avatar: ContentUriString,
-        header: ContentUriString
+        header: ContentUriString,
+        logo?: ContentUriString
     },
-
+    meta?: {
+        [key: string]: any
+    },
     // List of custom interactions that the entity defines.
     // It may include anything like visiting web sites, uploading pictures, making payments, etc.
     actions: EntityCustomAction[],
