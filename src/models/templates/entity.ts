@@ -22,5 +22,6 @@ export const EntityMetadataTemplate: EntityMetadata = {
         header: "https://source.unsplash.com/random/800x600",
         logo: "https://source.unsplash.com/random/800x600"
     },
+    meta: {},
     actions: []
 }
