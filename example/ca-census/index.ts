@@ -4,7 +4,6 @@ import * as assert from "assert"
 import { readFileSync, writeFileSync } from "fs"
 import * as YAML from 'yaml'
 import { GatewayPool } from "../../src/net/gateway-pool"
-import { EthNetworkID } from "../../src/net/gateway-bootnode"
 import { EntityMetadata, EntityMetadataTemplate } from "../../src/models/entity"
 import { EntityApi } from "../../src/api/entity"
 import { CaBundleProtobuf, VotingApi } from "../../src/api/voting"
@@ -15,8 +14,8 @@ import { VochainWaiter, EthWaiter } from "../../src/util/waiters"
 import axios from "axios"
 import { Random } from "../../src/util/random"
 import { Buffer } from "buffer"
-import { VocdoniEnvironment } from "../../src/models/common"
 import { IGatewayDiscoveryParameters } from "../../src"
+import { EthNetworkID, VocdoniEnvironment } from "../../dist"
 // import { DVoteGateway } from "../../src/net/gateway-dvote"
 
 const CONFIG_PATH = "./config.yaml"
@@ -125,9 +124,6 @@ async function setEntityMetadata() {
     assert(entityMetaPost)
     assert.strictEqual(entityMetaPost.name.default, metadata.name.default)
     assert.strictEqual(entityMetaPost.description.default, metadata.description.default)
-    assert.strictEqual(entityMetaPost.actions.length, 1)
-    assert.strictEqual(entityMetaPost.votingProcesses.active.length, 0)
-    assert.strictEqual(entityMetaPost.votingProcesses.ended.length, 0)
 
     return entityMetaPost
 }
