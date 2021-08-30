@@ -687,7 +687,7 @@ export namespace VotingApi {
 
             // REGISTER THE NEW PROCESS
             const ethChainId = await gateway.chainId
-            let options: IMethodOverrides = {
+            const options: IMethodOverrides = {
                 value: await getProcessPrice(gateway)
             }
             let tx: ContractTransaction
@@ -721,14 +721,6 @@ export namespace VotingApi {
             const namespaceId = await processInstance.namespaceId()
             const processId = await processInstance.getProcessId(address, count.toNumber() - 1, namespaceId, ethChainId)
 
-            // TODO: This might be simplified in the future (skip the process list updates here)
-
-            // UPDATE THE ENTITY
-            if (!entityMetadata.votingProcesses) entityMetadata.votingProcesses = { active: [], ended: [] }
-            entityMetadata.votingProcesses.active = [processId].concat(entityMetadata.votingProcesses.active || [])
-
-            await EntityApi.setMetadata(address, entityMetadata, walletOrSigner, gateway)
-
             return processId
         }
         catch (err) {
@@ -750,7 +742,6 @@ export namespace VotingApi {
         try {
             // throw if not valid
             const metadata = checkValidProcessMetadata(processParameters.metadata)
-            // const holderAddress = await walletOrSigner.getAddress()
 
             // CHECK THAT THE TOKEN EXISTS
             if (!await CensusErc20Api.isRegistered(processParameters.tokenAddress, gateway)) {
@@ -773,7 +764,7 @@ export namespace VotingApi {
 
             // REGISTER THE NEW PROCESS
             const ethChainId = await gateway.chainId
-            let options: IMethodOverrides = {
+            const options: IMethodOverrides = {
                 value: await getProcessPrice(gateway)
             }
             let tx: ContractTransaction

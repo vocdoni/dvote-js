@@ -53,21 +53,20 @@ describe("Entity", () => {
             }).to.throw()
 
             // Incomplete fields
-            const entityMetadata = EntityMetadataTemplate
+            const entityMetadata = JSON.parse(JSON.stringify(EntityMetadataTemplate))
 
-            expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { meta: invalidMeta })) }).to.throw()
             expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { version: null })) }).to.throw()
             expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { languages: null })) }).to.throw()
             expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { name: null })) }).to.throw()
             expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { description: null })) }).to.throw()
-            expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { votingProcesses: null })) }).to.throw()
+            expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { votingProcesses: [] })) }).to.not.throw()
             expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { newsFeed: null })) }).to.throw()
-            expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { media: { avatar: null }})) }).to.throw()
+            expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { avatar: null })) }).to.throw()
             expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { actions: null })) }).to.throw()
-            expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { bootEntities: null })) }).to.throw()
-            expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { fallbackBootNodeEntities: null })) }).to.throw()
-            expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { trustedEntities: null })) }).to.throw()
-            expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { censusServiceManagedEntities: null })) }).to.throw()
+            expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { bootEntities: [] })) }).to.not.throw()
+            expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { fallbackBootNodeEntities: [] })) }).to.not.throw()
+            expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { trustedEntities: [] })) }).to.not.throw()
+            expect(() => { checkValidEntityMetadata(Object.assign({}, entityMetadata, { censusServiceManagedEntities: [] })) }).to.not.throw()
         })
     })
 })
