@@ -23,8 +23,10 @@ export const EntityMetadataTemplate: EntityMetadata = {
     },
     media: {
         avatar: "https://source.unsplash.com/random/800x600",
-        header: "https://source.unsplash.com/random/800x600"
+        header: "https://source.unsplash.com/random/800x600",
+        logo: "https://source.unsplash.com/random/800x600"
     },
+    meta: {},
     actions: [
         {
             type: "register",

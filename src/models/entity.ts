@@ -8,7 +8,7 @@ import {
     MultiLanguage,
     URI
 } from "../common"
-import { object, array, string, mixed } from "yup"
+import { object, array, string } from "yup"
 import { by639_1 } from 'iso-language-codes'
 export { EntityMetadataTemplate } from "./templates/entity"
 
@@ -76,7 +76,7 @@ const entityMetadataSchema = object().shape({
         header: string().required(),
         logo: string()
     }),
-    meta: mixed().optional(),
+    meta: object().optional(),
     actions: array().of(
         object().shape({
             // Common
