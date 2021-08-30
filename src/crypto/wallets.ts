@@ -1,7 +1,8 @@
 import { providers, Wallet, utils } from "ethers"
 import * as createBlakeHash from "blake-hash"
 import { eddsa, babyJub } from "circomlib"
-import { Scalar, utils as ffutils } from "ffjavascript"
+// Note: Importing ffjavascript as an ES module will not work
+const { Scalar, utils: ffutils } = require("../../node_modules/ffjavascript/build/main.cjs")
 import { bufferToBigInt } from "../util/encoding"
 
 export class WalletUtil {
