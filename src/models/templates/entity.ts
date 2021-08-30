@@ -13,10 +13,6 @@ export const EntityMetadataTemplate: EntityMetadata = {
         default: "The description of my entity goes here",
         // fr: "La description officielle de ma communauté est ici"
     },
-    votingProcesses: {
-        active: [],
-        ended: []
-    },
     newsFeed: {
         default: "ipfs://QmWybQwdBwF81Dt71bNTDDr8PBpW9kNbWtQ64arswaBz1C",
         // fr: "https://feed2json.org/convert?url=http://www.intertwingly.net/blog/index.atom"
@@ -26,21 +22,5 @@ export const EntityMetadataTemplate: EntityMetadata = {
         header: "https://source.unsplash.com/random/800x600",
         logo: "https://source.unsplash.com/random/800x600"
     },
-    meta: {},
-    actions: [
-        {
-            type: "register",
-            actionKey: "register",
-            name: {
-                default: "Sign up",
-                // fr: "S'inscrire"
-            },
-            url: "wss://my-server/endpoint",
-            visible: "wss://my-server/endpoint"
-        }
-    ],
-    bootEntities: [],
-    fallbackBootNodeEntities: [],
-    trustedEntities: [],
-    censusServiceManagedEntities: []
+    actions: []
 }

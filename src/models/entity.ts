@@ -4,7 +4,6 @@
 // - A metadata JSON template
 
 import {
-    HexString,
     MultiLanguage,
     URI
 } from "../common"
@@ -15,7 +14,6 @@ export { EntityMetadataTemplate } from "./templates/entity"
 // LOCAL TYPE ALIASES
 type ContentUriString = string
 type ContentHashedUriString = string
-type MessagingUriString = string
 
 ///////////////////////////////////////////////////////////////////////////////
 // VALIDATION
@@ -30,7 +28,7 @@ export function checkValidEntityMetadata(entityMetadata: EntityMetadata) {
 
     try {
         entityMetadataSchema.validateSync(entityMetadata)
-        return entityMetadataSchema.cast(entityMetadata) as EntityMetadata
+        return entityMetadataSchema.cast(entityMetadata) as unknown as EntityMetadata
     }
     catch (err) {
         if (Array.isArray(err.errors)) throw new Error("ValidationError: " + err.errors.join(", "))
@@ -51,11 +49,6 @@ const multiLanguageStringKeys = {
     ...strLangCodes
 }
 
-const entityReferenceSchema = object().shape({
-    entityId: string().matches(/^0x[a-z0-9]+$/).required(),
-    entryPoints: array().of(string().required())
-})
-
 // MAIN ENTITY SCHEMA
 
 const entityMetadataSchema = object().shape({
@@ -64,11 +57,6 @@ const entityMetadataSchema = object().shape({
     languages: array().of(string().matches(/^([a-z]{2}|default)$/)).required(), // TODO: remove default
     name: object().shape(multiLanguageStringKeys).required(),
     description: object().shape(multiLanguageStringKeys).required(),
-
-    votingProcesses: object().shape({
-        active: array().of(string().matches(/^0x[a-z0-9]+$/)).defined(),
-        ended: array().of(string().matches(/^0x[a-z0-9]+$/)).defined()
-    }).required(),
 
     newsFeed: object().shape(multiLanguageStringKeys).required(),
     media: object().shape({
@@ -97,15 +85,7 @@ const entityMetadataSchema = object().shape({
                 })
             ).optional(),
         })
-    ).defined(),
-
-    bootEntities: array().of(entityReferenceSchema).defined(),
-
-    fallbackBootNodeEntities: array().of(entityReferenceSchema).defined(),
-
-    trustedEntities: array().of(entityReferenceSchema).defined(),
-
-    censusServiceManagedEntities: array().of(entityReferenceSchema).defined()
+    ).optional(),
 }).unknown(true) // allow deprecated or unknown fields beyond the required ones
 
 
@@ -145,11 +125,7 @@ export interface EntityMetadata {
     description: MultiLanguage<string>,
 
     newsFeed: MultiLanguage<ContentUriString>,
-    /** NOTE: This field is deprecated */
-    votingProcesses?: {
-        active?: string[],  // Process ID's to query on the Voting Contract
-        ended?: string[]
-    },
+
     media: {
         avatar: ContentUriString,
         header: ContentUriString,
@@ -160,12 +136,7 @@ export interface EntityMetadata {
     },
     // List of custom interactions that the entity defines.
     // It may include anything like visiting web sites, uploading pictures, making payments, etc.
-    actions: EntityCustomAction[],
-
-    bootEntities: EntityReference[],
-    fallbackBootNodeEntities: EntityReference[],
-    trustedEntities: EntityReference[],
-    censusServiceManagedEntities: EntityReference[],
+    actions?: Array<EntityCustomAction>,
 }
 
 export type EntityCustomAction = EntityBaseAction & (EntityRegisterAction | EntityBrowserAction | EntityImageUploadAction)
@@ -227,9 +198,4 @@ type ImageUploadSource = {
     orientation?: "portrait" | "landscape",  // Optional when type == "gallery"
     overlay?: "face" | "id-card-front" | "id-card-back",
     caption?: MultiLanguage<string>
-}
-
-type EntityReference = {
-    entityId: HexString,
-    entryPoints: string[]
 }
