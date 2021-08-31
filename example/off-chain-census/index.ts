@@ -246,9 +246,7 @@ async function launchNewVote(censusRoot, censusUri) {
     processId = await VotingApi.newProcess(processParamsPre, entityWallet, pool)
     assert(processId)
 
-    console.log("Reading the process metadata back")
-    const entityMetaPost = await EntityApi.getMetadata(await entityWallet.getAddress(), pool)
-    assert(entityMetaPost)
+    processMetadata = processParamsPre.metadata
 
     // Reading back
     processParams = await VotingApi.getProcessContractParameters(processId, pool)

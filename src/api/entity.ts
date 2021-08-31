@@ -24,6 +24,7 @@ export namespace EntityApi {
         if (!metadataContentUri) return Promise.reject(new Error("The given entity has no metadata defined yet"))
 
         const jsonData = await FileApi.fetchString(metadataContentUri, gateway)
+        if (!jsonData) return Promise.reject(new Error("The given entity has no metadata defined yet"))
 
         return JSON.parse(jsonData)
     }
