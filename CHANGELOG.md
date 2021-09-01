@@ -1,5 +1,8 @@
 # DVote JS changelog
 
+## 1.11.1
+- Workaround: Back off the tricky exports from ffjavascript (ES incompatible by default)
+
 ## 1.11.0
 
 - Adding `registerVotingKey`
