@@ -1,6 +1,8 @@
 # DVote JS changelog
 
 ## 1.11.1
+
+- Corrects XDAI and XDAI_STG entityID constants
 - Workaround: Back off the tricky exports from ffjavascript (ES incompatible by default)
 
 ## 1.11.0
