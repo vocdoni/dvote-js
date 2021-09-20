@@ -2,7 +2,7 @@ import { providers, Wallet, utils } from "ethers"
 import * as createBlakeHash from "blake-hash"
 import { eddsa, babyJub } from "circomlib"
 // Note: Importing ffjavascript as an ES module will not work
-// const { Scalar, utils: ffutils } = require("ffjavascript/require") // .cjs
+const { Scalar, utils: ffutils } = require("../../node_modules/ffjavascript/build/main.cjs")
 import { bufferToBigInt } from "../util/encoding"
 
 export class WalletUtil {
@@ -81,22 +81,22 @@ export class WalletBabyJub {
         return createBlakeHash("blake512").update(this._rawPrivKey).digest()
     }
 
-    // /** Returns the blake hash of the original private key, as a bigint.
-    //  * Use this value to feed to the snarks circuit.
-    //  */
-    // public get privateKey(): bigint {
-    //     const h1 = this.hashedRawPrivateKey
-    //     const sBuff: Buffer = eddsa.pruneBuffer(h1.slice(0, 32))
-    //     const s: bigint = ffutils.leBuff2int(sBuff)
-    //     return Scalar.shr(s, 3) as bigint
-    // }
+    /** Returns the blake hash of the original private key, as a bigint.
+     * Use this value to feed to the snarks circuit.
+     */
+    public get privateKey(): bigint {
+        const h1 = this.hashedRawPrivateKey
+        const sBuff: Buffer = eddsa.pruneBuffer(h1.slice(0, 32))
+        const s: bigint = ffutils.leBuff2int(sBuff)
+        return Scalar.shr(s, 3) as bigint
+    }
 
-    // /** Returns the two points of the public key coordinate as big integers */
-    // public get publicKey(): PublicKeyBabyJub {
-    //     const [pubKeyX, pubKeyY] = babyJub.mulPointEscalar(babyJub.Base8, this.privateKey) as [bigint, bigint]
+    /** Returns the two points of the public key coordinate as big integers */
+    public get publicKey(): PublicKeyBabyJub {
+        const [pubKeyX, pubKeyY] = babyJub.mulPointEscalar(babyJub.Base8, this.privateKey) as [bigint, bigint]
 
-    //     return { x: pubKeyX, y: pubKeyY }
-    // }
+        return { x: pubKeyX, y: pubKeyY }
+    }
 
     /** Returns the signature of the given message using the wallet's private key */
     public sign(msg: Buffer): { R8: [bigint, bigint], S: bigint } {
