@@ -13,7 +13,7 @@
   },
   "homepage": "https://github.com/vocdoni/bridge-ui#readme",
   "dependencies": {
-    "dvote-js": "file:dvote-js-1.11.0.tgz",
+    "dvote-js": "file:dvote-js-1.11.2.tgz",
     "ethers": "^5.4.1",
     "next": "10.0.5",
     "react": "^17.0.1",
