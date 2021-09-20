@@ -3,7 +3,7 @@ import { IRequestParameters } from "../net/gateway-dvote"
 import { Keccak256, Poseidon } from "../crypto/hashing"
 import { hexStringToBuffer } from "../util/encoding"
 import { CENSUS_MAX_BULK_SIZE } from "../constants"
-import { ERC20Prover } from "@vocdoni/storage-proofs-eth"
+import { ERC20Proof } from "@vocdoni/storage-proofs-eth"
 import { compressPublicKey } from "../crypto/elliptic"
 import { blind as _blind, unblind as _unblind, verify as _verify, signatureFromHex as _signatureFromHex, signatureToHex as _signatureToHex, pointFromHex as _pointFromHex, pointToHex as _pointToHex, UserSecretData, UnblindedSignature, BigInteger, Point } from "blindsecp256k1"
 import { hexZeroPad } from "ethers/lib/utils"
@@ -390,20 +390,12 @@ export namespace CensusCaApi {
 }
 
 export namespace CensusErc20Api {
-    export function generateProof(tokenAddress: string, storageKeys: string[], blockNumber: number | "latest", provider: string | providers.JsonRpcProvider | providers.Web3Provider | providers.IpcProvider | providers.InfuraProvider, options?: { verify?: boolean }) {
-        const prover = new ERC20Prover(provider)
-        const verify = options && options.verify || false
-        return prover.getProof(tokenAddress, storageKeys, blockNumber, verify)
+    export function generateProof(tokenAddress: string, holderAddress: string, tokenBalanceMappingPosition: number, blockNumber: number | "latest", provider: providers.JsonRpcProvider | providers.Web3Provider | providers.IpcProvider | providers.InfuraProvider, options?: { verify?: boolean }) {
+        return ERC20Proof.getFull(tokenAddress, holderAddress, tokenBalanceMappingPosition, blockNumber, provider)
     }
 
-    export function verifyProof(stateRoot: string, address: string, proof: any, provider: string | providers.JsonRpcProvider | providers.Web3Provider | providers.IpcProvider | providers.InfuraProvider) {
-        const prover = new ERC20Prover(provider)
-        return prover.verify(stateRoot, address, proof)
-    }
-
-    /** Computes the balance slot that the given holder address has, given the balance mapping position within the contract */
-    export function getHolderBalanceSlot(holderAddress: string, balanceMappingPosition: number) {
-        return ERC20Prover.getHolderBalanceSlot(holderAddress, balanceMappingPosition)
+    export function verifyProof(stateRoot: string, address: string, proof: any) {
+        return ERC20Proof.verify(stateRoot, address, proof)
     }
 
     /** Finds the balance mapping position of the given ERC20 token address and attempts to register it on the blockchain */
@@ -480,7 +472,6 @@ export namespace CensusErc20Api {
      * If the position cannot be found among the 50 first ones, `null` is returned.
      */
     export async function findBalanceMappingPosition(tokenAddress: string, holderAddress: string, provider: providers.JsonRpcProvider) {
-        const verify = true
         try {
             const blockNumber = await provider.getBlockNumber()
             const tokenInstance = new Contract(tokenAddress, ERC20_ABI, provider)
@@ -490,17 +481,12 @@ export namespace CensusErc20Api {
             for (let i = 0; i < 50; i++) {
                 const tokenBalanceMappingPosition = i
 
-                const balanceSlot = CensusErc20Api.getHolderBalanceSlot(
-                    holderAddress,
-                    tokenBalanceMappingPosition
-                )
-
                 const result = await CensusErc20Api.generateProof(
                     tokenAddress,
-                    [balanceSlot],
+                    holderAddress,
+                    tokenBalanceMappingPosition,
                     blockNumber,
-                    provider,
-                    { verify }
+                    provider
                 ).catch(() => null) // Failed => ignore
 
                 if (result == null || !result.proof) continue

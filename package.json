@@ -21,7 +21,7 @@
     "postinstall": "rimraf node_modules/ganache-core/node_modules/web3-providers-ws/node_modules/websocket/.git || true"
   },
   "dependencies": {
-    "@vocdoni/storage-proofs-eth": "^0.3.2",
+    "@vocdoni/storage-proofs-eth": "^0.4.0",
     "axios": "^0.21.1",
     "blindsecp256k1": "0.0.6",
     "buffer": "^6.0.3",

@@ -131,8 +131,7 @@ async function launchNewVote() {
     const tokenInfo = await CensusErc20Api.getTokenInfo(config.tokenAddress, pool)
 
     const blockNumber = (await pool.provider.getBlockNumber()) - 1
-    const balanceSlot = CensusErc20Api.getHolderBalanceSlot(creatorWallet.address, tokenInfo.balanceMappingPosition)
-    const result = await CensusErc20Api.generateProof(config.tokenAddress, [balanceSlot], blockNumber, pool.provider as providers.JsonRpcProvider)
+    const result = await CensusErc20Api.generateProof(config.tokenAddress, creatorWallet.address, tokenInfo.balanceMappingPosition, blockNumber, pool.provider as providers.JsonRpcProvider)
     const { proof, block, blockHeaderRLP, accountProofRLP, storageProofsRLP } = result
 
     const registeredTokens = await Erc20TokensApi.getTokenList(pool)
@@ -230,8 +229,7 @@ async function submitVotes(accounts: Account[]) {
 
         process.stdout.write(`Gen Proof [${idx}] ; `)
 
-        const balanceSlot = CensusErc20Api.getHolderBalanceSlot(wallet.address, balanceMappingPosition)
-        const result = await CensusErc20Api.generateProof(config.tokenAddress, [balanceSlot], processParams.sourceBlockHeight, pool.provider as providers.JsonRpcProvider)
+        const result = await CensusErc20Api.generateProof(config.tokenAddress, wallet.address, balanceMappingPosition, processParams.sourceBlockHeight, pool.provider as providers.JsonRpcProvider)
 
         process.stdout.write(`Pkg Envelope [${idx}] ; `)
 

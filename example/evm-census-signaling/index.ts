@@ -213,8 +213,7 @@ async function submitVotes(accounts: Account[]) {
 
         process.stdout.write(`Gen Proof [${idx}] ; `)
 
-        const balanceSlot = CensusErc20Api.getHolderBalanceSlot(wallet.address, balanceMappingPosition)
-        const result = await CensusErc20Api.generateProof(config.tokenAddress, [balanceSlot], processState.sourceBlockHeight, pool.provider as providers.JsonRpcProvider)
+        const result = await CensusErc20Api.generateProof(config.tokenAddress, wallet.address, balanceMappingPosition, processState.sourceBlockHeight, pool.provider as providers.JsonRpcProvider)
 
         process.stdout.write(`Pkg Envelope [${idx}] ; `)
 
