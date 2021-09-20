@@ -7,7 +7,6 @@ import { ERC20Proof } from "@vocdoni/storage-proofs-eth"
 import { compressPublicKey } from "../crypto/elliptic"
 import { blind as _blind, unblind as _unblind, verify as _verify, signatureFromHex as _signatureFromHex, signatureToHex as _signatureToHex, pointFromHex as _pointFromHex, pointToHex as _pointToHex, UserSecretData, UnblindedSignature, BigInteger, Point } from "blindsecp256k1"
 import { hexZeroPad } from "ethers/lib/utils"
-import { ERC20_ABI } from "../util/erc"
 import { IGatewayClient, IGatewayWeb3Client } from "../common"
 // import ContentURI from "../wrappers/content-uri"
 
@@ -402,10 +401,10 @@ export namespace CensusErc20Api {
     export async function registerTokenAuto(tokenAddress: string, walletOrSigner: Wallet | Signer, gw: IGatewayWeb3Client, customContractAddress?: string): Promise<ContractReceipt> {
         const contractInstance = await gw.getTokenStorageProofInstance(walletOrSigner, customContractAddress)
 
-        const balanceMappingPosition = await CensusErc20Api.findBalanceMappingPosition(tokenAddress, await walletOrSigner.getAddress(), gw.provider as providers.JsonRpcProvider)
-        if (balanceMappingPosition === null) throw new Error("The given token contract does not seem to have a defined mapping position for the holder balances")
+        const mapSlot = await CensusErc20Api.findBalanceMappingPosition(tokenAddress, await walletOrSigner.getAddress(), gw.provider as providers.JsonRpcProvider)
+        if (mapSlot === null) throw new Error("The given token contract does not seem to have a defined mapping position for the holder balances")
 
-        const tx = await contractInstance.registerToken(tokenAddress, balanceMappingPosition)
+        const tx = await contractInstance.registerToken(tokenAddress, mapSlot)
         return tx.wait()
     }
 
@@ -471,38 +470,7 @@ export namespace CensusErc20Api {
      * Attempts to find the index at which the holder balances are stored within the token contract.
      * If the position cannot be found among the 50 first ones, `null` is returned.
      */
-    export async function findBalanceMappingPosition(tokenAddress: string, holderAddress: string, provider: providers.JsonRpcProvider) {
-        try {
-            const blockNumber = await provider.getBlockNumber()
-            const tokenInstance = new Contract(tokenAddress, ERC20_ABI, provider)
-            const balance = await tokenInstance.balanceOf(holderAddress) as BigNumber
-            if (balance.isZero()) throw new Error("The holder has a zero balance")
-
-            for (let i = 0; i < 50; i++) {
-                const tokenBalanceMappingPosition = i
-
-                const result = await CensusErc20Api.generateProof(
-                    tokenAddress,
-                    holderAddress,
-                    tokenBalanceMappingPosition,
-                    blockNumber,
-                    provider
-                ).catch(() => null) // Failed => ignore
-
-                if (result == null || !result.proof) continue
-
-                const onChainBalance = BigNumber.from(result.proof.storageProof[0].value)
-                if (!onChainBalance.eq(balance)) {
-                    // keep searching
-                    continue
-                }
-
-                // FOUND
-                return tokenBalanceMappingPosition
-            }
-            return null
-        } catch (err) {
-            throw err
-        }
+    export function findBalanceMappingPosition(tokenAddress: string, holderAddress: string, provider: providers.JsonRpcProvider) {
+        return ERC20Proof.findMapSlot(tokenAddress, holderAddress, provider)
     }
 }

@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.11.3
+
+- Upgrade the storage-proofs dependency
+
 ## 1.11.2
 
 - Corrects XDAI and XDAI_STG entityID constants
