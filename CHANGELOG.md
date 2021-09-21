@@ -3,6 +3,7 @@
 ## 1.11.3
 
 - Upgrade the storage-proofs dependency
+- Adding the Baby Jub Jub wallet back (ffjavascript)
 
 ## 1.11.2
 
