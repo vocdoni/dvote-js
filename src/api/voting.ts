@@ -1464,7 +1464,7 @@ export namespace VotingOracleApi {
             if (!tokenInfo.isRegistered) return Promise.reject(new Error("The token is not yet registered"))
 
             // Generate the census proof
-            const { proof } = await CensusErc20Api.generateProof(processParameters.tokenAddress, holderAddress, tokenInfo.balanceMappingPosition, processParameters.sourceBlockHeight, gateway.provider as providers.JsonRpcProvider)
+            const proof = await CensusErc20Api.generateProof(processParameters.tokenAddress, holderAddress, tokenInfo.balanceMappingPosition, processParameters.sourceBlockHeight, gateway.provider as providers.JsonRpcProvider)
             if (!proof?.storageProof?.length)
                 return Promise.reject(new Error("Invalid storage proof"))
 
