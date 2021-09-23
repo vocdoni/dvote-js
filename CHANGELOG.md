@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.11.4
+
+- Retrieving light storage proofs for ERC20 tokens instead of full block ones
+
 ## 1.11.3
 
 - Upgrade the storage-proofs dependency
