@@ -390,7 +390,7 @@ export namespace CensusCaApi {
 
 export namespace CensusErc20Api {
     export function generateProof(tokenAddress: string, holderAddress: string, tokenBalanceMappingPosition: number, blockNumber: number | "latest", provider: providers.JsonRpcProvider | providers.Web3Provider | providers.IpcProvider | providers.InfuraProvider, options?: { verify?: boolean }) {
-        return ERC20Proof.getFull(tokenAddress, holderAddress, tokenBalanceMappingPosition, blockNumber, provider)
+        return ERC20Proof.get(tokenAddress, holderAddress, tokenBalanceMappingPosition, blockNumber, provider)
     }
 
     export function verifyProof(stateRoot: string, address: string, proof: any) {
