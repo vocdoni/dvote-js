@@ -8,14 +8,14 @@ import { utils, } from "ethers"
 
 const newNonce = () => tweetnacl.randomBytes(tweetnacl.secretbox.nonceLength)
 
-export class Asymmetric {
+export namespace Asymmetric {
     /**
      * Encrypts the given buffer with NaCl SealedBox using the given hex public key.
      * Returns a buffer with the encrypted payload.
      * @param messageBytes The payload to encrypt
      * @param hexPublicKey 32 byte public key in hex format
      */
-    static encryptRaw(messageBytes: Uint8Array | Buffer, hexPublicKey: string): Buffer {
+    export function encryptRaw(messageBytes: Uint8Array | Buffer, hexPublicKey: string): Buffer {
         if (!(messageBytes instanceof Uint8Array))
             throw new Error("Please, use a Uint8Array or Buffer instance from require('buffer/') to pass the messageBytes")
         else if (typeof hexPublicKey != "string")
@@ -33,7 +33,7 @@ export class Asymmetric {
      * @param messageBytes The payload to encrypt
      * @param hexPublicKey 32 byte public key in hex format
      */
-    static encryptBytes(messageBytes: Uint8Array | Buffer, hexPublicKey: string): string {
+    export function encryptBytes(messageBytes: Uint8Array | Buffer, hexPublicKey: string): string {
         if (!(messageBytes instanceof Uint8Array))
             throw new Error("Please, use a Uint8Array or Buffer instance from require('buffer/') to pass the messageBytes")
         else if (typeof hexPublicKey != "string")
@@ -51,7 +51,7 @@ export class Asymmetric {
      * @param message The payload to encrypt
      * @param hexPublicKey 32 byte public key in hex format
      */
-    static encryptString(message: string, hexPublicKey: string): string {
+    export function encryptString(message: string, hexPublicKey: string): string {
         if (typeof message != "string" || typeof hexPublicKey != "string")
             throw new Error("Invalid parameters")
 
@@ -68,7 +68,7 @@ export class Asymmetric {
      * @param encryptedBytes The payload to decrypt
      * @param hexPrivateKey 32 byte public key in hex format
      */
-    static decryptRaw(encryptedBytes: Uint8Array | Buffer, hexPrivateKey: string): Buffer {
+    export function decryptRaw(encryptedBytes: Uint8Array | Buffer, hexPrivateKey: string): Buffer {
         if (!(encryptedBytes instanceof Uint8Array))
             throw new Error("Please, use a Uint8Array or Buffer instance from require('buffer/') to pass the encryptedBytes")
         else if (typeof hexPrivateKey != "string")
@@ -88,7 +88,7 @@ export class Asymmetric {
      * @param encryptedBase64 The payload to decrypt
      * @param hexPrivateKey 32 byte public key in hex format
      */
-    static decryptBytes(encryptedBase64: string, hexPrivateKey: string): Buffer {
+    export function decryptBytes(encryptedBase64: string, hexPrivateKey: string): Buffer {
         if (typeof encryptedBase64 != "string" || typeof hexPrivateKey != "string")
             throw new Error("Invalid parameters")
 
@@ -108,7 +108,7 @@ export class Asymmetric {
      * @param encryptedBase64 The payload to decrypt
      * @param hexPrivateKey 32 byte public key in hex format
      */
-    static decryptString(encryptedBase64: string, hexPrivateKey: string): string {
+    export function decryptString(encryptedBase64: string, hexPrivateKey: string): string {
         if (typeof encryptedBase64 != "string" || typeof hexPrivateKey != "string")
             throw new Error("Invalid parameters")
 
@@ -123,14 +123,14 @@ export class Asymmetric {
     }
 }
 
-export class Symmetric {
+export namespace Symmetric {
     /**
      * Encrypts the given buffer with NaCl SecretBox using the given passpahrase and a random nonce.
      * Returns a Buffer containing `nonce[24] + cipherText[]`.
      * @param messageBytes The payload to encrypt
      * @param passphrase The secret key in string format
      */
-    static encryptRaw(messageBytes: Uint8Array | Buffer, passphrase: string): Buffer {
+    export function encryptRaw(messageBytes: Uint8Array | Buffer, passphrase: string): Buffer {
         if (!(messageBytes instanceof Uint8Array))
             throw new Error("Please, provide a Uint8Array or a Buffer instance from require('buffer/') to pass the messageBytes")
         else if (typeof passphrase != "string")
@@ -155,7 +155,7 @@ export class Symmetric {
      * @param messageBytes The payload to encrypt
      * @param passphrase The secret key in string format
      */
-    static encryptBytes(messageBytes: Uint8Array | Buffer, passphrase: string): string {
+    export function encryptBytes(messageBytes: Uint8Array | Buffer, passphrase: string): string {
         if (!(messageBytes instanceof Uint8Array))
             throw new Error("Please, use a Uint8Array or Buffer instance from require('buffer/') to pass the messageBytes")
         else if (typeof passphrase != "string")
@@ -172,7 +172,7 @@ export class Symmetric {
      * @param message The payload to encrypt
      * @param passphrase The secret key in string format
      */
-    static encryptString(message: string, passphrase: string): string {
+    export function encryptString(message: string, passphrase: string): string {
         if (typeof message != "string" || typeof passphrase != "string")
             throw new Error("Invalid parameters")
 
@@ -188,7 +188,7 @@ export class Symmetric {
      * @param encryptedBytes The payload to decrypt
      * @param passphrase The secret key in string format
      */
-    static decryptRaw(encryptedBytes: Uint8Array | Buffer, passphrase: string): Buffer {
+    export function decryptRaw(encryptedBytes: Uint8Array | Buffer, passphrase: string): Buffer {
         if (!(encryptedBytes instanceof Uint8Array))
             throw new Error("Please, use a Uint8Array or Buffer instance from require('buffer/') to pass the encryptedBytes")
         else if (typeof passphrase != "string")
@@ -219,7 +219,7 @@ export class Symmetric {
      * @param encryptedBase64 The payload to decrypt
      * @param passphrase The secret key in string format
      */
-    static decryptBytes(encryptedBase64: string, passphrase: string): Buffer {
+    export function decryptBytes(encryptedBase64: string, passphrase: string): Buffer {
         if (typeof encryptedBase64 != "string" || typeof passphrase != "string")
             throw new Error("Invalid parameters")
 
@@ -234,7 +234,7 @@ export class Symmetric {
      * @param encryptedBase64 The payload to decrypt
      * @param passphrase The secret key in string format
      */
-    static decryptString(encryptedBase64: string, passphrase: string): string {
+    export function decryptString(encryptedBase64: string, passphrase: string): string {
         if (typeof encryptedBase64 != "string" || typeof passphrase != "string")
             throw new Error("Invalid parameters")
 

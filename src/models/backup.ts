@@ -20,8 +20,8 @@ type AccountBackupCreateParams = {
     answers: string[]
 }
 
-export class AccountBackup {
-    static create(params: AccountBackupCreateParams): Uint8Array {
+export namespace AccountBackup {
+    export function create(params: AccountBackupCreateParams): Uint8Array {
         if (!params) throw new Error("Empty parameters")
         const { backupName, accountWallet, currentPassphrase, questionIds, answers } = params
 
@@ -57,7 +57,7 @@ export class AccountBackup {
      * Uses the given backup bytes and the given answers to decrypt the original passphrase used to 
      * secure the encryptedMnemonic on the account wallet
      */
-    static recoverPassphrase(backupBytes: Uint8Array, answers: string[]): string {
+    export function recoverPassphrase(backupBytes: Uint8Array, answers: string[]): string {
         const backup = AccountBackup.parse(backupBytes)
 
         // Digested answers as key
@@ -67,25 +67,25 @@ export class AccountBackup {
     }
 
     /** Used to encrypt either a mnemonic or a passphrase */
-    static encryptPayload(payload: string, key: string): Uint8Array {
+    export function encryptPayload(payload: string, key: string): Uint8Array {
         const payloadBytes = Buffer.from(payload, "utf-8")
         return Symmetric.encryptRaw(payloadBytes, key)
     }
 
     /** Used to encrypt either a mnemonic or a passphrase */
-    static decryptPayload(payloadBytes: Uint8Array, key: string): string {
+    export function decryptPayload(payloadBytes: Uint8Array, key: string): string {
         return Symmetric.decryptRaw(payloadBytes, key).toString()
     }
 
-    static digestAnswers(answers: string[]): string {
+    export function digestAnswers(answers: string[]): string {
         return answers.map(normalizeText).join("//")
     }
 
-    static areValidQuestions(questions: WalletBackup_Recovery_QuestionEnum[]) {
+    export function areValidQuestions(questions: WalletBackup_Recovery_QuestionEnum[]) {
         return questions.every(q => walletBackup_Recovery_QuestionEnumFromJSON(q) !== WalletBackup_Recovery_QuestionEnum.UNRECOGNIZED)
     }
 
-    static parse(backupBytes: Uint8Array) {
+    export function parse(backupBytes: Uint8Array) {
         return WalletBackup.decode(backupBytes)
     }
 }

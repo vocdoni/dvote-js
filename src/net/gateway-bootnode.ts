@@ -21,13 +21,13 @@ import { Web3Gateway } from "./gateway-web3"
 import { getDefaultProvider, providers } from "ethers"
 import { EthNetworkID, VocdoniEnvironment } from "../common"
 
-export class GatewayBootnode {
+export namespace GatewayBootnode {
     /**
      * Retrieve the list of gateways provided by default by Vocdoni in the network
      * @param networkId The Ethereum network to which the gateways should be associated
      * @returns A JsonBootnodeData object that represents the ata derrived from a Bootnode Content URI.
      */
-    static getDefaultGateways(networkId: EthNetworkID = "xdai", environment: VocdoniEnvironment = "prod"): Promise<JsonBootnodeData> {
+    export function getDefaultGateways(networkId: EthNetworkID = "xdai", environment: VocdoniEnvironment = "prod"): Promise<JsonBootnodeData> {
         return GatewayBootnode.getDefaultUri(networkId, environment)
             .then(contentUri => FileApi.fetchString(contentUri))
             .then(strResult => JSON.parse(strResult))
@@ -41,7 +41,7 @@ export class GatewayBootnode {
      * @param networkId Either "mainnet", "rinkeby" or "goerli" (test)
      * @returns A ContentURI object
      */
-    static getDefaultUri(networkId: EthNetworkID = "xdai", environment: VocdoniEnvironment = "prod"): Promise<ContentUri> {
+    export function getDefaultUri(networkId: EthNetworkID = "xdai", environment: VocdoniEnvironment = "prod"): Promise<ContentUri> {
         let provider: providers.BaseProvider
 
         switch (networkId) {
@@ -79,7 +79,7 @@ export class GatewayBootnode {
      * @param bootnodesContentUri The Content URI from which the list of gateways will be extracted
      * @returns A JsonBootnodeData object that represents the ata derrived from a Bootnode Content URI.
      */
-    static getGatewaysFromUri(bootnodesContentUri: string | ContentUri): Promise<JsonBootnodeData> {
+    export function getGatewaysFromUri(bootnodesContentUri: string | ContentUri): Promise<JsonBootnodeData> {
         if (!bootnodesContentUri) return Promise.reject(new Error("Invalid bootNodeUri"))
 
         return FileApi.fetchString(bootnodesContentUri)
@@ -96,7 +96,7 @@ export class GatewayBootnode {
      * @param bootnodeData A JsonBootnodeData objects that represents the ata derrived from a Bootnode Content URI.
      * @returns An object with a list of DVoteGateway(s) and Web3Gateway(s)
      */
-    static digest(bootnodeData: JsonBootnodeData, environment: VocdoniEnvironment = "prod"): { [networkId: string]: { dvote: DVoteGateway[], web3: Web3Gateway[] } } {
+    export function digest(bootnodeData: JsonBootnodeData, environment: VocdoniEnvironment = "prod"): { [networkId: string]: { dvote: DVoteGateway[], web3: Web3Gateway[] } } {
         const result: { [networkId: string]: { dvote: DVoteGateway[], web3: Web3Gateway[] } } = {}
         Object.keys(bootnodeData).forEach(networkId => {
             result[networkId] = GatewayBootnode.digestNetwork(bootnodeData, networkId, environment)
@@ -109,7 +109,7 @@ export class GatewayBootnode {
      * @param bootnodeData A JsonBootnodeData objects that represents the ata derrived from a Bootnode Content URI.
      * @returns An object with a list of DVoteGateway(s) and Web3Gateway(s)
      */
-    static digestNetwork(bootnodeData: JsonBootnodeData, networkId: string, environment: VocdoniEnvironment = "prod"): { dvote: DVoteGateway[], web3: Web3Gateway[] } {
+    export function digestNetwork(bootnodeData: JsonBootnodeData, networkId: string, environment: VocdoniEnvironment = "prod"): { dvote: DVoteGateway[], web3: Web3Gateway[] } {
         if (!bootnodeData || typeof bootnodeData[networkId] != "object") return { dvote: [], web3: [] }
 
         return {
