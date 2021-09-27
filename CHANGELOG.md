@@ -1,5 +1,19 @@
 # DVote JS changelog
 
+## 1.12.0
+
+- Supporting multiple choice (single question) results
+    - https://docs.vocdoni.io/architecture/data-schemes/ballot-protocol.html#vocdoni-results-interpretation
+- BREAKING:
+    - `VotingApi.getRawResults` no longer exists
+        - Use `VotingApi.getResults()` instead
+    - `VotingApi.getResultsDigest()` no longer exists. 
+    - Arrange results with:
+        - `Voting.digestSingleChoiceResults(results, metadata)`
+        - `Voting.digestSingleQuestionResults(results, metadata)`
+    - Types `DigestedProcessResults` and `DigestedProcessResultItem` no longer exist
+        - Use `ProcessResultsSingleChoice`, `ProcessResultsSingleQuestion` instead
+
 ## 1.11.4
 
 - Retrieving light storage proofs for ERC20 tokens instead of full block ones
