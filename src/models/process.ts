@@ -138,6 +138,16 @@ export interface SingleChoiceQuestionResults {
     }>,
 }
 
+// Multiple choice
+export interface ProcessResultsSingleQuestion {
+    totalVotes: number,
+    title: MultiLanguage<string>,
+    options: Array<{
+        title: MultiLanguage<string>,
+        votes: BigNumber
+    }>
+}
+
 // Envelope and proofs
 
 export type IProofGraviton = string

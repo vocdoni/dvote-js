@@ -2,7 +2,7 @@ import { Wallet, Signer, utils, ContractTransaction, BigNumber, providers } from
 import { GatewayArchive, GatewayArchiveApi } from "../net/gateway-archive";
 import { FileApi } from "./file"
 import { EntityApi } from "./entity"
-import { ProcessMetadata, checkValidProcessMetadata, INewProcessParams, IProofEVM, IProofCA, IProofGraviton, INewProcessErc20Params, ProcessResultsSingleChoice, SingleChoiceQuestionResults } from "../models/process"
+import { ProcessMetadata, checkValidProcessMetadata, INewProcessParams, IProofEVM, IProofCA, IProofGraviton, INewProcessErc20Params, ProcessResultsSingleChoice, SingleChoiceQuestionResults, ProcessResultsSingleQuestion } from "../models/process"
 import {
     VOCHAIN_BLOCK_TIME,
     XDAI_GAS_PRICE,
@@ -1432,7 +1432,7 @@ export namespace Voting {
         const { results, envelopHeight } = rawResults
 
         const resultsDigest: ProcessResultsSingleChoice = { totalVotes: envelopHeight, questions: [] }
-        const zippedQuestions = metadata.questions.map((e, i) => ({ meta: e, result: results[i] }))
+        const zippedQuestions = metadata.questions.map((meta, idx) => ({ meta, result: results[idx] }))
         resultsDigest.questions = zippedQuestions.map((zippedEntry, idx): SingleChoiceQuestionResults => {
             const zippedOptions = zippedEntry.meta.choices.map((e, i) => ({ title: e.title, value: zippedEntry.result[i] }))
             return {
@@ -1443,6 +1443,39 @@ export namespace Voting {
                 })),
             }
         })
+        return resultsDigest
+    }
+
+    /**
+     * Aggregates the raw results computing the index weighted value for each option of the single question, defined on the metadata.
+     * @param rawResults
+     * @param metadata
+     */
+    export function digestSingleQuestionResults(rawResults: VotingApi.RawResults, metadata: ProcessMetadata): ProcessResultsSingleQuestion {
+        const { results, envelopHeight } = rawResults
+        if (!Array.isArray(results)) throw new Error("Invalid results values")
+        else if (!metadata || !metadata.questions || !metadata.questions[0]) throw new Error("Invalid metadata")
+        else if (metadata.questions[0].choices.length != rawResults?.results?.length) throw new Error("The raw results don't match with the given metadata")
+
+        const resultsDigest: ProcessResultsSingleQuestion = {
+            totalVotes: envelopHeight,
+            title: metadata.questions[0].title,
+            options: []
+        }
+
+        for (let option = 0; option < results.length; option++) {
+            let sum = BigNumber.from(0)
+            for (let index = 0; index < results[option].length; index++) {
+                const str = results[option][index]
+                if (!str.match(/^[0-9]+$/)) throw new Error("Invalid result value")
+                const v = BigNumber.from(results[option][index])
+                sum = sum.add(v.mul(index))
+            }
+            resultsDigest.options.push({
+                title: metadata.questions[0].choices[option].title,
+                votes: BigNumber.from(sum)
+            })
+        }
         return resultsDigest
     }
 }
