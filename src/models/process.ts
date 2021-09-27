@@ -124,17 +124,18 @@ export interface ProcessMetadata {
 export type INewProcessParams = Omit<Omit<IProcessCreateParams, "metadata">, "questionCount"> & { metadata: ProcessMetadata }
 export type INewProcessErc20Params = Omit<Omit<INewProcessParams, "censusRoot">, "censusOrigin">
 
-export interface DigestedProcessResults {
+// Single choice
+export interface ProcessResultsSingleChoice {
     totalVotes: number,
-    questions: DigestedProcessResultItem[],
+    questions: SingleChoiceQuestionResults[],
 }
 
-export interface DigestedProcessResultItem {
+export interface SingleChoiceQuestionResults {
     title: MultiLanguage<string>,
-    voteResults: {
+    voteResults: Array<{
         title: MultiLanguage<string>,
         votes: BigNumber,
-    }[],
+    }>,
 }
 
 // Envelope and proofs
