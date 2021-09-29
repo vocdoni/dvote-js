@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.13.0
+
+- Adding the `censusType` field on `addCensus` defaulting to `ARBO_BLAKE2B`
+
 ## 1.12.0
 
 - Supporting multiple choice (single question) results

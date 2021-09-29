@@ -8,6 +8,7 @@ import { compressPublicKey } from "../crypto/elliptic"
 import { blind as _blind, unblind as _unblind, verify as _verify, signatureFromHex as _signatureFromHex, signatureToHex as _signatureToHex, pointFromHex as _pointFromHex, pointToHex as _pointToHex, UserSecretData, UnblindedSignature, BigInteger, Point } from "blindsecp256k1"
 import { hexZeroPad } from "ethers/lib/utils"
 import { IGatewayClient, IGatewayWeb3Client } from "../common"
+import { Census_Type } from "../models/protobuf/build/ts/vochain/vochain"
 // import ContentURI from "../wrappers/content-uri"
 
 export namespace CensusOffChain {
@@ -80,7 +81,7 @@ export namespace CensusOffChainApi {
         const censusId = CensusOffChain.generateCensusId(censusName, await walletOrSigner.getAddress())
 
         // Check if the census already exists
-        let existingRoot
+        let existingRoot: string
         try {
             // TODO: normalize the `censusId` parameter value
             // Pass the full censusId instead of the second term only
@@ -92,7 +93,12 @@ export namespace CensusOffChainApi {
 
         try {
             const censusIdSuffix = CensusOffChain.generateCensusIdSuffix(censusName)
-            const response = await gateway.sendRequest({ method: "addCensus", censusId: censusIdSuffix, pubKeys: managerPublicKeys }, walletOrSigner)
+            const response = await gateway.sendRequest({
+                method: "addCensus",
+                censusId: censusIdSuffix,
+                pubKeys: managerPublicKeys,
+                censusType: Census_Type.ARBO_BLAKE2B
+            }, walletOrSigner)
             const censusRoot = await getRoot(response.censusId, gateway)
             return { censusId: response.censusId, censusRoot }
         } catch (error) {
