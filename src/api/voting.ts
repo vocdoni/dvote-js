@@ -1,9 +1,8 @@
 import { Wallet, Signer, utils, ContractTransaction, BigNumber, providers } from "ethers"
-import { Gateway } from "../net/gateway"
 import { GatewayArchive, GatewayArchiveApi } from "../net/gateway-archive";
 import { FileApi } from "./file"
 import { EntityApi } from "./entity"
-import { ProcessMetadata, checkValidProcessMetadata, DigestedProcessResults, DigestedProcessResultItem, INewProcessParams, IProofEVM, IProofCA, IProofGraviton, INewProcessErc20Params } from "../models/process"
+import { ProcessMetadata, checkValidProcessMetadata, INewProcessParams, IProofEVM, IProofCA, IProofGraviton, INewProcessErc20Params, ProcessResultsSingleChoice, SingleChoiceQuestionResults, ProcessResultsSingleQuestion } from "../models/process"
 import {
     VOCHAIN_BLOCK_TIME,
     XDAI_GAS_PRICE,
@@ -39,6 +38,7 @@ import { ApiMethod } from "../models/gateway"
 import { IGatewayClient, IGatewayDVoteClient, IGatewayWeb3Client } from "../common"
 import { Poseidon } from "../crypto/hashing"
 import { uintArrayToHex } from "../util/encoding"
+import { ResultsNotAvailableError } from "../errors/results";
 
 export const CaBundleProtobuf: any = CAbundle
 
@@ -1020,14 +1020,10 @@ export namespace VotingApi {
             })
     }
 
-    /**
-     * Fetches the results for a given processId
-     * @param processId
-     * @param gateway
-     * @param params
-     * @returns Results, vote process  type, vote process state
-     */
-    export function getRawResults(processId: string, gateway: IGatewayClient, params: { skipArchive?: boolean } = {}): Promise<{ results: string[][], status: ProcessStatus, envelopHeight: number }> {
+    // Results
+    export type RawResults = { results: string[][], status: ProcessStatus, envelopHeight: number }
+
+    function fetchRawResults(processId: string, gateway: IGatewayClient, params: { skipArchive?: boolean } = {}): Promise<RawResults> {
         if (!processId)
             return Promise.reject(new Error("No process ID provided"))
         else if (!gateway)
@@ -1052,23 +1048,30 @@ export namespace VotingApi {
     }
 
     /**
-     * Fetches the results for a given processId and arranges them with the titles and their respective options.
+     * Retrieves the results for a given processId. Resolved from the archive if needed.
      * @param processId
      * @param gateway
      * @returns Results, vote process  type, vote process state
      */
-    export async function getResultsDigest(processId: string, gateway: IGatewayClient): Promise<DigestedProcessResults> {
+    export async function getResults(processId: string, gateway: IGatewayClient) {
         if (!processId)
             throw new Error("No process ID provided")
         else if (!gateway)
             throw new Error("Invalid gateway client")
 
         processId = processId.startsWith("0x") ? processId : "0x" + processId
-        const emptyResults = { totalVotes: 0, questions: [] }
+        const emptyResults = {
+            results: [[]] as string[][],
+            status: new ProcessStatus(ProcessStatus.READY),
+            envelopHeight: 0
+        }
 
         try {
             const processState = await getProcessState(processId, gateway)
-            if (processState.status == ProcessStatus.CANCELED) return emptyResults
+            if (processState.status == ProcessStatus.CANCELED) {
+                emptyResults.status = new ProcessStatus(ProcessStatus.CANCELED)
+                return emptyResults
+            }
 
             // Encrypted?
             let procKeys: ProcessKeys, retries: number
@@ -1095,25 +1098,10 @@ export namespace VotingApi {
                 if (!procKeys || !procKeys.encryptionPrivKeys || !procKeys.encryptionPrivKeys.length) return emptyResults
             }
 
-            const { results, status: resultsStatus, envelopHeight } = await getRawResults(processId, gateway)
-            const metadata = await getProcessMetadata(processId, gateway)
-
-            const resultsDigest: DigestedProcessResults = { totalVotes: envelopHeight, questions: [] }
-            const zippedQuestions = metadata.questions.map((e, i) => ({ meta: e, result: results[i] }))
-            resultsDigest.questions = zippedQuestions.map((zippedEntry, idx): DigestedProcessResultItem => {
-                const zippedOptions = zippedEntry.meta.choices.map((e, i) => ({ title: e.title, value: zippedEntry.result[i] }))
-                return {
-                    title: zippedEntry.meta.title,
-                    voteResults: zippedOptions.map((option) => ({
-                        title: option.title,
-                        votes: BigNumber.from(option.value || 0),
-                    })),
-                }
-            })
-            return resultsDigest
+            return fetchRawResults(processId, gateway)
         }
         catch (err) {
-            throw new Error("The results are not available")
+            throw new ResultsNotAvailableError()
         }
     }
 
@@ -1431,6 +1419,64 @@ export namespace VotingApi {
         else if (processId.length != 64) return null
 
         return utils.keccak256(utils.arrayify("0x" + address + processId))
+    }
+}
+
+export namespace Voting {
+    /**
+     * Arranges the raw results with the titles and the respective options from the metadata.
+     * @param rawResults
+     * @param metadata
+     */
+    export function digestSingleChoiceResults(rawResults: VotingApi.RawResults, metadata: ProcessMetadata): ProcessResultsSingleChoice {
+        const { results, envelopHeight } = rawResults
+
+        const resultsDigest: ProcessResultsSingleChoice = { totalVotes: envelopHeight, questions: [] }
+        const zippedQuestions = metadata.questions.map((meta, idx) => ({ meta, result: results[idx] }))
+        resultsDigest.questions = zippedQuestions.map((zippedEntry, idx): SingleChoiceQuestionResults => {
+            const zippedOptions = zippedEntry.meta.choices.map((e, i) => ({ title: e.title, value: zippedEntry.result[i] }))
+            return {
+                title: zippedEntry.meta.title,
+                voteResults: zippedOptions.map((option) => ({
+                    title: option.title,
+                    votes: BigNumber.from(option.value || 0),
+                })),
+            }
+        })
+        return resultsDigest
+    }
+
+    /**
+     * Aggregates the raw results computing the index weighted value for each option of the single question, defined on the metadata.
+     * @param rawResults
+     * @param metadata
+     */
+    export function digestSingleQuestionResults(rawResults: VotingApi.RawResults, metadata: ProcessMetadata): ProcessResultsSingleQuestion {
+        const { results, envelopHeight } = rawResults
+        if (!Array.isArray(results)) throw new Error("Invalid results values")
+        else if (!metadata || !metadata.questions || !metadata.questions[0]) throw new Error("Invalid metadata")
+        else if (metadata.questions[0].choices.length != rawResults?.results?.length) throw new Error("The raw results don't match with the given metadata")
+
+        const resultsDigest: ProcessResultsSingleQuestion = {
+            totalVotes: envelopHeight,
+            title: metadata.questions[0].title,
+            options: []
+        }
+
+        for (let option = 0; option < results.length; option++) {
+            let sum = BigNumber.from(0)
+            for (let index = 0; index < results[option].length; index++) {
+                const str = results[option][index]
+                if (!str.match(/^[0-9]+$/)) throw new Error("Invalid result value")
+                const v = BigNumber.from(results[option][index])
+                sum = sum.add(v.mul(index))
+            }
+            resultsDigest.options.push({
+                title: metadata.questions[0].choices[option].title,
+                votes: BigNumber.from(sum)
+            })
+        }
+        return resultsDigest
     }
 }
 
