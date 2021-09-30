@@ -1333,7 +1333,7 @@ export namespace VotingApi {
 
             const esProof = ProofEthereumStorage.fromPartial({
                 key: new Uint8Array(Buffer.from(resolvedProof.key.replace("0x", ""), "hex")),
-                value: utils.zeroPad(hexValue, 32),
+                value: Buffer.from(hexValue.replace("0x", ""), "hex"),
                 siblings: siblings
             })
 

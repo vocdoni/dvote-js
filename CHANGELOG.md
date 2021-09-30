@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.13.1
+
+- Skip padding storage proof values to be compatible with the new backend version
+
 ## 1.13.0
 
 - Adding the `censusType` field on `addCensus` defaulting to `ARBO_BLAKE2B`
