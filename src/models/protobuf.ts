@@ -3,7 +3,7 @@ export {
     Proof,
     ProofCA,
     ProofCA_Type,
-    ProofGraviton,
+    ProofArbo,
     ProofIden3,
     ProofEthereumStorage,
     ProofEthereumAccount,

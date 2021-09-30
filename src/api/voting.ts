@@ -2,7 +2,7 @@ import { Wallet, Signer, utils, ContractTransaction, BigNumber, providers } from
 import { GatewayArchive, GatewayArchiveApi } from "../net/gateway-archive";
 import { FileApi } from "./file"
 import { EntityApi } from "./entity"
-import { ProcessMetadata, checkValidProcessMetadata, INewProcessParams, IProofEVM, IProofCA, IProofGraviton, INewProcessErc20Params, ProcessResultsSingleChoice, SingleChoiceQuestionResults, ProcessResultsSingleQuestion } from "../models/process"
+import { ProcessMetadata, checkValidProcessMetadata, INewProcessParams, IProofEVM, IProofCA, IProofArbo, INewProcessErc20Params, ProcessResultsSingleChoice, SingleChoiceQuestionResults, ProcessResultsSingleQuestion } from "../models/process"
 import {
     VOCHAIN_BLOCK_TIME,
     XDAI_GAS_PRICE,
@@ -20,7 +20,7 @@ import {
     Tx, SignedTx,
     VoteEnvelope,
     Proof,
-    ProofGraviton,
+    ProofArbo,
     // ProofIden3,
     ProofEthereumStorage,
     // ProofEthereumAccount
@@ -34,11 +34,12 @@ import {
 import { DVoteGateway, DVoteGatewayResponseBody, IRequestParameters } from "../net/gateway-dvote"
 import { CensusErc20Api } from "./census"
 import { ProcessEnvelopeType } from "dvote-solidity"
-import { ApiMethod } from "../models/gateway"
 import { IGatewayClient, IGatewayDVoteClient, IGatewayWeb3Client } from "../common"
 import { Poseidon } from "../crypto/hashing"
 import { uintArrayToHex } from "../util/encoding"
 import { ResultsNotAvailableError } from "../errors/results";
+import { ApiMethod } from "../models/gateway"
+import { ProofArbo_Type } from "../models/protobuf/build/ts/vochain/vochain";
 
 export const CaBundleProtobuf: any = CAbundle
 
@@ -50,7 +51,7 @@ export type VotePackage = {
 export type SignedEnvelopeParams = {
     censusOrigin: number | ProcessCensusOrigin,
     votes: number[], processId: string, walletOrSigner: Wallet | Signer,
-    censusProof: IProofGraviton | IProofCA | IProofEVM,
+    censusProof: IProofArbo | IProofCA | IProofEVM,
     processKeys?: ProcessKeys
 }
 
@@ -1282,7 +1283,7 @@ export namespace VotingApi {
     }
 
     /** Packages the given parameters into a proof that can be submitted to the Vochain */
-    export function packageProof(processId: string, censusOrigin: ProcessCensusOrigin, censusProof: IProofGraviton | IProofCA | IProofEVM) {
+    export function packageProof(processId: string, censusOrigin: ProcessCensusOrigin, censusProof: IProofArbo | IProofCA | IProofEVM) {
         const proof = Proof.fromPartial({})
 
         if (censusOrigin.isOffChain || censusOrigin.isOffChainWeighted) {
@@ -1290,10 +1291,11 @@ export namespace VotingApi {
             if (typeof censusProof != "string" || !censusProof.match(/^(0x)?[0-9a-zA-Z]+$/))
                 throw new Error("Invalid census proof (must be a hex string)")
 
-            const gProof = ProofGraviton.fromPartial({
-                siblings: new Uint8Array(Buffer.from((censusProof as string).replace("0x", ""), "hex"))
+            const aProof = ProofArbo.fromPartial({
+                siblings: new Uint8Array(Buffer.from((censusProof as string).replace("0x", ""), "hex")),
+                type: ProofArbo_Type.BLAKE2B
             })
-            proof.payload = { $case: "graviton", graviton: gProof }
+            proof.payload = { $case: "arbo", arbo: aProof }
         }
         else if (censusOrigin.isOffChainCA) {
             // Check census proof
@@ -1345,14 +1347,14 @@ export namespace VotingApi {
         return proof
     }
 
-    function resolveCaProof(proof: IProofGraviton | IProofCA | IProofEVM): IProofCA {
+    function resolveCaProof(proof: IProofArbo | IProofCA | IProofEVM): IProofCA {
         if (!proof || typeof proof == "string") return null
         // else if (proof["key"] || proof["proof"] || proof["value"]) return null
         else if (typeof proof["type"] != "number" || typeof proof["voterAddress"] != "string" || typeof proof["signature"] != "string") return null
         return proof as IProofCA
     }
 
-    function resolveEvmProof(proof: IProofGraviton | IProofCA | IProofEVM): IProofEVM {
+    function resolveEvmProof(proof: IProofArbo | IProofCA | IProofEVM): IProofEVM {
         if (!proof || typeof proof == "string") return null
         // else if (proof["type"] || proof["voterAddress"] || proof["signature"]) return null
         else if (typeof proof["key"] != "string" || !Array.isArray(proof["proof"]) || proof["proof"].some(item => typeof item != "string") || typeof proof["value"] != "string") return null

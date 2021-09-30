@@ -150,7 +150,7 @@ export interface ProcessResultsSingleQuestion {
 
 // Envelope and proofs
 
-export type IProofGraviton = string
+export type IProofArbo = string
 export type IProofCA = { type: number, voterAddress: string, signature: string }
 export type IProofEVM = { key: string, proof: string[], value: string }
 

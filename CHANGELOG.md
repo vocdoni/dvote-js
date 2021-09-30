@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.13.2
+
+- Supporting ProofArbo instead of ProofGraviton
+
 ## 1.13.1
 
 - Skip padding storage proof values to be compatible with the new backend version
