@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.13.3
+
+- Fix an internal import
+
 ## 1.13.2
 
 - Supporting ProofArbo instead of ProofGraviton
