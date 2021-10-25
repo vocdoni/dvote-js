@@ -1053,18 +1053,19 @@ export namespace VotingApi {
      * @param gateway
      * @returns Results, vote process  type, vote process state
      */
-    export async function getResults(processId: string, gateway: IGatewayClient) {
+    export async function getResults(processId: string, gateway: IGatewayClient): Promise<RawResults> {
         if (!processId)
             throw new Error("No process ID provided")
         else if (!gateway)
             throw new Error("Invalid gateway client")
 
         processId = ensure0x(processId)
-        const emptyResults = { totalVotes: 0, questions: [] }
+        const emptyResults: RawResults = { envelopHeight: 0, results: [], status: new ProcessStatus(ProcessStatus.READY) }
 
         try {
             const processState = await getProcessState(processId, gateway)
             if (processState.status == ProcessStatus.CANCELED) {
+                emptyResults.status = new ProcessStatus(processState.status)
                 return emptyResults
             }
 
@@ -1382,7 +1383,7 @@ export namespace Voting {
     }
 
     /** Packages the given parameters into a proof that can be submitted to the Vochain */
-    export function packageSignedProof(processId: string, censusOrigin: ProcessCensusOrigin, censusProof: IProofArbo | IProofCA | IProofEVM) {
+    function packageSignedProof(processId: string, censusOrigin: ProcessCensusOrigin, censusProof: IProofArbo | IProofCA | IProofEVM) {
         const proof = Proof.fromPartial({})
 
         if (censusOrigin.isOffChain || censusOrigin.isOffChainWeighted) {

@@ -6,7 +6,7 @@ import * as YAML from 'yaml'
 import { GatewayPool } from "../../src/net/gateway-pool"
 import { EntityMetadata, EntityMetadataTemplate } from "../../src/models/entity"
 import { EntityApi } from "../../src/api/entity"
-import { CaBundleProtobuf, VotingApi } from "../../src/api/voting"
+import { CaBundleProtobuf, Voting, VotingApi } from "../../src/api/voting"
 import { CensusCaApi } from "../../src/api/census"
 import { INewProcessParams, IProofCA, ProcessMetadata, ProcessMetadataTemplate, ProofCaSignatureTypes } from "../../src/models/process"
 import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../../src/net/contracts"
@@ -256,8 +256,8 @@ async function launchPlainVotes() {
         const choices = getChoicesForVoter(idx)
 
         const envelope = processParams.envelopeType.hasEncryptedVotes ?
-            await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof: proof, processId, walletOrSigner: wallet, processKeys }) :
-            await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof: proof, processId, walletOrSigner: wallet })
+            await Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof: proof, processId, walletOrSigner: wallet, processKeys }) :
+            await Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof: proof, processId, walletOrSigner: wallet })
 
         process.stdout.write(`Sending [${idx}] ; `)
         await VotingApi.submitEnvelope(envelope, wallet, pool)
@@ -270,7 +270,7 @@ async function launchPlainVotes() {
         await new Promise(resolve => setTimeout(resolve, 11000))
 
         process.stdout.write(`Checking [${idx}] ; `)
-        const nullifier = VotingApi.getSignedVoteNullifier(wallet.address, processId)
+        const nullifier = Voting.getSignedVoteNullifier(wallet.address, processId)
         const { registered, date, block } = await VotingApi.getEnvelopeStatus(processId, nullifier, pool)
             .catch(err => {
                 console.error("\ngetEnvelopeStatus ERR", wallet.address, nullifier, err)
@@ -347,8 +347,8 @@ async function launchBlindedVotes() {
         const choices = getChoicesForVoter(idx)
 
         const envelope = processParams.envelopeType.hasEncryptedVotes ?
-            await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof: proof, processId, walletOrSigner: wallet, processKeys }) :
-            await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof: proof, processId, walletOrSigner: wallet })
+            await Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof: proof, processId, walletOrSigner: wallet, processKeys }) :
+            await Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof: proof, processId, walletOrSigner: wallet })
 
         process.stdout.write(`Sending [${idx}] ; `)
         await VotingApi.submitEnvelope(envelope, wallet, pool)
@@ -361,7 +361,7 @@ async function launchBlindedVotes() {
         await new Promise(resolve => setTimeout(resolve, 11000))
 
         process.stdout.write(`Checking [${idx}] ; `)
-        const nullifier = VotingApi.getSignedVoteNullifier(wallet.address, processId)
+        const nullifier = Voting.getSignedVoteNullifier(wallet.address, processId)
         const { registered, date, block } = await VotingApi.getEnvelopeStatus(processId, nullifier, pool)
             .catch(err => {
                 console.error("\ngetEnvelopeStatus ERR", wallet.address, nullifier, err)
