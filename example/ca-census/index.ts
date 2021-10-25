@@ -294,6 +294,21 @@ async function launchBlindedVotes() {
     await Bluebird.map(dummyAccounts, async (_, idx: number) => {
         process.stdout.write(`Starting [${idx}] ; `)
 
+        // Request a blinding token
+        const request1 = {
+            id: Random.getHex().substr(2, 10),
+            request: { method: "auth", signatureType: "ECDSA_BLIND" },
+            // any additional fields to prove that you are an eligible voter
+            signature: ""
+        }
+        const res1 = await axios.post(config.censusUri, request1)
+        assert(res1.data.response.ok)
+
+        // Blinding
+        const hexTokenR: string = res1.data?.response?.token
+        assert(hexTokenR)
+
+        const tokenR = CensusCaApi.decodePoint(hexTokenR)
         const wallet = Wallet.createRandom()
         const caBundle = CaBundleProtobuf.fromPartial({
             processId: new Uint8Array(Buffer.from((processId).replace("0x", ""), "hex")),
@@ -303,22 +318,11 @@ async function launchBlindedVotes() {
         const hexCaBundle = utils.hexlify(CaBundleProtobuf.encode(caBundle).finish())
         const hexCaHashedBundle = utils.keccak256(hexCaBundle).substr(2)
 
-        const request1 = {
-            id: Random.getHex().substr(2, 10),
-            request: { method: "auth", signatureType: "ECDSA_BLIND" },
-            signature: ""
-        }
-        const res1 = await axios.post(config.censusUri, request1)
-        assert(res1.data.response.ok)
-
-        const hexTokenR: string = res1.data?.response?.token
-        assert(hexTokenR)
-
-        const tokenR = CensusCaApi.decodePoint(hexTokenR)
         const { hexBlinded, userSecretData } = CensusCaApi.blind(hexCaHashedBundle, tokenR)
 
         process.stdout.write(`Get Proof [${idx}] ; `)
 
+        // Request signature
         const request2 = {
             id: Random.getHex().substr(2, 10),
             request: { method: "sign", "signatureType": "ECDSA_BLIND", token: hexTokenR, messageHash: hexBlinded },
@@ -399,46 +403,46 @@ async function checkVoteResults() {
     await VochainWaiter.waitUntil(nextBlock, pool, { verbose: true })
 
     console.log("Fetching the vote results for", processId)
-    const resultsDigest = await VotingApi.getResultsDigest(processId, pool)
+    const resultsDigest = await VotingApi.getResults(processId, pool)
     const totalVotes = await VotingApi.getEnvelopeHeight(processId, pool)
 
-    assert.strictEqual(resultsDigest.questions.length, 1)
-    assert(resultsDigest.questions[0].voteResults)
+    assert.strictEqual(resultsDigest.results.length, 1)
+    assert(resultsDigest.results[0])
 
     switch (config.votesPattern) {
         case "all-0":
-            assert(resultsDigest.questions[0].voteResults.length >= 2)
-            assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes.toNumber(), config.numAccounts)
-            assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes.toNumber(), 0)
+            assert(resultsDigest.results[0].length >= 2)
+            assert.strictEqual(resultsDigest.results[0][0], config.numAccounts)
+            assert.strictEqual(resultsDigest.results[0][1], 0)
             break
         case "all-1":
-            assert(resultsDigest.questions[0].voteResults.length >= 2)
-            assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes.toNumber(), 0)
-            assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes.toNumber(), config.numAccounts)
+            assert(resultsDigest.results[0].length >= 2)
+            assert.strictEqual(resultsDigest.results[0][0], 0)
+            assert.strictEqual(resultsDigest.results[0][1], config.numAccounts)
             break
         case "all-2":
-            assert(resultsDigest.questions[0].voteResults.length >= 3)
-            assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes.toNumber(), 0)
-            assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes.toNumber(), 0)
-            assert.strictEqual(resultsDigest.questions[0].voteResults[2].votes.toNumber(), config.numAccounts)
+            assert(resultsDigest.results[0].length >= 3)
+            assert.strictEqual(resultsDigest.results[0][0], 0)
+            assert.strictEqual(resultsDigest.results[0][1], 0)
+            assert.strictEqual(resultsDigest.results[0][2], config.numAccounts)
             break
         case "all-even":
-            assert(resultsDigest.questions[0].voteResults.length >= 2)
+            assert(resultsDigest.results[0].length >= 2)
             if (config.numAccounts % 2 == 0) {
-                assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes.toNumber(), config.numAccounts / 2)
-                assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes.toNumber(), config.numAccounts / 2)
+                assert.strictEqual(resultsDigest.results[0][0], config.numAccounts / 2)
+                assert.strictEqual(resultsDigest.results[0][1], config.numAccounts / 2)
             }
             else {
-                assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes.toNumber(), Math.ceil(config.numAccounts / 2))
-                assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes.toNumber(), Math.floor(config.numAccounts / 2))
+                assert.strictEqual(resultsDigest.results[0][0], Math.ceil(config.numAccounts / 2))
+                assert.strictEqual(resultsDigest.results[0][1], Math.floor(config.numAccounts / 2))
             }
             break
         case "incremental":
-            assert.strictEqual(resultsDigest.questions[0].voteResults.length, 2)
-            resultsDigest.questions.forEach((question, i) => {
-                for (let j = 0; j < question.voteResults.length; j++) {
-                    if (i == j) assert.strictEqual(question.voteResults[j].votes.toNumber(), config.numAccounts)
-                    else assert.strictEqual(question.voteResults[j].votes.toNumber(), 0)
+            assert.strictEqual(resultsDigest.results[0].length, 2)
+            resultsDigest.results.forEach((question, i) => {
+                for (let j = 0; j < question.length; j++) {
+                    if (i == j) assert.strictEqual(question[j], config.numAccounts)
+                    else assert.strictEqual(question[j], 0)
                 }
             })
             break
