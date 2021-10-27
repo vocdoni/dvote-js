@@ -447,8 +447,7 @@ async function showProcessResults() {
 
     const processId = "0x75599e74bcbf7f3ad16ac8a256861ca36e9d1338726ac2612e1b5e259e7c025e"
 
-    console.log("getRawResults", await VotingApi.getRawResults(processId, pool))
-    console.log("getResultsDigest", JSON.stringify(await VotingApi.getResultsDigest(processId, pool), null, 2))
+    console.log("getResults", JSON.stringify(await VotingApi.getResults(processId, pool), null, 2))
     console.log("getResultsWeight", await VotingApi.getResultsWeight(processId, pool))
 }
 
@@ -557,8 +556,7 @@ async function useVoteApi() {
     if (envelopeList.length > 0)
         console.log("- Retrieved Vote:", await VotingApi.getEnvelope(envelopeList[envelopeList.length - 1].nullifier, pool))
 
-    console.log("getRawResults", await VotingApi.getRawResults(processId, pool))
-    console.log("getResultsDigest", JSON.stringify(await VotingApi.getResultsDigest(processId, pool), null, 2))
+    console.log("getResults", JSON.stringify(await VotingApi.getResults(processId, pool), null, 2))
 }
 
 async function submitVoteBatch() {
