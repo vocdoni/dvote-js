@@ -287,16 +287,16 @@ async function checkVoteResults() {
     await VochainWaiter.wait(5, pool, { verbose: true })
 
     console.log("Fetching the vote results for", processId)
-    const resultsDigest = await VotingApi.getResultsDigest(processId, pool)
+    const results = await VotingApi.getResults(processId, pool)
     const totalVotes = await VotingApi.getEnvelopeHeight(processId, pool)
 
-    assert.strictEqual(resultsDigest.questions.length, 1)
-    assert(resultsDigest.questions[0].voteResults)
+    assert.strictEqual(results.results.length, 1)
+    assert(results.results[0])
 
     // all-0
-    assert(resultsDigest.questions[0].voteResults.length >= 2)
-    assert(resultsDigest.questions[0].voteResults[0].votes.gt(0))
-    assert(resultsDigest.questions[0].voteResults[1].votes.eq(0))
+    assert(results.results[0].length >= 2)
+    assert.strictEqual(results.results[0][0], 0)
+    assert.strictEqual(results.results[0][1], 0)
 
     assert.strictEqual(totalVotes, config.privKeys.length)
 }
