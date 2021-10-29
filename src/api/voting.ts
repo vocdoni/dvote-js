@@ -1513,9 +1513,7 @@ export namespace Voting {
         const pid = BigInt(ensure0x(processId))
         return ensure0x(Poseidon.hash([secretKey, pid]).toString(16))
     }
-}
-
-export namespace Voting {
+    
     /**
      * Arranges the raw results with the titles and the respective options from the metadata.
      * @param rawResults
