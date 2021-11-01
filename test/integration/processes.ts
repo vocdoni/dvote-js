@@ -25,7 +25,7 @@ import NamespaceBuilder from "../builders/namespace"
 import { Web3Gateway } from "../../src/net/gateway-web3"
 import GenesisBuilder, { DEFAULT_CHAIN_ID } from "../builders/genesis"
 import ResultsBuilder from "../builders/results"
-import { VotingApi } from "../../dist"
+import { VotingApi } from "../../dist/src"
 
 let server: DevServices
 

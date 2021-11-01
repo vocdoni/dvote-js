@@ -1,9 +1,9 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
-import { Wallet } from "ethers"
+import { Wallet } from "@ethersproject/wallet"
 
-import { Asymmetric, Symmetric } from "../../src/crypto/encryption"
+import { Asymmetric, Symmetric } from "../../src"
 import { Buffer } from "buffer/"
 
 addCompletionHooks()

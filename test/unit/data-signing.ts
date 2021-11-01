@@ -6,7 +6,7 @@ import { TextEncoder, TextDecoder } from "util"
 
 import { JsonSignature, BytesSignature } from "../../src/crypto/data-signing"
 import { extractUint8ArrayJSONValue } from "../../src/util/uint8array"
-import { compressPublicKey } from "../../dist"
+import { compressPublicKey } from "../../dist/src"
 
 addCompletionHooks()
 

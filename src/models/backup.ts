@@ -1,4 +1,4 @@
-import { Symmetric } from "../crypto/encryption"
+import { Symmetric } from "../../packages/encryption/src"
 import { Wallet as PbWallet, WalletBackup, Account as PbAccount } from "../models/protobuf"
 import {
     walletBackup_Recovery_QuestionEnumFromJSON,
@@ -54,7 +54,7 @@ export namespace AccountBackup {
     }
 
     /**
-     * Uses the given backup bytes and the given answers to decrypt the original passphrase used to 
+     * Uses the given backup bytes and the given answers to decrypt the original passphrase used to
      * secure the encryptedMnemonic on the account wallet
      */
     export function recoverPassphrase(backupBytes: Uint8Array, answers: string[]): string {

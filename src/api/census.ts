@@ -1,7 +1,7 @@
 import { Wallet, Signer, providers, BigNumber, ContractReceipt, Contract } from "ethers"
 import { IRequestParameters } from "../net/gateway-dvote"
 import { Keccak256, Poseidon } from "../crypto/hashing"
-import { hexStringToBuffer } from "../util/encoding"
+import { hexStringToBuffer } from "../../packages/common/src"
 import { CENSUS_MAX_BULK_SIZE } from "../constants"
 import { ERC20Proof } from "@vocdoni/storage-proofs-eth"
 import { compressPublicKey } from "../crypto/elliptic"

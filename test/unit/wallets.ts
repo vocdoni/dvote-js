@@ -6,7 +6,7 @@ import { utils } from "ethers"
 import { WalletBabyJub, WalletUtil } from "../../src/crypto/wallets"
 import { Random } from "../../src/util/random"
 import { JsonSignature, BytesSignature } from "../../src/crypto/data-signing"
-import { compressPublicKey } from "../../dist"
+import { compressPublicKey } from "../../dist/src"
 
 addCompletionHooks()
 

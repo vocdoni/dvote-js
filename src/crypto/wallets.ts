@@ -5,13 +5,13 @@ import { eddsa, babyJub } from "circomlib"
 // import { Scalar, utils as ffutils } from "ffjavascript"
 // const { Scalar, utils: ffutils } = require("../../node_modules/ffjavascript/build/main.cjs")
 const { Scalar, utils: ffutils } = require("ffjavascript")
-import { bufferToBigInt } from "../util/encoding"
+import { bufferToBigInt } from "../../packages/common/src"
 
 export class WalletUtil {
     /**
      * Returns a standalone Ethers.js wallet and connects it to the given provider if one is set. It uses the given passphrase and
      * hexSeed to compute a deterministic private key along with some seed to salt the passphrase. Use `Random.getHex`
-     * to generate a secure random seed. 
+     * to generate a secure random seed.
      * @param passphrase
      * @param hexSeed
      * @param provider (optional)
@@ -30,7 +30,7 @@ export class WalletUtil {
 
     /**
      * Returns a standalone Ethers.js wallet and connects it to the given provider if one is set
-     * @param mnemonic 
+     * @param mnemonic
      * @param mnemonicPath (optional)
      * @param provider (optional)
      */
@@ -135,7 +135,7 @@ export namespace SignerUtil {
 /**
  * Returns `false` if the passphrase is shorter than 8 characters, or it doesn't contain
  * at least one digit, one lowercase character and an uppercase one
- * @param passphrase 
+ * @param passphrase
  */
 function isStrongPassphrase(passphrase: string): boolean {
     if (passphrase.length < 8) return false

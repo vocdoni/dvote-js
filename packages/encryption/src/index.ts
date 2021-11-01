@@ -1,8 +1,8 @@
 import { Buffer } from "buffer/"
 import * as tweetnacl from 'tweetnacl'
 import * as sealedbox from 'tweetnacl-sealedbox-js'
-import { hexStringToBuffer } from "../util/encoding"
-import { utils, } from "ethers"
+import { hexStringToBuffer } from "vocdoni-common"
+import { sha256 } from "@ethersproject/sha2"
 
 (tweetnacl as any).sealedbox = sealedbox
 
@@ -137,7 +137,7 @@ export namespace Symmetric {
             throw new Error("Invalid passphrase")
 
         const key = Buffer.from(passphrase, "utf-8")
-        const keyDigest = utils.sha256(key)
+        const keyDigest = sha256(key)
         const nonce = newNonce()
 
         const box = tweetnacl.secretbox(messageBytes, nonce, hexStringToBuffer(keyDigest))
@@ -195,7 +195,7 @@ export namespace Symmetric {
             throw new Error("Invalid passaphrase")
 
         const key = Buffer.from(passphrase, "utf-8")
-        const keyDigest = utils.sha256(key)
+        const keyDigest = sha256(key)
         const keyDigestBytes = hexStringToBuffer(keyDigest)
 
         const nonce = encryptedBytes.slice(0, tweetnacl.secretbox.nonceLength);

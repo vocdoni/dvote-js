@@ -3,9 +3,7 @@ import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
 import { Buffer } from "buffer/"
 
-import { AccountBackup } from "../../src/models/backup"
-import { Wallet_AuthMethod } from "../../src"
-import { bigIntToBuffer, bufferToBigInt, hexStringToBuffer, uintArrayToHex } from "../../src/util/encoding"
+import { bigIntToBuffer, bufferToBigInt, hexStringToBuffer, uintArrayToHex } from "../../src"
 
 addCompletionHooks()
 

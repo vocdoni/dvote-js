@@ -5,7 +5,7 @@ import { Wallet, utils } from "ethers"
 import { Buffer } from "buffer/"
 
 import { CensusOffChain } from "../../src/api/census"
-import { compressPublicKey } from "../../dist"
+import { compressPublicKey } from "../../dist/src"
 import { Poseidon } from "../../src/crypto/hashing"
 
 addCompletionHooks()

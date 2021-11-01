@@ -13,11 +13,11 @@ import { GenesisContractMethods, ProcessCensusOrigin, ProcessesContractMethods, 
 import { Buffer } from "buffer/"
 
 import { VotingApi, VotePackage } from "../../src/api/voting"
-import { Asymmetric } from "../../src/crypto/encryption"
+import { Asymmetric } from "../../packages/encryption/src"
 import { checkValidProcessMetadata, IProofCA, IProofEVM, ProofCaSignatureTypes } from "../../src/models/process"
 import ProcessMetadataBuilder from "../builders/process-metadata"
 // import { BytesSignature } from "../../src/crypto/data-signing"
-// import { compressPublicKey } from "../../dist"
+// import { compressPublicKey } from "../../dist/src"
 import {
     // VoteEnvelope,
     // Proof,
