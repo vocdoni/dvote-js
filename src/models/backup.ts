@@ -1,4 +1,4 @@
-import { Symmetric } from "../../packages/encryption/src"
+import { Symmetric } from "../../packages/encryption/src" // TODO: Import from the new NPM package
 import { Wallet as PbWallet, WalletBackup, Account as PbAccount } from "../models/protobuf"
 import {
     walletBackup_Recovery_QuestionEnumFromJSON,

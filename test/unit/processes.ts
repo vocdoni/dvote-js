@@ -13,7 +13,7 @@ import { GenesisContractMethods, ProcessCensusOrigin, ProcessesContractMethods, 
 import { Buffer } from "buffer/"
 
 import { VotingApi, VotePackage } from "../../src/api/voting"
-import { Asymmetric } from "../../packages/encryption/src"
+import { Asymmetric } from "../../packages/encryption/src" // TODO: Import from the new NPM package
 import { checkValidProcessMetadata, IProofCA, IProofEVM, ProofCaSignatureTypes } from "../../src/models/process"
 import ProcessMetadataBuilder from "../builders/process-metadata"
 // import { BytesSignature } from "../../src/crypto/data-signing"

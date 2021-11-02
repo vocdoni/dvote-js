@@ -12,7 +12,7 @@ import {
 } from "../constants"
 import { BytesSignature } from "../crypto/data-signing"
 import { Buffer } from "buffer/"  // Previously using "arraybuffer-to-string"
-import { Asymmetric } from "../../packages/encryption/src"
+import { Asymmetric } from "../../packages/encryption/src" // TODO: Import from the new NPM package
 import { VochainWaiter } from "../util/waiters"
 import { Random } from "../util/random"
 import { IMethodOverrides, ProcessContractParameters, ProcessStatus, IProcessStatus, ProcessCensusOrigin, IProcessCensusOrigin } from "../net/contracts"
@@ -36,7 +36,7 @@ import { CensusErc20Api } from "./census"
 import { ProcessEnvelopeType } from "dvote-solidity"
 import { IGatewayClient, IGatewayDVoteClient, IGatewayWeb3Client } from "../common"
 import { Poseidon } from "../crypto/hashing"
-import { uintArrayToHex } from "../../packages/common/src"
+import { uintArrayToHex } from "../../packages/common/src" // TODO: Import from the new NPM package
 import { ResultsNotAvailableError } from "../errors/results";
 import { ApiMethod } from "../models/gateway"
 import { ProofArbo_Type } from "../models/protobuf/build/ts/vochain/vochain";

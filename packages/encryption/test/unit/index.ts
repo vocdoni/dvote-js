@@ -1,6 +1,6 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
-import { addCompletionHooks } from "../mocha-hooks"
+import { addCompletionHooks } from "../../../common/test/mocha-hooks" // TODO reference the future package
 import { Wallet } from "@ethersproject/wallet"
 
 import { Asymmetric, Symmetric } from "../../src"

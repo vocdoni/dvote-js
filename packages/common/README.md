@@ -1,6 +1,6 @@
 # @vocdoni/common
 
-@vocdoni/common is the common package of the [dvote-js library](https://github.com/vocdoni/dvote-js/)
+@vocdoni/common contains shared helpers, models and type definitions for the [dvote-js library](https://github.com/vocdoni/dvote-js/)
 
 ## Installation
 
@@ -11,6 +11,8 @@ npm install @vocdoni/common
 ```
 
 ## Usage
+
+#### Encoding
 
 ```ts
 import { hexStringToBuffer, uintArrayToHex, bigIntToBuffer, bufferToBigInt } from "@vocdoni/common"

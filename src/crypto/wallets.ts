@@ -5,7 +5,7 @@ import { eddsa, babyJub } from "circomlib"
 // import { Scalar, utils as ffutils } from "ffjavascript"
 // const { Scalar, utils: ffutils } = require("../../node_modules/ffjavascript/build/main.cjs")
 const { Scalar, utils: ffutils } = require("ffjavascript")
-import { bufferToBigInt } from "../../packages/common/src"
+import { bufferToBigInt } from "../../packages/common/src" // TODO: Import from the new NPM package
 
 export class WalletUtil {
     /**
