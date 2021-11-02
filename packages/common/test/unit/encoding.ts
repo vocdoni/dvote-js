@@ -1,6 +1,6 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
-import { addCompletionHooks } from "../mocha-hooks"
+import { addCompletionHooks } from "../../../../shared/test/mocha-hooks"
 import { Buffer } from "buffer/"
 
 import { bigIntToBuffer, bufferToBigInt, hexStringToBuffer, uintArrayToHex } from "../../src"
