@@ -26,7 +26,7 @@
     "blindsecp256k1": "0.0.6",
     "buffer": "^6.0.3",
     "circomlib": "^0.5.2",
-    "dvote-solidity": "^1.3.1",
+    "dvote-solidity": "^1.4.0",
     "ethers": "^5.4.1",
     "ffjavascript": "^0.2.38",
     "google-protobuf": "^3.14.0",

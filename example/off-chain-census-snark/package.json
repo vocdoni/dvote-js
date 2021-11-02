@@ -1,0 +1,19 @@
+{
+  "name": "benchmark",
+  "version": "1.0.0",
+  "description": "",
+  "keywords": [],
+  "author": "",
+  "scripts": {
+    "start": "ts-node index.ts"
+  },
+  "license": "ISC",
+  "homepage": "https://vocdoni.io",
+  "devDependencies": {
+    "bluebird": "^3.7.2",
+    "ts-node": "^10.2.1",
+    "typescript": "^4.4.2",
+    "yaml": "^1.9.2"
+  },
+  "dependencies": {}
+}
