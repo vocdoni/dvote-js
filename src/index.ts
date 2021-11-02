@@ -28,6 +28,7 @@ export * from "./net/ipfs"
 // CRYPTO
 export * from "./crypto/data-signing"
 export * from "./crypto/elliptic"
+export * from "../packages/encryption/src"
 export * from "./crypto/hashing"
 export * from "./crypto/wallets"
 export * from "./crypto/signers"
