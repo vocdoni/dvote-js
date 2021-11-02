@@ -14,8 +14,11 @@ bootnodesUrlRw: "https://server/gateways.json"     # Bootnode used by default
 dvoteGatewayUri:                                   # If set, overrides bootnodesUrlRw
 dvoteGatewayPublicKey:                             # If set, overrides bootnodesUrlRw
 
-numAccounts: 10000
-maxConcurrency: 4500
+numAccounts: 1000
+maxConcurrency: 450
+
+circuitWasmUrl: "https://github.com/vocdoni/zk-circuits-artifacts/raw/master/zkcensusproof/dev/1024/circuit.wasm"
+zKeyUrl: "https://github.com/vocdoni/zk-circuits-artifacts/raw/master/zkcensusproof/dev/1024/circuit_final.zkey"
 
 encryptedVote: true
 votesPattern: "all-0"   #  Vote the first option on all questions

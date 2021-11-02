@@ -1,18 +1,19 @@
 import * as Bluebird from "bluebird"
-import { Wallet, utils } from "ethers"
+import { Wallet } from "ethers"
 import * as assert from "assert"
 import { readFileSync, writeFileSync } from "fs"
 import * as YAML from 'yaml'
 import { GatewayPool } from "../../src/net/gateway-pool"
 import { EntityMetadataTemplate } from "../../src/models/entity"
 import { EntityApi } from "../../src/api/entity"
-import { VotingApi } from "../../src/api/voting"
+import { VotingApi, Voting, AnonymousEnvelopeParams } from "../../src/api/voting"
 import { CensusOffChain, CensusOffChainApi } from "../../src/api/census"
 import { INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "../../src/models/process"
 import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../../src/net/contracts"
 import { VochainWaiter, EthWaiter } from "../../src/util/waiters"
 import { compressPublicKey, EthNetworkID } from "../../dist"
-import { IGatewayDiscoveryParameters, VocdoniEnvironment } from "../../src"
+import { IGatewayDiscoveryParameters, Random, VocdoniEnvironment } from "../../src"
+import axios from "axios"
 
 
 const CONFIG_PATH = "./config.yaml"
@@ -80,6 +81,8 @@ async function main() {
     console.log("- Process merkle root", processParams.censusRoot)
     console.log("- Process merkle tree", processParams.censusUri)
     console.log("-", accounts.length, "accounts on the census")
+
+    await registerVoterKeys()
 
     // Wait until the current block >= startBlock
     await waitUntilStarted()
@@ -257,6 +260,31 @@ async function launchNewVote(censusRoot, censusUri) {
     assert.strictEqual(processParams.censusUri, processParamsPre.censusUri)
 }
 
+async function registerVoterKeys() {
+    console.log("Registering keys")
+    await Bluebird.map(accounts, async (account: Account, idx: number) => {
+        process.stdout.write(`Registering [${idx}] ; `)
+
+        // The key in the census
+        const wallet = new Wallet(account.privateKey)
+
+        // Generate a deterministic BabyJub secret key that we can generate again later, on launchVotes.
+        // PLEASE: generate a truly random secret key instead and make sure to store it in a safe place.
+        const secretKey = BigInt(idx * 1000000)
+
+        // Get a census proof to be able to register the new key
+        const censusProof = await CensusOffChainApi.generateProof(processParams.censusRoot, { key: account.publicKeyDigested }, true, pool)
+            .catch(err => {
+                console.error("\nCensusOffChainApi.generateProof ERR", account, err)
+                if (config.stopOnError) throw err
+                return null
+            })
+        if (!censusProof) return // skip when !config.stopOnError
+
+        return VotingApi.registerVoterKey(processId, censusProof, secretKey, "0x01", wallet, pool)
+    })
+}
+
 async function waitUntilStarted() {
     assert(pool)
     assert(processId)
@@ -285,6 +313,10 @@ async function launchVotes(accounts) {
 
     const processKeys = processParams.envelopeType.hasEncryptedVotes ? await VotingApi.getProcessKeys(processId, pool) : null
 
+    const { censusRoot } = await VotingApi.getProcessState(processId, pool)
+    const circuitWasm: Uint8Array = await axios.get(config.circuitWasmUrl, { responseType: "arraybuffer" }).then(data => data.data)
+    const zKey: Uint8Array = await axios.get(config.zKeyUrl, { responseType: "arraybuffer" }).then(data => data.data)
+
     await Bluebird.map(accounts, async (account, idx) => {
         process.stdout.write(`Starting [${idx}] ; `)
 
@@ -302,9 +334,23 @@ async function launchVotes(accounts) {
         process.stdout.write(`Pkg Envelope [${idx}] ; `)
         const choices = getChoicesForVoter(idx)
 
-        const envelope = processParams.envelopeType.hasEncryptedVotes ?
-            await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet, processKeys }) :
-            await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet })
+        // Generating the same BabyJub secret key that we generated before
+        // PLEASE: generate a truly random secret key instead and make sure to store it in a safe place.
+        const secretKey = BigInt(idx * 1000000)
+
+        const params: AnonymousEnvelopeParams = {
+            votes: choices,
+            censusRoot,
+            circuitWasm,
+            secretKey,
+            zKey,
+            processId
+        }
+        if (processParams.envelopeType.hasEncryptedVotes) {
+            params.processKeys = processKeys
+        }
+
+        const envelope = Voting.packageAnonymousEnvelope(params)
 
         process.stdout.write(`Sending [${idx}] ; `)
         await VotingApi.submitEnvelope(envelope, wallet, pool)
@@ -317,7 +363,7 @@ async function launchVotes(accounts) {
         await new Promise(resolve => setTimeout(resolve, 11000))
 
         process.stdout.write(`Checking [${idx}] ; `)
-        const nullifier = VotingApi.getSignedVoteNullifier(wallet.address, processId)
+        const nullifier = Voting.getSignedVoteNullifier(wallet.address, processId)
         const { registered, date, block } = await VotingApi.getEnvelopeStatus(processId, nullifier, pool)
             .catch(err => {
                 console.error("\ngetEnvelopeStatus ERR", account.publicKey, nullifier, err)
@@ -359,46 +405,46 @@ async function checkVoteResults() {
     await VochainWaiter.waitUntil(nextBlock, pool, { verbose: true })
 
     console.log("Fetching the vote results for", processId)
-    const resultsDigest = await VotingApi.getResultsDigest(processId, pool)
+    const resultsDigest = await VotingApi.getResults(processId, pool)
     const totalVotes = await VotingApi.getEnvelopeHeight(processId, pool)
 
-    assert.strictEqual(resultsDigest.questions.length, 1)
-    assert(resultsDigest.questions[0].voteResults)
+    assert.strictEqual(resultsDigest.results.length, 1)
+    assert(resultsDigest.results[0])
 
     switch (config.votesPattern) {
         case "all-0":
-            assert(resultsDigest.questions[0].voteResults.length >= 2)
-            assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes.toNumber(), config.numAccounts)
-            assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes.toNumber(), 0)
+            assert(resultsDigest.results[0].length >= 2)
+            assert.strictEqual(resultsDigest.results[0][0], config.numAccounts)
+            assert.strictEqual(resultsDigest.results[0][1], 0)
             break
         case "all-1":
-            assert(resultsDigest.questions[0].voteResults.length >= 2)
-            assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes.toNumber(), 0)
-            assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes.toNumber(), config.numAccounts)
+            assert(resultsDigest.results[0].length >= 2)
+            assert.strictEqual(resultsDigest.results[0][0], 0)
+            assert.strictEqual(resultsDigest.results[0][1], config.numAccounts)
             break
         case "all-2":
-            assert(resultsDigest.questions[0].voteResults.length >= 3)
-            assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes.toNumber(), 0)
-            assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes.toNumber(), 0)
-            assert.strictEqual(resultsDigest.questions[0].voteResults[2].votes.toNumber(), config.numAccounts)
+            assert(resultsDigest.results[0].length >= 3)
+            assert.strictEqual(resultsDigest.results[0][0], 0)
+            assert.strictEqual(resultsDigest.results[0][1], 0)
+            assert.strictEqual(resultsDigest.results[0][2], config.numAccounts)
             break
         case "all-even":
-            assert(resultsDigest.questions[0].voteResults.length >= 2)
+            assert(resultsDigest.results[0].length >= 2)
             if (config.numAccounts % 2 == 0) {
-                assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes.toNumber(), config.numAccounts / 2)
-                assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes.toNumber(), config.numAccounts / 2)
+                assert.strictEqual(resultsDigest.results[0][0], config.numAccounts / 2)
+                assert.strictEqual(resultsDigest.results[0][1], config.numAccounts / 2)
             }
             else {
-                assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes.toNumber(), Math.ceil(config.numAccounts / 2))
-                assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes.toNumber(), Math.floor(config.numAccounts / 2))
+                assert.strictEqual(resultsDigest.results[0][0], Math.ceil(config.numAccounts / 2))
+                assert.strictEqual(resultsDigest.results[0][1], Math.floor(config.numAccounts / 2))
             }
             break
         case "incremental":
-            assert.strictEqual(resultsDigest.questions[0].voteResults.length, 2)
-            resultsDigest.questions.forEach((question, i) => {
-                for (let j = 0; j < question.voteResults.length; j++) {
-                    if (i == j) assert.strictEqual(question.voteResults[j].votes.toNumber(), config.numAccounts)
-                    else assert.strictEqual(question.voteResults[j].votes.toNumber(), 0)
+            assert.strictEqual(resultsDigest.results[0].length, 2)
+            resultsDigest.results.forEach((question, i) => {
+                for (let j = 0; j < question.length; j++) {
+                    if (i == j) assert.strictEqual(question[j], config.numAccounts)
+                    else assert.strictEqual(question[j], 0)
                 }
             })
             break
@@ -459,6 +505,8 @@ function getConfig(): Config {
     assert(!config.dvoteGatewayPublicKey || typeof config.dvoteGatewayPublicKey == "string", "config.yaml > dvoteGatewayPublicKey should be a string")
     assert(typeof config.numAccounts == "number", "config.yaml > numAccounts should be a number")
     assert(typeof config.maxConcurrency == "number", "config.yaml > maxConcurrency should be a number")
+    assert(typeof config.circuitWasmUrl == "string", "config.yaml > circuitWasmUrl should be a string")
+    assert(typeof config.zKeyUrl == "string", "config.yaml > zKeyUrl should be a string")
     assert(typeof config.encryptedVote == "boolean", "config.yaml > encryptedVote should be a boolean")
     assert(typeof config.votesPattern == "string", "config.yaml > votesPattern should be a string")
     return config
@@ -483,6 +531,9 @@ type Config = {
 
     numAccounts: number
     maxConcurrency: number
+
+    circuitWasmUrl: string
+    zKeyUrl: string
 
     encryptedVote: boolean
     votesPattern: "all-0" | "all-1" | "all-2" | "all-even" | "incremental"

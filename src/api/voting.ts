@@ -1151,7 +1151,7 @@ export namespace VotingApi {
      * @param walletOrSigner
      * @param gateway
      */
-    export function registerVoterKey(processId: string, proof: Proof, secretKey: bigint, weight: string = "0x1", walletOrSigner: Wallet | Signer, gateway: IGatewayDVoteClient): Promise<any> {
+    export function registerVoterKey(processId: string, proof: Proof, secretKey: bigint, weight: string = "0x01", walletOrSigner: Wallet | Signer, gateway: IGatewayDVoteClient): Promise<any> {
         if (!processId || !proof || typeof secretKey !== "bigint") return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
 
@@ -1513,7 +1513,7 @@ export namespace Voting {
         const pid = BigInt(ensure0x(processId))
         return ensure0x(Poseidon.hash([secretKey, pid]).toString(16))
     }
-    
+
     /**
      * Arranges the raw results with the titles and the respective options from the metadata.
      * @param rawResults
