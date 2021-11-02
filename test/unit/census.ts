@@ -5,7 +5,6 @@ import { Wallet, utils } from "ethers"
 import { Buffer } from "buffer/"
 
 import { CensusOffChain } from "../../src/api/census"
-import { compressPublicKey } from "../../dist/src"
 import { Poseidon } from "../../src/crypto/hashing"
 
 addCompletionHooks()
@@ -55,7 +54,7 @@ describe("Census", () => {
         it("Should fail on invalid hex strings", () => {
             const wallet = Wallet.fromMnemonic("soul frequent purity regret noble husband weapon scheme cement lamp put regular envelope physical entire", "m/44'/60'/0'/0/0")
 
-            let pubKey = compressPublicKey(wallet.publicKey)
+            let pubKey = utils.computePublicKey(wallet.publicKey, true)
             expect(() => {
                 CensusOffChain.Public.encodePublicKey(pubKey)
             }).to.not.throw

@@ -2,14 +2,13 @@ import * as express from "express"
 import { NextFunction, Request, Response } from "express"
 import { json } from "body-parser"
 import { Server } from "http";
-import { Wallet } from "ethers"
+import { Wallet, utils } from "ethers"
 import { TextEncoder } from "util"
-import { BytesSignature } from "../../src/crypto/data-signing"
+import { BytesSignature } from "../../packages/signing/src" // TODO: Import from the new NPM package
 import { DVoteGateway } from "../../src/net/gateway-dvote"
 import { GatewayInfo } from "../../src/wrappers/gateway-info"
 import { getWallets } from "./web3-service"
 import { BackendApiName, GatewayApiName } from "../../src/models/gateway";
-import { compressPublicKey } from "../../src/crypto/elliptic";
 
 
 export type TestResponse = {
@@ -118,7 +117,7 @@ export class DevGatewayService {
     // GETTERS
     get uri() { return `http://localhost:${this.port}/dvote` }
     get privateKey() { return this.wallet.privateKey }
-    get publicKey() { return compressPublicKey(this.wallet.publicKey) }
+    get publicKey() { return utils.computePublicKey(this.wallet.publicKey, true) }
     get client() {
         return new DVoteGateway({ uri: this.uri, supportedApis: ["file", "census", "vote", "results"], publicKey: this.publicKey })
     }

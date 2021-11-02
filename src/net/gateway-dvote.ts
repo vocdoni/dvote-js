@@ -3,7 +3,7 @@ import { IGatewayDVoteClient, VocdoniEnvironment } from "../common";
 import { GatewayInfo } from "../wrappers/gateway-info"
 import { GatewayApiMethod, BackendApiMethod, allApis, registryApiMethods, ApiMethod, GatewayApiName, BackendApiName, InfoApiMethod, RawApiMethod } from "../models/gateway"
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
-import { JsonSignature, BytesSignature } from "../crypto/data-signing"
+import { JsonSignature, BytesSignature } from "../../packages/signing/src" // TODO: Import from the new NPM package
 import axios, { AxiosInstance, AxiosResponse } from "axios"
 import { extractUint8ArrayJSONValue } from "../util/uint8array"
 import { promiseWithTimeout } from '../util/timeout'

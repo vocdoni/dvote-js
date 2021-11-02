@@ -1,10 +1,9 @@
-import { Wallet, Signer, providers, BigNumber, ContractReceipt, Contract } from "ethers"
+import { Wallet, Signer, providers, BigNumber, ContractReceipt, Contract, utils } from "ethers"
 import { IRequestParameters } from "../net/gateway-dvote"
 import { Keccak256, Poseidon } from "../crypto/hashing"
 import { hexStringToBuffer } from "../../packages/common/src" // TODO: Import from the new NPM package
 import { CENSUS_MAX_BULK_SIZE } from "../constants"
 import { ERC20Proof } from "@vocdoni/storage-proofs-eth"
-import { compressPublicKey } from "../crypto/elliptic"
 import { blind as _blind, unblind as _unblind, verify as _verify, signatureFromHex as _signatureFromHex, signatureToHex as _signatureToHex, pointFromHex as _pointFromHex, pointToHex as _pointToHex, UserSecretData, UnblindedSignature, BigInteger, Point } from "blindsecp256k1"
 import { hexZeroPad } from "ethers/lib/utils"
 import { IGatewayClient, IGatewayWeb3Client } from "../common"
@@ -37,7 +36,7 @@ export namespace CensusOffChain {
          * Returns a base64 representation of the given ECDSA public key
          */
         export function encodePublicKey(publicKey: string | Uint8Array | Buffer | number[]): string {
-            const compPubKey = compressPublicKey(publicKey)
+            const compPubKey = utils.computePublicKey(publicKey, true)
             const pubKeyBytes = hexStringToBuffer(compPubKey)
 
             return pubKeyBytes.toString("base64")

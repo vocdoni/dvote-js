@@ -10,7 +10,7 @@ import {
     SOKOL_CHAIN_ID,
     SOKOL_GAS_PRICE,
 } from "../constants"
-import { BytesSignature } from "../crypto/data-signing"
+import { BytesSignature } from "../../packages/signing/src" // TODO: Import from the new NPM package
 import { Buffer } from "buffer/"  // Previously using "arraybuffer-to-string"
 import { Asymmetric } from "../../packages/encryption/src" // TODO: Import from the new NPM package
 import { VochainWaiter } from "../util/waiters"

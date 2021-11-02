@@ -13,7 +13,6 @@ import {
     ProcessMetadata, ProcessMetadataTemplate,
     ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin,
     VochainWaiter, EthWaiter,
-    compressPublicKey,
     VocdoniEnvironment,
     Erc20TokensApi,
     IGatewayDiscoveryParameters,
@@ -33,7 +32,7 @@ async function main() {
         return {
             idx: i,
             privateKey: key,
-            publicKey: compressPublicKey(wallet.publicKey)
+            publicKey: utils.computePublicKey(wallet.publicKey, true)
         }
     })
 

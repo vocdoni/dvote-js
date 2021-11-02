@@ -1,5 +1,5 @@
 import * as Bluebird from "bluebird"
-import { Wallet, providers } from "ethers"
+import { Wallet, providers, utils } from "ethers"
 import * as assert from "assert"
 import { readFileSync, writeFileSync } from "fs"
 import * as YAML from 'yaml'
@@ -13,7 +13,6 @@ import {
     ProcessMetadata, ProcessMetadataTemplate,
     ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin,
     VochainWaiter,
-    compressPublicKey,
     VocdoniEnvironment,
     Erc20TokensApi,
     IGatewayDiscoveryParameters,
@@ -37,7 +36,7 @@ async function main() {
         return {
             idx: i,
             privateKey: key,
-            publicKey: compressPublicKey(wallet.publicKey)
+            publicKey: utils.computePublicKey(wallet.publicKey, true)
         }
     })
 
