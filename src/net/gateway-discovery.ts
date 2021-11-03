@@ -5,7 +5,7 @@ import { Web3Gateway } from "./gateway-web3"
 import { GatewayBootnode } from "./gateway-bootnode"
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
 import { JsonBootnodeData } from "../models/gateway"
-import { promiseWithTimeout } from "../util/timeout"
+import { promiseWithTimeout } from "../../packages/common/src" // TODO: Import from the new NPM package
 import { allSettled } from "../util/promise";
 import { Random } from "../../packages/common/src" // TODO: Import from the new NPM package
 import { EthNetworkID, VocdoniEnvironment } from "../common"

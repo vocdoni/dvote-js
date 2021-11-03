@@ -6,7 +6,7 @@ import { IPFS } from "../net/ipfs"
 import { Buffer } from 'buffer/'
 import axios from "axios"
 import { Wallet, Signer } from "ethers"
-import { promiseWithTimeout } from "../util/timeout"
+import { promiseWithTimeout } from "../../packages/common/src" // TODO: Import from the new NPM package
 
 const MAX_FETCH_TIMEOUT = 8000
 

@@ -6,7 +6,7 @@ import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
 import { JsonSignature, BytesSignature } from "../../packages/signing/src" // TODO: Import from the new NPM package
 import axios, { AxiosInstance, AxiosResponse } from "axios"
 import { extractUint8ArrayJSONValue } from "../util/uint8array"
-import { promiseWithTimeout } from '../util/timeout'
+import { promiseWithTimeout } from "../../packages/common/src" // TODO: Import from the new NPM package
 import { Random } from "../../packages/common/src" // TODO: Import from the new NPM package
 
 ///////////////////////////////////////////////////////////////////////////////

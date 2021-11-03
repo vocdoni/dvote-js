@@ -34,7 +34,7 @@ import {
     ResultsContractMethods,
     Erc20StorageProofContractMethods
 } from "./contracts"
-import { promiseWithTimeout } from '../util/timeout'
+import { promiseWithTimeout } from "../../packages/common/src" // TODO: Import from the new NPM package
 import { EthNetworkID, IGatewayWeb3Client, VocdoniEnvironment } from '../common'
 
 const { JsonRpcProvider, Web3Provider, IpcProvider, InfuraProvider, FallbackProvider, EtherscanProvider } = providers
