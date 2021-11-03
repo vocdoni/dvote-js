@@ -4,7 +4,7 @@ import { addCompletionHooks } from "../mocha-hooks"
 import { utils } from "ethers"
 
 import { WalletBabyJub, WalletUtil } from "../../src/crypto/wallets"
-import { Random } from "../../src/util/random"
+import { Random } from "../../packages/common/src" // TODO: Import from the new NPM package
 import { JsonSignature } from "../../packages/signing/src" // TODO: Import from the new NPM package
 
 addCompletionHooks()

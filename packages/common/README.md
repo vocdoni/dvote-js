@@ -34,6 +34,24 @@ bufferToBigInt(Buffer.from("64", "hex"))
 // returns '100n'
 ```
 
+#### Random
+
+```ts
+import { Random } from "@vocdoni/common"
+
+const bytes = Random.getBytes(8)
+// returns '<Buffer 4b 77 f5 f6 30 fc 1a d2>' (random)
+
+const hex = Random.getHex()
+// returns '0x64fa37b4d6139678787efebb8bbddcb104de323ccb980343dbfaceca0a49ac83' (32 byte hash (starting with "0x"))
+
+const bigint = Random.getBigInt(256n)
+// returns '28n' (random)
+
+const shuffle = Random.shuffle([1, 2, 3, 4])
+// returns '[ 2, 4, 1, 3 ]' (random order)
+```
+
 ## Testing
 
 To execute library tests just run

@@ -35,7 +35,7 @@ export * from "./crypto/signers"
 // UTIL
 export * from "./util/normalization"
 export * from "./util/providers"
-export * from "./util/random"
+export * from "../packages/common/src" // TODO: Export from the new NPM package
 export * from "./util/waiters"
 
 // WRAPPERS

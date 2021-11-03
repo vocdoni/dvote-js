@@ -12,7 +12,7 @@ import { INewProcessParams, IProofCA, ProcessMetadata, ProcessMetadataTemplate, 
 import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../../src/net/contracts"
 import { VochainWaiter, EthWaiter } from "../../src/util/waiters"
 import axios from "axios"
-import { Random } from "../../src/util/random"
+import { Random } from "../../packages/common/src" // TODO: Import from the new NPM package
 import { Buffer } from "buffer"
 import { IGatewayDiscoveryParameters } from "../../src"
 import { EthNetworkID, VocdoniEnvironment } from "../../dist"

@@ -1,7 +1,7 @@
 import { IPFS_GATEWAY_LIST_URI } from "../constants"
 import axios from "axios"
 import { Buffer } from 'buffer/'
-import { Random } from "../util/random"
+import { Random } from "../../packages/common/src" // TODO: Import from the new NPM package
 
 export class IPFS {
     /**

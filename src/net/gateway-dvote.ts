@@ -7,7 +7,7 @@ import { JsonSignature, BytesSignature } from "../../packages/signing/src" // TO
 import axios, { AxiosInstance, AxiosResponse } from "axios"
 import { extractUint8ArrayJSONValue } from "../util/uint8array"
 import { promiseWithTimeout } from '../util/timeout'
-import { Random } from '../util/random'
+import { Random } from "../../packages/common/src" // TODO: Import from the new NPM package
 
 ///////////////////////////////////////////////////////////////////////////////
 // DVOTE GATEWAY
