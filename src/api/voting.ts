@@ -1156,7 +1156,9 @@ export namespace VotingApi {
         else if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
 
         const hexHashedKey = Poseidon.hash([secretKey]).toString(16)
-        const newKey = utils.zeroPad("0x" + hexHashedKey, 32)
+        const newKey = hexHashedKey.length % 2 == 1 ?
+            utils.zeroPad("0x0" + hexHashedKey, 32) :
+            utils.zeroPad("0x" + hexHashedKey, 32)
 
         const registerKey: RegisterKeyTx = {
             newKey,

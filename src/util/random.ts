@@ -1,4 +1,5 @@
 import { utils } from "ethers"
+import { Poseidon } from "../crypto/hashing"
 
 export namespace Random {
     /**
@@ -53,6 +54,14 @@ export namespace Random {
             // accumulate bytes
             result = nextValue
         }
+    }
+
+
+    /**
+     * Generates a random big integer within the field of the Poseidon hash algorithm
+     */
+    export function getPoseidonBigInt() {
+        return getBigInt(Poseidon.Q)
     }
 
     /**

@@ -89,7 +89,7 @@ async function main() {
 
     // Submit votes for every account
     console.time("Voting 📩")
-    await launchVotes(accounts)
+    await submitVotes(accounts)
     console.timeEnd("Voting 📩")
 
     await checkVoteResults()
@@ -265,15 +265,15 @@ async function registerVoterKeys() {
     await Bluebird.map(accounts, async (account: Account, idx: number) => {
         process.stdout.write(`Registering [${idx}] ; `)
 
-        // The key in the census
+        // The key (within the census) to sign the request
         const wallet = new Wallet(account.privateKey)
 
-        // Generate a deterministic BabyJub secret key that we can generate again later, on launchVotes.
-        // PLEASE: generate a truly random secret key instead and make sure to store it in a safe place.
-        const secretKey = BigInt(idx * 1000000)
+        // Generate the random secret key that will be used for voting
+        const secretKey = Random.getPoseidonBigInt()
+        account.secretKey = secretKey
 
         // Get a census proof to be able to register the new key
-        const censusProof = await CensusOffChainApi.generateProof(processParams.censusRoot, { key: account.publicKeyDigested }, true, pool)
+        const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: account.publicKeyDigested }, true, pool)
             .catch(err => {
                 console.error("\nCensusOffChainApi.generateProof ERR", account, err)
                 if (config.stopOnError) throw err
@@ -308,22 +308,23 @@ async function waitUntilStarted() {
     assert(processList.some(v => v == trimProcId), "Process ID not present")
 }
 
-async function launchVotes(accounts) {
+async function submitVotes(accounts: Account[]) {
     console.log("Launching votes")
 
     const processKeys = processParams.envelopeType.hasEncryptedVotes ? await VotingApi.getProcessKeys(processId, pool) : null
 
-    const { censusRoot } = await VotingApi.getProcessState(processId, pool)
+    const censusRoot = processParams.censusRoot
+
     const circuitWasm: Uint8Array = await axios.get(config.circuitWasmUrl, { responseType: "arraybuffer" }).then(data => data.data)
     const zKey: Uint8Array = await axios.get(config.zKeyUrl, { responseType: "arraybuffer" }).then(data => data.data)
 
-    await Bluebird.map(accounts, async (account, idx) => {
+    await Bluebird.map(accounts, async (account: Account, idx: number) => {
         process.stdout.write(`Starting [${idx}] ; `)
 
         const wallet = new Wallet(account.privateKey)
 
         process.stdout.write(`Gen Proof [${idx}] ; `)
-        const censusProof = await CensusOffChainApi.generateProof(processParams.censusRoot, { key: account.publicKeyDigested }, true, pool)
+        const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: account.publicKeyDigested }, true, pool)
             .catch(err => {
                 console.error("\nCensusOffChainApi.generateProof ERR", account, err)
                 if (config.stopOnError) throw err
@@ -334,15 +335,11 @@ async function launchVotes(accounts) {
         process.stdout.write(`Pkg Envelope [${idx}] ; `)
         const choices = getChoicesForVoter(idx)
 
-        // Generating the same BabyJub secret key that we generated before
-        // PLEASE: generate a truly random secret key instead and make sure to store it in a safe place.
-        const secretKey = BigInt(idx * 1000000)
-
         const params: AnonymousEnvelopeParams = {
             votes: choices,
             censusRoot,
             circuitWasm,
-            secretKey,
+            secretKey: account.secretKey,
             zKey,
             processId
         }
@@ -363,7 +360,7 @@ async function launchVotes(accounts) {
         await new Promise(resolve => setTimeout(resolve, 11000))
 
         process.stdout.write(`Checking [${idx}] ; `)
-        const nullifier = Voting.getSignedVoteNullifier(wallet.address, processId)
+        const nullifier = Voting.getAnonymousVoteNullifier(account.secretKey, processId)
         const { registered, date, block } = await VotingApi.getEnvelopeStatus(processId, nullifier, pool)
             .catch(err => {
                 console.error("\ngetEnvelopeStatus ERR", account.publicKey, nullifier, err)
@@ -545,4 +542,7 @@ type Account = {
     privateKey: string
     publicKey: string
     publicKeyDigested: string
+
+    /** Snark friendly secret key */
+    secretKey: bigint
 }

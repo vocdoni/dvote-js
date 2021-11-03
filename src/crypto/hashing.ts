@@ -1,6 +1,5 @@
 import { utils } from "ethers"
 import { poseidon } from "circomlib"
-import { ensure0x } from "../util/hex"
 
 export namespace Keccak256 {
     export function hashText(value: string): string {

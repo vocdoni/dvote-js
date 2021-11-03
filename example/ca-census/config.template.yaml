@@ -10,7 +10,7 @@ censusUri: https://server/uri
 privateKey:
 mnemonic: ""
 hdPath: "m/44'/60'/0'/0/1"
-# ethNetworkId: "goerli"
+# ethNetworkId: "rinkeby"
 ethNetworkId: "xdai"
 
 vocdoniEnvironment: "dev" # "stg" or "prod"

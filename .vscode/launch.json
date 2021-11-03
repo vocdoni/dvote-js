@@ -42,6 +42,24 @@
         {
             "type": "node",
             "request": "launch",
+            "name": "ZK votes (off-chain)",
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register/transpile-only"
+            ],
+            "program": "${workspaceFolder}/example/off-chain-census-snark/index.ts",
+            "cwd": "${workspaceFolder}/example/off-chain-census-snark",
+            "internalConsoleOptions": "openOnSessionStart",
+            "skipFiles": [
+                "<node_internals>/**",
+                "node_modules/**"
+            ],
+            "preLaunchTask": "npm: build"
+        },
+        {
+            "type": "node",
+            "request": "launch",
             "name": "CA votes",
             "runtimeArgs": [
                 "--nolazy",
