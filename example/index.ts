@@ -21,7 +21,7 @@ import { GatewayBootnode } from "../src/net/gateway-bootnode"
 import { EntityMetadataTemplate, EntityMetadata, TextRecordKeys } from "../src/models/entity"
 import { INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "../src/models/process"
 import { GatewayInfo } from "../src/wrappers/gateway-info"
-import { XDAI_CHAIN_ID, XDAI_ENS_REGISTRY_ADDRESS, VOCHAIN_BLOCK_TIME } from "../src/constants"
+import { XDAI_CHAIN_ID, XDAI_ENS_REGISTRY_ADDRESS, VOCHAIN_BLOCK_TIME } from "../packages/common/src" // TODO: Import from the new NPM package
 import { JsonSignature } from "../packages/signing/src" // TODO: Import from the new NPM package
 import { GatewayApiMethod, BackendApiMethod, ApiMethod } from "../src/models/gateway"
 import { IGatewayDiscoveryParameters } from "../src/net/gateway-discovery"

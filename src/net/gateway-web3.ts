@@ -17,7 +17,7 @@ import {
     PROCESSES_ENS_SUBDOMAIN,
     NAMESPACES_ENS_SUBDOMAIN,
     ERC20_STORAGE_PROOFS_ENS_SUBDOMAIN
-} from "../constants"
+} from "../../packages/common/src" // TODO: Import from the new NPM package
 import { IProcessesContract, IEnsPublicResolverContract, INamespacesContract, ITokenStorageProofContract, IGenesisContract, IResultsContract } from "../net/contracts"
 import {
     PublicResolverContractDefinition,

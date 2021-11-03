@@ -2,7 +2,7 @@ import { Wallet, Signer, providers, BigNumber, ContractReceipt, Contract, utils 
 import { IRequestParameters } from "../net/gateway-dvote"
 import { Keccak256, Poseidon } from "../../packages/hashing/src" // TODO: Import from the new NPM package
 import { hexStringToBuffer } from "../../packages/common/src" // TODO: Import from the new NPM package
-import { CENSUS_MAX_BULK_SIZE } from "../constants"
+import { CENSUS_MAX_BULK_SIZE } from "../../packages/common/src" // TODO: Import from the new NPM package
 import { ERC20Proof } from "@vocdoni/storage-proofs-eth"
 import { blind as _blind, unblind as _unblind, verify as _verify, signatureFromHex as _signatureFromHex, signatureToHex as _signatureToHex, pointFromHex as _pointFromHex, pointToHex as _pointToHex, UserSecretData, UnblindedSignature, BigInteger, Point } from "blindsecp256k1"
 import { hexZeroPad } from "ethers/lib/utils"

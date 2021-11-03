@@ -6,7 +6,7 @@ import {
     SOKOL_CHAIN_ID,
     SOKOL_ENS_REGISTRY_ADDRESS,
     XDAI_STG_ENS_REGISTRY_ADDRESS
-} from "../constants"
+} from "../../packages/common/src" // TODO: Import from the new NPM package
 import { EthNetworkID } from "../common"
 
 export class ProviderUtil {

@@ -7,7 +7,7 @@ import { Web3Gateway } from "../../src/net/gateway-web3"
 import { VotingApi } from "../../src/api/voting"
 import { DevGatewayService, MockedInteraction, TestResponse } from "../helpers/dvote-service"
 import { DevWeb3Service } from "../helpers/web3-service"
-import { VOCHAIN_BLOCK_TIME } from "../../src/constants"
+import { VOCHAIN_BLOCK_TIME } from "../../packages/common/src" // TODO: Import from the new NPM package
 import { BackendApiName, GatewayApiName } from "../../src/models/gateway"
 
 const dvotePort = 8500

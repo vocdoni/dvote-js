@@ -13,7 +13,7 @@ import {
     SOKOL_PROVIDER_URI,
     SOKOL_ENS_REGISTRY_ADDRESS,
     XDAI_STG_ENS_REGISTRY_ADDRESS,
-} from "../constants"
+} from "../../packages/common/src" // TODO: Import from the new NPM package
 import { TextRecordKeys } from "../models/entity"
 import { JsonBootnodeData } from "../models/gateway"
 import { DVoteGateway } from "./gateway-dvote"

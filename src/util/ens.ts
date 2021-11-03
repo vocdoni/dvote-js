@@ -5,7 +5,7 @@ import {
     VOCDONI_MAINNET_ENTITY_ID,
     VOCDONI_RINKEBY_ENTITY_ID, VOCDONI_SOKOL_ENTITY_ID,
     VOCDONI_XDAI_ENTITY_ID, VOCDONI_XDAI_STG_ENTITY_ID
-} from "../constants"
+} from "../../packages/common/src" // TODO: Import from the new NPM package
 
 export function getEnsTextRecord(
     gateway: IGatewayWeb3Client,
