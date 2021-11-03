@@ -34,7 +34,7 @@ import { DVoteGateway, DVoteGatewayResponseBody, IRequestParameters } from "../n
 import { CensusErc20Api } from "./census"
 import { ProcessEnvelopeType } from "dvote-solidity"
 import { IGatewayClient, IGatewayDVoteClient, IGatewayWeb3Client } from "../common"
-import { Poseidon } from "../crypto/hashing"
+import { Poseidon } from "../../packages/hashing/src" // TODO: Import from the new NPM package
 import { Random, uintArrayToHex } from "../../packages/common/src" // TODO: Import from the new NPM package
 import { ResultsNotAvailableError } from "../errors/results";
 import { ApiMethod } from "../models/gateway"

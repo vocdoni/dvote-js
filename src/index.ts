@@ -28,7 +28,7 @@ export * from "./net/ipfs"
 // CRYPTO
 export * from "../packages/signing/src" // TODO: Export from the new NPM package
 export * from "../packages/encryption/src" // TODO: Export from the new NPM package
-export * from "./crypto/hashing"
+export * from "../packages/hashing/src" // TODO: Export from the new NPM package
 export * from "./crypto/wallets"
 export * from "./crypto/signers"
 

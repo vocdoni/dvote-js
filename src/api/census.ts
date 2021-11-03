@@ -1,6 +1,6 @@
 import { Wallet, Signer, providers, BigNumber, ContractReceipt, Contract, utils } from "ethers"
 import { IRequestParameters } from "../net/gateway-dvote"
-import { Keccak256, Poseidon } from "../crypto/hashing"
+import { Keccak256, Poseidon } from "../../packages/hashing/src" // TODO: Import from the new NPM package
 import { hexStringToBuffer } from "../../packages/common/src" // TODO: Import from the new NPM package
 import { CENSUS_MAX_BULK_SIZE } from "../constants"
 import { ERC20Proof } from "@vocdoni/storage-proofs-eth"
