@@ -6,7 +6,7 @@ import { GatewayBootnode } from "./gateway-bootnode"
 import { GATEWAY_SELECTION_TIMEOUT } from "../constants"
 import { JsonBootnodeData } from "../models/gateway"
 import { promiseWithTimeout } from "../../packages/common/src" // TODO: Import from the new NPM package
-import { allSettled } from "../util/promise";
+import { allSettled } from "../../packages/common/src" // TODO: Import from the new NPM package
 import { Random } from "../../packages/common/src" // TODO: Import from the new NPM package
 import { EthNetworkID, VocdoniEnvironment } from "../common"
 import { GatewayDiscoveryError, GatewayDiscoveryValidationError } from "../errors/gateway-discovery"

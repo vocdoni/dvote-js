@@ -1,7 +1,7 @@
 import { Wallet, Signer, ContractTransaction } from "ethers"
 import { checkValidEntityMetadata, EntityMetadata } from "../models/entity"
 import { TextRecordKeys } from "../models/entity"
-import { allSettled } from "../util/promise";
+import { allSettled } from "../../packages/common/src" // TODO: Import from the new NPM package
 import { FileApi } from "./file"
 import { XDAI_CHAIN_ID, XDAI_GAS_PRICE, SOKOL_CHAIN_ID, SOKOL_GAS_PRICE } from "../constants"
 import { IMethodOverrides, ensHashAddress, ITokenStorageProofContract } from "../net/contracts"
