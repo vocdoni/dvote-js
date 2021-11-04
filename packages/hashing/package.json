@@ -1,7 +1,7 @@
 {
-  "name": "@vocdoni/encryption",
+  "name": "@vocdoni/hashing",
   "version": "1.14.0",
-  "description": "Javascript/Typescript encryption package",
+  "description": "Javascript/Typescript hashing package",
   "main": "dist/index",
   "types": "dist/index",
   "repository": "https://github.com/vocdoni/dvote-js.git",
