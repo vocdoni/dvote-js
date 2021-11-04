@@ -4,7 +4,7 @@
 
 import { parseURL } from 'universal-parse-url'
 import { Contract, ContractFactory, providers, Wallet, Signer, ContractInterface, BigNumber } from "ethers"
-import { ProviderUtil } from "../../../src" // TODO (high priority) reference the future package
+import { ProviderUtil } from "util/providers"
 import { GatewayInfo } from "./wrappers/gateway-info"
 import {
     GATEWAY_SELECTION_TIMEOUT,

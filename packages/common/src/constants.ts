@@ -1,4 +1,5 @@
 import { parseUnits } from "@ethersproject/units"
+import {BigNumber} from "ethers";
 
 export const IPFS_GATEWAY_LIST_URI = "https://ipfs.github.io/public-gateway-checker/gateways.json"
 
@@ -23,13 +24,13 @@ export const VOCDONI_SOKOL_ENTITY_ID = "0x60E134146338EEce72EF01275Ea4109744e6Ca
 
 export const XDAI_CHAIN_ID = 100
 export const XDAI_PROVIDER_URI = "https://dai.poa.network"
-export const XDAI_GAS_PRICE = parseUnits("60", "gwei")
+export const XDAI_GAS_PRICE = parseUnits("60", "gwei") as BigNumber
 export const XDAI_ENS_REGISTRY_ADDRESS = "0x00cEBf9E1E81D3CC17fbA0a49306EBA77a8F26cD"
 export const XDAI_STG_ENS_REGISTRY_ADDRESS = "0x693E79F3FD7DC5B3c32D1914E02a932b88397cC7"
 
 export const SOKOL_CHAIN_ID = 77
 export const SOKOL_PROVIDER_URI = "https://sokol.poa.network"
-export const SOKOL_GAS_PRICE = parseUnits("1", "gwei")
+export const SOKOL_GAS_PRICE = parseUnits("1", "gwei") as BigNumber
 export const SOKOL_ENS_REGISTRY_ADDRESS = "0xDb6C74071116D17a47D9c191cbE6d640111Ee5C2"
 
 // export const SIGNATURE_TIMESTAMP_TOLERANCE = 60 * 8 // +/- 8 minutes

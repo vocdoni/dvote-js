@@ -1,7 +1,7 @@
 {
-  "name": "@vocdoni/common",
+  "name": "@vocdoni/wallets",
   "version": "1.14.0",
-  "description": "Javascript/Typescript common package",
+  "description": "Javascript/Typescript wallets package",
   "main": "dist/index",
   "types": "dist/index",
   "repository": "https://github.com/vocdoni/dvote-js.git",
@@ -17,10 +17,10 @@
     "test": "npm run build && ./node_modules/.bin/mocha -r ts-node/register test/**/*.ts"
   },
   "dependencies": {
-    "@ethersproject/keccak256": "^5.5.0",
-    "@ethersproject/units": "^5.5.0",
-    "buffer": "^6.0.3",
-    "latinize": "^0.5.0"
+    "blake-hash": "^2.0.0",
+    "circomlib": "^0.5.2",
+    "ethers": "^5.4.1",
+    "ffjavascript": "^0.2.38"
   },
   "devDependencies": {
     "@types/chai": "^4.1.7",

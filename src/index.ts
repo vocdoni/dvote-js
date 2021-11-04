@@ -9,34 +9,18 @@ export * from "./api/voting"
 
 // MODELS
 export * from "../packages/models/src" // TODO: Export from the new NPM package
-// export * from "./models/entity"
-// export * from "./models/gateway"
-// export * from "./models/json-feed"
-// export * from "./models/process"
-// export * from "./models/backup"
-// export * from "./models/protobuf"
 
 // NETWORK
 export * from "../packages/net/src" // TODO: Export from the new NPM package
-// export * from "./net/contracts"
-// export * from "./net/gateway-bootnode"
-// export * from "./net/gateway-discovery"
-// export * from "./net/gateway-dvote"
-// export * from "./net/gateway-pool"
-// export * from "./net/gateway-web3"
-// export * from "./net/gateway"
-// export * from "./net/ipfs"
 
 // CRYPTO
 export * from "../packages/signing/src" // TODO: Export from the new NPM package
 export * from "../packages/encryption/src" // TODO: Export from the new NPM package
 export * from "../packages/hashing/src" // TODO: Export from the new NPM package
-export * from "./crypto/wallets"
+export * from "../packages/wallets/src" // TODO: Export from the new NPM package
 export * from "./crypto/signers"
 
 // UTIL
-export * from "./util/normalization"
-export * from "./util/providers"
 export * from "../packages/common/src" // TODO: Export from the new NPM package
 export * from "./util/waiters"
 

@@ -5,7 +5,7 @@ import {
     WalletBackup_Recovery_QuestionEnum,
 } from "./protobuf/build/ts/client-store/backup"
 import { Buffer } from "buffer/"
-import { normalizeText }  from "../../../src" // TODO (high priority) reference the common package
+import { normalizeText } from "../../common/src" // TODO: Import from the new NPM package
 
 type AccountBackupCreateParams = {
     /** An arbitrary name given to identify the account when restoring */

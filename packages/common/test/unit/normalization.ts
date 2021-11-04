@@ -1,8 +1,8 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
-import { addCompletionHooks } from "../mocha-hooks"
+import { addCompletionHooks } from "../../../../shared/test/mocha-hooks"
 
-import { normalizeText } from "../../src/util/normalization"
+import { normalizeText } from "../../src"
 
 addCompletionHooks()
 

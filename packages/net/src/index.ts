@@ -12,3 +12,5 @@ export * from "./ipfs"
 export * from "./wrappers/content-hashed-uri"
 export * from "./wrappers/content-uri"
 export * from "./wrappers/gateway-info"
+
+export * from "./util/providers"

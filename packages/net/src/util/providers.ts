@@ -7,7 +7,7 @@ import {
     SOKOL_CHAIN_ID,
     SOKOL_ENS_REGISTRY_ADDRESS,
     XDAI_STG_ENS_REGISTRY_ADDRESS
-} from "../../packages/common/src" // TODO: Import from the new NPM package
+} from "../../../common/src" // TODO: Import from the new NPM package
 
 export class ProviderUtil {
     /**
