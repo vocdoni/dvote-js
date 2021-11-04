@@ -4,7 +4,7 @@
 import {
     NamespacesContractMethods,
     NamespacesContractDefinition
-} from "../../src/net/contracts"
+} from "../../packages/net/src" // TODO: Import from the new NPM package
 import { Contract, ContractFactory } from "ethers"
 import { TestAccount } from "../helpers/all-services"
 

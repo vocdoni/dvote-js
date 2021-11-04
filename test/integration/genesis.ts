@@ -9,7 +9,7 @@ import { expect } from "chai"
 import { Contract, providers } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
 import DevServices, { TestAccount } from "../helpers/all-services"
-import { GenesisContractMethods } from "../../src/net/contracts"
+import { GenesisContractMethods } from "../../packages/net/src" // TODO: Import from the new NPM package
 
 import GenesisBuilder, { DEFAULT_GENESIS, DEFAULT_ORACLES, DEFAULT_VALIDATORS, DEFAULT_CHAIN_ID } from "../builders/genesis"
 

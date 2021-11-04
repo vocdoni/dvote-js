@@ -1,6 +1,6 @@
 
 import { Wallet, providers } from "ethers"
-import { Web3Gateway } from "../../src/net/gateway-web3"
+import { Web3Gateway } from "../../packages/net/src" // TODO: Import from the new NPM package
 import * as ganache from "ganache-core"
 import { ProviderUtil } from "../../src/util/providers"
 

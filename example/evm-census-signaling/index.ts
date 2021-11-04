@@ -6,21 +6,17 @@ import * as YAML from 'yaml'
 import {
     VotingApi,
     CensusErc20Api,
-    GatewayPool,
-    Gateway, GatewayInfo,
-    EthNetworkID,
     EntityMetadataTemplate,
     ProcessMetadata, ProcessMetadataTemplate,
     ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin,
     VochainWaiter,
-    VocdoniEnvironment,
     Erc20TokensApi,
-    IGatewayDiscoveryParameters,
-    DVoteGateway,
     VotingOracleApi,
     INewProcessErc20Params,
     ProcessState
 } from "../../src"
+import { GatewayInfo, GatewayPool, DVoteGateway, Gateway, IGatewayDiscoveryParameters } from "../../packages/net/src" // TODO: Import from the new NPM package
+import { VocdoniEnvironment, EthNetworkID } from "../../packages/common/src" // TODO: Import from the new NPM package
 
 
 const CONFIG_PATH = "./config.yaml"

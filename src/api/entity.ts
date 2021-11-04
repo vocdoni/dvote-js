@@ -4,9 +4,9 @@ import { TextRecordKeys } from "../models/entity"
 import { allSettled } from "../../packages/common/src" // TODO: Import from the new NPM package
 import { FileApi } from "./file"
 import { XDAI_CHAIN_ID, XDAI_GAS_PRICE, SOKOL_CHAIN_ID, SOKOL_GAS_PRICE } from "../../packages/common/src" // TODO: Import from the new NPM package
-import { IMethodOverrides, ensHashAddress, ITokenStorageProofContract } from "../net/contracts"
+import { IMethodOverrides, ensHashAddress, ITokenStorageProofContract } from "../../packages/net/src" // TODO: Import from the new NPM package
 import { CensusErc20Api } from "./census"
-import { IGatewayClient } from "../common"
+import { IGatewayClient } from "../../packages/net/src" // TODO: Import from the new NPM package
 
 export namespace EntityApi {
     /**

@@ -1,6 +1,6 @@
 // NOTE: This code is borrowed from dvote-solidity
 
-import { ResultsContractMethods, ResultsContractDefinition } from "../../src/net/contracts"
+import { ResultsContractMethods, ResultsContractDefinition } from "../../packages/net/src" // TODO: Import from the new NPM package
 import { Contract, ContractFactory } from "ethers"
 import { TestAccount } from "../helpers/all-services"
 import GenesisBuilder from "./genesis"

@@ -1,8 +1,8 @@
 import { DevGatewayService, TestResponseBody } from "./dvote-service"
 import { DevWeb3Service } from "./web3-service"
-import { GatewayInfo } from "../../src/wrappers/gateway-info"
-import { Gateway } from "../../src/net/gateway"
-import { Web3Gateway } from "../../src/net/gateway-web3"
+import { GatewayInfo } from "../../packages/net/src" // TODO: Import from the new NPM package
+import { Gateway } from "../../packages/net/src" // TODO: Import from the new NPM package
+import { Web3Gateway } from "../../packages/net/src" // TODO: Import from the new NPM package
 
 export { TestResponse, TestResponseBody, MockedInteraction } from "./dvote-service"
 export { TestAccount } from "./web3-service"

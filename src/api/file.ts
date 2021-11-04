@@ -1,8 +1,8 @@
-import { ContentUri } from "../wrappers/content-uri"
-import { ContentHashedUri } from "../wrappers/content-hashed-uri"
-import { IRequestParameters } from "../net/gateway-dvote"
-import { IGatewayDVoteClient } from "../common"
-import { IPFS } from "../net/ipfs"
+import { ContentUri } from "../../packages/net/src" // TODO: Import from the new NPM package
+import { ContentHashedUri } from "../../packages/net/src" // TODO: Import from the new NPM package
+import { IRequestParameters } from "../../packages/net/src" // TODO: Import from the new NPM package
+import { IGatewayDVoteClient } from "../../packages/net/src" // TODO: Import from the new NPM package
+import { IPFS } from "../../packages/net/src" // TODO: Import from the new NPM package
 import { Buffer } from 'buffer/'
 import axios from "axios"
 import { Wallet, Signer } from "ethers"

@@ -2,9 +2,9 @@ import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
 
-import { ContentUri } from "../../src/wrappers/content-uri"
-import { ContentHashedUri } from "../../src/wrappers/content-hashed-uri"
-import { GatewayInfo } from "../../src/wrappers/gateway-info"
+import { ContentUri } from "../../packages/net/src" // TODO: Import from the new NPM package
+import { ContentHashedUri } from "../../packages/net/src" // TODO: Import from the new NPM package
+import { GatewayInfo } from "../../packages/net/src" // TODO: Import from the new NPM package
 
 addCompletionHooks()
 

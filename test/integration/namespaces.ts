@@ -9,7 +9,7 @@ import { expect } from "chai"
 import { Contract, ContractTransaction, providers } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
 import DevServices, { TestAccount } from "../helpers/all-services"
-import { NamespacesContractMethods } from "../../src/net/contracts"
+import { NamespacesContractMethods } from "../../packages/net/src" // TODO: Import from the new NPM package
 
 // import { BigNumber, ContractReceipt } from "ethers"
 import NamespaceBuilder, { DEFAULT_NAMESPACE } from "../builders/namespace"

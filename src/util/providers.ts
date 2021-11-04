@@ -1,13 +1,13 @@
 import { providers } from "ethers"
-import { VocdoniEnvironment } from "../common"
 import {
+    EthNetworkID,
+    VocdoniEnvironment,
     XDAI_CHAIN_ID,
     XDAI_ENS_REGISTRY_ADDRESS,
     SOKOL_CHAIN_ID,
     SOKOL_ENS_REGISTRY_ADDRESS,
     XDAI_STG_ENS_REGISTRY_ADDRESS
 } from "../../packages/common/src" // TODO: Import from the new NPM package
-import { EthNetworkID } from "../common"
 
 export class ProviderUtil {
     /**

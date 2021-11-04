@@ -4,8 +4,8 @@
 
 import { parseURL } from 'universal-parse-url'
 import { Contract, ContractFactory, providers, Wallet, Signer, ContractInterface, BigNumber } from "ethers"
-import { ProviderUtil } from "../util/providers"
-import { GatewayInfo } from "../wrappers/gateway-info"
+import { ProviderUtil } from "../../../src" // TODO (high priority) reference the future package
+import { GatewayInfo } from "./wrappers/gateway-info"
 import {
     GATEWAY_SELECTION_TIMEOUT,
     GENESIS_ENS_SUBDOMAIN,
@@ -17,8 +17,8 @@ import {
     PROCESSES_ENS_SUBDOMAIN,
     NAMESPACES_ENS_SUBDOMAIN,
     ERC20_STORAGE_PROOFS_ENS_SUBDOMAIN
-} from "../../packages/common/src" // TODO: Import from the new NPM package
-import { IProcessesContract, IEnsPublicResolverContract, INamespacesContract, ITokenStorageProofContract, IGenesisContract, IResultsContract } from "../net/contracts"
+} from "../../common/src" // TODO: Import from the new NPM package
+import { IProcessesContract, IEnsPublicResolverContract, INamespacesContract, ITokenStorageProofContract, IGenesisContract, IResultsContract } from "./contracts"
 import {
     PublicResolverContractDefinition,
     GenesisContractDefinition,
@@ -34,8 +34,9 @@ import {
     ResultsContractMethods,
     Erc20StorageProofContractMethods
 } from "./contracts"
-import { promiseWithTimeout } from "../../packages/common/src" // TODO: Import from the new NPM package
-import { EthNetworkID, IGatewayWeb3Client, VocdoniEnvironment } from '../common'
+import { promiseWithTimeout } from "../../common/src" // TODO: Import from the new NPM package
+import { EthNetworkID, VocdoniEnvironment } from "../../common/src" // TODO reference the future package
+import { IGatewayWeb3Client } from './common'
 
 const { JsonRpcProvider, Web3Provider, IpcProvider, InfuraProvider, FallbackProvider, EtherscanProvider } = providers
 

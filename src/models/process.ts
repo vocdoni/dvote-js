@@ -11,7 +11,7 @@ import {
 } from "../common"
 import { object, array, string, number } from "yup"
 import { by639_1 } from 'iso-language-codes'
-import { IProcessCreateParams } from "../net/contracts"
+import { IProcessCreateParams } from "../../packages/net/src" // TODO: Import from the new NPM package
 import { BigNumber } from "ethers"
 import { ProofCA_Type } from "../models/protobuf"
 

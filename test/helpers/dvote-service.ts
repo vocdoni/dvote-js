@@ -5,8 +5,8 @@ import { Server } from "http";
 import { Wallet, utils } from "ethers"
 import { TextEncoder } from "util"
 import { BytesSignature } from "../../packages/signing/src" // TODO: Import from the new NPM package
-import { DVoteGateway } from "../../src/net/gateway-dvote"
-import { GatewayInfo } from "../../src/wrappers/gateway-info"
+import { DVoteGateway } from "../../packages/net/src" // TODO: Import from the new NPM package
+import { GatewayInfo } from "../../packages/net/src" // TODO: Import from the new NPM package
 import { getWallets } from "./web3-service"
 import { BackendApiName, GatewayApiName } from "../../src/models/gateway";
 

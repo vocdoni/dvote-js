@@ -2,9 +2,9 @@
 // This component is meant to be a simple communication wrapper.
 // It provides a wrapper to use a Vocdoni Gateway, as well as a wrapper a Web3 one
 
-import { getEnsTextRecord } from "../util/ens";
-import { ContentUri } from "../wrappers/content-uri"
-import { FileApi } from "../api/file"
+import { getEnsTextRecord } from "./util/ens"
+import { ContentUri } from "./wrappers/content-uri"
+import { FileApi } from "../../../src" // TODO (high priority) reference the future package
 import {
     XDAI_ENS_REGISTRY_ADDRESS,
     XDAI_PROVIDER_URI,
@@ -13,13 +13,13 @@ import {
     SOKOL_PROVIDER_URI,
     SOKOL_ENS_REGISTRY_ADDRESS,
     XDAI_STG_ENS_REGISTRY_ADDRESS,
-} from "../../packages/common/src" // TODO: Import from the new NPM package
-import { TextRecordKeys } from "../models/entity"
-import { JsonBootnodeData } from "../models/gateway"
+} from "../../common/src" // TODO: Import from the new NPM package
+import { TextRecordKeys } from "../../../src" // TODO (high priority) reference the future package
+import { JsonBootnodeData } from "../../../src" // TODO (high priority) reference the future package
 import { DVoteGateway } from "./gateway-dvote"
 import { Web3Gateway } from "./gateway-web3"
 import { getDefaultProvider, providers } from "ethers"
-import { EthNetworkID, VocdoniEnvironment } from "../common"
+import { EthNetworkID, VocdoniEnvironment } from "../../common/src" // TODO reference the future package
 
 export namespace GatewayBootnode {
     /**

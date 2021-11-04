@@ -9,7 +9,7 @@ import { expect } from "chai"
 import { Contract, Wallet } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
 import { DevWeb3Service, TestAccount } from "../helpers/web3-service"
-import { GenesisContractMethods, ProcessCensusOrigin, ProcessesContractMethods, ProcessContractParameters, ProcessStatus } from "../../src/net/contracts"
+import { GenesisContractMethods, ProcessCensusOrigin, ProcessesContractMethods, ProcessContractParameters, ProcessStatus } from "../../packages/net/src" // TODO: Import from the new NPM package
 import { Buffer } from "buffer/"
 
 import { VotingApi, VotePackage } from "../../src/api/voting"

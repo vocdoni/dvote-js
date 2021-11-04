@@ -1,14 +1,14 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
-import { DVoteGateway } from "../../src/net/gateway-dvote"
-import { Web3Gateway } from "../../src/net/gateway-web3"
+import { DVoteGateway } from "../../packages/net/src" // TODO: Import from the new NPM package
+import { Web3Gateway } from "../../packages/net/src" // TODO: Import from the new NPM package
 import { FileApi } from "../../src/api/file"
 import DevServices, { TestAccount, TestResponseBody } from "../helpers/all-services"
 import { DevGatewayService } from "../helpers/dvote-service"
 import { DevWeb3Service, getWallets } from "../helpers/web3-service"
 import { Buffer } from "buffer/"
-import { GatewayInfo } from "../../src/wrappers/gateway-info"
+import { GatewayInfo } from "../../packages/net/src" // TODO: Import from the new NPM package
 import { BackendApiName, GatewayApiName } from "../../src/models/gateway"
 
 // let accounts: TestAccount[]

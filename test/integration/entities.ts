@@ -3,10 +3,10 @@ import { expect } from "chai"
 import { Contract } from "ethers"
 import { addCompletionHooks } from "../mocha-hooks"
 import DevServices, { TestAccount } from "../helpers/all-services"
-import { EnsResolverContractMethods } from "../../src/net/contracts"
+import { EnsResolverContractMethods } from "../../packages/net/src" // TODO: Import from the new NPM package
 
-import { ensHashAddress } from "../../src/net/contracts"
-import { Web3Gateway } from "../../src/net/gateway-web3"
+import { ensHashAddress } from "../../packages/net/src" // TODO: Import from the new NPM package
+import { Web3Gateway } from "../../packages/net/src" // TODO: Import from the new NPM package
 import EntityResolverBuilder, { DEFAULT_NAME } from "../builders/ens-resolver"
 
 let server: DevServices

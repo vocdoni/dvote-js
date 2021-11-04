@@ -1,4 +1,4 @@
-import { IGatewayClient, IGatewayDVoteClient, IGatewayWeb3Client } from "../common"
+import { IGatewayClient, IGatewayDVoteClient, IGatewayWeb3Client } from "../../packages/net/src" // TODO: Import from the new NPM package
 import { VotingApi } from "../api/voting"
 
 // VOTING BLOCKCHAIN

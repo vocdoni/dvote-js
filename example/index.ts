@@ -12,21 +12,21 @@ import { FileApi } from "../src/api/file"
 import { EntityApi } from "../src/api/entity"
 import { VotingApi } from "../src/api/voting"
 import { CensusOffChainApi, CensusOffChain } from "../src/api/census"
-import { ProcessContractParameters } from "../src/net/contracts"
-import { Gateway } from "../src/net/gateway"
-import { DVoteGateway } from "../src/net/gateway-dvote"
-import { Web3Gateway } from "../src/net/gateway-web3"
-import { GatewayPool } from "../src/net/gateway-pool"
-import { GatewayBootnode } from "../src/net/gateway-bootnode"
+import { ProcessContractParameters } from "../packages/net/src" // TODO: Import from the new NPM package
+import { Gateway } from "../packages/net/src" // TODO: Import from the new NPM package
+import { DVoteGateway } from "../packages/net/src" // TODO: Import from the new NPM package
+import { Web3Gateway } from "../packages/net/src" // TODO: Import from the new NPM package
+import { GatewayPool } from "../packages/net/src" // TODO: Import from the new NPM package
+import { GatewayBootnode } from "../packages/net/src" // TODO: Import from the new NPM package
 import { EntityMetadataTemplate, EntityMetadata, TextRecordKeys } from "../src/models/entity"
 import { INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "../src/models/process"
-import { GatewayInfo } from "../src/wrappers/gateway-info"
+import { GatewayInfo } from "../packages/net/src" // TODO: Import from the new NPM package
 import { XDAI_CHAIN_ID, XDAI_ENS_REGISTRY_ADDRESS, VOCHAIN_BLOCK_TIME } from "../packages/common/src" // TODO: Import from the new NPM package
 import { JsonSignature } from "../packages/signing/src" // TODO: Import from the new NPM package
 import { GatewayApiMethod, BackendApiMethod, ApiMethod } from "../src/models/gateway"
-import { IGatewayDiscoveryParameters } from "../src/net/gateway-discovery"
-import { ProcessEnvelopeType, ProcessMode, ProcessStatus, ProcessCensusOrigin, ensHashAddress } from "../src/net/contracts"
-import { ContentHashedUri } from "../src/wrappers/content-hashed-uri"
+import { IGatewayDiscoveryParameters } from "../packages/net/src" // TODO: Import from the new NPM package
+import { ProcessEnvelopeType, ProcessMode, ProcessStatus, ProcessCensusOrigin, ensHashAddress } from "../packages/net/src" // TODO: Import from the new NPM package
+import { ContentHashedUri } from "../packages/net/src" // TODO: Import from the new NPM package
 
 const { Buffer } = require("buffer/")
 

@@ -1,10 +1,10 @@
-import { VocdoniEnvironment } from "../common";
 import { Gateway } from "./gateway"
 import { DVoteGatewayResponseBody, IRequestParameters } from "./gateway-dvote"
 import { GatewayDiscovery, IGatewayDiscoveryParameters } from "./gateway-discovery"
 import { Wallet, Signer, providers, utils, Contract, ContractInterface } from "ethers"
 import { IProcessesContract, IEnsPublicResolverContract, INamespacesContract, ITokenStorageProofContract, IGenesisContract, IResultsContract } from "./contracts"
-import { IGatewayClient } from "../common"
+import { VocdoniEnvironment } from "../../common/src" // TODO reference the future package
+import { IGatewayClient } from "./common"
 
 const SEQUENTIAL_METHODS = ['addClaimBulk', 'publishCensus'] //generateProof and vote?
 const ERROR_SKIP_METHODS = ['getRoot']

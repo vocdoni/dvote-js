@@ -1,10 +1,10 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
 
-import { DVoteGateway } from "../../src/net/gateway-dvote"
-import { Web3Gateway } from "../../src/net/gateway-web3"
-import { GatewayBootnode } from "../../src/net/gateway-bootnode"
-import { EthNetworkID, VocdoniEnvironment } from "../../src/common"
+import { DVoteGateway } from "../../packages/net/src" // TODO: Import from the new NPM package
+import { Web3Gateway } from "../../packages/net/src" // TODO: Import from the new NPM package
+import { GatewayBootnode } from "../../packages/net/src" // TODO: Import from the new NPM package
+import { EthNetworkID, VocdoniEnvironment } from "../../packages/common/src" // TODO: Import from the new NPM package
 
 const DEV_BOOTNODES_URL = "https://bootnodes.vocdoni.net/gateways.dev.json"
 const STAGE_BOOTNODES_URL = "https://bootnodes.vocdoni.net/gateways.stg.json"

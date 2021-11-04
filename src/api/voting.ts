@@ -1,5 +1,5 @@
 import { Wallet, Signer, utils, ContractTransaction, BigNumber, providers } from "ethers"
-import { GatewayArchive, GatewayArchiveApi } from "../net/gateway-archive";
+import { GatewayArchive, GatewayArchiveApi } from "../../packages/net/src" // TODO: Import from the new NPM package
 import { FileApi } from "./file"
 import { EntityApi } from "./entity"
 import { ProcessMetadata, checkValidProcessMetadata, INewProcessParams, IProofEVM, IProofCA, IProofArbo, INewProcessErc20Params, ProcessResultsSingleChoice, SingleChoiceQuestionResults, ProcessResultsSingleQuestion } from "../models/process"
@@ -14,7 +14,7 @@ import { BytesSignature } from "../../packages/signing/src" // TODO: Import from
 import { Buffer } from "buffer/"  // Previously using "arraybuffer-to-string"
 import { Asymmetric } from "../../packages/encryption/src" // TODO: Import from the new NPM package
 import { VochainWaiter } from "../util/waiters"
-import { IMethodOverrides, ProcessContractParameters, ProcessStatus, IProcessStatus, ProcessCensusOrigin, IProcessCensusOrigin } from "../net/contracts"
+import { IMethodOverrides, ProcessContractParameters, ProcessStatus, IProcessStatus, ProcessCensusOrigin, IProcessCensusOrigin } from "../../packages/net/src" // TODO: Import from the new NPM package
 import {
     Tx, SignedTx,
     VoteEnvelope,
@@ -30,10 +30,10 @@ import {
     RegisterKeyTx,
     SourceNetworkId
 } from "../models/protobuf"
-import { DVoteGateway, DVoteGatewayResponseBody, IRequestParameters } from "../net/gateway-dvote"
+import { DVoteGateway, DVoteGatewayResponseBody, IRequestParameters } from "../../packages/net/src" // TODO: Import from the new NPM package
 import { CensusErc20Api } from "./census"
 import { ProcessEnvelopeType } from "dvote-solidity"
-import { IGatewayClient, IGatewayDVoteClient, IGatewayWeb3Client } from "../common"
+import { IGatewayClient, IGatewayDVoteClient, IGatewayWeb3Client } from "../../packages/net/src" // TODO: Import from the new NPM package
 import { Poseidon } from "../../packages/hashing/src" // TODO: Import from the new NPM package
 import { Random, uintArrayToHex } from "../../packages/common/src" // TODO: Import from the new NPM package
 import { ResultsNotAvailableError } from "../errors/results";

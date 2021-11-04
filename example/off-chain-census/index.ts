@@ -3,17 +3,17 @@ import { Wallet, utils } from "ethers"
 import * as assert from "assert"
 import { readFileSync, writeFileSync } from "fs"
 import * as YAML from 'yaml'
-import { GatewayPool } from "../../src/net/gateway-pool"
+import { GatewayPool } from "../../packages/net/src" // TODO: Import from the new NPM package
 import { EntityMetadataTemplate } from "../../src/models/entity"
 import { EntityApi } from "../../src/api/entity"
 import { VotingApi } from "../../src/api/voting"
 import { CensusOffChain, CensusOffChainApi } from "../../src/api/census"
 import { INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "../../src/models/process"
-import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../../src/net/contracts"
+import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../../packages/common/src" // TODO: Import from the new NPM package
 import { VochainWaiter, EthWaiter } from "../../src/util/waiters"
-import { compressPublicKey, EthNetworkID } from "../../dist"
-import { IGatewayDiscoveryParameters, VocdoniEnvironment } from "../../src"
-
+import { compressPublicKey } from "../../dist"
+import { IGatewayDiscoveryParameters } from "../../src"
+import { VocdoniEnvironment, EthNetworkID } from "../../packages/common/src" // TODO: Import from the new NPM package
 
 const CONFIG_PATH = "./config.yaml"
 const config = getConfig()

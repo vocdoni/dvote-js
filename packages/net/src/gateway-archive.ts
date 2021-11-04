@@ -1,11 +1,12 @@
-import { FileApi } from "../api/file";
-import { ProcessSummary } from "../api/voting";
-import { GatewayArchiveError } from "../errors/gateway-archive";
-import { TextRecordKeys } from "../models/entity"
-import { VochainProcessStatus } from "../models/protobuf";
-import { getEnsTextRecord } from "../util/ens";
-import { ContentUri } from "../wrappers/content-uri"
-import { EthNetworkID, IGatewayClient, IGatewayDVoteClient } from "../common";
+import { FileApi } from "../../../src" // TODO (high priority) reference the future package
+import { ProcessSummary } from "../../../src" // TODO (high priority) reference the future package
+import { GatewayArchiveError } from "./errors/gateway-archive"
+import { TextRecordKeys } from "../../../src" // TODO (high priority) reference the future package
+import { VochainProcessStatus } from "../../../src" // TODO (high priority) reference the future package
+import { getEnsTextRecord } from "./util/ens"
+import { ContentUri } from "./wrappers/content-uri"
+import { EthNetworkID } from "../../common/src" // TODO reference the future package
+import { IGatewayClient, IGatewayDVoteClient } from "./common"
 
 export interface IArchiveResponseBody {
     process: ProcessSummary

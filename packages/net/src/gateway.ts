@@ -3,15 +3,15 @@
 // It provides a wrapper to use a Vocdoni Gateway, as well as a wrapper a Web3 one
 
 import { Contract, providers, utils, Wallet, Signer, ContractInterface } from "ethers"
-import { GatewayInfo } from "../wrappers/gateway-info"
-import { GatewayApiName, BackendApiName, ApiMethod } from "../models/gateway"
+import { GatewayInfo } from "./wrappers/gateway-info"
+import { GatewayApiName, BackendApiName, ApiMethod } from "../../../src" // TODO (high priority) reference the future package
 import { GatewayBootnode } from "./gateway-bootnode"
-import { ContentUri } from "../wrappers/content-uri"
-import { IProcessesContract, IEnsPublicResolverContract, INamespacesContract, ITokenStorageProofContract, IGenesisContract, IResultsContract } from "../net/contracts"
+import { ContentUri } from "./wrappers/content-uri"
+import { IProcessesContract, IEnsPublicResolverContract, INamespacesContract, ITokenStorageProofContract, IGenesisContract, IResultsContract } from "./contracts"
 import { DVoteGateway, IRequestParameters } from "./gateway-dvote"
 import { Web3Gateway } from "./gateway-web3"
-import { EthNetworkID, VocdoniEnvironment } from "../common"
-import { IGatewayClient } from "../common"
+import { EthNetworkID, VocdoniEnvironment } from "../../common/src" // TODO reference the future package
+import { IGatewayClient } from "./common"
 
 
 /**

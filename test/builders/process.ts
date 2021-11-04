@@ -11,7 +11,7 @@ import {
     IProcessCensusOrigin,
     ProcessCensusOrigin,
     ProcessContractParameters
-} from "../../src/net/contracts"
+} from "../../packages/net/src" // TODO: Import from the new NPM package
 import { BigNumber, Contract, ContractFactory } from "ethers"
 import { TestAccount } from "../helpers/all-services"
 import NamespaceBuilder from "./namespace"

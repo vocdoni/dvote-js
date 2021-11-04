@@ -1,13 +1,22 @@
 import { Wallet, Signer } from "ethers"
-import { IGatewayDVoteClient, VocdoniEnvironment } from "../common";
-import { GatewayInfo } from "../wrappers/gateway-info"
-import { GatewayApiMethod, BackendApiMethod, allApis, registryApiMethods, ApiMethod, GatewayApiName, BackendApiName, InfoApiMethod, RawApiMethod } from "../models/gateway"
-import { GATEWAY_SELECTION_TIMEOUT } from "../../packages/common/src" // TODO: Import from the new NPM package
-import { JsonSignature, BytesSignature } from "../../packages/signing/src" // TODO: Import from the new NPM package
+import { VocdoniEnvironment } from "../../common/src" // TODO reference the future package
+import { IGatewayDVoteClient } from "./common"
+import { GatewayInfo } from "./wrappers/gateway-info"
+import {
+    GatewayApiMethod,
+    BackendApiMethod,
+    allApis,
+    registryApiMethods,
+    ApiMethod,
+    GatewayApiName,
+    BackendApiName,
+    InfoApiMethod,
+    RawApiMethod
+} from "../../../src" // TODO (high priority) reference the future package
+import { JsonSignature, BytesSignature } from "../../signing/src" // TODO: Import from the new NPM package
 import axios, { AxiosInstance, AxiosResponse } from "axios"
-import { extractUint8ArrayJSONValue } from "../util/uint8array"
-import { promiseWithTimeout } from "../../packages/common/src" // TODO: Import from the new NPM package
-import { Random } from "../../packages/common/src" // TODO: Import from the new NPM package
+import { extractUint8ArrayJSONValue } from "../../../src/util/uint8array" // TODO (high priority) reference the future package
+import { Random, GATEWAY_SELECTION_TIMEOUT, promiseWithTimeout } from "../../common/src" // TODO: Import from the new NPM package
 
 ///////////////////////////////////////////////////////////////////////////////
 // DVOTE GATEWAY

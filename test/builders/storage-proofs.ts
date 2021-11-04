@@ -1,9 +1,9 @@
 // NOTE: This code is borrowed from dvote-solidity
 
-import { Erc20StorageProofContractMethods, Erc20StorageProofContractDefinition } from "../../src/net/contracts"
+import { Erc20StorageProofContractMethods, Erc20StorageProofContractDefinition } from "../../packages/net/src" // TODO: Import from the new NPM package
 import { Contract } from "ethers"
 import { TestAccount } from "../helpers/all-services"
-import { Web3Gateway } from "../../src/net/gateway-web3"
+import { Web3Gateway } from "../../packages/net/src" // TODO: Import from the new NPM package
 
 
 // BUILDER

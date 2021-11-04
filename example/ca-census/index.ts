@@ -3,19 +3,19 @@ import { Wallet, utils } from "ethers"
 import * as assert from "assert"
 import { readFileSync, writeFileSync } from "fs"
 import * as YAML from 'yaml'
-import { GatewayPool } from "../../src/net/gateway-pool"
+import { GatewayPool } from "../../packages/net/src" // TODO: Import from the new NPM package
 import { EntityMetadata, EntityMetadataTemplate } from "../../src/models/entity"
 import { EntityApi } from "../../src/api/entity"
 import { CaBundleProtobuf, VotingApi } from "../../src/api/voting"
 import { CensusCaApi } from "../../src/api/census"
 import { INewProcessParams, IProofCA, ProcessMetadata, ProcessMetadataTemplate, ProofCaSignatureTypes } from "../../src/models/process"
-import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../../src/net/contracts"
+import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../../packages/net/src" // TODO: Import from the new NPM package
 import { VochainWaiter, EthWaiter } from "../../src/util/waiters"
 import axios from "axios"
 import { Random } from "../../packages/common/src" // TODO: Import from the new NPM package
 import { Buffer } from "buffer"
-import { IGatewayDiscoveryParameters } from "../../src"
-import { EthNetworkID, VocdoniEnvironment } from "../../dist"
+import { IGatewayDiscoveryParameters } from "../../packages/net/src" // TODO: Import from the new NPM package
+import { EthNetworkID, VocdoniEnvironment } from "../../packages/common/src" // TODO: Import from the new NPM package
 // import { DVoteGateway } from "../../src/net/gateway-dvote"
 
 const CONFIG_PATH = "./config.yaml"

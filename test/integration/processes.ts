@@ -3,7 +3,7 @@ import { expect } from "chai"
 import DevServices, { TestAccount } from "../helpers/all-services"
 // import NamespaceBuilder, { DEFAULT_NAMESPACE } from "../builders/namespace"
 import { Contract, providers, Wallet } from "ethers"
-import { ProcessesContractMethods, ProcessContractParameters, ProcessEnvelopeType, ProcessMode } from "../../src/net/contracts"
+import { ProcessesContractMethods, ProcessContractParameters, ProcessEnvelopeType, ProcessMode } from "../../packages/net/src" // TODO: Import from the new NPM package
 import ProcessBuilder, {
     DEFAULT_PROCESS_MODE,
     DEFAULT_ENVELOPE_TYPE,
@@ -22,7 +22,7 @@ import ProcessBuilder, {
     DEFAULT_PARAMS_SIGNATURE
 } from "../builders/process"
 import NamespaceBuilder from "../builders/namespace"
-import { Web3Gateway } from "../../src/net/gateway-web3"
+import { Web3Gateway } from "../../packages/net/src" // TODO: Import from the new NPM package
 import GenesisBuilder, { DEFAULT_CHAIN_ID } from "../builders/genesis"
 import ResultsBuilder from "../builders/results"
 import { VotingApi } from "../../dist/src"
