@@ -8,7 +8,7 @@ import { BytesSignature } from "../../packages/signing/src" // TODO: Import from
 import { DVoteGateway } from "../../packages/net/src" // TODO: Import from the new NPM package
 import { GatewayInfo } from "../../packages/net/src" // TODO: Import from the new NPM package
 import { getWallets } from "./web3-service"
-import { BackendApiName, GatewayApiName } from "../../src/models/gateway";
+import { BackendApiName, GatewayApiName } from "../../packages/models/src" // TODO reference the future package
 
 
 export type TestResponse = {

@@ -8,12 +8,13 @@ export * from "./api/namespace"
 export * from "./api/voting"
 
 // MODELS
-export * from "./models/entity"
-export * from "./models/gateway"
-export * from "./models/json-feed"
-export * from "./models/process"
-export * from "./models/backup"
-export * from "./models/protobuf"
+export * from "../packages/models/src" // TODO: Export from the new NPM package
+// export * from "./models/entity"
+// export * from "./models/gateway"
+// export * from "./models/json-feed"
+// export * from "./models/process"
+// export * from "./models/backup"
+// export * from "./models/protobuf"
 
 // NETWORK
 export * from "../packages/net/src" // TODO: Export from the new NPM package

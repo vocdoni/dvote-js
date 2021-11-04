@@ -1,7 +1,7 @@
 import { FileApi } from "../../../src" // TODO (high priority) reference the future package
 import { ProcessSummary } from "../../../src" // TODO (high priority) reference the future package
 import { GatewayArchiveError } from "./errors/gateway-archive"
-import { TextRecordKeys } from "../../../src" // TODO (high priority) reference the future package
+import { TextRecordKeys } from "../../models/src" // TODO reference the future package
 import { VochainProcessStatus } from "../../../src" // TODO (high priority) reference the future package
 import { getEnsTextRecord } from "./util/ens"
 import { ContentUri } from "./wrappers/content-uri"

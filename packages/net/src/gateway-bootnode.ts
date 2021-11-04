@@ -14,8 +14,8 @@ import {
     SOKOL_ENS_REGISTRY_ADDRESS,
     XDAI_STG_ENS_REGISTRY_ADDRESS,
 } from "../../common/src" // TODO: Import from the new NPM package
-import { TextRecordKeys } from "../../../src" // TODO (high priority) reference the future package
-import { JsonBootnodeData } from "../../../src" // TODO (high priority) reference the future package
+import { TextRecordKeys } from "../../models/src" // TODO reference the future package
+import { JsonBootnodeData } from "../../models/src" // TODO reference the future package
 import { DVoteGateway } from "./gateway-dvote"
 import { Web3Gateway } from "./gateway-web3"
 import { getDefaultProvider, providers } from "ethers"

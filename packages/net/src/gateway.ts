@@ -4,7 +4,7 @@
 
 import { Contract, providers, utils, Wallet, Signer, ContractInterface } from "ethers"
 import { GatewayInfo } from "./wrappers/gateway-info"
-import { GatewayApiName, BackendApiName, ApiMethod } from "../../../src" // TODO (high priority) reference the future package
+import { GatewayApiName, BackendApiName, ApiMethod } from "../../models/src" // TODO reference the future package
 import { GatewayBootnode } from "./gateway-bootnode"
 import { ContentUri } from "./wrappers/content-uri"
 import { IProcessesContract, IEnsPublicResolverContract, INamespacesContract, ITokenStorageProofContract, IGenesisContract, IResultsContract } from "./contracts"

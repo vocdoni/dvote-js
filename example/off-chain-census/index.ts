@@ -8,7 +8,7 @@ import { EntityMetadataTemplate } from "../../src/models/entity"
 import { EntityApi } from "../../src/api/entity"
 import { VotingApi } from "../../src/api/voting"
 import { CensusOffChain, CensusOffChainApi } from "../../src/api/census"
-import { INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "../../src/models/process"
+import { INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "../../packages/models/src" // TODO: Import from the new NPM package
 import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../../packages/common/src" // TODO: Import from the new NPM package
 import { VochainWaiter, EthWaiter } from "../../src/util/waiters"
 import { compressPublicKey } from "../../dist"

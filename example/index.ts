@@ -18,12 +18,12 @@ import { DVoteGateway } from "../packages/net/src" // TODO: Import from the new 
 import { Web3Gateway } from "../packages/net/src" // TODO: Import from the new NPM package
 import { GatewayPool } from "../packages/net/src" // TODO: Import from the new NPM package
 import { GatewayBootnode } from "../packages/net/src" // TODO: Import from the new NPM package
-import { EntityMetadataTemplate, EntityMetadata, TextRecordKeys } from "../src/models/entity"
-import { INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "../src/models/process"
+import { EntityMetadataTemplate, EntityMetadata, TextRecordKeys } from "../packages/models/src" // TODO: Import from the new NPM package
+import { INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "../packages/models/src" // TODO: Import from the new NPM package
 import { GatewayInfo } from "../packages/net/src" // TODO: Import from the new NPM package
 import { XDAI_CHAIN_ID, XDAI_ENS_REGISTRY_ADDRESS, VOCHAIN_BLOCK_TIME } from "../packages/common/src" // TODO: Import from the new NPM package
 import { JsonSignature } from "../packages/signing/src" // TODO: Import from the new NPM package
-import { GatewayApiMethod, BackendApiMethod, ApiMethod } from "../src/models/gateway"
+import { GatewayApiMethod, BackendApiMethod, ApiMethod } from "../packages/models/src" // TODO: Import from the new NPM package
 import { IGatewayDiscoveryParameters } from "../packages/net/src" // TODO: Import from the new NPM package
 import { ProcessEnvelopeType, ProcessMode, ProcessStatus, ProcessCensusOrigin, ensHashAddress } from "../packages/net/src" // TODO: Import from the new NPM package
 import { ContentHashedUri } from "../packages/net/src" // TODO: Import from the new NPM package

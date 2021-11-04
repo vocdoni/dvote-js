@@ -1,4 +1,4 @@
-import { ProcessMetadataTemplate, ProcessMetadata } from "../../src/models/process"
+import { ProcessMetadataTemplate, ProcessMetadata } from "../../packages/models/src" // TODO: Import from the new NPM package
 import { URI } from "../../src/common"
 
 // BUILDER

@@ -8,7 +8,7 @@ import { VotingApi } from "../../src/api/voting"
 import { DevGatewayService, MockedInteraction, TestResponse } from "../helpers/dvote-service"
 import { DevWeb3Service } from "../helpers/web3-service"
 import { VOCHAIN_BLOCK_TIME } from "../../packages/common/src" // TODO: Import from the new NPM package
-import { BackendApiName, GatewayApiName } from "../../src/models/gateway"
+import { BackendApiName, GatewayApiName } from "../../packages/models/src" // TODO reference the future package
 
 const dvotePort = 8500
 const web3Port = 8600

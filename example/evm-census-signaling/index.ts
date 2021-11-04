@@ -7,15 +7,14 @@ import {
     VotingApi,
     CensusErc20Api,
     EntityMetadataTemplate,
-    ProcessMetadata, ProcessMetadataTemplate,
     ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin,
     VochainWaiter,
     Erc20TokensApi,
     VotingOracleApi,
-    INewProcessErc20Params,
     ProcessState
 } from "../../src"
 import { GatewayInfo, GatewayPool, DVoteGateway, Gateway, IGatewayDiscoveryParameters } from "../../packages/net/src" // TODO: Import from the new NPM package
+import { INewProcessErc20Params, ProcessMetadata, ProcessMetadataTemplate } from "../../packages/models/src" // TODO: Import from the new NPM package
 import { VocdoniEnvironment, EthNetworkID } from "../../packages/common/src" // TODO: Import from the new NPM package
 
 

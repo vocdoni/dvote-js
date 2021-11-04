@@ -3,7 +3,7 @@ import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
 import { Wallet } from "ethers"
 
-import { AccountBackup } from "../../src/models/backup"
+import { AccountBackup } from "../../packages/models/src" // TODO: Import from the new NPM package
 import { Wallet_AuthMethod } from "../../src"
 
 addCompletionHooks()

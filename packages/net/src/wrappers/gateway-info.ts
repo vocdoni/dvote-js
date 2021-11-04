@@ -1,5 +1,5 @@
 import { VocdoniEnvironment } from "../../../common/src" // TODO reference the future package
-import { BackendApiName, GatewayApiName } from "../../../../src" // TODO (high priority) reference the future package
+import { BackendApiName, GatewayApiName } from "../../../models/src" // TODO reference the future package
 
 // const uriPattern = /^([a-z][a-z0-9+.-]+):(\/\/([^@]+@)?([a-z0-9.\-_~]+)(:\d+)?)?((?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])*)*|(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+)*)?(\?(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?(\#(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?$/i
 

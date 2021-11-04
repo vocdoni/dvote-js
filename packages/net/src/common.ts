@@ -1,6 +1,6 @@
 import { VocdoniEnvironment } from "../../common/src" // TODO reference the future package
 import { DVoteGatewayResponseBody, IRequestParameters } from "./gateway-dvote"
-import { BackendApiName, GatewayApiName } from "../../../src" // TODO (high priority) reference the future package
+import { BackendApiName, GatewayApiName } from "../../models/src" // TODO reference the future package
 import { Contract, ContractInterface, providers, Signer, utils, Wallet } from "ethers"
 import { IEnsPublicResolverContract, IGenesisContract, INamespacesContract, IProcessesContract, IResultsContract, ITokenStorageProofContract } from "./contracts"
 

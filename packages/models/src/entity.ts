@@ -6,7 +6,7 @@
 import {
     MultiLanguage,
     URI
-} from "../common"
+} from "../../../src" // TODO (high priority) reference the future package
 import { object, array, string } from "yup"
 import { by639_1 } from 'iso-language-codes'
 export { EntityMetadataTemplate } from "./templates/entity"

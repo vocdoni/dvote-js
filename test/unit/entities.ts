@@ -3,7 +3,7 @@ import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
 
 import { ensHashAddress } from "../../packages/net/src" // TODO: Import from the new NPM package
-import { checkValidEntityMetadata, EntityMetadataTemplate } from "../../src/models/entity"
+import { checkValidEntityMetadata, EntityMetadataTemplate } from "../../packages/models/src" // TODO: Import from the new NPM package
 
 addCompletionHooks()
 

@@ -1,11 +1,11 @@
-import { Symmetric } from "../../packages/encryption/src" // TODO: Import from the new NPM package
-import { Wallet as PbWallet, WalletBackup, Account as PbAccount } from "../models/protobuf"
+import { Symmetric } from "../../encryption/src" // TODO: Import from the new NPM package
+import { Wallet as PbWallet, WalletBackup, Account as PbAccount } from "./protobuf"
 import {
     walletBackup_Recovery_QuestionEnumFromJSON,
     WalletBackup_Recovery_QuestionEnum,
 } from "./protobuf/build/ts/client-store/backup"
 import { Buffer } from "buffer/"
-import { normalizeText } from "../util/normalization"
+import { normalizeText }  from "../../../src" // TODO (high priority) reference the common package
 
 type AccountBackupCreateParams = {
     /** An arbitrary name given to identify the account when restoring */

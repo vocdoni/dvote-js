@@ -12,7 +12,7 @@ import {
     BackendApiName,
     InfoApiMethod,
     RawApiMethod
-} from "../../../src" // TODO (high priority) reference the future package
+} from "../../models/src" // TODO reference the future package
 import { JsonSignature, BytesSignature } from "../../signing/src" // TODO: Import from the new NPM package
 import axios, { AxiosInstance, AxiosResponse } from "axios"
 import { extractUint8ArrayJSONValue } from "../../../src/util/uint8array" // TODO (high priority) reference the future package

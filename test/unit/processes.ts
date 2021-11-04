@@ -14,7 +14,7 @@ import { Buffer } from "buffer/"
 
 import { VotingApi, VotePackage } from "../../src/api/voting"
 import { Asymmetric } from "../../packages/encryption/src" // TODO: Import from the new NPM package
-import { checkValidProcessMetadata, IProofCA, IProofEVM, ProofCaSignatureTypes } from "../../src/models/process"
+import { checkValidProcessMetadata, IProofCA, IProofEVM, ProofCaSignatureTypes } from "../../packages/models/src" // TODO: Import from the new NPM package
 import ProcessMetadataBuilder from "../builders/process-metadata"
 // import { BytesSignature } from "../../src/crypto/data-signing"
 // import { compressPublicKey } from "../../dist/src"
@@ -27,7 +27,7 @@ import {
     // ProofIden3,
     // ProofEthereumStorage,
     // ProofEthereumAccount
-} from "../../src/models/protobuf"
+} from "../../packages/models/src" // TODO: Import from the new NPM package
 
 let accounts: TestAccount[]
 let baseAccount: TestAccount

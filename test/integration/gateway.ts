@@ -9,7 +9,7 @@ import { DevGatewayService } from "../helpers/dvote-service"
 import { DevWeb3Service, getWallets } from "../helpers/web3-service"
 import { Buffer } from "buffer/"
 import { GatewayInfo } from "../../packages/net/src" // TODO: Import from the new NPM package
-import { BackendApiName, GatewayApiName } from "../../src/models/gateway"
+import { BackendApiName, GatewayApiName } from "../../packages/models/src" // TODO reference the future package
 
 // let accounts: TestAccount[]
 let baseAccount = new DevWeb3Service({ port: 80000 }).accounts[0]

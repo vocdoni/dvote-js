@@ -3,7 +3,7 @@ import { Gateway } from "./gateway"
 import { DVoteGateway } from "./gateway-dvote"
 import { Web3Gateway } from "./gateway-web3"
 import { GatewayBootnode } from "./gateway-bootnode"
-import { JsonBootnodeData } from "../../../src" // TODO (high priority) reference the future package
+import { JsonBootnodeData } from "../../models/src" // TODO reference the future package
 import { Random, GATEWAY_SELECTION_TIMEOUT, allSettled, promiseWithTimeout } from "../../common/src" // TODO: Import from the new NPM package
 import { EthNetworkID, VocdoniEnvironment } from "../../common/src" // TODO reference the future package
 import { GatewayDiscoveryError, GatewayDiscoveryValidationError } from "./errors/gateway-discovery"

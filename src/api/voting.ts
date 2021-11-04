@@ -2,7 +2,7 @@ import { Wallet, Signer, utils, ContractTransaction, BigNumber, providers } from
 import { GatewayArchive, GatewayArchiveApi } from "../../packages/net/src" // TODO: Import from the new NPM package
 import { FileApi } from "./file"
 import { EntityApi } from "./entity"
-import { ProcessMetadata, checkValidProcessMetadata, INewProcessParams, IProofEVM, IProofCA, IProofArbo, INewProcessErc20Params, ProcessResultsSingleChoice, SingleChoiceQuestionResults, ProcessResultsSingleQuestion } from "../models/process"
+import { ProcessMetadata, checkValidProcessMetadata, INewProcessParams, IProofEVM, IProofCA, IProofArbo, INewProcessErc20Params, ProcessResultsSingleChoice, SingleChoiceQuestionResults, ProcessResultsSingleQuestion } from "../../packages/models/src" // TODO: Import from the new NPM package
 import {
     VOCHAIN_BLOCK_TIME,
     XDAI_GAS_PRICE,
@@ -29,7 +29,7 @@ import {
     VochainProcessStatus,
     RegisterKeyTx,
     SourceNetworkId
-} from "../models/protobuf"
+} from "../../packages/models/src" // TODO: Import from the new NPM package
 import { DVoteGateway, DVoteGatewayResponseBody, IRequestParameters } from "../../packages/net/src" // TODO: Import from the new NPM package
 import { CensusErc20Api } from "./census"
 import { ProcessEnvelopeType } from "dvote-solidity"
@@ -37,8 +37,8 @@ import { IGatewayClient, IGatewayDVoteClient, IGatewayWeb3Client } from "../../p
 import { Poseidon } from "../../packages/hashing/src" // TODO: Import from the new NPM package
 import { Random, uintArrayToHex } from "../../packages/common/src" // TODO: Import from the new NPM package
 import { ResultsNotAvailableError } from "../errors/results";
-import { ApiMethod } from "../models/gateway"
-import { ProofArbo_Type } from "../models/protobuf/build/ts/vochain/vochain";
+import { ApiMethod } from "../../packages/models/src" // TODO reference the future package
+import { ProofArbo_Type } from "../../packages/models/src" // TODO: Import from the new NPM package
 
 export const CaBundleProtobuf: any = CAbundle
 

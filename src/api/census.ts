@@ -7,7 +7,7 @@ import { ERC20Proof } from "@vocdoni/storage-proofs-eth"
 import { blind as _blind, unblind as _unblind, verify as _verify, signatureFromHex as _signatureFromHex, signatureToHex as _signatureToHex, pointFromHex as _pointFromHex, pointToHex as _pointToHex, UserSecretData, UnblindedSignature, BigInteger, Point } from "blindsecp256k1"
 import { hexZeroPad } from "ethers/lib/utils"
 import { IGatewayClient, IGatewayWeb3Client } from "../../packages/net/src" // TODO: Import from the new NPM package
-import { Census_Type } from "../models/protobuf/build/ts/vochain/vochain"
+import { Census_Type } from "../../packages/models/src" // TODO: Import from the new NPM package
 // import ContentURI from "../wrappers/content-uri"
 
 export namespace CensusOffChain {

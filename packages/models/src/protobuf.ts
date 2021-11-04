@@ -13,7 +13,9 @@ export {
     SignedTx,
     RegisterKeyTx,
     CensusOrigin as VochainCensusOrigin,
-    SourceNetworkId
+    SourceNetworkId,
+    Census_Type,
+    ProofArbo_Type
 } from "./protobuf/build/ts/vochain/vochain"
 
 export {

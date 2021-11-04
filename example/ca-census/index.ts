@@ -4,11 +4,11 @@ import * as assert from "assert"
 import { readFileSync, writeFileSync } from "fs"
 import * as YAML from 'yaml'
 import { GatewayPool } from "../../packages/net/src" // TODO: Import from the new NPM package
-import { EntityMetadata, EntityMetadataTemplate } from "../../src/models/entity"
+import { EntityMetadata, EntityMetadataTemplate } from "../../packages/models/src" // TODO: Import from the new NPM package
 import { EntityApi } from "../../src/api/entity"
 import { CaBundleProtobuf, VotingApi } from "../../src/api/voting"
 import { CensusCaApi } from "../../src/api/census"
-import { INewProcessParams, IProofCA, ProcessMetadata, ProcessMetadataTemplate, ProofCaSignatureTypes } from "../../src/models/process"
+import { INewProcessParams, IProofCA, ProcessMetadata, ProcessMetadataTemplate, ProofCaSignatureTypes } from "../../packages/models/src" // TODO: Import from the new NPM package
 import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../../packages/net/src" // TODO: Import from the new NPM package
 import { VochainWaiter, EthWaiter } from "../../src/util/waiters"
 import axios from "axios"

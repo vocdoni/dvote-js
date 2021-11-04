@@ -8,12 +8,12 @@ import {
     // HexString,
     MultiLanguage,
     ContentUriString,
-} from "../common"
+} from "../../../src" // TODO (high priority) reference the future package
 import { object, array, string, number } from "yup"
 import { by639_1 } from 'iso-language-codes'
-import { IProcessCreateParams } from "../../packages/net/src" // TODO: Import from the new NPM package
-import { BigNumber } from "ethers"
-import { ProofCA_Type } from "../models/protobuf"
+import { IProcessCreateParams } from "../../net/src" // TODO: Import from the new NPM package
+import { BigNumber } from "@ethersproject/bignumber"
+import { ProofCA_Type } from "./protobuf"
 
 export { ProcessMetadataTemplate } from "./templates/process"
 
