@@ -9,9 +9,9 @@ import { EntityApi } from "../../src/api/entity"
 import { VotingApi, Voting, AnonymousEnvelopeParams } from "../../src/api/voting"
 import { CensusOffChain, CensusOffChainApi } from "../../src/api/census"
 import { INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "../../src/models/process"
-import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../../src/net/contracts"
+import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin, ensHashAddress } from "../../src/net/contracts"
 import { VochainWaiter, EthWaiter } from "../../src/util/waiters"
-import { compressPublicKey, EthNetworkID } from "../../dist"
+import { compressPublicKey, EthNetworkID, IGatewayClient } from "../../dist"
 import { IGatewayDiscoveryParameters, Random, VocdoniEnvironment } from "../../src"
 import axios from "axios"
 
@@ -19,7 +19,7 @@ import axios from "axios"
 const CONFIG_PATH = "./config.yaml"
 const config = getConfig()
 
-let pool: GatewayPool, entityAddr: string, entityWallet: Wallet, processId: string, processParams: ProcessContractParameters, processMetadata: ProcessMetadata, accounts: Account[]
+let pool: IGatewayClient, entityAddr: string, entityWallet: Wallet, processId: string, processParams: ProcessContractParameters, processMetadata: ProcessMetadata, accounts: Account[]
 
 async function main() {
     // Connect to a GW
@@ -95,7 +95,7 @@ async function main() {
     await checkVoteResults()
 }
 
-async function connectGateways(): Promise<GatewayPool> {
+async function connectGateways(): Promise<IGatewayClient> {
     console.log("Connecting to the gateways")
     const options: IGatewayDiscoveryParameters = {
         networkId: config.ethNetworkId as EthNetworkID,
@@ -114,7 +114,7 @@ async function connectGateways(): Promise<GatewayPool> {
 
     entityAddr = await entityWallet.getAddress()
     console.log("Entity Address", entityAddr)
-    // console.log("Entity ID", ensHashAddress(entityAddr))
+    console.log("Entity ID", entityAddr)
 
     return pool
 }
@@ -195,10 +195,10 @@ async function generatePublicCensusFromAccounts(accounts) {
     const censusUri = await CensusOffChainApi.publishCensus(censusId, entityWallet, pool)
 
     // Check that the census is published
-    const exportedMerkleTree = await CensusOffChainApi.dumpPlain(censusId, entityWallet, pool)
+    const censusSize = await CensusOffChainApi.getSize(censusId, pool)
     if (config.stopOnError) {
-        assert(Array.isArray(exportedMerkleTree))
-        assert(exportedMerkleTree.length == config.numAccounts)
+        assert(typeof censusSize == "number")
+        assert(censusSize == claimList.length)
     }
 
     // Return the census ID / Merkle Root
@@ -262,6 +262,8 @@ async function launchNewVote(censusRoot, censusUri) {
 
 async function registerVoterKeys() {
     console.log("Registering keys")
+    const censusRoot = processParams.censusRoot
+
     await Bluebird.map(accounts, async (account: Account, idx: number) => {
         process.stdout.write(`Registering [${idx}] ; `)
 
@@ -311,9 +313,8 @@ async function waitUntilStarted() {
 async function submitVotes(accounts: Account[]) {
     console.log("Launching votes")
 
-    const processKeys = processParams.envelopeType.hasEncryptedVotes ? await VotingApi.getProcessKeys(processId, pool) : null
-
     const censusRoot = processParams.censusRoot
+    const processKeys = processParams.envelopeType.hasEncryptedVotes ? await VotingApi.getProcessKeys(processId, pool) : null
 
     const circuitWasm: Uint8Array = await axios.get(config.circuitWasmUrl, { responseType: "arraybuffer" }).then(data => data.data)
     const zKey: Uint8Array = await axios.get(config.zKeyUrl, { responseType: "arraybuffer" }).then(data => data.data)

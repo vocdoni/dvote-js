@@ -192,10 +192,10 @@ async function generatePublicCensusFromAccounts(accounts) {
     const censusUri = await CensusOffChainApi.publishCensus(censusId, entityWallet, pool)
 
     // Check that the census is published
-    const exportedMerkleTree = await CensusOffChainApi.dumpPlain(censusId, entityWallet, pool)
+    const censusSize = await CensusOffChainApi.getSize(censusId, pool)
     if (config.stopOnError) {
-        assert(Array.isArray(exportedMerkleTree))
-        assert(exportedMerkleTree.length == config.numAccounts)
+        assert(typeof censusSize == "number")
+        assert(censusSize == claimList.length)
     }
 
     // Return the census ID / Merkle Root
