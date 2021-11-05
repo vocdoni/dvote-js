@@ -25,7 +25,7 @@ import NamespaceBuilder from "../builders/namespace"
 import { Web3Gateway } from "../../packages/net/src" // TODO: Import from the new NPM package
 import GenesisBuilder, { DEFAULT_CHAIN_ID } from "../builders/genesis"
 import ResultsBuilder from "../builders/results"
-import { VotingApi } from "../../dist/src"
+import { VotingApi } from "../../packages/client/src" // TODO: Import from the new NPM package
 
 let server: DevServices
 

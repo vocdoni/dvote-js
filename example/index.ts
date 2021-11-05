@@ -7,11 +7,9 @@ config({ path: __dirname + "/.env" })
 
 import * as fs from "fs"
 import { utils, providers, Wallet } from "ethers"
-// import { WalletUtil } from "../src/util/signers"
-import { FileApi } from "../src/api/file"
-import { EntityApi } from "../src/api/entity"
-import { VotingApi } from "../src/api/voting"
-import { CensusOffChainApi, CensusOffChain } from "../src/api/census"
+import { FileApi } from "../packages/client/src" // TODO: Import from the new NPM package
+import { EntityApi, VotingApi } from "../packages/client/src" // TODO: Import from the new NPM package
+import { CensusOffChainApi, CensusOffChain } from "../packages/client/src" // TODO: Import from the new NPM package
 import { ProcessContractParameters } from "../packages/net/src" // TODO: Import from the new NPM package
 import { Gateway } from "../packages/net/src" // TODO: Import from the new NPM package
 import { DVoteGateway } from "../packages/net/src" // TODO: Import from the new NPM package

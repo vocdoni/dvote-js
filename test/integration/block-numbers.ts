@@ -4,7 +4,7 @@ import { addCompletionHooks } from "../mocha-hooks"
 import { Gateway } from "../../packages/net/src" // TODO: Import from the new NPM package
 import { DVoteGateway } from "../../packages/net/src" // TODO: Import from the new NPM package
 import { Web3Gateway } from "../../packages/net/src" // TODO: Import from the new NPM package
-import { VotingApi } from "../../src/api/voting"
+import { VotingApi } from "../../packages/client/src" // TODO: Import from the new NPM package
 import { DevGatewayService, MockedInteraction, TestResponse } from "../helpers/dvote-service"
 import { DevWeb3Service } from "../helpers/web3-service"
 import { VOCHAIN_BLOCK_TIME } from "../../packages/common/src" // TODO: Import from the new NPM package

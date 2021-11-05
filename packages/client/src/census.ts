@@ -1,14 +1,23 @@
-import { Wallet, Signer, providers, BigNumber, ContractReceipt, Contract, utils } from "ethers"
-import { IRequestParameters } from "../../packages/net/src" // TODO: Import from the new NPM package
-import { Keccak256, Poseidon } from "../../packages/hashing/src" // TODO: Import from the new NPM package
-import { hexStringToBuffer } from "../../packages/common/src" // TODO: Import from the new NPM package
-import { CENSUS_MAX_BULK_SIZE } from "../../packages/common/src" // TODO: Import from the new NPM package
+import { BigNumber, ContractReceipt, providers, Signer, utils, Wallet } from "ethers"
+import { IGatewayClient, IGatewayWeb3Client, IRequestParameters } from "../../net/src" // TODO reference the future package
+import { Keccak256, Poseidon } from "../../hashing/src" // TODO reference the future package
+import { CENSUS_MAX_BULK_SIZE, hexStringToBuffer } from "../../common/src" // TODO reference the future package
 import { ERC20Proof } from "@vocdoni/storage-proofs-eth"
-import { blind as _blind, unblind as _unblind, verify as _verify, signatureFromHex as _signatureFromHex, signatureToHex as _signatureToHex, pointFromHex as _pointFromHex, pointToHex as _pointToHex, UserSecretData, UnblindedSignature, BigInteger, Point } from "blindsecp256k1"
+import {
+    BigInteger,
+    blind as _blind,
+    Point,
+    pointFromHex as _pointFromHex,
+    signatureFromHex as _signatureFromHex,
+    signatureToHex as _signatureToHex,
+    unblind as _unblind,
+    UnblindedSignature,
+    UserSecretData,
+    verify as _verify
+} from "blindsecp256k1"
 import { hexZeroPad } from "ethers/lib/utils"
-import { IGatewayClient, IGatewayWeb3Client } from "../../packages/net/src" // TODO: Import from the new NPM package
-import { Census_Type } from "../../packages/models/src" // TODO: Import from the new NPM package
-// import ContentURI from "../wrappers/content-uri"
+import { Census_Type } from "../../models/src" // TODO reference the future package
+// import ContentURI from "../../net/src" // TODO reference the future package
 
 export namespace CensusOffChain {
     /**

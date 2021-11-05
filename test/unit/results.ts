@@ -3,7 +3,7 @@ import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
 
 import { ProcessMetadata, ProcessMetadataTemplate } from "../../packages/models/src" // TODO: Import from the new NPM package
-import { Voting, VotingApi } from "../../src/api/voting"
+import { Voting, VotingApi } from "../../packages/client/src" // TODO: Import from the new NPM package
 import { ProcessStatus } from "dvote-solidity"
 
 addCompletionHooks()

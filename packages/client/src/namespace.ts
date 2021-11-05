@@ -1,5 +1,5 @@
 import { Wallet, Signer } from "ethers"
-import { IGatewayWeb3Client } from "../../packages/net/src" // TODO: Import from the new NPM package
+import { IGatewayWeb3Client } from "../../net/src" // TODO reference the future package
 
 type NamespaceData = { namespace: number, chainId: string, genesis: string, validators: string[], oracles: string[] }
 

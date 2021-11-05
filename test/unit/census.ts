@@ -4,7 +4,7 @@ import { addCompletionHooks } from "../mocha-hooks"
 import { Wallet, utils } from "ethers"
 import { Buffer } from "buffer/"
 
-import { CensusOffChain } from "../../src/api/census"
+import { CensusOffChain } from "../../packages/client/src" // TODO: Import from the new NPM package
 
 addCompletionHooks()
 

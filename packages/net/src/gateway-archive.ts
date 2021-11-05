@@ -1,5 +1,4 @@
-import { FileApi } from "../../../src" // TODO (high priority) reference the future package
-import { ProcessSummary } from "../../../src" // TODO (high priority) reference the future package
+import { FileApi, ProcessSummary } from "../../client/src" // TODO (should really) reference the future package?
 import { GatewayArchiveError } from "./errors/gateway-archive"
 import { TextRecordKeys } from "../../models/src" // TODO reference the future package
 import { VochainProcessStatus } from "../../../src" // TODO (high priority) reference the future package

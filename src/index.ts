@@ -2,11 +2,7 @@
 export * from "../packages/common/src" // TODO: Export from the new NPM package
 
 // API
-export * from "./api/census"
-export * from "./api/entity"
-export * from "./api/file"
-export * from "./api/namespace"
-export * from "./api/voting"
+export * from "../packages/client/src" // TODO: Export from the new NPM package
 
 // MODELS
 export * from "../packages/models/src" // TODO: Export from the new NPM package
@@ -21,6 +17,4 @@ export * from "../packages/hashing/src" // TODO: Export from the new NPM package
 export * from "../packages/wallets/src" // TODO: Export from the new NPM package
 export * from "./crypto/signers"
 
-// UTIL
-export * from "./util/waiters"
 

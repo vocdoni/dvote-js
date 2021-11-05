@@ -3,16 +3,10 @@ import { Wallet, utils, providers, BigNumber } from "ethers"
 import * as assert from "assert"
 import { readFileSync, writeFileSync } from "fs"
 import * as YAML from 'yaml'
-import {
-    VotingApi,
-    CensusErc20Api,
-    EntityMetadataTemplate,
-    ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin,
-    VochainWaiter, EthWaiter,
-    Erc20TokensApi
-} from "../../src"
+import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../../packages/net/src" // TODO: Import from the new NPM package
 import { GatewayInfo, GatewayPool, Gateway, IGatewayDiscoveryParameters } from "../../packages/net/src" // TODO: Import from the new NPM package
-import { ProcessMetadata, ProcessMetadataTemplate, INewProcessParams } from "../../packages/models/src" // TODO: Import from the new NPM package
+import { VotingApi, VochainWaiter, EthWaiter, Erc20TokensApi, CensusErc20Api } from "../../packages/client/src" // TODO: Import from the new NPM package
+import { EntityMetadataTemplate, ProcessMetadata, ProcessMetadataTemplate, INewProcessParams } from "../../packages/models/src" // TODO: Import from the new NPM package
 import { VocdoniEnvironment, EthNetworkID } from "../../packages/common/src" // TODO: Import from the new NPM package
 
 const CONFIG_PATH = "./config.yaml"

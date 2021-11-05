@@ -1,12 +1,14 @@
-import { ContentUri } from "../../packages/net/src" // TODO: Import from the new NPM package
-import { ContentHashedUri } from "../../packages/net/src" // TODO: Import from the new NPM package
-import { IRequestParameters } from "../../packages/net/src" // TODO: Import from the new NPM package
-import { IGatewayDVoteClient } from "../../packages/net/src" // TODO: Import from the new NPM package
-import { IPFS } from "../../packages/net/src" // TODO: Import from the new NPM package
+import {
+    ContentHashedUri,
+    ContentUri,
+    IGatewayDVoteClient,
+    IPFS,
+    IRequestParameters
+} from "../../net/src" // TODO reference the future package
 import { Buffer } from 'buffer/'
 import axios from "axios"
-import { Wallet, Signer } from "ethers"
-import { promiseWithTimeout } from "../../packages/common/src" // TODO: Import from the new NPM package
+import { Signer, Wallet } from "ethers"
+import { promiseWithTimeout } from "../../common/src" // TODO reference the future package
 
 const MAX_FETCH_TIMEOUT = 8000
 

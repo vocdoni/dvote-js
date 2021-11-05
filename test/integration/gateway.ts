@@ -3,7 +3,7 @@ import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
 import { DVoteGateway } from "../../packages/net/src" // TODO: Import from the new NPM package
 import { Web3Gateway } from "../../packages/net/src" // TODO: Import from the new NPM package
-import { FileApi } from "../../src/api/file"
+import { FileApi } from "../../packages/client/src" // TODO: Import from the new NPM package
 import DevServices, { TestAccount, TestResponseBody } from "../helpers/all-services"
 import { DevGatewayService } from "../helpers/dvote-service"
 import { DevWeb3Service, getWallets } from "../helpers/web3-service"

@@ -3,18 +3,9 @@ import { Wallet, providers, utils } from "ethers"
 import * as assert from "assert"
 import { readFileSync, writeFileSync } from "fs"
 import * as YAML from 'yaml'
-import {
-    VotingApi,
-    CensusErc20Api,
-    EntityMetadataTemplate,
-    ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin,
-    VochainWaiter,
-    Erc20TokensApi,
-    VotingOracleApi,
-    ProcessState
-} from "../../src"
-import { GatewayInfo, GatewayPool, DVoteGateway, Gateway, IGatewayDiscoveryParameters } from "../../packages/net/src" // TODO: Import from the new NPM package
-import { INewProcessErc20Params, ProcessMetadata, ProcessMetadataTemplate } from "../../packages/models/src" // TODO: Import from the new NPM package
+import { GatewayInfo, GatewayPool, DVoteGateway, Gateway, IGatewayDiscoveryParameters, ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../../packages/net/src" // TODO: Import from the new NPM package
+import { VotingOracleApi, VotingApi, ProcessState, VochainWaiter, Erc20TokensApi, CensusErc20Api } from "../../packages/client/src" // TODO: Import from the new NPM package
+import { EntityMetadataTemplate, INewProcessErc20Params, ProcessMetadata, ProcessMetadataTemplate } from "../../packages/models/src" // TODO: Import from the new NPM package
 import { VocdoniEnvironment, EthNetworkID } from "../../packages/common/src" // TODO: Import from the new NPM package
 
 

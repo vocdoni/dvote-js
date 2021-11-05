@@ -12,7 +12,7 @@ import { DevWeb3Service, TestAccount } from "../helpers/web3-service"
 import { GenesisContractMethods, ProcessCensusOrigin, ProcessesContractMethods, ProcessContractParameters, ProcessStatus } from "../../packages/net/src" // TODO: Import from the new NPM package
 import { Buffer } from "buffer/"
 
-import { VotingApi, VotePackage } from "../../src/api/voting"
+import { VotingApi, VotePackage } from "../../packages/client/src" // TODO: Import from the new NPM package
 import { Asymmetric } from "../../packages/encryption/src" // TODO: Import from the new NPM package
 import { checkValidProcessMetadata, IProofCA, IProofEVM, ProofCaSignatureTypes } from "../../packages/models/src" // TODO: Import from the new NPM package
 import ProcessMetadataBuilder from "../builders/process-metadata"

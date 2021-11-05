@@ -1,12 +1,9 @@
-import { Wallet, Signer, ContractTransaction } from "ethers"
-import { checkValidEntityMetadata, EntityMetadata } from "../../packages/models/src" // TODO: Import from the new NPM package
-import { TextRecordKeys } from "../../packages/models/src" // TODO: Import from the new NPM package
-import { allSettled } from "../../packages/common/src" // TODO: Import from the new NPM package
+import { ContractTransaction, Signer, Wallet } from "ethers"
+import { checkValidEntityMetadata, EntityMetadata, TextRecordKeys } from "../../models/src" // TODO reference the future package
+import { allSettled, SOKOL_CHAIN_ID, SOKOL_GAS_PRICE, XDAI_CHAIN_ID, XDAI_GAS_PRICE } from "../../common/src" // TODO reference the future package
 import { FileApi } from "./file"
-import { XDAI_CHAIN_ID, XDAI_GAS_PRICE, SOKOL_CHAIN_ID, SOKOL_GAS_PRICE } from "../../packages/common/src" // TODO: Import from the new NPM package
-import { IMethodOverrides, ensHashAddress, ITokenStorageProofContract } from "../../packages/net/src" // TODO: Import from the new NPM package
+import { ensHashAddress, IGatewayClient, IMethodOverrides, ITokenStorageProofContract } from "../../net/src" // TODO reference the future package
 import { CensusErc20Api } from "./census"
-import { IGatewayClient } from "../../packages/net/src" // TODO: Import from the new NPM package
 
 export namespace EntityApi {
     /**

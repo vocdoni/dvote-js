@@ -4,7 +4,7 @@
 
 import { getEnsTextRecord } from "./util/ens"
 import { ContentUri } from "./wrappers/content-uri"
-import { FileApi } from "../../../src" // TODO (high priority) reference the future package
+import { FileApi } from "../../client/src" // TODO (should really) reference the future package?
 import {
     XDAI_ENS_REGISTRY_ADDRESS,
     XDAI_PROVIDER_URI,

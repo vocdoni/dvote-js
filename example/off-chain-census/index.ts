@@ -4,15 +4,12 @@ import * as assert from "assert"
 import { readFileSync, writeFileSync } from "fs"
 import * as YAML from 'yaml'
 import { GatewayPool } from "../../packages/net/src" // TODO: Import from the new NPM package
-import { EntityMetadataTemplate } from "../../src/models/entity"
-import { EntityApi } from "../../src/api/entity"
-import { VotingApi } from "../../src/api/voting"
-import { CensusOffChain, CensusOffChainApi } from "../../src/api/census"
+import { EntityMetadataTemplate } from "../../packages/models/src" // TODO: Import from the new NPM package
+import { EntityApi, VotingApi } from "../../packages/client/src" // TODO: Import from the new NPM package
+import { CensusOffChain, CensusOffChainApi } from "../../packages/client/src" // TODO: Import from the new NPM package
 import { INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "../../packages/models/src" // TODO: Import from the new NPM package
-import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../../packages/common/src" // TODO: Import from the new NPM package
-import { VochainWaiter, EthWaiter } from "../../src/util/waiters"
-import { compressPublicKey } from "../../dist"
-import { IGatewayDiscoveryParameters } from "../../src"
+import { IGatewayDiscoveryParameters, ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../../packages/net/src" // TODO: Import from the new NPM package
+import { VochainWaiter, EthWaiter } from "../../packages/client/src" // TODO: Import from the new NPM package
 import { VocdoniEnvironment, EthNetworkID } from "../../packages/common/src" // TODO: Import from the new NPM package
 
 const CONFIG_PATH = "./config.yaml"
@@ -151,7 +148,7 @@ function createWallets(amount) {
             idx: i,
             mnemonic: wallet.mnemonic.phrase,
             privateKey: wallet.privateKey,
-            publicKey: compressPublicKey(wallet.publicKey),
+            publicKey: utils.computePublicKey(wallet.publicKey, true),
             publicKeyDigested: CensusOffChain.Public.encodePublicKey(wallet.publicKey)
             // address: wallet.address
         })
@@ -167,7 +164,7 @@ async function generatePublicCensusFromAccounts(accounts) {
 
     const censusIdSuffix = require("crypto").createHash('sha256').update("" + Date.now()).digest().toString("hex")
     const claimList: { key: string, value?: string }[] = accounts.map(account => ({ key: account.publicKeyDigested, value: "" }))
-    const managerPublicKeys = [compressPublicKey(entityWallet.publicKey)]
+    const managerPublicKeys = [utils.computePublicKey(entityWallet.publicKey, true)]
 
     if (config.stopOnError) {
         assert(censusIdSuffix.length == 64)

@@ -1,20 +1,20 @@
 import { Wallet, Signer, utils, ContractTransaction, BigNumber, providers } from "ethers"
-import { GatewayArchive, GatewayArchiveApi } from "../../packages/net/src" // TODO: Import from the new NPM package
+import { GatewayArchive, GatewayArchiveApi } from "../../net/src" // TODO reference the future package
 import { FileApi } from "./file"
 import { EntityApi } from "./entity"
-import { ProcessMetadata, checkValidProcessMetadata, INewProcessParams, IProofEVM, IProofCA, IProofArbo, INewProcessErc20Params, ProcessResultsSingleChoice, SingleChoiceQuestionResults, ProcessResultsSingleQuestion } from "../../packages/models/src" // TODO: Import from the new NPM package
+import { ProcessMetadata, checkValidProcessMetadata, INewProcessParams, IProofEVM, IProofCA, IProofArbo, INewProcessErc20Params, ProcessResultsSingleChoice, SingleChoiceQuestionResults, ProcessResultsSingleQuestion } from "../../models/src" // TODO reference the future package
 import {
     VOCHAIN_BLOCK_TIME,
     XDAI_GAS_PRICE,
     XDAI_CHAIN_ID,
     SOKOL_CHAIN_ID,
     SOKOL_GAS_PRICE,
-} from "../../packages/common/src" // TODO: Import from the new NPM package
-import { BytesSignature } from "../../packages/signing/src" // TODO: Import from the new NPM package
+} from "../../common/src" // TODO reference the future package
+import { BytesSignature } from "../../signing/src" // TODO reference the future package
 import { Buffer } from "buffer/"  // Previously using "arraybuffer-to-string"
-import { Asymmetric } from "../../packages/encryption/src" // TODO: Import from the new NPM package
-import { VochainWaiter } from "../util/waiters"
-import { IMethodOverrides, ProcessContractParameters, ProcessStatus, IProcessStatus, ProcessCensusOrigin, IProcessCensusOrigin } from "../../packages/net/src" // TODO: Import from the new NPM package
+import { Asymmetric } from "../../encryption/src" // TODO reference the future package
+import { VochainWaiter } from "./util/waiters"
+import { IMethodOverrides, ProcessContractParameters, ProcessStatus, IProcessStatus, ProcessCensusOrigin, IProcessCensusOrigin } from "../../net/src" // TODO reference the future package
 import {
     Tx, SignedTx,
     VoteEnvelope,
@@ -29,18 +29,19 @@ import {
     VochainProcessStatus,
     RegisterKeyTx,
     SourceNetworkId
-} from "../../packages/models/src" // TODO: Import from the new NPM package
-import { DVoteGateway, DVoteGatewayResponseBody, IRequestParameters } from "../../packages/net/src" // TODO: Import from the new NPM package
+} from "../../models/src" // TODO reference the future package
+import { DVoteGateway, DVoteGatewayResponseBody, IRequestParameters } from "../../net/src" // TODO reference the future package
 import { CensusErc20Api } from "./census"
 import { ProcessEnvelopeType } from "dvote-solidity"
-import { IGatewayClient, IGatewayDVoteClient, IGatewayWeb3Client } from "../../packages/net/src" // TODO: Import from the new NPM package
-import { Poseidon } from "../../packages/hashing/src" // TODO: Import from the new NPM package
-import { Random, uintArrayToHex } from "../../packages/common/src" // TODO: Import from the new NPM package
-import { ResultsNotAvailableError } from "../errors/results";
-import { ApiMethod } from "../../packages/models/src" // TODO reference the future package
-import { ProofArbo_Type } from "../../packages/models/src" // TODO: Import from the new NPM package
+import { IGatewayClient, IGatewayDVoteClient, IGatewayWeb3Client } from "../../net/src" // TODO reference the future package
+import { Poseidon } from "../../hashing/src" // TODO reference the future package
+import { Random, uintArrayToHex } from "../../common/src" // TODO reference the future package
+import { ResultsNotAvailableError } from "./errors/results";
+import { ApiMethod } from "../../models/src" // TODO reference the future package
+import { ProofArbo_Type } from "../../models/src" // TODO reference the future package
 
 export const CaBundleProtobuf: any = CAbundle
+export { VochainWaiter, EthWaiter } from "./util/waiters"
 
 export type VotePackage = {
     nonce: string, // (optional) random number to prevent guessing the encrypted payload before the key is revealed
