@@ -17,6 +17,7 @@
     "test": "npm run build && ./node_modules/.bin/mocha -r ts-node/register test/**/*.ts"
   },
   "dependencies": {
+    "@ethersproject/bignumber": "^5.5.0",
     "@ethersproject/keccak256": "^5.5.0",
     "@ethersproject/units": "^5.5.0",
     "buffer": "^6.0.3",

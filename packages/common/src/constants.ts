@@ -1,5 +1,5 @@
 import { parseUnits } from "@ethersproject/units"
-import {BigNumber} from "ethers";
+import { BigNumber } from "@ethersproject/bignumber"
 
 export const IPFS_GATEWAY_LIST_URI = "https://ipfs.github.io/public-gateway-checker/gateways.json"
 
