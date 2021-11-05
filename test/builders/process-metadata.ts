@@ -1,5 +1,5 @@
 import { ProcessMetadataTemplate, ProcessMetadata } from "../../packages/models/src" // TODO: Import from the new NPM package
-import { URI } from "../../src/common"
+import { URI } from "../../packages/common/src" // TODO: Import from the new NPM package
 
 // BUILDER
 export default class ProcessMetadataBuilder {

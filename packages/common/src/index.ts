@@ -1,4 +1,4 @@
-export * from './common'
+export * from './types'
 export * from './encoding'
 export * from './random'
 export * from './timeout'

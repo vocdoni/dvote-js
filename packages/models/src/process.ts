@@ -8,7 +8,7 @@ import {
     // HexString,
     MultiLanguage,
     ContentUriString,
-} from "../../../src" // TODO (high priority) reference the future package
+} from "../../common/src" // TODO: Import from the new NPM package
 import { object, array, string, number } from "yup"
 import { by639_1 } from 'iso-language-codes'
 import { IProcessCreateParams } from "../../net/src" // TODO: Import from the new NPM package

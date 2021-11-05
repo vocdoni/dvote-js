@@ -1,4 +1,5 @@
-export * from "./common"
+// COMMON
+export * from "../packages/common/src" // TODO: Export from the new NPM package
 
 // API
 export * from "./api/census"
@@ -21,10 +22,5 @@ export * from "../packages/wallets/src" // TODO: Export from the new NPM package
 export * from "./crypto/signers"
 
 // UTIL
-export * from "../packages/common/src" // TODO: Export from the new NPM package
 export * from "./util/waiters"
 
-// WRAPPERS
-// export * from "./wrappers/content-uri"
-// export * from "./wrappers/content-hashed-uri"
-// export * from "./wrappers/gateway-info"
