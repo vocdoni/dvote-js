@@ -6,7 +6,7 @@ import * as YAML from 'yaml'
 import { GatewayPool } from "../../src/net/gateway-pool"
 import { EntityMetadataTemplate } from "../../src/models/entity"
 import { EntityApi } from "../../src/api/entity"
-import { VotingApi } from "../../src/api/voting"
+import { VotingApi, Voting } from "../../src/api/voting"
 import { CensusOffChain, CensusOffChainApi } from "../../src/api/census"
 import { INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "../../src/models/process"
 import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../../src/net/contracts"
@@ -255,6 +255,18 @@ async function launchNewVote(censusRoot, censusUri) {
     assert.strictEqual(processParams.blockCount, processParamsPre.blockCount)
     assert.strictEqual(processParams.censusRoot, processParamsPre.censusRoot)
     assert.strictEqual(processParams.censusUri, processParamsPre.censusUri)
+
+    let attempts = 6
+    while (attempts >= 0) {
+        console.log("Waiting for process", processId, "to be created")
+        await VochainWaiter.wait(1, pool)
+
+        const state = await VotingApi.getProcessState(processId, pool).catch(() => null)
+        if (state?.entityId) break
+
+        attempts--
+    }
+    if (attempts < 0) throw new Error("The process still does not exist on the Vochain")
 }
 
 async function waitUntilStarted() {
@@ -303,8 +315,8 @@ async function launchVotes(accounts) {
         const choices = getChoicesForVoter(idx)
 
         const envelope = processParams.envelopeType.hasEncryptedVotes ?
-            await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet, processKeys }) :
-            await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet })
+            await Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet, processKeys }) :
+            await Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet })
 
         process.stdout.write(`Sending [${idx}] ; `)
         await VotingApi.submitEnvelope(envelope, wallet, pool)
@@ -317,7 +329,7 @@ async function launchVotes(accounts) {
         await new Promise(resolve => setTimeout(resolve, 11000))
 
         process.stdout.write(`Checking [${idx}] ; `)
-        const nullifier = VotingApi.getSignedVoteNullifier(wallet.address, processId)
+        const nullifier = Voting.getSignedVoteNullifier(wallet.address, processId)
         const { registered, date, block } = await VotingApi.getEnvelopeStatus(processId, nullifier, pool)
             .catch(err => {
                 console.error("\ngetEnvelopeStatus ERR", account.publicKey, nullifier, err)
@@ -359,46 +371,46 @@ async function checkVoteResults() {
     await VochainWaiter.waitUntil(nextBlock, pool, { verbose: true })
 
     console.log("Fetching the vote results for", processId)
-    const resultsDigest = await VotingApi.getResultsDigest(processId, pool)
+    const resultsDigest = await VotingApi.getResults(processId, pool)
     const totalVotes = await VotingApi.getEnvelopeHeight(processId, pool)
 
-    assert.strictEqual(resultsDigest.questions.length, 1)
-    assert(resultsDigest.questions[0].voteResults)
+    assert.strictEqual(resultsDigest.results.length, 1)
+    assert(resultsDigest.results[0])
 
     switch (config.votesPattern) {
         case "all-0":
-            assert(resultsDigest.questions[0].voteResults.length >= 2)
-            assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes.toNumber(), config.numAccounts)
-            assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes.toNumber(), 0)
+            assert(resultsDigest.results[0].length >= 2)
+            assert.strictEqual(resultsDigest.results[0][0], config.numAccounts)
+            assert.strictEqual(resultsDigest.results[0][1], 0)
             break
         case "all-1":
-            assert(resultsDigest.questions[0].voteResults.length >= 2)
-            assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes.toNumber(), 0)
-            assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes.toNumber(), config.numAccounts)
+            assert(resultsDigest.results[0].length >= 2)
+            assert.strictEqual(resultsDigest.results[0][0], 0)
+            assert.strictEqual(resultsDigest.results[0][1], config.numAccounts)
             break
         case "all-2":
-            assert(resultsDigest.questions[0].voteResults.length >= 3)
-            assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes.toNumber(), 0)
-            assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes.toNumber(), 0)
-            assert.strictEqual(resultsDigest.questions[0].voteResults[2].votes.toNumber(), config.numAccounts)
+            assert(resultsDigest.results[0].length >= 3)
+            assert.strictEqual(resultsDigest.results[0][0], 0)
+            assert.strictEqual(resultsDigest.results[0][1], 0)
+            assert.strictEqual(resultsDigest.results[0][2], config.numAccounts)
             break
         case "all-even":
-            assert(resultsDigest.questions[0].voteResults.length >= 2)
+            assert(resultsDigest.results[0].length >= 2)
             if (config.numAccounts % 2 == 0) {
-                assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes.toNumber(), config.numAccounts / 2)
-                assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes.toNumber(), config.numAccounts / 2)
+                assert.strictEqual(resultsDigest.results[0][0], config.numAccounts / 2)
+                assert.strictEqual(resultsDigest.results[0][1], config.numAccounts / 2)
             }
             else {
-                assert.strictEqual(resultsDigest.questions[0].voteResults[0].votes.toNumber(), Math.ceil(config.numAccounts / 2))
-                assert.strictEqual(resultsDigest.questions[0].voteResults[1].votes.toNumber(), Math.floor(config.numAccounts / 2))
+                assert.strictEqual(resultsDigest.results[0][0], Math.ceil(config.numAccounts / 2))
+                assert.strictEqual(resultsDigest.results[0][1], Math.floor(config.numAccounts / 2))
             }
             break
         case "incremental":
-            assert.strictEqual(resultsDigest.questions[0].voteResults.length, 2)
-            resultsDigest.questions.forEach((question, i) => {
-                for (let j = 0; j < question.voteResults.length; j++) {
-                    if (i == j) assert.strictEqual(question.voteResults[j].votes.toNumber(), config.numAccounts)
-                    else assert.strictEqual(question.voteResults[j].votes.toNumber(), 0)
+            assert.strictEqual(resultsDigest.results[0].length, 2)
+            resultsDigest.results.forEach((question, i) => {
+                for (let j = 0; j < question.length; j++) {
+                    if (i == j) assert.strictEqual(question[j], config.numAccounts)
+                    else assert.strictEqual(question[j], 0)
                 }
             })
             break

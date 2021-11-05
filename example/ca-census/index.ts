@@ -180,6 +180,18 @@ async function launchNewVote() {
     assert.strictEqual(processParams.blockCount, processParamsPre.blockCount)
     assert.strictEqual(processParams.censusRoot, processParamsPre.censusRoot)
     assert.strictEqual(processParams.censusUri, processParamsPre.censusUri)
+
+    let attempts = 6
+    while (attempts >= 0) {
+        console.log("Waiting for process", processId, "to be created")
+        await VochainWaiter.wait(1, pool)
+
+        const state = await VotingApi.getProcessState(processId, pool).catch(() => null)
+        if (state?.entityId) break
+
+        attempts--
+    }
+    if (attempts < 0) throw new Error("The process still does not exist on the Vochain")
 }
 
 async function waitUntilStarted() {

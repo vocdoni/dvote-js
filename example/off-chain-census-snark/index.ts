@@ -37,7 +37,7 @@ async function main() {
         console.log("Creating from scratch")
 
         // Set Entity Metadata
-        await setEntityMetadata()
+        // await setEntityMetadata()
 
         // Create N wallets
         accounts = createWallets(config.numAccounts)
@@ -47,11 +47,14 @@ async function main() {
         writeFileSync(config.accountListFilePath, JSON.stringify(accounts, null, 2))
     }
 
+    let censusId: string
+
     if (config.readExistingProcess) {
         console.log("Reading process metadata")
-        const procInfo: { processId: string, processMetadata: ProcessMetadata } = JSON.parse(readFileSync(config.processInfoFilePath).toString())
+        const procInfo: { processId: string, processMetadata: ProcessMetadata, censusId: string } = JSON.parse(readFileSync(config.processInfoFilePath).toString())
         processId = procInfo.processId
         processMetadata = procInfo.processMetadata
+        censusId = procInfo.censusId
         processParams = await VotingApi.getProcessContractParameters(processId, gwPool)
 
         assert(processId)
@@ -61,13 +64,14 @@ async function main() {
         // Generate and publish the census
         // Get the merkle root and IPFS origin of the Merkle Tree
         console.log("Publishing census")
-        const { censusRoot, censusUri } = await generatePublicCensusFromAccounts(accounts)
+        const { censusRoot, censusUri, censusId: cid } = await generatePublicCensusFromAccounts(accounts)
+        censusId = cid
 
         // Create a new voting process
         await launchNewVote(censusRoot, censusUri)
         assert(processId)
         assert(processMetadata)
-        writeFileSync(config.processInfoFilePath, JSON.stringify({ processId, processMetadata }, null, 2))
+        writeFileSync(config.processInfoFilePath, JSON.stringify({ processId, processMetadata, censusId }, null, 2))
 
         console.log("The voting process is ready")
     }
@@ -82,7 +86,7 @@ async function main() {
     console.log("- Process merkle tree", processParams.censusUri)
     console.log("-", accounts.length, "accounts on the census")
 
-    await registerVoterKeys()
+    await registerVoterKeys(censusId)
 
     // Wait until the current block >= startBlock
     await waitUntilStarted()
@@ -164,7 +168,7 @@ function createWallets(amount) {
     return accounts
 }
 
-async function generatePublicCensusFromAccounts(accounts) {
+async function generatePublicCensusFromAccounts(accounts: Account[]) {
     // Create new census
     console.log("Creating a new census")
 
@@ -204,11 +208,12 @@ async function generatePublicCensusFromAccounts(accounts) {
     // Return the census ID / Merkle Root
     return {
         censusUri,
-        censusRoot
+        censusRoot,
+        censusId
     }
 }
 
-async function launchNewVote(censusRoot, censusUri) {
+async function launchNewVote(censusRoot: string, censusUri: string) {
     assert(censusRoot)
     assert(censusUri)
     console.log("Preparing the new vote metadata")
@@ -258,11 +263,22 @@ async function launchNewVote(censusRoot, censusUri) {
     assert.strictEqual(processParams.blockCount, processParamsPre.blockCount)
     assert.strictEqual(processParams.censusRoot, processParamsPre.censusRoot)
     assert.strictEqual(processParams.censusUri, processParamsPre.censusUri)
+
+    let attempts = 6
+    while (attempts >= 0) {
+        console.log("Waiting for process", processId, "to be created")
+        await VochainWaiter.wait(1, pool)
+
+        const state = await VotingApi.getProcessState(processId, pool).catch(() => null)
+        if (state?.entityId) break
+
+        attempts--
+    }
+    if (attempts < 0) throw new Error("The process still does not exist on the Vochain")
 }
 
-async function registerVoterKeys() {
+async function registerVoterKeys(censusId: string) {
     console.log("Registering keys")
-    const censusRoot = processParams.censusRoot
 
     await Bluebird.map(accounts, async (account: Account, idx: number) => {
         process.stdout.write(`Registering [${idx}] ; `)
@@ -275,7 +291,7 @@ async function registerVoterKeys() {
         account.secretKey = secretKey
 
         // Get a census proof to be able to register the new key
-        const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: account.publicKeyDigested }, true, pool)
+        const censusProof = await CensusOffChainApi.generateProof(censusId, { key: account.publicKeyDigested }, true, pool)
             .catch(err => {
                 console.error("\nCensusOffChainApi.generateProof ERR", account, err)
                 if (config.stopOnError) throw err
