@@ -70,6 +70,8 @@ async function main() {
         writeFileSync(config.processInfoFilePath, JSON.stringify({ processId, processMetadata }, null, 2))
 
         console.log("The voting process is ready")
+
+        await registerVoterKeys(processParams.censusRoot)
     }
 
     assert(processParams)
@@ -81,8 +83,6 @@ async function main() {
     console.log("- Process merkle root", processParams.censusRoot)
     console.log("- Process merkle tree", processParams.censusUri)
     console.log("-", accounts.length, "accounts on the census")
-
-    await registerVoterKeys(processParams.censusRoot)
 
     // Wait until the current block >= startBlock
     await waitUntilStarted()
@@ -327,8 +327,12 @@ async function submitVotes(accounts: Account[]) {
     const censusRoot = processParams.censusRoot
     const processKeys = processParams.envelopeType.hasEncryptedVotes ? await VotingApi.getProcessKeys(processId, pool) : null
 
-    const circuitWasm: Uint8Array = await axios.get(config.circuitWasmUrl, { responseType: "arraybuffer" }).then(data => data.data)
-    const zKey: Uint8Array = await axios.get(config.zKeyUrl, { responseType: "arraybuffer" }).then(data => data.data)
+    const circuitWasm = new Uint8Array(
+        await axios.get(config.circuitWasmUrl, { responseType: "arraybuffer" }).then(data => data.data)
+    )
+    const zKey = new Uint8Array(
+        await axios.get(config.zKeyUrl, { responseType: "arraybuffer" }).then(data => data.data)
+    )
 
     await Bluebird.map(accounts, async (account: Account, idx: number) => {
         process.stdout.write(`Starting [${idx}] ; `)
