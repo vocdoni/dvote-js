@@ -238,8 +238,8 @@ async function launchNewVote(censusRoot: string, censusUri: string) {
         envelopeType: ProcessEnvelopeType.make({ encryptedVotes: true, anonymousVoters: true }), // helper
         censusOrigin: ProcessCensusOrigin.OFF_CHAIN_TREE,
         metadata: ProcessMetadataTemplate,
-        censusRoot: censusRoot,
-        censusUri: "ipfs://1234123412341234",
+        censusRoot,
+        censusUri,
         startBlock,
         blockCount,
         maxCount: 1,

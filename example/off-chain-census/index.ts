@@ -230,8 +230,8 @@ async function launchNewVote(censusRoot, censusUri) {
         envelopeType: ProcessEnvelopeType.ENCRYPTED_VOTES, // bit mask
         censusOrigin: ProcessCensusOrigin.OFF_CHAIN_TREE,
         metadata: ProcessMetadataTemplate,
-        censusRoot: censusRoot,
-        censusUri: "ipfs://1234123412341234",
+        censusRoot,
+        censusUri,
         startBlock,
         blockCount,
         maxCount: 1,
