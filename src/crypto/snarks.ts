@@ -16,7 +16,18 @@ export type ZkInputs = {
   nullifier: string
 }
 
-export function getZkProof(input: ZkInputs, circuitWasm: Uint8Array, zKey: Uint8Array) {
+type ZkReturn = {
+  proof: {
+    a: string[]
+    b: string[][]
+    c: string[]
+    protocol: string
+    // curve: <string>proof.curve || "bn128",
+  },
+  publicSignals: string[]
+}
+
+export function getZkProof(input: ZkInputs, circuitWasm: Uint8Array, zKey: Uint8Array): Promise<ZkReturn> {
   const voteValue = digestVoteValue(input.votes)
 
   const proverInputs = {
@@ -27,18 +38,25 @@ export function getZkProof(input: ZkInputs, circuitWasm: Uint8Array, zKey: Uint8
     electionId: BigInt(ensure0x(input.processId)),
     nullifier: BigInt(ensure0x(input.nullifier))
   }
-  const { proof, publicSignals } = groth16.fullProve(proverInputs, circuitWasm, zKey)
+  return groth16.fullProve(proverInputs, circuitWasm, zKey)
+    .then(result => {
+      if (!result) throw new Error("The ZK proof could not be generated")
+      const { proof, publicSignals } = result
 
-  return {
-    proof: {
-      a: <string[]>proof.pi_a,
-      b: <string[][]>proof.pi_b,
-      c: <string[]>proof.pi_c,
-      protocol: <string>proof.protocol,
-      // curve: <string>proof.curve || "bn128",
-    },
-    publicSignals: <string[]>publicSignals
-  }
+      return {
+        proof: {
+          a: <string[]>proof.pi_a,
+          b: <string[][]>proof.pi_b,
+          c: <string[]>proof.pi_c,
+          protocol: <string>proof.protocol,
+          // curve: <string>proof.curve || "bn128",
+        },
+        publicSignals: <string[]>publicSignals
+      }
+    })
+    .catch(err => {
+      throw new Error("The ZK proof could not be generated")
+    })
 }
 
 export function verifyZkProof(verificationKey: { [k: string]: any }, publicSignals: Array<bigint>,

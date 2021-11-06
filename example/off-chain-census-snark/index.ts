@@ -363,7 +363,7 @@ async function submitVotes(accounts: Account[]) {
             params.processKeys = processKeys
         }
 
-        const envelope = Voting.packageAnonymousEnvelope(params)
+        const envelope = await Voting.packageAnonymousEnvelope(params)
 
         process.stdout.write(`Sending [${idx}] ; `)
         await VotingApi.submitEnvelope(envelope, wallet, pool)

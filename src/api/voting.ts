@@ -1313,7 +1313,7 @@ export namespace Voting {
      * If `encryptionPublicKey` is defined, it will be used to encrypt the vote package.
      * @param params
      */
-    export function packageAnonymousEnvelope(params: AnonymousEnvelopeParams): VoteEnvelope {
+    export function packageAnonymousEnvelope(params: AnonymousEnvelopeParams): Promise<VoteEnvelope> {
         if (!params) throw new Error("Invalid parameters")
         else if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
         else if (typeof params.processId != "string" || !params.processId.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid processId")
@@ -1325,24 +1325,24 @@ export namespace Voting {
             }
         }
 
-        try {
-            const proof = packageZkProof(params.processId, params.secretKey, params.censusRoot, params.votes,
-                params.circuitWasm, params.zKey)
-            const nonce = strip0x(Random.getHex())
-            const { votePackage, keyIndexes } = packageVoteContent(params.votes, params.processKeys)
-            const hexNullifier = getAnonymousVoteNullifier(params.secretKey, params.processId)
+        return packageZkProof(params.processId, params.secretKey, params.censusRoot, params.votes, params.circuitWasm, params.zKey)
+            .then(proof => {
+                const nonce = strip0x(Random.getHex())
+                const { votePackage, keyIndexes } = packageVoteContent(params.votes, params.processKeys)
+                const hexNullifier = getAnonymousVoteNullifier(params.secretKey, params.processId)
 
-            return VoteEnvelope.fromPartial({
-                proof,
-                processId: new Uint8Array(Buffer.from(strip0x(params.processId), "hex")),
-                nonce: new Uint8Array(Buffer.from(nonce, "hex")),
-                votePackage: new Uint8Array(votePackage),
-                encryptionKeyIndexes: keyIndexes ? keyIndexes : [],
-                nullifier: Buffer.from(hexNullifier)
+                return VoteEnvelope.fromPartial({
+                    proof,
+                    processId: new Uint8Array(Buffer.from(strip0x(params.processId), "hex")),
+                    nonce: new Uint8Array(Buffer.from(nonce, "hex")),
+                    votePackage: new Uint8Array(votePackage),
+                    encryptionKeyIndexes: keyIndexes ? keyIndexes : [],
+                    nullifier: Buffer.from(hexNullifier)
+                })
             })
-        } catch (error) {
-            throw new Error("The anonymous vote envelope could not be generated")
-        }
+            .catch(err => {
+                throw new Error("The anonymous vote envelope could not be generated")
+            })
     }
 
     /**
@@ -1473,20 +1473,23 @@ export namespace Voting {
             votes
         }
 
-        const { proof: zkProof, publicSignals } = getZkProof(inputs, circuitWasm, zKey)
-        // [w, x, y, z] => [[w, x], [y, z]]
-        const b = [zkProof.b[0][0], zkProof.b[0][1], zkProof.b[1][0], zkProof.b[1][1]]
+        return getZkProof(inputs, circuitWasm, zKey).then(result => {
+            const { proof: zkProof, publicSignals } = result
 
-        const zkSnark = ProofZkSNARK.fromPartial({
-            a: zkProof.a,
-            b,
-            c: zkProof.c,
-            publicInputs: publicSignals,
-            // type: ProofZkSNARK_Type.UNKNOWN
+            // [w, x, y, z] => [[w, x], [y, z]]
+            const b = [zkProof.b[0][0], zkProof.b[0][1], zkProof.b[1][0], zkProof.b[1][1]]
+
+            const zkSnark = ProofZkSNARK.fromPartial({
+                a: zkProof.a,
+                b,
+                c: zkProof.c,
+                publicInputs: publicSignals,
+                // type: ProofZkSNARK_Type.UNKNOWN
+            })
+            proof.payload = { $case: "zkSnark", zkSnark }
+
+            return proof
         })
-        proof.payload = { $case: "zkSnark", zkSnark }
-
-        return proof
     }
 
     function resolveCaProof(proof: IProofArbo | IProofCA | IProofEVM): IProofCA {
