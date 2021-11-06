@@ -1151,14 +1151,23 @@ export namespace VotingApi {
      * @param walletOrSigner
      * @param gateway
      */
-    export function registerVoterKey(processId: string, proof: Proof, secretKey: bigint, weight: string = "0x01", walletOrSigner: Wallet | Signer, gateway: IGatewayDVoteClient): Promise<any> {
-        if (!processId || !proof || typeof secretKey !== "bigint") return Promise.reject(new Error("Invalid parameters"))
+    export function registerVoterKey(processId: string, censusProof: IProofArbo, secretKey: bigint, weight: string = "0x01", walletOrSigner: Wallet | Signer, gateway: IGatewayDVoteClient): Promise<any> {
+        if (!processId || typeof secretKey !== "bigint") return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
+        else if (typeof censusProof != "string" || !censusProof.match(/^(0x)?[0-9a-zA-Z]+$/))
+            throw new Error("Invalid census proof (must be a hex string)")
 
         const hexHashedKey = Poseidon.hash([secretKey]).toString(16)
         const newKey = hexHashedKey.length % 2 == 1 ?
             utils.zeroPad("0x0" + hexHashedKey, 32) :
             utils.zeroPad("0x" + hexHashedKey, 32)
+
+        const proof = Proof.fromPartial({})
+        const aProof = ProofArbo.fromPartial({
+            siblings: new Uint8Array(Buffer.from(strip0x(censusProof as string), "hex")),
+            type: ProofArbo_Type.BLAKE2B
+        })
+        proof.payload = { $case: "arbo", arbo: aProof }
 
         const registerKey: RegisterKeyTx = {
             newKey,

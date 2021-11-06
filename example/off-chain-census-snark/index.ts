@@ -47,14 +47,11 @@ async function main() {
         writeFileSync(config.accountListFilePath, JSON.stringify(accounts, null, 2))
     }
 
-    let censusId: string
-
     if (config.readExistingProcess) {
         console.log("Reading process metadata")
         const procInfo: { processId: string, processMetadata: ProcessMetadata, censusId: string } = JSON.parse(readFileSync(config.processInfoFilePath).toString())
         processId = procInfo.processId
         processMetadata = procInfo.processMetadata
-        censusId = procInfo.censusId
         processParams = await VotingApi.getProcessContractParameters(processId, gwPool)
 
         assert(processId)
@@ -64,14 +61,13 @@ async function main() {
         // Generate and publish the census
         // Get the merkle root and IPFS origin of the Merkle Tree
         console.log("Publishing census")
-        const { censusRoot, censusUri, censusId: cid } = await generatePublicCensusFromAccounts(accounts)
-        censusId = cid
+        const { censusRoot, censusUri } = await generatePublicCensusFromAccounts(accounts)
 
         // Create a new voting process
         await launchNewVote(censusRoot, censusUri)
         assert(processId)
         assert(processMetadata)
-        writeFileSync(config.processInfoFilePath, JSON.stringify({ processId, processMetadata, censusId }, null, 2))
+        writeFileSync(config.processInfoFilePath, JSON.stringify({ processId, processMetadata }, null, 2))
 
         console.log("The voting process is ready")
     }
@@ -86,7 +82,7 @@ async function main() {
     console.log("- Process merkle tree", processParams.censusUri)
     console.log("-", accounts.length, "accounts on the census")
 
-    await registerVoterKeys(censusId)
+    await registerVoterKeys(processParams.censusRoot)
 
     // Wait until the current block >= startBlock
     await waitUntilStarted()
@@ -190,7 +186,7 @@ async function generatePublicCensusFromAccounts(accounts: Account[]) {
     const { censusId } = await CensusOffChainApi.addCensus(censusIdSuffix, managerPublicKeys, entityWallet, pool)
 
     console.log("Adding", claimList.length, "claims")
-    const { invalidClaims, censusRoot } = await CensusOffChainApi.addClaimBulk(censusId, claimList, false, entityWallet, pool)
+    const { invalidClaims, censusRoot } = await CensusOffChainApi.addClaimBulk(censusId, claimList, true, entityWallet, pool)
 
     if (invalidClaims.length > 0) throw new Error("Census Service invalid claims count is " + invalidClaims.length)
 
@@ -208,8 +204,7 @@ async function generatePublicCensusFromAccounts(accounts: Account[]) {
     // Return the census ID / Merkle Root
     return {
         censusUri,
-        censusRoot,
-        censusId
+        censusRoot
     }
 }
 
@@ -277,7 +272,7 @@ async function launchNewVote(censusRoot: string, censusUri: string) {
     if (attempts < 0) throw new Error("The process still does not exist on the Vochain")
 }
 
-async function registerVoterKeys(censusId: string) {
+async function registerVoterKeys(censusRoot: string) {
     console.log("Registering keys")
 
     await Bluebird.map(accounts, async (account: Account, idx: number) => {
@@ -291,7 +286,7 @@ async function registerVoterKeys(censusId: string) {
         account.secretKey = secretKey
 
         // Get a census proof to be able to register the new key
-        const censusProof = await CensusOffChainApi.generateProof(censusId, { key: account.publicKeyDigested }, true, pool)
+        const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: account.publicKeyDigested }, true, pool)
             .catch(err => {
                 console.error("\nCensusOffChainApi.generateProof ERR", account, err)
                 if (config.stopOnError) throw err
