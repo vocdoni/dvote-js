@@ -154,8 +154,8 @@ function createWallets(amount) {
             idx: i,
             mnemonic: wallet.mnemonic.phrase,
             privateKey: wallet.privateKey,
-            publicKey: compressPublicKey(wallet.publicKey),
-            publicKeyDigested: CensusOffChain.Public.encodePublicKey(wallet.publicKey)
+            // publicKey: compressPublicKey(wallet.publicKey),
+            publicKeyEncoded: CensusOffChain.Public.encodePublicKey(wallet.publicKey)
             // address: wallet.address
         })
     }
@@ -169,7 +169,7 @@ async function generatePublicCensusFromAccounts(accounts: Account[]) {
     console.log("Creating a new census")
 
     const censusIdSuffix = require("crypto").createHash('sha256').update("" + Date.now()).digest().toString("hex")
-    const claimList: { key: string, value?: string }[] = accounts.map(account => ({ key: account.publicKeyDigested, value: "" }))
+    const claimList: { key: string, value?: string }[] = accounts.map(account => ({ key: account.publicKeyEncoded, value: "" }))
     const managerPublicKeys = [compressPublicKey(entityWallet.publicKey)]
 
     if (config.stopOnError) {
@@ -186,7 +186,7 @@ async function generatePublicCensusFromAccounts(accounts: Account[]) {
     const { censusId } = await CensusOffChainApi.addCensus(censusIdSuffix, managerPublicKeys, entityWallet, pool)
 
     console.log("Adding", claimList.length, "claims")
-    const { invalidClaims, censusRoot } = await CensusOffChainApi.addClaimBulk(censusId, claimList, true, entityWallet, pool)
+    const { invalidClaims, censusRoot } = await CensusOffChainApi.addClaimBulk(censusId, claimList, entityWallet, pool)
 
     if (invalidClaims.length > 0) throw new Error("Census Service invalid claims count is " + invalidClaims.length)
 
@@ -225,7 +225,7 @@ async function launchNewVote(censusRoot: string, censusUri: string) {
 
     console.log("Getting the block height")
     const currentBlock = await VotingApi.getBlockHeight(pool)
-    const startBlock = currentBlock + 25
+    const startBlock = currentBlock + 7
     const blockCount = 60480
 
     const processParamsPre: INewProcessParams = {
@@ -286,7 +286,7 @@ async function registerVoterKeys(censusRoot: string) {
         account.secretKey = secretKey
 
         // Get a census proof to be able to register the new key
-        const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: account.publicKeyDigested }, true, pool)
+        const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: account.publicKeyEncoded }, pool)
             .catch(err => {
                 console.error("\nCensusOffChainApi.generateProof ERR", account, err)
                 if (config.stopOnError) throw err
@@ -340,7 +340,7 @@ async function submitVotes(accounts: Account[]) {
         const wallet = new Wallet(account.privateKey)
 
         process.stdout.write(`Gen Proof [${idx}] ; `)
-        const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: account.publicKeyDigested }, true, pool)
+        const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: account.publicKeyEncoded }, pool)
             .catch(err => {
                 console.error("\nCensusOffChainApi.generateProof ERR", account, err)
                 if (config.stopOnError) throw err
@@ -368,7 +368,7 @@ async function submitVotes(accounts: Account[]) {
         process.stdout.write(`Sending [${idx}] ; `)
         await VotingApi.submitEnvelope(envelope, wallet, pool)
             .catch(err => {
-                console.error("\nsubmitEnvelope ERR", account.publicKey, envelope, err)
+                console.error("\nsubmitEnvelope ERR", account.publicKeyEncoded, envelope, err)
                 if (config.stopOnError) throw err
             })
 
@@ -379,7 +379,7 @@ async function submitVotes(accounts: Account[]) {
         const nullifier = Voting.getAnonymousVoteNullifier(account.secretKey, processId)
         const { registered, date, block } = await VotingApi.getEnvelopeStatus(processId, nullifier, pool)
             .catch(err => {
-                console.error("\ngetEnvelopeStatus ERR", account.publicKey, nullifier, err)
+                console.error("\ngetEnvelopeStatus ERR", account.publicKeyEncoded, nullifier, err)
                 if (config.stopOnError) throw err
             }) as any
 
@@ -556,8 +556,8 @@ type Account = {
     idx: number,
     mnemonic: string
     privateKey: string
-    publicKey: string
-    publicKeyDigested: string
+    // publicKey: string
+    publicKeyEncoded: string
 
     /** Snark friendly secret key */
     secretKey: bigint

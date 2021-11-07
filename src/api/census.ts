@@ -119,12 +119,12 @@ export namespace CensusOffChainApi {
      * @param walletOrSigner
      * @returns Promise resolving with the new censusRoot
      */
-    export function addClaim(censusId: string, claim: { key: string, value?: string }, digested: boolean, walletOrSigner: Wallet | Signer, gateway: IGatewayClient): Promise<string> {
+    export function addClaim(censusId: string, claim: { key: string, value?: string }, walletOrSigner: Wallet | Signer, gateway: IGatewayClient): Promise<string> {
         if (!censusId || !claim || !claim.key || !claim.key.length || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!walletOrSigner || !walletOrSigner._isSigner) return Promise.reject(new Error("Invalid WalletOrSinger object"))
 
-        return gateway.sendRequest({ method: "addClaim", censusId, digested, censusKey: claim.key, censusValue: claim.value || undefined }, walletOrSigner)
+        return gateway.sendRequest({ method: "addClaim", censusId, digested: false, censusKey: claim.key, censusValue: claim.value || undefined }, walletOrSigner)
             .then((response) => {
                 if (typeof response.root == "string") return response.root
                 return getRoot(censusId, gateway)
@@ -146,7 +146,7 @@ export namespace CensusOffChainApi {
      * @param walletOrSigner
      * @returns Promise resolving with the new censusRoot
      */
-    export async function addClaimBulk(censusId: string, claimList: { key: string, value?: string }[], digested: boolean, walletOrSigner: Wallet | Signer, gateway: IGatewayClient): Promise<{ censusRoot: string, invalidClaims: any[] }> {
+    export async function addClaimBulk(censusId: string, claimList: { key: string, value?: string }[], walletOrSigner: Wallet | Signer, gateway: IGatewayClient): Promise<{ censusRoot: string, invalidClaims: any[] }> {
         if (!censusId || !claimList || !claimList.length || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!walletOrSigner || !walletOrSigner._isSigner) return Promise.reject(new Error("Invalid WalletOrSinger object"))
@@ -156,7 +156,7 @@ export namespace CensusOffChainApi {
         while (addedClaims < claimList.length) {
             let claims = claimList.slice(addedClaims, addedClaims + CENSUS_MAX_BULK_SIZE)
             addedClaims += CENSUS_MAX_BULK_SIZE
-            const partialInvalidClaims = await addClaimChunk(censusId, claims, digested, walletOrSigner, gateway)
+            const partialInvalidClaims = await addClaimChunk(censusId, claims, walletOrSigner, gateway)
             invalidClaims = invalidClaims.concat(partialInvalidClaims)
         }
 
@@ -165,7 +165,7 @@ export namespace CensusOffChainApi {
         return { censusRoot, invalidClaims }
     }
 
-    function addClaimChunk(censusId: string, claimList: { key: string, value?: string }[], digested: boolean, walletOrSigner: Wallet | Signer, gateway: IGatewayClient): Promise<any[]> {
+    function addClaimChunk(censusId: string, claimList: { key: string, value?: string }[], walletOrSigner: Wallet | Signer, gateway: IGatewayClient): Promise<any[]> {
         if (!censusId || !claimList || claimList.length > CENSUS_MAX_BULK_SIZE || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!claimList.length) return Promise.resolve([])
@@ -175,7 +175,7 @@ export namespace CensusOffChainApi {
         const censusValues = claimList.map(c => c.value || undefined).filter(k => !!k)
         if (censusValues.length > 0 && censusKeys.length != censusValues.length) throw new Error("Either all claimList.value elements should be set or all be empty, but not both")
 
-        return gateway.sendRequest({ method: "addClaimBulk", censusId, digested, censusKeys, censusValues: censusValues.length ? censusValues : undefined }, walletOrSigner)
+        return gateway.sendRequest({ method: "addClaimBulk", censusId, digested: false, censusKeys, censusValues: censusValues.length ? censusValues : undefined }, walletOrSigner)
             .then(response => {
                 const invalidClaims = ("invalidClaims" in response) ? response.invalidClaims : []
                 return invalidClaims
@@ -314,14 +314,14 @@ export namespace CensusOffChainApi {
      * @param base64Claim Base64-encoded claim of the leaf to request
      * @param gateway
      */
-    export function generateProof(censusRoot: string, { key, value }: { key: string, value?: number }, isDigested: boolean, gateway: IGatewayClient): Promise<string> {
+    export function generateProof(censusRoot: string, { key, value }: { key: string, value?: number }, gateway: IGatewayClient): Promise<string> {
         if (!censusRoot || !key || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
         return gateway.sendRequest({
             method: "genProof",
             censusId: censusRoot,
-            digested: isDigested,
+            digested: false,
             censusKey: key,
             censusValue: value
         }).then(response => {

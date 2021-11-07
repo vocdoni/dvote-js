@@ -1159,8 +1159,8 @@ export namespace VotingApi {
 
         const hexHashedKey = Poseidon.hash([secretKey]).toString(16)
         const newKey = hexHashedKey.length % 2 == 1 ?
-            utils.zeroPad("0x0" + hexHashedKey, 32) :
-            utils.zeroPad("0x" + hexHashedKey, 32)
+            utils.zeroPad("0x0" + hexHashedKey, 32).reverse() :
+            utils.zeroPad("0x" + hexHashedKey, 32).reverse()
 
         const proof = Proof.fromPartial({})
         const aProof = ProofArbo.fromPartial({
@@ -1196,18 +1196,24 @@ export namespace VotingApi {
     /**
      * Submit the vote envelope to a Gateway
      * @param {VoteEnvelope} voteEnvelope Instance of the VoteEnvelope protobuf model
-     * @param {String} signature Hex encoded signature of the voteEnvelope
+     * @param {Wallet|Signer} walletOrSigner Set to `null` on ZK Snarks. The wallet to sign the envelope.
      * @param {Gateway|GatewayPool} gateway
      */
-    export async function submitEnvelope(voteEnvelope: VoteEnvelope, walletOrSigner: Wallet | Signer, gateway: IGatewayDVoteClient): Promise<DVoteGatewayResponseBody> {
+    export async function submitEnvelope(voteEnvelope: VoteEnvelope, walletOrSigner: Wallet | Signer | null, gateway: IGatewayDVoteClient): Promise<DVoteGatewayResponseBody> {
         if (typeof voteEnvelope != "object") return Promise.reject(new Error("The vote has to be a VoteEnvelope object"))
         else if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
 
         const tx = Tx.encode({ payload: { $case: "vote", vote: voteEnvelope } })
         const txBytes = tx.finish()
 
-        const hexSignature = await BytesSignature.sign(txBytes, walletOrSigner)
-        const signature = new Uint8Array(Buffer.from(strip0x(hexSignature), "hex"))
+        let signature: Uint8Array
+        if (voteEnvelope.proof.payload.$case == "zkSnark") {
+            signature = new Uint8Array()
+        }
+        else {
+            const hexSignature = await BytesSignature.sign(txBytes, walletOrSigner)
+            signature = new Uint8Array(Buffer.from(strip0x(hexSignature), "hex"))
+        }
 
         const signedTx = SignedTx.encode({ tx: txBytes, signature })
         const signedTxBytes = signedTx.finish()
