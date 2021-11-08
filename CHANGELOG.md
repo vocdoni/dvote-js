@@ -1,5 +1,7 @@
 # DVote JS changelog
 
+- `Census.addClaim`, `Census.addClaimBulk` and `Census.registerVoterKey` now don't receive the `isDigested` parameter.
+
 ## 1.13.3
 
 - Fix an internal import

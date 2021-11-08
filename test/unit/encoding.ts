@@ -5,7 +5,7 @@ import { Buffer } from "buffer/"
 
 import { AccountBackup } from "../../src/models/backup"
 import { Wallet_AuthMethod } from "../../src"
-import { bigIntToBuffer, bufferToBigInt, hexStringToBuffer, uintArrayToHex } from "../../src/util/encoding"
+import { bigIntToBuffer, bigIntToLeBuffer, bufferLeToBigInt, bufferToBigInt, hexStringToBuffer, uintArrayToHex } from "../../src/util/encoding"
 
 addCompletionHooks()
 
@@ -67,6 +67,9 @@ describe("Value encoding", () => {
     for (let input of inputs) {
       const result = bigIntToBuffer(input.bigint)
       expect(result.toString("hex")).to.eq(input.hexBuffer)
+
+      const leResult = bigIntToLeBuffer(input.bigint)
+      expect(leResult.reverse().toString("hex")).to.eq(input.hexBuffer)
     }
   })
 
@@ -90,6 +93,9 @@ describe("Value encoding", () => {
     for (let input of inputs) {
       const result = bufferToBigInt(Buffer.from(input.hexBuffer, "hex"))
       expect(result).to.eq(input.bigint)
+
+      const result2 = bufferLeToBigInt(Buffer.from(input.hexBuffer, "hex").reverse())
+      expect(result2).to.eq(input.bigint)
     }
   })
 })

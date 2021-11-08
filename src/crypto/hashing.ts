@@ -18,8 +18,8 @@ export namespace Poseidon {
 
     /** Computes the raw poseidon hash of an array of big integers */
     export function hash(inputs: bigint[]): bigint {
-        const modInputs = inputs.map(value => value % Q)
-        return poseidon(modInputs)
+        if (inputs.some(value => value >= Q)) throw new Error("One or more inputs are out of the Poseidon field")
+        return poseidon(inputs)
     }
 
     /** Computes the poseidon hash of the uncompressed coordinates of a

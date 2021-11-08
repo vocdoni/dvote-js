@@ -37,6 +37,7 @@ import { Poseidon } from "../crypto/hashing"
 import { ProofZkSNARK } from "../models/protobuf/build/ts/vochain/vochain"
 import { getZkProof, ZkInputs } from "../crypto/snarks"
 import { ensure0x, strip0x } from "../util/hex"
+import { bigIntToLeBuffer, bufferLeToBigInt, hexStringToBuffer } from "../util/encoding";
 
 export const CaBundleProtobuf: any = CAbundle
 
@@ -1105,26 +1106,28 @@ export namespace VotingApi {
      * Depending on the census size, if chooses the right circuit to fetch.
      */
     export function fetchAnonymousVotingCircuit(censusSize: number) {
+        if (censusSize > 1024) throw new Error("There is no circuit available for the given census size")
+
         // TODO: Choose the circuit to use depending on the census size
 
-        return axios.get(ZK_VOTING_CIRCUIT_WASM_URI, { responseType: "arraybuffer" })
-            .then(response => {
-                if (response.status < 200 || response.status >= 400) throw new Error("Fetching failed")
+        const url = ZK_VOTING_CIRCUIT_WASM_URI
 
-                // TODO: hash and verify the data integrity
-                return Buffer.from(response.data)
-            })
+        return axios.get(url, { responseType: "arraybuffer" }).then(response => {
+            if (response.status < 200 || response.status >= 400) throw new Error("Fetching failed")
+
+            // TODO: hash and verify the data integrity
+            return new Uint8Array(response.data)
+        })
     }
 
     /** Fetches the raw bytes of the Proving key */
     export function fetchAnonymousVotingZKey() {
-        return axios.get(ZK_VOTING_PROVING_KEY_URI, { responseType: "arraybuffer" })
-            .then(response => {
-                if (response.status < 200 || response.status >= 400) throw new Error("Fetching failed")
+        return axios.get(ZK_VOTING_PROVING_KEY_URI, { responseType: "arraybuffer" }).then(response => {
+            if (response.status < 200 || response.status >= 400) throw new Error("Fetching failed")
 
-                // TODO: hash and verify the data integrity
-                return Buffer.from(response.data)
-            })
+            // TODO: hash and verify the data integrity
+            return new Uint8Array(response.data)
+        })
     }
 
     /** Fetches the raw bytes of the Verification key */
@@ -1157,10 +1160,8 @@ export namespace VotingApi {
         else if (typeof censusProof != "string" || !censusProof.match(/^(0x)?[0-9a-zA-Z]+$/))
             throw new Error("Invalid census proof (must be a hex string)")
 
-        const hexHashedKey = Poseidon.hash([secretKey]).toString(16)
-        const newKey = hexHashedKey.length % 2 == 1 ?
-            utils.zeroPad("0x0" + hexHashedKey, 32).reverse() :
-            utils.zeroPad("0x" + hexHashedKey, 32).reverse()
+        const hashedKey = Poseidon.hash([secretKey])
+        const newKey = new Uint8Array(bigIntToLeBuffer(hashedKey))
 
         const proof = Proof.fromPartial({})
         const aProof = ProofArbo.fromPartial({
@@ -1269,6 +1270,15 @@ export namespace Voting {
         return utils.keccak256(
             utils.solidityPack(["address", "uint256", "uint32", "uint32"], [entityAddress, processCountIndex, namespace, chainId])
         )
+    }
+
+    /** Returns a two-bigint array containing a representation of the given process ID */
+    export function getSnarkProcessId(processId: string): [bigint, bigint] {
+        const pid = hexStringToBuffer(processId)
+        return [
+            bufferLeToBigInt(pid.slice(0, 16)),
+            bufferLeToBigInt(pid.slice(16, 32)),
+        ]
     }
 
     // See https://docs.vocdoni.io/architecture/data-schemes/process.html#vote-envelope
@@ -1400,7 +1410,7 @@ export namespace Voting {
     }
 
     /** Packages the given parameters into a proof that can be submitted to the Vochain */
-    function packageSignedProof(processId: string, censusOrigin: ProcessCensusOrigin, censusProof: IProofArbo | IProofCA | IProofEVM) {
+    export function packageSignedProof(processId: string, censusOrigin: ProcessCensusOrigin, censusProof: IProofArbo | IProofCA | IProofEVM) {
         const proof = Proof.fromPartial({})
 
         if (censusOrigin.isOffChain || censusOrigin.isOffChainWeighted) {
@@ -1469,13 +1479,14 @@ export namespace Voting {
         const proof = Proof.fromPartial({})
 
         const nullifier = strip0x(getAnonymousVoteNullifier(secretKey, processId))
+        const snarkProcessId = getSnarkProcessId(processId)
 
         const inputs: ZkInputs = {
             censusRoot,
             censusSiblings: [],
             nullifier,
             secretKey,
-            processId: strip0x(processId),
+            processId: snarkProcessId,
             votes
         }
 

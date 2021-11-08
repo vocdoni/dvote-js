@@ -1,11 +1,12 @@
 // @ts-ignore  
 import { groth16 } from "snarkjs"
-import { ensure0x, strip0x } from "../util/hex"
+import { ensure0x } from "../util/hex"
+import { bufferLeToBigInt, hexStringToBuffer } from "../util/encoding"
 import { VoteValues } from "../common"
-import { utils } from "ethers"
+import { Keccak256 } from "./hashing"
 
 export type ZkInputs = {
-  processId: string
+  processId: [bigint, bigint]
   /** hex string */
   censusRoot: string
   /** hex strings */
@@ -35,7 +36,7 @@ export function getZkProof(input: ZkInputs, circuitWasm: Uint8Array, zKey: Uint8
     censusSiblings: input.censusSiblings.map(item => BigInt(ensure0x(item))),
     secretKey: input.secretKey,
     voteValue,
-    electionId: BigInt(ensure0x(input.processId)),
+    processId: input.processId,
     nullifier: BigInt(ensure0x(input.nullifier))
   }
   return groth16.fullProve(proverInputs, circuitWasm, zKey)

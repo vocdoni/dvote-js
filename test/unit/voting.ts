@@ -28,6 +28,7 @@ import {
     // ProofEthereumStorage,
     // ProofEthereumAccount
 } from "../../src/models/protobuf"
+import { digestVoteValue } from "../../src/crypto/snarks"
 import { strip0x } from "../../src/util/hex"
 
 let accounts: TestAccount[]
@@ -61,11 +62,56 @@ describe("Governance Process", () => {
     afterEach(() => server.stop())
 
     describe("Voting", () => {
+        describe("Process ID", () => {
+            it("Should compute a process ID", () => {
+                const items = [
+                    {
+                        address: "0xdc0809E3c052b1ca21f0fF2f9b221445543401ac",
+                        idx: 0,
+                        namespace: 1,
+                        chainId: 1,
+                        expected: "0x629fece5cb9f8165465a14159eba88497f8de3bee5363d874786014014e83ed6"
+                    }
+                ]
+
+                items.forEach((item) => {
+                    const output = Voting.getProcessId(item.address, item.idx, item.namespace, item.chainId)
+                    expect(output).to.eq(item.expected)
+                })
+            })
+
+            it("Should compute a process ID snark friendly", () => {
+                const items = [
+                    { pid: "0x8b35e10045faa886bd2e18636cd3cb72e80203a04e568c47205bf0313a0f60d1", expected: "152590315957499152479613644009734485387,278307420464299579500377304315503772392" },
+                    { pid: "0xdc44bf8c260abe06a7265c5775ea4fb68ecd1b1940cfa76c1726141ec0da5ddc", expected: "242334442065257808471833509472105350364,292917479466934938504259689620000460174" },
+                    { pid: "0x13bf966813b5299110d34b1e565d62d8c26ecb1f76f92ca8bd21fd91600360bc", expected: "287623985268769573942948104428815040275,250393392204297283875746771561056267970" },
+                ]
+
+                items.forEach((item) => {
+                    const output = Voting.getSnarkProcessId(item.pid).map(v => v.toString()).join(",")
+                    expect(output).to.eq(item.expected)
+                })
+            })
+        })
+
         describe("Anonymous votes", () => {
             it("Should produce a valid ZK proof if the user is eligible to vote in an election")
             it("Should allow to verify that a ZK proof is valid")
             it("Should compute valid anonymous nullifiers")
             it("Should package an anonymous envelope")
+            it("Should digest vote values in a snark friendly format", () => {
+                const items = [
+                    { votes: [1, 2, 3], expected: "6787106b067651e92b3e1f9f4c6b1907,64c3d8278cb3eeebf96dc2e3a8b907da" },
+                    { votes: [10, 20, 30], expected: "42b1a47d2a245da1d37494d97c8c2291,ad5a1c43272f9c9c17fdbc1803fddcf5" },
+                    { votes: [1, 5, 10], expected: "93fdc27fdb77f508905866a77528b650,ae7dd40bf2e5b2dcc9abc87ad47c8e9f" },
+                    { votes: [1, 10, 20], expected: "4435f65cab83651f39915b4f089dc48c,14415d309276528165fb256c17d141f3" }
+                ]
+
+                items.forEach(item => {
+                    const output = digestVoteValue(item.votes).map(v => v.toString(16)).join(",")
+                    expect(output).to.eq(item.expected)
+                })
+            })
         })
 
         describe("Signed votes", () => {
@@ -95,13 +141,13 @@ describe("Governance Process", () => {
                 let processId = "0x8b35e10045faa886bd2e18636cd3cb72e80203a04e568c47205bf0313a0f60d1"
                 let siblings = "0x0003000000000000000000000000000000000000000000000000000000000006f0d72fbd8b3a637488107b0d8055410180ec017a4d76dbb97bee1c3086a25e25b1a6134dbd323c420d6fc2ac3aaf8fff5f9ac5bc0be5949be64b7cfd1bcc5f1f"
 
-                const proof1 = Voting.packageProof(processId, new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), siblings)
+                const proof1 = Voting.packageSignedProof(processId, new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), siblings)
                 expect(Buffer.from((proof1.payload as ProofArboPayload).arbo.siblings).toString("hex")).to.eq(strip0x(siblings))
 
                 processId = "0x36c886bd2e18605bf03a0428be100313a0f6e568c470d135d3cb72e802045faa"
                 siblings = "0x0003000000100000000002000000000300000000000400000000000050000006f0d72fbd8b3a637488107b0d8055410180ec017a4d76dbb97bee1c3086a25e25b1a6134dbd323c420d6fc2ac3aaf8fff5f9ac5bc0be5949be64b7cfd1bcc5f1f"
 
-                const proof2 = Voting.packageProof(processId, new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), siblings)
+                const proof2 = Voting.packageSignedProof(processId, new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), siblings)
                 expect(Buffer.from((proof2.payload as ProofArboPayload).arbo.siblings).toString("hex")).to.eq(strip0x(siblings))
             })
         })
