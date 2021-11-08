@@ -28,7 +28,7 @@ import {
     // ProofEthereumStorage,
     // ProofEthereumAccount
 } from "../../src/models/protobuf"
-import { digestVoteValue } from "../../src/crypto/snarks"
+import { digestVotePackage } from "../../src/crypto/snarks"
 import { strip0x } from "../../src/util/hex"
 
 let accounts: TestAccount[]
@@ -101,14 +101,14 @@ describe("Governance Process", () => {
             it("Should package an anonymous envelope")
             it("Should digest vote values in a snark friendly format", () => {
                 const items = [
-                    { votes: [1, 2, 3], expected: "6787106b067651e92b3e1f9f4c6b1907,64c3d8278cb3eeebf96dc2e3a8b907da" },
-                    { votes: [10, 20, 30], expected: "42b1a47d2a245da1d37494d97c8c2291,ad5a1c43272f9c9c17fdbc1803fddcf5" },
-                    { votes: [1, 5, 10], expected: "93fdc27fdb77f508905866a77528b650,ae7dd40bf2e5b2dcc9abc87ad47c8e9f" },
-                    { votes: [1, 10, 20], expected: "4435f65cab83651f39915b4f089dc48c,14415d309276528165fb256c17d141f3" }
+                    { votePackage: new Uint8Array([1, 2, 3, 4]), expected: "6787106b067651e92b3e1f9f4c6b1907,64c3d8278cb3eeebf96dc2e3a8b907da" },
+                    { votePackage: new Uint8Array([10, 20, 30, 40]), expected: "42b1a47d2a245da1d37494d97c8c2291,ad5a1c43272f9c9c17fdbc1803fddcf5" },
+                    { votePackage: new Uint8Array([1, 5, 10, 50]), expected: "93fdc27fdb77f508905866a77528b650,ae7dd40bf2e5b2dcc9abc87ad47c8e9f" },
+                    { votePackage: new Uint8Array([1, 10, 20, 30]), expected: "4435f65cab83651f39915b4f089dc48c,14415d309276528165fb256c17d141f3" }
                 ]
 
                 items.forEach(item => {
-                    const output = digestVoteValue(item.votes).map(v => v.toString(16)).join(",")
+                    const output = digestVotePackage(item.votePackage).map(v => v.toString(16)).join(",")
                     expect(output).to.eq(item.expected)
                 })
             })
