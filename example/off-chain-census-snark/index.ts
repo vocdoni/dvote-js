@@ -7,7 +7,7 @@ import { GatewayPool } from "../../src/net/gateway-pool"
 import { EntityMetadataTemplate } from "../../src/models/entity"
 import { EntityApi } from "../../src/api/entity"
 import { VotingApi, Voting, AnonymousEnvelopeParams } from "../../src/api/voting"
-import { CensusOffChain, CensusOffChainApi } from "../../src/api/census"
+import { CensusOffChain, CensusOffChainApi, CensusOnChainApi } from "../../src/api/census"
 import { INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "../../src/models/process"
 import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin, ensHashAddress } from "../../src/net/contracts"
 import { VochainWaiter, EthWaiter } from "../../src/util/waiters"
@@ -324,27 +324,23 @@ async function waitUntilStarted() {
 async function submitVotes(accounts: Account[]) {
     console.log("Launching votes")
 
-    const censusRoot = processParams.censusRoot
+    const state = await VotingApi.getProcessState(processId, pool)
+    const circuitInfo = await VotingApi.getProcessCircuitInfo(processId, pool)
+    const { maxSize } = circuitInfo
+
     const processKeys = processParams.envelopeType.hasEncryptedVotes ? await VotingApi.getProcessKeys(processId, pool) : null
 
-    const circuitWasm = new Uint8Array(
-        await axios.get(config.circuitWasmUrl, { responseType: "arraybuffer" }).then(data => data.data)
-    )
-    const zKey = new Uint8Array(
-        await axios.get(config.zKeyUrl, { responseType: "arraybuffer" }).then(data => data.data)
-    )
+    const witnessGeneratorWasm = await VotingApi.fetchAnonymousWitnessGenerator(circuitInfo)
+    const zKey = await VotingApi.fetchAnonymousVotingZKey(circuitInfo)
 
     await Bluebird.map(accounts, async (account: Account, idx: number) => {
         process.stdout.write(`Starting [${idx}] ; `)
 
-        const wallet = new Wallet(account.privateKey)
-
         process.stdout.write(`Gen Proof [${idx}] ; `)
-        const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: account.publicKeyEncoded }, pool)
+        const censusProof = await CensusOnChainApi.generateProof(state.rollingCensusRoot, account.secretKey, pool)
             .catch(err => {
-                console.error("\nCensusOffChainApi.generateProof ERR", account, err)
+                console.error("\nCensusOnChainApi.generateProof ERR", account, err)
                 if (config.stopOnError) throw err
-                return null
             })
         if (!censusProof) return // skip when !config.stopOnError
 
@@ -353,8 +349,11 @@ async function submitVotes(accounts: Account[]) {
 
         const params: AnonymousEnvelopeParams = {
             votes: choices,
-            censusRoot,
-            circuitWasm,
+            rollingCensusRoot: state.rollingCensusRoot,
+            siblings: censusProof.siblings,
+            keyIndex: censusProof.index,
+            maxSize,
+            witnessGeneratorWasm,
             secretKey: account.secretKey,
             zKey,
             processId
@@ -366,7 +365,7 @@ async function submitVotes(accounts: Account[]) {
         const envelope = await Voting.packageAnonymousEnvelope(params)
 
         process.stdout.write(`Sending [${idx}] ; `)
-        await VotingApi.submitEnvelope(envelope, wallet, pool)
+        await VotingApi.submitEnvelope(envelope, null, pool)
             .catch(err => {
                 console.error("\nsubmitEnvelope ERR", account.publicKeyEncoded, envelope, err)
                 if (config.stopOnError) throw err
@@ -518,8 +517,6 @@ function getConfig(): Config {
     assert(!config.dvoteGatewayPublicKey || typeof config.dvoteGatewayPublicKey == "string", "config.yaml > dvoteGatewayPublicKey should be a string")
     assert(typeof config.numAccounts == "number", "config.yaml > numAccounts should be a number")
     assert(typeof config.maxConcurrency == "number", "config.yaml > maxConcurrency should be a number")
-    assert(typeof config.circuitWasmUrl == "string", "config.yaml > circuitWasmUrl should be a string")
-    assert(typeof config.zKeyUrl == "string", "config.yaml > zKeyUrl should be a string")
     assert(typeof config.encryptedVote == "boolean", "config.yaml > encryptedVote should be a boolean")
     assert(typeof config.votesPattern == "string", "config.yaml > votesPattern should be a string")
     return config

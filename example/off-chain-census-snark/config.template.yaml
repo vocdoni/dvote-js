@@ -17,9 +17,6 @@ dvoteGatewayPublicKey:                             # If set, overrides bootnodes
 numAccounts: 1000
 maxConcurrency: 450
 
-circuitWasmUrl: "https://github.com/vocdoni/zk-circuits-artifacts/raw/master/zkcensusproof/dev/1024/circuit.wasm"
-zKeyUrl: "https://github.com/vocdoni/zk-circuits-artifacts/raw/master/zkcensusproof/dev/1024/circuit_final.zkey"
-
 encryptedVote: true
 votesPattern: "all-0"   #  Vote the first option on all questions
 #votesPattern: "all-1"  #  Vote the second option on all questions

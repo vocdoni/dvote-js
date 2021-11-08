@@ -18,7 +18,7 @@ export namespace Poseidon {
 
     /** Computes the raw poseidon hash of an array of big integers */
     export function hash(inputs: bigint[]): bigint {
-        if (inputs.some(value => value >= Q)) throw new Error("One or more inputs are out of the Poseidon field")
+        if (inputs.some(value => value >= Q || value < BigInt("0"))) throw new Error("One or more inputs are out of the Poseidon field")
         return poseidon(inputs)
     }
 

@@ -1,6 +1,7 @@
 import { ContentUri } from "./content-uri"
-import { sha3_256 } from 'js-sha3'
+import { sha256 } from "@ethersproject/sha2"
 import { Buffer } from 'buffer/'
+import { strip0x } from "../util/hex";
 
 export class ContentHashedUri extends ContentUri {
     protected _hash: string
@@ -19,7 +20,10 @@ export class ContentHashedUri extends ContentUri {
         super(terms[0]) // Set the Content URI
 
         if (terms[1]) {
-            this._hash = terms[1]
+            if (!/^(0x)?[0-9a-fA-F]+$/.test(terms[1])) throw new Error("Invalid hash hex string")
+            else if (terms[1].length % 2 != 0) throw new Error("The hash contains an odd length")
+
+            this._hash = strip0x(terms[1])
         }
     }
 
@@ -32,12 +36,15 @@ export class ContentHashedUri extends ContentUri {
     /** Returns the hash on the content referenced by the underlying Content URI */
     public get hash(): string { return this._hash || null }
 
-    public setHashFrom(data: string | Uint8Array | Buffer | number[]) {
-        this._hash = ContentHashedUri.hashFrom(data)
+    /** Verifies that the given data produces the current hash */
+    public verify(data: Uint8Array | Buffer | number[]) {
+        if (!this._hash) throw new Error("The Content URI hash is empty")
+
+        return this._hash == ContentHashedUri.hash(data)
     }
 
-    /** Computes the SHA3 256 hash of the content provided */
-    static hashFrom(data: string | Uint8Array | Buffer | number[]): string {
-        return sha3_256(data)
+    /** Computes the SHA256 hash of the content provided */
+    static hash(data: Uint8Array | Buffer | number[]): string {
+        return strip0x(sha256(data))
     }
 }

@@ -1,7 +1,7 @@
 import { Wallet, Signer, providers, BigNumber, ContractReceipt, Contract } from "ethers"
 import { IRequestParameters } from "../net/gateway-dvote"
 import { Keccak256, Poseidon } from "../crypto/hashing"
-import { hexStringToBuffer } from "../util/encoding"
+import { bigIntToLeBuffer, bufferLeToBigInt, hexStringToBuffer } from "../util/encoding"
 import { CENSUS_MAX_BULK_SIZE } from "../constants"
 import { ERC20Proof } from "@vocdoni/storage-proofs-eth"
 import { compressPublicKey } from "../crypto/elliptic"
@@ -349,6 +349,40 @@ export namespace CensusOffChainApi {
                 const message = (error.message) ? "The census list could not be fetched: " + error.message : "The census list could not be fetched"
                 throw new Error(message)
             })
+    }
+}
+
+export namespace CensusOnChainApi {
+    /**
+     * Fetch the proof of the given claim for the rolling census generated on the Vochain
+     * @param rollingCensusRoot The Merkle Root of the Census to query
+     * @param secretKey Base64-encoded claim of the leaf to request
+     * @param gateway
+     */
+    export function generateProof(rollingCensusRoot: string, secretKey: bigint, gateway: IGatewayClient): Promise<{ index: bigint, siblings: Uint8Array }> {
+        if (!rollingCensusRoot || !secretKey || !gateway) return Promise.reject(new Error("Invalid parameters"))
+        else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
+
+        const hashedSecretKey = Poseidon.hash([secretKey])
+
+        return gateway.sendRequest({
+            method: "genProof",
+            censusId: rollingCensusRoot,
+            digested: true,
+            censusKey: bigIntToLeBuffer(hashedSecretKey).toString("base64"),
+            // censusValue: null
+        }).then(response => {
+            if (typeof response.siblings != "string" || !response.siblings.length) throw new Error("The census proof could not be fetched")
+
+            const responseBuff = Buffer.from(response.siblings, "base64")
+            const index = bufferLeToBigInt(responseBuff.slice(0, 8))
+            const siblings = new Uint8Array(responseBuff.slice(8))
+
+            return { index, siblings }
+        }).catch((error) => {
+            const message = (error.message) ? error.message : "The request could not be completed"
+            throw new Error(message)
+        })
     }
 }
 

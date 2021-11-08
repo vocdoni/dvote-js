@@ -2,19 +2,19 @@
 import { groth16 } from "snarkjs"
 import { ensure0x } from "../util/hex"
 import { bufferLeToBigInt, hexStringToBuffer } from "../util/encoding"
-import { VoteValues } from "../common"
-import { Keccak256 } from "./hashing"
+import { sha256 } from "@ethersproject/sha2"
 
 export type ZkInputs = {
   processId: [bigint, bigint]
   /** hex string */
   censusRoot: string
   /** hex strings */
-  censusSiblings: string[]
+  censusSiblings: bigint[]
+  keyIndex: bigint
   secretKey: bigint
-  votes: VoteValues
+  votePackage: Uint8Array
   /** hex string */
-  nullifier: string
+  nullifier: bigint
 }
 
 type ZkReturn = {
@@ -28,18 +28,19 @@ type ZkReturn = {
   publicSignals: string[]
 }
 
-export function getZkProof(input: ZkInputs, circuitWasm: Uint8Array, zKey: Uint8Array): Promise<ZkReturn> {
-  const voteValue = digestVoteValue(input.votes)
+export function getZkProof(input: ZkInputs, witnessGeneratorWasm: Uint8Array, zKey: Uint8Array): Promise<ZkReturn> {
+  const voteHash = digestVotePackage(input.votePackage)
 
   const proverInputs = {
     censusRoot: BigInt(ensure0x(input.censusRoot)),
-    censusSiblings: input.censusSiblings.map(item => BigInt(ensure0x(item))),
+    censusSiblings: input.censusSiblings,
     secretKey: input.secretKey,
-    voteValue,
+    index: input.keyIndex,
+    voteHash,
     processId: input.processId,
-    nullifier: BigInt(ensure0x(input.nullifier))
+    nullifier: input.nullifier
   }
-  return groth16.fullProve(proverInputs, circuitWasm, zKey)
+  return groth16.fullProve(proverInputs, witnessGeneratorWasm, zKey)
     .then(result => {
       if (!result) throw new Error("The ZK proof could not be generated")
       const { proof, publicSignals } = result
@@ -77,14 +78,11 @@ export function verifyZkProof(verificationKey: { [k: string]: any }, publicSigna
 // HELPERS
 ///////////////////////////////////////////////////////////////////////////////
 
-function digestVoteValue(votes: VoteValues): [bigint, bigint] {
-  // TODO: confirm serialization method
-  const strVotes = votes.map(v => v.toString()).join(",")  // 1234,2345,3456,4567,5678
-  const strVotesBytes = Buffer.from(strVotes, "utf-8")
-  const hexHashed = strip0x(utils.keccak256(strVotesBytes))
+export function digestVotePackage(votePackage: Uint8Array): [bigint, bigint] {
+  const hexHashed = sha256(votePackage)
+  const buffHashed = hexStringToBuffer(hexHashed)
   return [
-    // little-endian BigInt representations
-    BigInt("0x" + hexHashed.slice(0, 32).match(/.{2}/g).reverse().join("")),
-    BigInt("0x" + hexHashed.slice(32, 64).match(/.{2}/g).reverse().join(""))
+    bufferLeToBigInt(buffHashed.slice(0, 16)),
+    bufferLeToBigInt(buffHashed.slice(16, 32)),
   ]
 }

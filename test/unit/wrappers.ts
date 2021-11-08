@@ -65,28 +65,33 @@ describe("Wrappers", () => {
 
         it("Should allow to hash properly", () => {
             const str1 = "Hello world"
+            const buff1 = Buffer.from(str1)
             const str2 = "I am a string to be hashed"
-            let hash1, hash2
+            const buff2 = Buffer.from(str2)
+
+            let hash1: string, hash2: string
 
             // no hash yet
             const curi = new ContentHashedUri("ipfs://1234,https://server/file,http://server/file")
             expect(curi.hash).to.equal(null)
 
-            hash1 = ContentHashedUri.hashFrom(str1)
-            hash2 = ContentHashedUri.hashFrom(str2)
-            expect(hash1).to.equal("369183d3786773cef4e56c7b849e7ef5f742867510b676d6b38f8e38a222d8a2")
-            expect(hash2).to.equal("9fa024c30ba0daaad55a84b75f48379c4751d191a7e8c5817d3aa8712eb37470")
+            hash1 = ContentHashedUri.hash(buff1)
+            hash2 = ContentHashedUri.hash(buff2)
+            expect(hash1).to.equal("64ec88ca00b268e5ba1a35678a1b5316d212f4f366b2477232534a8aeca37f3c")
+            expect(hash2).to.equal("56a3222b874d8adaf85265f96793c86085834e7d8bacee269c6a4f3ed1a10525")
             expect(hash1).to.not.equal(hash2)
 
-            curi.setHashFrom(str1)
-            expect(curi.hash).to.equal(hash1)
-
-            curi.setHashFrom(str2)
-            expect(curi.hash).to.equal(hash2)
+            // Verify
+            const curi1 = new ContentHashedUri(`https://server/file1!${hash1}`)
+            expect(curi1.hash).to.eq(hash1)
+            expect(curi1.verify(buff1)).to.eq(true)
+            const curi2 = new ContentHashedUri(`https://server/file2!${hash2}`)
+            expect(curi2.hash).to.eq(hash2)
+            expect(curi2.verify(buff2)).to.eq(true)
 
             // Buffer
-            expect(ContentHashedUri.hashFrom(Buffer.from(str1))).to.equal(hash1)
-            expect(ContentHashedUri.hashFrom(Buffer.from(str2))).to.equal(hash2)
+            expect(ContentHashedUri.hash(Buffer.from(str1))).to.equal(hash1)
+            expect(ContentHashedUri.hash(Buffer.from(str2))).to.equal(hash2)
         })
     })
 

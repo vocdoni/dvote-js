@@ -4,7 +4,7 @@ import axios from "axios"
 import { FileApi } from "./file"
 import { EntityApi } from "./entity"
 import { ProcessMetadata, checkValidProcessMetadata, INewProcessParams, IProofEVM, IProofCA, IProofArbo, INewProcessErc20Params, ProcessResultsSingleChoice, SingleChoiceQuestionResults, ProcessResultsSingleQuestion } from "../models/process"
-import { VOCHAIN_BLOCK_TIME, XDAI_GAS_PRICE, XDAI_CHAIN_ID, SOKOL_CHAIN_ID, SOKOL_GAS_PRICE, ZK_VOTING_CIRCUIT_WASM_URI, ZK_VOTING_PROVING_KEY_URI, ZK_VOTING_VERIFICATION_KEY_URI } from "../constants"
+import { VOCHAIN_BLOCK_TIME, XDAI_GAS_PRICE, XDAI_CHAIN_ID, SOKOL_CHAIN_ID, SOKOL_GAS_PRICE, ZK_VOTING_CIRCUIT_WASM_FILE_NAME, ZK_VOTING_ZKEY_FILE_NAME, ZK_VOTING_VERIFICATION_KEY_FILE_NAME } from "../constants"
 import { BytesSignature } from "../crypto/data-signing"
 import { Buffer } from "buffer/"  // Previously using "arraybuffer-to-string"
 import { Asymmetric } from "../crypto/encryption"
@@ -37,7 +37,9 @@ import { Poseidon } from "../crypto/hashing"
 import { ProofZkSNARK } from "../models/protobuf/build/ts/vochain/vochain"
 import { getZkProof, ZkInputs } from "../crypto/snarks"
 import { ensure0x, strip0x } from "../util/hex"
-import { bigIntToLeBuffer, bufferLeToBigInt, hexStringToBuffer } from "../util/encoding";
+import { bigIntToLeBuffer, bufferLeToBigInt, hexStringToBuffer } from "../util/encoding"
+import { sha256 } from "@ethersproject/sha2"
+import { ContentHashedUri } from "../wrappers/content-hashed-uri";
 
 export const CaBundleProtobuf: any = CAbundle
 
@@ -61,9 +63,15 @@ export type AnonymousEnvelopeParams = {
     /** The BabyJubJub secret key registered early */
     secretKey: bigint,
     /** Hex string */
-    censusRoot: string,
-    /** The raw bytes of the wasm file implementing the circuit */
-    circuitWasm: Uint8Array,
+    rollingCensusRoot: string,
+    /** Array containing the Merkle Tree sibling nodes for the key */
+    siblings: Uint8Array,
+    /** The index where the key is stored within the Merkle Tree */
+    keyIndex: bigint,
+    /** The max census size */
+    maxSize: number,
+    /** The raw bytes of the wasm file implementing the witness generation */
+    witnessGeneratorWasm: Uint8Array,
     /** The raw bytes of the circuit key */
     zKey: Uint8Array,
     processKeys?: ProcessKeys
@@ -90,6 +98,7 @@ export type ProcessState = {
     censusOrigin: VochainCensusOrigin,
     censusRoot: string,
     censusURI: string,
+    rollingCensusRoot: string,
     metadata: string,
     /** Example: 2021-05-12T15:52:10-05:00 */
     creationTime: string,
@@ -137,6 +146,21 @@ export type ProcessKeys = {
     encryptionPrivKeys?: { idx: number, key: string }[],
     commitmentKeys?: { idx: number, key: string }[],
     revealKeys?: { idx: number, key: string }[]
+}
+
+export type ProcessCircuitInfo = {
+    /** Base URI to fetch from */
+    uri: string
+    /** Relative path where the circuit is hosted */
+    circuitPath: string
+    /** Maximum census size supported by the circuit */
+    maxSize: number
+    /** Base64 */
+    witnessHash: string
+    /** Base64 */
+    zKeyHash: string
+    /** Base64 */
+    vKHash: string
 }
 
 type EnvelopeMeta = {
@@ -313,6 +337,31 @@ export namespace VotingApi {
             .catch(error => {
                 const message = (error.message) ? "Could not fetch the process data: " + error.message : "Could not fetch the process data"
                 throw new Error(message)
+            })
+    }
+
+    /**
+     * Fetch the details of the ZK circuit used for the given process ID
+     * @param processId
+     * @param gateway
+     * @returns The relevant parameters and the SHA256 digests of the witness, the zKey and the verification key
+     */
+    export function getProcessCircuitInfo(processId: string, gateway: IGatewayClient): Promise<ProcessCircuitInfo> {
+        if (!processId) return Promise.reject(new Error("Empty process ID"))
+        else if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
+
+        return gateway.sendRequest({ method: "getProcessCircuitConfig", processId })
+            .then(response => {
+                if (!response?.circuitConfig) throw new Error("Invalid response")
+
+                return {
+                    uri: response.circuitConfig.uri,
+                    circuitPath: response.circuitConfig.circuitPath,
+                    maxSize: response.circuitConfig.parameters[0],
+                    witnessHash: "0x" + Buffer.from(response.circuitConfig.witnessHash, "base64").toString("hex"),
+                    zKeyHash: "0x" + Buffer.from(response.circuitConfig.zKeyHash, "base64").toString("hex"),
+                    vKHash: "0x" + Buffer.from(response.circuitConfig.vKHash, "base64").toString("hex")
+                }
             })
     }
 
@@ -1102,43 +1151,39 @@ export namespace VotingApi {
         }
     }
 
-    /** Fetches the raw bytes of the Voting circuit WASM file.
+    /** Fetches the raw bytes of the WASM file used to generate the witness.
      * Depending on the census size, if chooses the right circuit to fetch.
      */
-    export function fetchAnonymousVotingCircuit(censusSize: number) {
-        if (censusSize > 1024) throw new Error("There is no circuit available for the given census size")
+    export function fetchAnonymousWitnessGenerator(circuitInfo: ProcessCircuitInfo) {
+        const uri = circuitInfo.uri + "/" + circuitInfo.circuitPath + "/" + ZK_VOTING_CIRCUIT_WASM_FILE_NAME
+        const hexHash = Buffer.from(circuitInfo.witnessHash, "base64").toString("hex")
+        const curi = new ContentHashedUri(uri + "!" + hexHash)
 
-        // TODO: Choose the circuit to use depending on the census size
-
-        const url = ZK_VOTING_CIRCUIT_WASM_URI
-
-        return axios.get(url, { responseType: "arraybuffer" }).then(response => {
-            if (response.status < 200 || response.status >= 400) throw new Error("Fetching failed")
-
-            // TODO: hash and verify the data integrity
-            return new Uint8Array(response.data)
+        return FileApi.fetchBytes(curi).then(data => {
+            return new Uint8Array(data)
         })
     }
 
     /** Fetches the raw bytes of the Proving key */
-    export function fetchAnonymousVotingZKey() {
-        return axios.get(ZK_VOTING_PROVING_KEY_URI, { responseType: "arraybuffer" }).then(response => {
-            if (response.status < 200 || response.status >= 400) throw new Error("Fetching failed")
+    export function fetchAnonymousVotingZKey(circuitInfo: ProcessCircuitInfo) {
+        const uri = circuitInfo.uri + "/" + circuitInfo.circuitPath + "/" + ZK_VOTING_ZKEY_FILE_NAME
+        const hexHash = Buffer.from(circuitInfo.zKeyHash, "base64").toString("hex")
+        const curi = new ContentHashedUri(uri + "!" + hexHash)
 
-            // TODO: hash and verify the data integrity
-            return new Uint8Array(response.data)
+        return FileApi.fetchBytes(curi).then(data => {
+            return new Uint8Array(data)
         })
     }
 
     /** Fetches the raw bytes of the Verification key */
-    export function fetchAnonymousVotingVerificationKey() {
-        return axios.get(ZK_VOTING_VERIFICATION_KEY_URI, { responseType: "arraybuffer" })
-            .then(response => {
-                if (response.status < 200 || response.status >= 400) throw new Error("Fetching failed")
+    export function fetchAnonymousVotingVerificationKey(circuitInfo: ProcessCircuitInfo) {
+        const uri = circuitInfo.uri + "/" + circuitInfo.circuitPath + "/" + ZK_VOTING_VERIFICATION_KEY_FILE_NAME
+        const hexHash = Buffer.from(circuitInfo.vKHash, "base64").toString("hex")
+        const curi = new ContentHashedUri(uri + "!" + hexHash)
 
-                // TODO: hash and verify the data integrity
-                return Buffer.from(response.data)
-            })
+        return FileApi.fetchBytes(curi).then(data => {
+            return new Uint8Array(data)
+        })
     }
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -1233,9 +1278,13 @@ export namespace VotingApi {
      * @param nullifier
      * @param gateway
      */
-    export function getEnvelopeStatus(processId: string, nullifier: string, gateway: IGatewayDVoteClient): Promise<{ registered: boolean, date?: Date, block?: number }> {
+    export function getEnvelopeStatus(processId: string, nullifier: string | bigint, gateway: IGatewayDVoteClient): Promise<{ registered: boolean, date?: Date, block?: number }> {
         if (!processId || !nullifier) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
+
+        if (typeof nullifier == "bigint") {
+            nullifier = "0x" + bigIntToLeBuffer(nullifier).toString("hex")
+        }
 
         return gateway.sendRequest({ method: "getEnvelopeStatus", processId, nullifier })
             .then((response) => {
@@ -1340,12 +1389,40 @@ export namespace Voting {
                 throw new Error("Some encryption public keys are not valid")
             }
         }
+        const censusSiblings = unpackSiblings(params.siblings)
+        const nullifier = getAnonymousVoteNullifier(params.secretKey, params.processId)
+        const { votePackage, keyIndexes } = packageVoteContent(params.votes, params.processKeys)
 
-        return packageZkProof(params.processId, params.secretKey, params.censusRoot, params.votes, params.circuitWasm, params.zKey)
-            .then(proof => {
+        const inputs: ZkInputs = {
+            censusRoot: params.rollingCensusRoot,
+            censusSiblings,
+            keyIndex: params.keyIndex,
+            nullifier,
+            secretKey: params.secretKey,
+            processId: getSnarkProcessId(params.processId),
+            votePackage
+        }
+
+        return getZkProof(inputs, params.witnessGeneratorWasm, params.zKey)
+            .then(result => {
+                const { proof: zkProof, publicSignals } = result
+
+                // [w, x, y, z] => [[w, x], [y, z]]
+                const b = [zkProof.b[0][0], zkProof.b[0][1], zkProof.b[1][0], zkProof.b[1][1]]
+
+                const zkSnark = ProofZkSNARK.fromPartial({
+                    a: zkProof.a,
+                    b,
+                    c: zkProof.c,
+                    publicInputs: publicSignals,
+                    // type: ProofZkSNARK_Type.UNKNOWN
+                })
+
+                const proof = Proof.fromPartial({})
+                proof.payload = { $case: "zkSnark", zkSnark }
+
                 const nonce = strip0x(Random.getHex())
-                const { votePackage, keyIndexes } = packageVoteContent(params.votes, params.processKeys)
-                const hexNullifier = getAnonymousVoteNullifier(params.secretKey, params.processId)
+                const nullifier = getAnonymousVoteNullifier(params.secretKey, params.processId)
 
                 return VoteEnvelope.fromPartial({
                     proof,
@@ -1353,12 +1430,54 @@ export namespace Voting {
                     nonce: new Uint8Array(Buffer.from(nonce, "hex")),
                     votePackage: new Uint8Array(votePackage),
                     encryptionKeyIndexes: keyIndexes ? keyIndexes : [],
-                    nullifier: Buffer.from(hexNullifier)
+                    nullifier: new Uint8Array(bigIntToLeBuffer(nullifier))
                 })
             })
             .catch(err => {
                 throw new Error("The anonymous vote envelope could not be generated")
             })
+    }
+
+    const HASH_FUNCTION_LEN = 32
+
+    function unpackSiblings(siblings: Uint8Array): bigint[] {
+        if (siblings.length < 4) throw new Error("Invalid siblings buffer")
+
+        const fullLen = Number(bufferLeToBigInt(siblings.slice(0, 2)))
+        const bitmapBytesLength = Number(bufferLeToBigInt(siblings.slice(2, 4)))
+
+        if (siblings.length != fullLen) throw new Error("The expected length doesn't match the siblings size")
+
+        const result: bigint[] = []
+
+        const bitmapBytes = siblings.slice(4, 4 + bitmapBytesLength)
+        const bitmap = bytesToBitmap(bitmapBytes)
+
+        const siblingsBytes = siblings.slice(4 + bitmapBytesLength)
+        const emptySibling = BigInt("0")
+
+        let siblingIdx = 0
+        for (let i = 0; i < bitmap.length; i++) {
+            if (siblingIdx >= bitmap.length) break
+            if (bitmap[i]) {
+                const v = siblingsBytes.slice(siblingIdx, siblingIdx + HASH_FUNCTION_LEN)
+                result.push(bufferLeToBigInt(v))
+            }
+            else {
+                result.push(emptySibling)
+            }
+        }
+        return result
+    }
+
+    function bytesToBitmap(bytes: Uint8Array): boolean[] {
+        const result: boolean[] = []
+        for (let i = 0; i < bytes.length; i++) {
+            for (let j = 0; j < bytes.length; j++) {
+                result.push(!!(bytes[i] & (1 << j)))
+            }
+        }
+        return result
     }
 
     /**
@@ -1474,41 +1593,6 @@ export namespace Voting {
         return proof
     }
 
-    function packageZkProof(processId: string, secretKey: bigint, censusRoot: string,
-        votes: VoteValues, circuitWasm: Uint8Array, zKey: Uint8Array) {
-        const proof = Proof.fromPartial({})
-
-        const nullifier = strip0x(getAnonymousVoteNullifier(secretKey, processId))
-        const snarkProcessId = getSnarkProcessId(processId)
-
-        const inputs: ZkInputs = {
-            censusRoot,
-            censusSiblings: [],
-            nullifier,
-            secretKey,
-            processId: snarkProcessId,
-            votes
-        }
-
-        return getZkProof(inputs, circuitWasm, zKey).then(result => {
-            const { proof: zkProof, publicSignals } = result
-
-            // [w, x, y, z] => [[w, x], [y, z]]
-            const b = [zkProof.b[0][0], zkProof.b[0][1], zkProof.b[1][0], zkProof.b[1][1]]
-
-            const zkSnark = ProofZkSNARK.fromPartial({
-                a: zkProof.a,
-                b,
-                c: zkProof.c,
-                publicInputs: publicSignals,
-                // type: ProofZkSNARK_Type.UNKNOWN
-            })
-            proof.payload = { $case: "zkSnark", zkSnark }
-
-            return proof
-        })
-    }
-
     function resolveCaProof(proof: IProofArbo | IProofCA | IProofEVM): IProofCA {
         if (!proof || typeof proof == "string") return null
         // else if (proof["key"] || proof["proof"] || proof["value"]) return null
@@ -1541,8 +1625,8 @@ export namespace Voting {
      * @param secretKey BigInt that has been registered on the Vochain for the given proposal
      * @param processId */
     export function getAnonymousVoteNullifier(secretKey: bigint, processId: string) {
-        const pid = BigInt(ensure0x(processId))
-        return ensure0x(Poseidon.hash([secretKey, pid]).toString(16))
+        const snarkProcessId = getSnarkProcessId(processId)
+        return Poseidon.hash([secretKey, snarkProcessId[0], snarkProcessId[1]])
     }
 
     /**

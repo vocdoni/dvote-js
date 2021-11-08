@@ -55,12 +55,11 @@ export namespace FileApi {
                     return Promise.reject(new Error("Invalid response received from the gateway"))
                 }
 
-                if (cUri.hash) {
-                    // TODO: Compute the SHA3-256 hash of the contents
-                    console.warn("TO DO: Compute the SHA3-256 hash of the contents")
+                const result = Buffer.from(response.content, "base64")
+                if (cUri.hash && !cUri.verify(result)) {
+                    throw new Error("The fetched artifact doesn't match the expected hash")
                 }
-
-                return Buffer.from(response.content, "base64")
+                return result
             } catch (err) {
                 const msg = err?.message?.toString?.()
                 if (msg != "The operation cannot be completed" && msg != "The request timed out") throw err
@@ -71,13 +70,11 @@ export namespace FileApi {
         // Attempt 2: fetch fallback from IPFS public gateways
         if (cUri.ipfsHash) {
             try {
-                var response = await promiseWithTimeout(IPFS.fetchHash(cUri.ipfsHash), MAX_FETCH_TIMEOUT)
+                const response = await promiseWithTimeout(IPFS.fetchHash(cUri.ipfsHash), MAX_FETCH_TIMEOUT)
                 if (response) {
-                    if (cUri.hash) {
-                        // TODO: Compute the SHA3-256 hash of the contents
-                        console.warn("TO DO: Compute the SHA3-256 hash of the contents")
+                    if (cUri.hash && !cUri.verify(response)) {
+                        throw new Error("The fetched artifact doesn't match the expected hash")
                     }
-
                     return response
                 }
             } catch (err) {
@@ -88,20 +85,20 @@ export namespace FileApi {
         // Attempt 3: fetch from fallback https endpoints
         for (let uri of cUri.httpsItems) {
             try {
-                const res = await promiseWithTimeout(axios.get(uri), MAX_FETCH_TIMEOUT)
+                const res = await promiseWithTimeout(
+                    axios.get(uri, { responseType: "arraybuffer" }),
+                    MAX_FETCH_TIMEOUT
+                )
                 if (!res || !res.data || res.status < 200 || res.status >= 300) continue
-                else if (cUri.hash) {
-                    // TODO: Compute the SHA3-256 hash of the contents
-                    console.warn("TO DO: Compute the SHA3-256 hash of the contents")
-                }
 
-                // If the response is not a string, it's because it has been parsed
-                // into a JSON object, so we stringify it back
-                if (typeof res.data != "string") {
-                    res.data = JSON.stringify(res.data)
+                const result = Buffer.from(res.data)
+                if (cUri.hash && !cUri.verify(result)) {
+                    throw new Error("The fetched artifact doesn't match the expected hash")
                 }
-                return Buffer.from(res.data)
+                return result
             } catch (err) {
+                if (err.message == "The fetched artifact doesn't match the expected hash") throw err
+
                 // keep trying
                 continue
             }
