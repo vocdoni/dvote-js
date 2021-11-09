@@ -1,6 +1,5 @@
 import { Wallet, Signer, utils, ContractTransaction, BigNumber, providers } from "ethers"
 import { GatewayArchive, GatewayArchiveApi } from "../net/gateway-archive";
-import axios from "axios"
 import { FileApi } from "./file"
 import { EntityApi } from "./entity"
 import { ProcessMetadata, checkValidProcessMetadata, INewProcessParams, IProofEVM, IProofCA, IProofArbo, INewProcessErc20Params, ProcessResultsSingleChoice, SingleChoiceQuestionResults, ProcessResultsSingleQuestion } from "../models/process"
@@ -23,7 +22,6 @@ import {
     CAbundle,
     VochainCensusOrigin,
     VochainProcessStatus,
-    RegisterKeyTx,
     SourceNetworkId
 } from "../models/protobuf"
 import { DVoteGateway, DVoteGatewayResponseBody, IRequestParameters } from "../net/gateway-dvote"
@@ -38,7 +36,6 @@ import { ProofZkSNARK } from "../models/protobuf/build/ts/vochain/vochain"
 import { getZkProof, ZkInputs } from "../crypto/snarks"
 import { ensure0x, strip0x } from "../util/hex"
 import { bigIntToLeBuffer, bufferLeToBigInt, hexStringToBuffer } from "../util/encoding"
-import { sha256 } from "@ethersproject/sha2"
 import { ContentHashedUri } from "../wrappers/content-hashed-uri";
 
 export const CaBundleProtobuf: any = CAbundle
@@ -1189,55 +1186,6 @@ export namespace VotingApi {
     ///////////////////////////////////////////////////////////////////////////////
     // VOCHAIN SETTERS
     ///////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * Get status of an envelope
-     * @param processId
-     * @param proof A valid franchise proof. See `packageSignedProof`.
-     * @param secretKey The bytes of the secret key to use
-     * @param weight Hex string (by default "0x1")
-     * @param walletOrSigner
-     * @param gateway
-     */
-    export function registerVoterKey(processId: string, censusProof: IProofArbo, secretKey: bigint, weight: string = "0x01", walletOrSigner: Wallet | Signer, gateway: IGatewayDVoteClient): Promise<any> {
-        if (!processId || typeof secretKey !== "bigint") return Promise.reject(new Error("Invalid parameters"))
-        else if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
-        else if (typeof censusProof != "string" || !censusProof.match(/^(0x)?[0-9a-zA-Z]+$/))
-            throw new Error("Invalid census proof (must be a hex string)")
-
-        const hashedKey = Poseidon.hash([secretKey])
-        const newKey = new Uint8Array(bigIntToLeBuffer(hashedKey))
-
-        const proof = Proof.fromPartial({})
-        const aProof = ProofArbo.fromPartial({
-            siblings: new Uint8Array(Buffer.from(strip0x(censusProof as string), "hex")),
-            type: ProofArbo_Type.BLAKE2B
-        })
-        proof.payload = { $case: "arbo", arbo: aProof }
-
-        const registerKey: RegisterKeyTx = {
-            newKey,
-            processId: Buffer.from(strip0x(processId), "hex"),
-            nonce: Random.getBytes(32),
-            proof,
-            weight: Buffer.from(strip0x(weight), "hex")
-        }
-
-        const tx = Tx.encode({ payload: { $case: "registerKey", registerKey } })
-        const txBytes = tx.finish()
-
-        return BytesSignature.sign(txBytes, walletOrSigner).then(hexSignature => {
-            const signature = new Uint8Array(Buffer.from(strip0x(hexSignature), "hex"))
-            const signedTx = SignedTx.encode({ tx: txBytes, signature })
-            const signedTxBytes = signedTx.finish()
-            const base64Payload = Buffer.from(signedTxBytes).toString("base64")
-
-            return gateway.sendRequest({ method: "submitRawTx", payload: base64Payload })
-        }).catch((error) => {
-            const message = (error.message) ? "The key cannot be registered: " + error.message : "The key cannot be registered"
-            throw new Error(message)
-        })
-    }
 
     /**
      * Submit the vote envelope to a Gateway

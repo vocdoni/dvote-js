@@ -34,8 +34,8 @@ export function getZkProof(input: ZkInputs, witnessGeneratorWasm: Uint8Array, zK
   const proverInputs = {
     censusRoot: BigInt(ensure0x(input.censusRoot)),
     censusSiblings: input.censusSiblings,
-    secretKey: input.secretKey,
     index: input.keyIndex,
+    secretKey: input.secretKey,
     voteHash,
     processId: input.processId,
     nullifier: input.nullifier

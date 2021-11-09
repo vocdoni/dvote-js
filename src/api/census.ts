@@ -7,9 +7,13 @@ import { ERC20Proof } from "@vocdoni/storage-proofs-eth"
 import { compressPublicKey } from "../crypto/elliptic"
 import { blind as _blind, unblind as _unblind, verify as _verify, signatureFromHex as _signatureFromHex, signatureToHex as _signatureToHex, pointFromHex as _pointFromHex, pointToHex as _pointToHex, UserSecretData, UnblindedSignature, BigInteger, Point } from "blindsecp256k1"
 import { hexZeroPad } from "ethers/lib/utils"
-import { IGatewayClient, IGatewayWeb3Client } from "../common"
-import { Census_Type } from "../models/protobuf/build/ts/vochain/vochain"
-import { ensure0x } from "../util/hex"
+import { IGatewayClient, IGatewayDVoteClient, IGatewayWeb3Client } from "../common"
+import { Census_Type, Proof, ProofArbo, ProofArbo_Type, SignedTx, Tx } from "../models/protobuf/build/ts/vochain/vochain"
+import { ensure0x, strip0x } from "../util/hex"
+import { RegisterKeyTx } from "../models/protobuf"
+import { IProofArbo } from "../models/process"
+import { Random } from "../util/random"
+import { BytesSignature } from "../crypto/data-signing"
 
 // import ContentURI from "../wrappers/content-uri"
 
@@ -354,12 +358,61 @@ export namespace CensusOffChainApi {
 
 export namespace CensusOnChainApi {
     /**
+     * Get status of an envelope
+     * @param processId
+     * @param proof A valid franchise proof. See `packageSignedProof`.
+     * @param secretKey The bytes of the secret key to use
+     * @param weight Hex string (by default "0x1")
+     * @param walletOrSigner
+     * @param gateway
+     */
+    export function registerVoterKey(processId: string, censusProof: IProofArbo, secretKey: bigint, weight: string = "0x01", walletOrSigner: Wallet | Signer, gateway: IGatewayDVoteClient): Promise<any> {
+        if (!processId || typeof secretKey !== "bigint") return Promise.reject(new Error("Invalid parameters"))
+        else if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
+        else if (typeof censusProof != "string" || !censusProof.match(/^(0x)?[0-9a-zA-Z]+$/))
+            throw new Error("Invalid census proof (must be a hex string)")
+
+        const hashedKey = Poseidon.hash([secretKey])
+        const newKey = new Uint8Array(bigIntToLeBuffer(hashedKey))
+
+        const proof = Proof.fromPartial({})
+        const aProof = ProofArbo.fromPartial({
+            siblings: new Uint8Array(Buffer.from(strip0x(censusProof as string), "hex")),
+            type: ProofArbo_Type.BLAKE2B
+        })
+        proof.payload = { $case: "arbo", arbo: aProof }
+
+        const registerKey: RegisterKeyTx = {
+            newKey,
+            processId: Buffer.from(strip0x(processId), "hex"),
+            nonce: Random.getBytes(32),
+            proof,
+            weight: Buffer.from(strip0x(weight), "hex")
+        }
+
+        const tx = Tx.encode({ payload: { $case: "registerKey", registerKey } })
+        const txBytes = tx.finish()
+
+        return BytesSignature.sign(txBytes, walletOrSigner).then(hexSignature => {
+            const signature = new Uint8Array(Buffer.from(strip0x(hexSignature), "hex"))
+            const signedTx = SignedTx.encode({ tx: txBytes, signature })
+            const signedTxBytes = signedTx.finish()
+            const base64Payload = Buffer.from(signedTxBytes).toString("base64")
+
+            return gateway.sendRequest({ method: "submitRawTx", payload: base64Payload })
+        }).catch((error) => {
+            const message = (error.message) ? "The key cannot be registered: " + error.message : "The key cannot be registered"
+            throw new Error(message)
+        })
+    }
+
+    /**
      * Fetch the proof of the given claim for the rolling census generated on the Vochain
      * @param rollingCensusRoot The Merkle Root of the Census to query
      * @param secretKey Base64-encoded claim of the leaf to request
      * @param gateway
      */
-    export function generateProof(rollingCensusRoot: string, secretKey: bigint, gateway: IGatewayClient): Promise<{ index: bigint, siblings: Uint8Array }> {
+    export function generateProof(rollingCensusRoot: string, secretKey: bigint, gateway: IGatewayDVoteClient): Promise<{ index: bigint, siblings: Uint8Array }> {
         if (!rollingCensusRoot || !secretKey || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 

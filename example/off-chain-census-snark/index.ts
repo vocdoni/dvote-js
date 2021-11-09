@@ -294,7 +294,7 @@ async function registerVoterKeys(censusRoot: string) {
             })
         if (!censusProof) return // skip when !config.stopOnError
 
-        return VotingApi.registerVoterKey(processId, censusProof, secretKey, "0x01", wallet, pool)
+        return CensusOnChainApi.registerVoterKey(processId, censusProof, secretKey, "0x01", wallet, pool)
     })
 }
 
