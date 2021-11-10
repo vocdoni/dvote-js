@@ -21,7 +21,7 @@ export function uintArrayToHex(buff: Uint8Array, prepend0x?: boolean): string {
 /** Encodes the given big integer as a little endian buffer */
 export function bigIntToBuffer(number: bigint): Buffer {
     let hexNumber = number.toString(16)
-    if (hexNumber.length % 2 == 1) return Buffer.from("0" + hexNumber, "hex")
+    while (hexNumber.length < 64) hexNumber = "0" + hexNumber
     return Buffer.from(hexNumber, "hex")
 }
 
@@ -37,5 +37,6 @@ export function bufferToBigInt(bytes: Buffer | Uint8Array): bigint {
 }
 
 export function bufferLeToBigInt(bytes: Buffer | Uint8Array): bigint {
-    return BigInt(ensure0x(bytes.reverse().toString("hex")))
+    bytes = Buffer.from(bytes)
+    return bufferToBigInt(bytes.reverse())
 }

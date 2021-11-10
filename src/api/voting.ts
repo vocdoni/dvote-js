@@ -62,7 +62,7 @@ export type AnonymousEnvelopeParams = {
     /** Hex string */
     rollingCensusRoot: string,
     /** Array containing the Merkle Tree sibling nodes for the key */
-    siblings: Uint8Array,
+    siblings: bigint[],
     /** The index where the key is stored within the Merkle Tree */
     keyIndex: bigint,
     /** The max census size */
@@ -1337,7 +1337,12 @@ export namespace Voting {
                 throw new Error("Some encryption public keys are not valid")
             }
         }
-        const censusSiblings = unpackSiblings(params.siblings)
+
+        const censusSiblings = [].concat(params.siblings)
+        const levels = Math.ceil(Math.log2(params.maxSize))
+        for (let i = censusSiblings.length; i < levels; i++) {
+            censusSiblings.push(BigInt("0"))
+        }
         const nullifier = getAnonymousVoteNullifier(params.secretKey, params.processId)
         const { votePackage, keyIndexes } = packageVoteContent(params.votes, params.processKeys)
 
@@ -1384,48 +1389,6 @@ export namespace Voting {
             .catch(err => {
                 throw new Error("The anonymous vote envelope could not be generated")
             })
-    }
-
-    const HASH_FUNCTION_LEN = 32
-
-    function unpackSiblings(siblings: Uint8Array): bigint[] {
-        if (siblings.length < 4) throw new Error("Invalid siblings buffer")
-
-        const fullLen = Number(bufferLeToBigInt(siblings.slice(0, 2)))
-        const bitmapBytesLength = Number(bufferLeToBigInt(siblings.slice(2, 4)))
-
-        if (siblings.length != fullLen) throw new Error("The expected length doesn't match the siblings size")
-
-        const result: bigint[] = []
-
-        const bitmapBytes = siblings.slice(4, 4 + bitmapBytesLength)
-        const bitmap = bytesToBitmap(bitmapBytes)
-
-        const siblingsBytes = siblings.slice(4 + bitmapBytesLength)
-        const emptySibling = BigInt("0")
-
-        let siblingIdx = 0
-        for (let i = 0; i < bitmap.length; i++) {
-            if (siblingIdx >= bitmap.length) break
-            if (bitmap[i]) {
-                const v = siblingsBytes.slice(siblingIdx, siblingIdx + HASH_FUNCTION_LEN)
-                result.push(bufferLeToBigInt(v))
-            }
-            else {
-                result.push(emptySibling)
-            }
-        }
-        return result
-    }
-
-    function bytesToBitmap(bytes: Uint8Array): boolean[] {
-        const result: boolean[] = []
-        for (let i = 0; i < bytes.length; i++) {
-            for (let j = 0; j < bytes.length; j++) {
-                result.push(!!(bytes[i] & (1 << j)))
-            }
-        }
-        return result
     }
 
     /**
