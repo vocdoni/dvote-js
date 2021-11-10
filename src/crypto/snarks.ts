@@ -29,10 +29,12 @@ type ZkReturn = {
 }
 
 export function getZkProof(input: ZkInputs, witnessGeneratorWasm: Uint8Array, zKey: Uint8Array): Promise<ZkReturn> {
+  const censusRootLe = Buffer.from(input.censusRoot, "hex")
+  const censusRoot = bufferLeToBigInt(censusRootLe)
   const voteHash = digestVotePackage(input.votePackage)
 
   const proverInputs = {
-    censusRoot: BigInt(ensure0x(input.censusRoot)),
+    censusRoot,
     censusSiblings: input.censusSiblings,
     index: input.keyIndex,
     secretKey: input.secretKey,

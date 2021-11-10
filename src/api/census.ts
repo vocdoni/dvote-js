@@ -461,7 +461,7 @@ export namespace CensusOnChainApi {
         let siblingIdx = 0
         for (let i = 0; i < bitmap.length; i++) {
             if (siblingIdx >= bitmap.length) break
-            if (bitmap[i]) {
+            else if (bitmap[i]) {
                 const v = siblingsBytes.slice(siblingIdx, siblingIdx + HASH_FUNCTION_LEN)
                 result.push(bufferLeToBigInt(v))
                 siblingIdx++

@@ -1153,8 +1153,7 @@ export namespace VotingApi {
      */
     export function fetchAnonymousWitnessGenerator(circuitInfo: ProcessCircuitInfo) {
         const uri = circuitInfo.uri + "/" + circuitInfo.circuitPath + "/" + ZK_VOTING_CIRCUIT_WASM_FILE_NAME
-        const hexHash = Buffer.from(circuitInfo.witnessHash, "base64").toString("hex")
-        const curi = new ContentHashedUri(uri + "!" + hexHash)
+        const curi = new ContentHashedUri(uri + "!" + strip0x(circuitInfo.witnessHash))
 
         return FileApi.fetchBytes(curi).then(data => {
             return new Uint8Array(data)
@@ -1164,8 +1163,7 @@ export namespace VotingApi {
     /** Fetches the raw bytes of the Proving key */
     export function fetchAnonymousVotingZKey(circuitInfo: ProcessCircuitInfo) {
         const uri = circuitInfo.uri + "/" + circuitInfo.circuitPath + "/" + ZK_VOTING_ZKEY_FILE_NAME
-        const hexHash = Buffer.from(circuitInfo.zKeyHash, "base64").toString("hex")
-        const curi = new ContentHashedUri(uri + "!" + hexHash)
+        const curi = new ContentHashedUri(uri + "!" + strip0x(circuitInfo.zKeyHash))
 
         return FileApi.fetchBytes(curi).then(data => {
             return new Uint8Array(data)
@@ -1175,8 +1173,7 @@ export namespace VotingApi {
     /** Fetches the raw bytes of the Verification key */
     export function fetchAnonymousVotingVerificationKey(circuitInfo: ProcessCircuitInfo) {
         const uri = circuitInfo.uri + "/" + circuitInfo.circuitPath + "/" + ZK_VOTING_VERIFICATION_KEY_FILE_NAME
-        const hexHash = Buffer.from(circuitInfo.vKHash, "base64").toString("hex")
-        const curi = new ContentHashedUri(uri + "!" + hexHash)
+        const curi = new ContentHashedUri(uri + "!" + strip0x(circuitInfo.vKHash))
 
         return FileApi.fetchBytes(curi).then(data => {
             return new Uint8Array(data)
