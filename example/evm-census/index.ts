@@ -1,13 +1,13 @@
 import * as Bluebird from "bluebird"
-import { Wallet, utils, providers, BigNumber } from "ethers"
+import { providers, utils, Wallet } from "ethers"
 import * as assert from "assert"
 import { readFileSync, writeFileSync } from "fs"
 import * as YAML from 'yaml'
-import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../../packages/net/src" // TODO: Import from the new NPM package
-import { GatewayInfo, GatewayPool, Gateway, IGatewayDiscoveryParameters } from "../../packages/net/src" // TODO: Import from the new NPM package
-import { VotingApi, VochainWaiter, EthWaiter, Erc20TokensApi, CensusErc20Api } from "../../packages/client/src" // TODO: Import from the new NPM package
-import { EntityMetadataTemplate, ProcessMetadata, ProcessMetadataTemplate, INewProcessParams } from "../../packages/models/src" // TODO: Import from the new NPM package
-import { VocdoniEnvironment, EthNetworkID } from "../../packages/common/src" // TODO: Import from the new NPM package
+import { ProcessCensusOrigin, ProcessContractParameters, ProcessEnvelopeType, ProcessMode } from "vocdoni-contracts" // TODO: Import from the new NPM package
+import { Gateway, GatewayInfo, GatewayPool, IGatewayDiscoveryParameters } from "vocdoni-net" // TODO: Import from the new NPM package
+import { CensusErc20Api, Erc20TokensApi, VochainWaiter, VotingApi } from "vocdoni-client" // TODO: Import from the new NPM package
+import { INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "vocdoni-models" // TODO: Import from the new NPM package
+import { EthNetworkID, VocdoniEnvironment } from "vocdoni-common" // TODO: Import from the new NPM package
 
 const CONFIG_PATH = "./config.yaml"
 const config = getConfig(CONFIG_PATH)
@@ -120,7 +120,6 @@ async function launchNewVote() {
 
     const blockNumber = (await pool.provider.getBlockNumber()) - 1
     const result = await CensusErc20Api.generateProof(config.tokenAddress, creatorWallet.address, tokenInfo.balanceMappingPosition, blockNumber, pool.provider as providers.JsonRpcProvider)
-    const { proof, block, blockHeaderRLP, accountProofRLP, storageProofsRLP } = result
 
     const registeredTokens = await Erc20TokensApi.getTokenList(pool)
 
@@ -156,7 +155,7 @@ async function launchNewVote() {
         envelopeType: ProcessEnvelopeType.make({}), // bit mask
         censusOrigin: ProcessCensusOrigin.ERC20,
         metadata: processMetadataPre,
-        censusRoot: proof.storageHash,
+        censusRoot: result.storageHash,
         startBlock,
         blockCount,
         maxCount: 1,
@@ -222,7 +221,7 @@ async function submitVotes(accounts: Account[]) {
         process.stdout.write(`Pkg Envelope [${idx}] ; `)
 
         const choices = [0]
-        const censusProof = result.proof.storageProof[0]
+        const censusProof = result.storageProof[0]
 
         const envelope = processParams.envelopeType.hasEncryptedVotes ?
             await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet, processKeys }) :

@@ -1,7 +1,7 @@
 import { BigNumber, ContractReceipt, providers, Signer, utils, Wallet } from "ethers"
-import { IGatewayClient, IGatewayWeb3Client, IRequestParameters } from "../../net/src" // TODO reference the future package
-import { Keccak256, Poseidon } from "../../hashing/src" // TODO reference the future package
-import { CENSUS_MAX_BULK_SIZE, hexStringToBuffer } from "../../common/src" // TODO reference the future package
+import { IGatewayClient, IGatewayWeb3Client, IRequestParameters } from "vocdoni-net" // TODO reference the future package
+import { Keccak256, Poseidon } from "vocdoni-hashing" // TODO reference the future package
+import { CENSUS_MAX_BULK_SIZE, hexStringToBuffer } from "vocdoni-common" // TODO reference the future package
 import { ERC20Proof } from "@vocdoni/storage-proofs-eth"
 import {
     BigInteger,
@@ -16,8 +16,8 @@ import {
     verify as _verify
 } from "blindsecp256k1"
 import { hexZeroPad } from "ethers/lib/utils"
-import { Census_Type } from "../../models/src" // TODO reference the future package
-// import ContentURI from "../../net/src" // TODO reference the future package
+import { Census_Type } from "vocdoni-models" // TODO reference the future package
+// import ContentURI from "vocdoni-net" // TODO reference the future package
 
 export namespace CensusOffChain {
     /**

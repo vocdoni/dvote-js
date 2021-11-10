@@ -20,7 +20,8 @@
     "@ethersproject/sha2": "^5.5.0",
     "buffer": "^6.0.3",
     "tweetnacl": "^1.0.3",
-    "tweetnacl-sealedbox-js": "^1.2.0"
+    "tweetnacl-sealedbox-js": "^1.2.0",
+    "vocdoni-common": "file:../common/common.tgz"
   },
   "devDependencies": {
     "@types/chai": "^4.1.7",

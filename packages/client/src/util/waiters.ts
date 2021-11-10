@@ -1,4 +1,4 @@
-import { IGatewayClient, IGatewayDVoteClient, IGatewayWeb3Client } from "../../../net/src" // TODO reference the future package
+import { IGatewayClient, IGatewayDVoteClient, IGatewayWeb3Client } from "vocdoni-net" // TODO reference the future package
 import { VotingApi } from "../voting"
 
 // VOTING BLOCKCHAIN

@@ -17,8 +17,8 @@ import {
     PROCESSES_ENS_SUBDOMAIN,
     NAMESPACES_ENS_SUBDOMAIN,
     ERC20_STORAGE_PROOFS_ENS_SUBDOMAIN
-} from "../../common/src" // TODO: Import from the new NPM package
-import { IProcessesContract, IEnsPublicResolverContract, INamespacesContract, ITokenStorageProofContract, IGenesisContract, IResultsContract } from "./contracts"
+} from "vocdoni-common" // TODO: Import from the new NPM package
+import { IProcessesContract, IEnsPublicResolverContract, INamespacesContract, ITokenStorageProofContract, IGenesisContract, IResultsContract } from "vocdoni-contracts"
 import {
     PublicResolverContractDefinition,
     GenesisContractDefinition,
@@ -33,9 +33,9 @@ import {
     ProcessesContractMethods,
     ResultsContractMethods,
     Erc20StorageProofContractMethods
-} from "./contracts"
-import { promiseWithTimeout } from "../../common/src" // TODO: Import from the new NPM package
-import { EthNetworkID, VocdoniEnvironment } from "../../common/src" // TODO reference the future package
+} from "vocdoni-contracts"
+import { promiseWithTimeout } from "vocdoni-common" // TODO: Import from the new NPM package
+import { EthNetworkID, VocdoniEnvironment } from "vocdoni-common" // TODO reference the future package
 import { IGatewayWeb3Client } from './common'
 
 const { JsonRpcProvider, Web3Provider, IpcProvider, InfuraProvider, FallbackProvider, EtherscanProvider } = providers

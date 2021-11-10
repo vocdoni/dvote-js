@@ -1,20 +1,20 @@
 import { Wallet, Signer, utils, ContractTransaction, BigNumber, providers } from "ethers"
-import { GatewayArchive, GatewayArchiveApi } from "../../net/src" // TODO reference the future package
+import { GatewayArchive, GatewayArchiveApi } from "vocdoni-net" // TODO reference the future package
 import { FileApi } from "./file"
 import { EntityApi } from "./entity"
-import { ProcessMetadata, checkValidProcessMetadata, INewProcessParams, IProofEVM, IProofCA, IProofArbo, INewProcessErc20Params, ProcessResultsSingleChoice, SingleChoiceQuestionResults, ProcessResultsSingleQuestion } from "../../models/src" // TODO reference the future package
+import { ProcessMetadata, checkValidProcessMetadata, INewProcessParams, IProofEVM, IProofCA, IProofArbo, INewProcessErc20Params, ProcessResultsSingleChoice, SingleChoiceQuestionResults, ProcessResultsSingleQuestion } from "vocdoni-models" // TODO reference the future package
 import {
     VOCHAIN_BLOCK_TIME,
     XDAI_GAS_PRICE,
     XDAI_CHAIN_ID,
     SOKOL_CHAIN_ID,
     SOKOL_GAS_PRICE,
-} from "../../common/src" // TODO reference the future package
-import { BytesSignature } from "../../signing/src" // TODO reference the future package
+} from "vocdoni-common" // TODO reference the future package
+import { BytesSignature } from "vocdoni-signing" // TODO reference the future package
 import { Buffer } from "buffer/"  // Previously using "arraybuffer-to-string"
-import { Asymmetric } from "../../encryption/src" // TODO reference the future package
+import { Asymmetric } from "vocdoni-encryption" // TODO reference the future package
 import { VochainWaiter } from "./util/waiters"
-import { IMethodOverrides, ProcessContractParameters, ProcessStatus, IProcessStatus, ProcessCensusOrigin, IProcessCensusOrigin } from "../../net/src" // TODO reference the future package
+import { IMethodOverrides, ProcessContractParameters, ProcessStatus, IProcessStatus, ProcessCensusOrigin, IProcessCensusOrigin } from "vocdoni-contracts" // TODO reference the future package
 import {
     Tx, SignedTx,
     VoteEnvelope,
@@ -29,16 +29,16 @@ import {
     VochainProcessStatus,
     RegisterKeyTx,
     SourceNetworkId
-} from "../../models/src" // TODO reference the future package
-import { DVoteGateway, DVoteGatewayResponseBody, IRequestParameters } from "../../net/src" // TODO reference the future package
+} from "vocdoni-models" // TODO reference the future package
+import { DVoteGateway, DVoteGatewayResponseBody, IRequestParameters } from "vocdoni-net" // TODO reference the future package
 import { CensusErc20Api } from "./census"
-import { ProcessEnvelopeType } from "dvote-solidity"
-import { IGatewayClient, IGatewayDVoteClient, IGatewayWeb3Client } from "../../net/src" // TODO reference the future package
-import { Poseidon } from "../../hashing/src" // TODO reference the future package
-import { Random, uintArrayToHex } from "../../common/src" // TODO reference the future package
+import { ProcessEnvelopeType } from "dvote-solidity" // TODO fix
+import { IGatewayClient, IGatewayDVoteClient, IGatewayWeb3Client } from "vocdoni-net" // TODO reference the future package
+import { Poseidon } from "vocdoni-hashing" // TODO reference the future package
+import { Random, uintArrayToHex } from "vocdoni-common" // TODO reference the future package
 import { ResultsNotAvailableError } from "./errors/results";
-import { ApiMethod } from "../../models/src" // TODO reference the future package
-import { ProofArbo_Type } from "../../models/src" // TODO reference the future package
+import { ApiMethod } from "vocdoni-models" // TODO reference the future package
+import { ProofArbo_Type } from "vocdoni-models" // TODO reference the future package
 
 export const CaBundleProtobuf: any = CAbundle
 export { VochainWaiter, EthWaiter } from "./util/waiters"

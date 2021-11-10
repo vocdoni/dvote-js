@@ -1,16 +1,19 @@
 import * as Bluebird from "bluebird"
-import { Wallet, utils } from "ethers"
+import { utils, Wallet } from "ethers"
 import * as assert from "assert"
 import { readFileSync, writeFileSync } from "fs"
 import * as YAML from 'yaml'
-import { GatewayPool } from "../../packages/net/src" // TODO: Import from the new NPM package
-import { EntityMetadataTemplate } from "../../packages/models/src" // TODO: Import from the new NPM package
-import { EntityApi, VotingApi } from "../../packages/client/src" // TODO: Import from the new NPM package
-import { CensusOffChain, CensusOffChainApi } from "../../packages/client/src" // TODO: Import from the new NPM package
-import { INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "../../packages/models/src" // TODO: Import from the new NPM package
-import { IGatewayDiscoveryParameters, ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../../packages/net/src" // TODO: Import from the new NPM package
-import { VochainWaiter, EthWaiter } from "../../packages/client/src" // TODO: Import from the new NPM package
-import { VocdoniEnvironment, EthNetworkID } from "../../packages/common/src" // TODO: Import from the new NPM package
+import { GatewayPool, IGatewayDiscoveryParameters } from "vocdoni-net" // TODO: Import from the new NPM package
+import { EntityMetadataTemplate, INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "vocdoni-models" // TODO: Import from the new NPM package
+import { CensusOffChain, CensusOffChainApi, EntityApi, EthWaiter, VochainWaiter, VotingApi } from "vocdoni-client" // TODO: Import from the new NPM package
+import {
+    ProcessCensusOrigin,
+    ProcessContractParameters,
+    ProcessEnvelopeType,
+    ProcessMode,
+    ProcessStatus
+} from "vocdoni-contracts" // TODO: Import from the new NPM package
+import { EthNetworkID, VocdoniEnvironment } from "vocdoni-common" // TODO: Import from the new NPM package
 
 const CONFIG_PATH = "./config.yaml"
 const config = getConfig()

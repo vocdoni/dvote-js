@@ -21,7 +21,11 @@
     "@ethersproject/bignumber": "^5.5.0",
     "buffer": "^6.0.3",
     "iso-language-codes": "^1.0.6",
-    "yup": "^0.32.9"
+    "protobufjs": "^6.10.2",
+    "yup": "^0.32.9",
+    "vocdoni-common": "file:../common/common.tgz",
+    "vocdoni-contracts": "file:../contracts/contracts.tgz",
+    "vocdoni-encryption": "file:../encryption/encryption.tgz"
   },
   "devDependencies": {
     "@types/chai": "^4.1.7",

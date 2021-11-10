@@ -1,14 +1,16 @@
-import { FileApi, ProcessSummary } from "../../client/src" // TODO (should really) reference the future package?
+// import { FileApi, ProcessSummary } from "../../client/src" // TODO (should really) reference the future package?
+import { FileApi } from "./util/file" // TODO !!(should really) reference the future package?
 import { GatewayArchiveError } from "./errors/gateway-archive"
-import { TextRecordKeys } from "../../models/src" // TODO reference the future package
-import { VochainProcessStatus } from "../../models/src" // TODO reference the future package
+import { TextRecordKeys } from "vocdoni-models" // TODO reference the future package
+import { VochainProcessStatus } from "vocdoni-models" // TODO reference the future package
 import { getEnsTextRecord } from "./util/ens"
 import { ContentUri } from "./wrappers/content-uri"
-import { EthNetworkID } from "../../common/src" // TODO reference the future package
+import { EthNetworkID } from "vocdoni-common" // TODO reference the future package
 import { IGatewayClient, IGatewayDVoteClient } from "./common"
 
 export interface IArchiveResponseBody {
-    process: ProcessSummary
+    // process: ProcessSummary
+    process: any
     results: {
         processId: string
         votes: string[][]

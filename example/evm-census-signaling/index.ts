@@ -1,12 +1,13 @@
 import * as Bluebird from "bluebird"
-import { Wallet, providers, utils } from "ethers"
+import { providers, utils, Wallet } from "ethers"
 import * as assert from "assert"
 import { readFileSync, writeFileSync } from "fs"
 import * as YAML from 'yaml'
-import { GatewayInfo, GatewayPool, DVoteGateway, Gateway, IGatewayDiscoveryParameters, ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../../packages/net/src" // TODO: Import from the new NPM package
-import { VotingOracleApi, VotingApi, ProcessState, VochainWaiter, Erc20TokensApi, CensusErc20Api } from "../../packages/client/src" // TODO: Import from the new NPM package
-import { EntityMetadataTemplate, INewProcessErc20Params, ProcessMetadata, ProcessMetadataTemplate } from "../../packages/models/src" // TODO: Import from the new NPM package
-import { VocdoniEnvironment, EthNetworkID } from "../../packages/common/src" // TODO: Import from the new NPM package
+import { ProcessEnvelopeType, ProcessMode } from "vocdoni-contracts" // TODO: Import from the new NPM package
+import { DVoteGateway, Gateway, GatewayInfo, GatewayPool, IGatewayDiscoveryParameters } from "vocdoni-net" // TODO: Import from the new NPM package
+import { CensusErc20Api, ProcessState, VochainWaiter, VotingApi, VotingOracleApi } from "vocdoni-client" // TODO: Import from the new NPM package
+import { INewProcessErc20Params, ProcessMetadata, ProcessMetadataTemplate } from "vocdoni-models" // TODO: Import from the new NPM package
+import { EthNetworkID, VocdoniEnvironment } from "vocdoni-common" // TODO: Import from the new NPM package
 
 
 const CONFIG_PATH = "./config.yaml"
@@ -203,7 +204,7 @@ async function submitVotes(accounts: Account[]) {
         process.stdout.write(`Pkg Envelope [${idx}] ; `)
 
         const choices = [0]
-        const censusProof = result.proof.storageProof[0]
+        const censusProof = result.storageProof[0]
 
         const envelope = processState.envelopeType.encryptedVotes ?
             await VotingApi.packageSignedEnvelope({ censusOrigin: processState.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet, processKeys }) :

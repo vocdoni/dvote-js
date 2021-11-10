@@ -20,7 +20,8 @@
     "blake-hash": "^2.0.0",
     "circomlib": "^0.5.2",
     "ethers": "^5.4.1",
-    "ffjavascript": "^0.2.38"
+    "ffjavascript": "^0.2.38",
+    "vocdoni-common": "file:../common/common.tgz"
   },
   "devDependencies": {
     "@types/chai": "^4.1.7",

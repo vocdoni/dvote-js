@@ -1,21 +1,29 @@
 import * as Bluebird from "bluebird"
-import { Wallet, utils } from "ethers"
+import { utils, Wallet } from "ethers"
 import * as assert from "assert"
 import { readFileSync, writeFileSync } from "fs"
 import * as YAML from 'yaml'
-import { GatewayPool } from "../../packages/net/src" // TODO: Import from the new NPM package
-import { EntityMetadata, EntityMetadataTemplate } from "../../packages/models/src" // TODO: Import from the new NPM package
-import { EntityApi } from "../../packages/client/src" // TODO: Import from the new NPM package
-import { CaBundleProtobuf, VotingApi } from "../../packages/client/src" // TODO: Import from the new NPM package
-import { CensusCaApi } from "../../packages/client/src" // TODO: Import from the new NPM package
-import { INewProcessParams, IProofCA, ProcessMetadata, ProcessMetadataTemplate, ProofCaSignatureTypes } from "../../packages/models/src" // TODO: Import from the new NPM package
-import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../../packages/net/src" // TODO: Import from the new NPM package
-import { VochainWaiter, EthWaiter } from "../../packages/client/src" // TODO: Import from the new NPM package
-import axios from "axios"
-import { Random } from "../../packages/common/src" // TODO: Import from the new NPM package
 import { Buffer } from "buffer"
-import { IGatewayDiscoveryParameters } from "../../packages/net/src" // TODO: Import from the new NPM package
-import { EthNetworkID, VocdoniEnvironment } from "../../packages/common/src" // TODO: Import from the new NPM package
+import { GatewayPool, IGatewayDiscoveryParameters } from "vocdoni-net" // TODO: Import from the new NPM package
+import {
+    EntityMetadata,
+    EntityMetadataTemplate,
+    INewProcessParams,
+    IProofCA,
+    ProcessMetadata,
+    ProcessMetadataTemplate,
+    ProofCaSignatureTypes
+} from "vocdoni-models" // TODO: Import from the new NPM package
+import { CaBundleProtobuf, CensusCaApi, EntityApi, EthWaiter, VochainWaiter, VotingApi } from "vocdoni-client" // TODO: Import from the new NPM package
+import {
+    ProcessCensusOrigin,
+    ProcessContractParameters,
+    ProcessEnvelopeType,
+    ProcessMode,
+    ProcessStatus
+} from "vocdoni-contracts" // TODO: Import from the new NPM package
+import axios from "axios"
+import { EthNetworkID, Random, VocdoniEnvironment } from "vocdoni-common" // TODO: Import from the new NPM package
 
 const CONFIG_PATH = "./config.yaml"
 const config = getConfig()

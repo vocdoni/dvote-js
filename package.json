@@ -21,23 +21,15 @@
     "postinstall": "rimraf node_modules/ganache-core/node_modules/web3-providers-ws/node_modules/websocket/.git || true"
   },
   "dependencies": {
-    "@vocdoni/storage-proofs-eth": "^0.4.1",
-    "axios": "^0.21.1",
-    "blindsecp256k1": "0.0.6",
-    "buffer": "^6.0.3",
-    "circomlib": "^0.5.2",
-    "dvote-solidity": "^1.3.1",
-    "ethers": "^5.4.1",
-    "ffjavascript": "^0.2.38",
-    "google-protobuf": "^3.14.0",
-    "iso-language-codes": "^1.0.6",
-    "latinize": "^0.5.0",
-    "long": "^4.0.0",
-    "protobufjs": "^6.10.2",
-    "tweetnacl": "^1.0.3",
-    "tweetnacl-sealedbox-js": "^1.2.0",
-    "universal-parse-url": "^1.0.2",
-    "yup": "^0.32.9"
+    "vocdoni-common": "file:packages/common/common.tgz",
+    "vocdoni-contracts": "file:packages/contracts/contracts.tgz",
+    "vocdoni-signing": "file:packages/signing/signing.tgz",
+    "vocdoni-hashing": "file:packages/hashing/hashing.tgz",
+    "vocdoni-encryption": "file:packages/encryption/encryption.tgz",
+    "vocdoni-models": "file:packages/models/models.tgz",
+    "vocdoni-net": "file:packages/net/net.tgz",
+    "vocdoni-client": "file:packages/client/client.tgz",
+    "vocdoni-wallets": "file:packages/wallets/wallets.tgz"
   },
   "devDependencies": {
     "@types/chai": "^4.1.7",

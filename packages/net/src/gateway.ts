@@ -4,13 +4,13 @@
 
 import { Contract, providers, utils, Wallet, Signer, ContractInterface } from "ethers"
 import { GatewayInfo } from "./wrappers/gateway-info"
-import { GatewayApiName, BackendApiName, ApiMethod } from "../../models/src" // TODO reference the future package
+import { GatewayApiName, BackendApiName, ApiMethod } from "vocdoni-models" // TODO reference the future package
 import { GatewayBootnode } from "./gateway-bootnode"
 import { ContentUri } from "./wrappers/content-uri"
-import { IProcessesContract, IEnsPublicResolverContract, INamespacesContract, ITokenStorageProofContract, IGenesisContract, IResultsContract } from "./contracts"
+import { IProcessesContract, IEnsPublicResolverContract, INamespacesContract, ITokenStorageProofContract, IGenesisContract, IResultsContract } from "vocdoni-contracts"
 import { DVoteGateway, IRequestParameters } from "./gateway-dvote"
 import { Web3Gateway } from "./gateway-web3"
-import { EthNetworkID, VocdoniEnvironment } from "../../common/src" // TODO reference the future package
+import { EthNetworkID, VocdoniEnvironment } from "vocdoni-common" // TODO reference the future package
 import { IGatewayClient } from "./common"
 
 

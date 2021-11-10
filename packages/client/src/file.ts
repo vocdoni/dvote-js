@@ -4,11 +4,11 @@ import {
     IGatewayDVoteClient,
     IPFS,
     IRequestParameters
-} from "../../net/src" // TODO reference the future package
+} from "vocdoni-net" // TODO reference the future package
 import { Buffer } from 'buffer/'
 import axios from "axios"
 import { Signer, Wallet } from "ethers"
-import { promiseWithTimeout } from "../../common/src" // TODO reference the future package
+import { promiseWithTimeout } from "vocdoni-common" // TODO reference the future package
 
 const MAX_FETCH_TIMEOUT = 8000
 

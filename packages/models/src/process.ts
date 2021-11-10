@@ -8,10 +8,10 @@ import {
     // HexString,
     MultiLanguage,
     ContentUriString,
-} from "../../common/src" // TODO: Import from the new NPM package
+} from "vocdoni-common" // TODO: Import from the new NPM package
 import { object, array, string, number } from "yup"
 import { by639_1 } from 'iso-language-codes'
-import { IProcessCreateParams } from "../../net/src" // TODO: Import from the new NPM package
+import { IProcessCreateParams } from "vocdoni-contracts" // TODO: Import from the new NPM package
 import { BigNumber } from "@ethersproject/bignumber"
 import { ProofCA_Type } from "./protobuf"
 

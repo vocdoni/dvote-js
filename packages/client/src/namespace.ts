@@ -1,5 +1,5 @@
 import { Wallet, Signer } from "ethers"
-import { IGatewayWeb3Client } from "../../net/src" // TODO reference the future package
+import { IGatewayWeb3Client } from "vocdoni-net" // TODO reference the future package
 
 type NamespaceData = { namespace: number, chainId: string, genesis: string, validators: string[], oracles: string[] }
 

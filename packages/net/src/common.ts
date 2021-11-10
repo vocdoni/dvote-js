@@ -1,8 +1,8 @@
-import { VocdoniEnvironment } from "../../common/src" // TODO reference the future package
+import { VocdoniEnvironment } from "vocdoni-common" // TODO reference the future package
 import { DVoteGatewayResponseBody, IRequestParameters } from "./gateway-dvote"
-import { BackendApiName, GatewayApiName } from "../../models/src" // TODO reference the future package
+import { BackendApiName, GatewayApiName } from "vocdoni-models" // TODO reference the future package
 import { Contract, ContractInterface, providers, Signer, utils, Wallet } from "ethers"
-import { IEnsPublicResolverContract, IGenesisContract, INamespacesContract, IProcessesContract, IResultsContract, ITokenStorageProofContract } from "./contracts"
+import { IEnsPublicResolverContract, IGenesisContract, INamespacesContract, IProcessesContract, IResultsContract, ITokenStorageProofContract } from "vocdoni-contracts"
 
 // GATEWAY INTERFACES
 

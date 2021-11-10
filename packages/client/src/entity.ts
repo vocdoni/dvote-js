@@ -1,8 +1,9 @@
 import { ContractTransaction, Signer, Wallet } from "ethers"
-import { checkValidEntityMetadata, EntityMetadata, TextRecordKeys } from "../../models/src" // TODO reference the future package
-import { allSettled, SOKOL_CHAIN_ID, SOKOL_GAS_PRICE, XDAI_CHAIN_ID, XDAI_GAS_PRICE } from "../../common/src" // TODO reference the future package
+import { checkValidEntityMetadata, EntityMetadata, TextRecordKeys } from "vocdoni-models" // TODO reference the future package
+import { allSettled, SOKOL_CHAIN_ID, SOKOL_GAS_PRICE, XDAI_CHAIN_ID, XDAI_GAS_PRICE } from "vocdoni-common" // TODO reference the future package
 import { FileApi } from "./file"
-import { ensHashAddress, IGatewayClient, IMethodOverrides, ITokenStorageProofContract } from "../../net/src" // TODO reference the future package
+import { ensHashAddress, IMethodOverrides, ITokenStorageProofContract } from "vocdoni-contracts" // TODO reference the future package
+import { IGatewayClient } from "vocdoni-net" // TODO reference the future package
 import { CensusErc20Api } from "./census"
 
 export namespace EntityApi {

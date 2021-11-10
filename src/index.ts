@@ -1,20 +1,28 @@
 // COMMON
-export * from "../packages/common/src" // TODO: Export from the new NPM package
+export * from "vocdoni-common" // TODO: Export from the new NPM package
 
 // API
-export * from "../packages/client/src" // TODO: Export from the new NPM package
+export * from "vocdoni-client" // TODO: Export from the new NPM package
 
 // MODELS
-export * from "../packages/models/src" // TODO: Export from the new NPM package
+export * from "vocdoni-models" // TODO: Export from the new NPM package
 
 // NETWORK
-export * from "../packages/net/src" // TODO: Export from the new NPM package
+export * from "vocdoni-net" // TODO: Export from the new NPM package
 
 // CRYPTO
-export * from "../packages/signing/src" // TODO: Export from the new NPM package
-export * from "../packages/encryption/src" // TODO: Export from the new NPM package
-export * from "../packages/hashing/src" // TODO: Export from the new NPM package
-export * from "../packages/wallets/src" // TODO: Export from the new NPM package
-export * from "./crypto/signers"
+export * from "vocdoni-signing" // TODO: Export from the new NPM package
+export * from "vocdoni-encryption" // TODO: Export from the new NPM package
+export * from "vocdoni-hashing" // TODO: Export from the new NPM package
+export * from "vocdoni-wallets" // TODO: Export from the new NPM package
+
+/**
+ * TODO Review
+ * Web3Signer::fromInjected not exported
+ *
+ * Web3Signer::fromInjected is already exported in ProviderUtil from `net` package
+ * and in SignerUtil from `wallets` package
+ */
+// export * from "./crypto/signers"
 
 

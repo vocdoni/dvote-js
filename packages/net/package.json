@@ -21,7 +21,10 @@
     "buffer": "^6.0.3",
     "axios": "^0.21.1",
     "universal-parse-url": "^1.0.2",
-    "dvote-solidity": "^1.3.1"
+    "vocdoni-common": "file:../common/common.tgz",
+    "vocdoni-contracts": "file:../contracts/contracts.tgz",
+    "vocdoni-signing": "file:../signing/signing.tgz",
+    "vocdoni-models": "file:../models/models.tgz"
   },
   "devDependencies": {
     "@types/chai": "^4.1.7",
@@ -31,6 +34,7 @@
     "rimraf": "^3.0.2",
     "ts-node": "^10.2.1",
     "tslint": "^6.1.3",
-    "typescript": "^4.4.3"
+    "typescript": "^4.4.3",
+    "vocdoni-client": "file:../client/client.tgz"
   }
 }
