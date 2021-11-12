@@ -430,7 +430,7 @@ export namespace CensusOnChainApi {
             const responseBuff = Buffer.from(response.siblings, "hex")
             const index = bufferLeToBigInt(responseBuff.slice(0, 8))
             const buffSiblings = new Uint8Array(responseBuff.slice(8))
-            const siblings = unpackSiblings(buffSiblings)
+            const siblings = CensusOnChain.unpackSiblings(buffSiblings)
 
             return { index, siblings }
         }).catch((error) => {
@@ -438,12 +438,12 @@ export namespace CensusOnChainApi {
             throw new Error(message)
         })
     }
+}
 
-    //
-
+export namespace CensusOnChain {
     const HASH_FUNCTION_LEN = 32
 
-    function unpackSiblings(siblings: Uint8Array): bigint[] {
+    export function unpackSiblings(siblings: Uint8Array): bigint[] {
         if (siblings.length < 4) throw new Error("Invalid siblings buffer")
 
         const fullLen = Number(bufferLeToBigInt(siblings.slice(0, 2)))
@@ -460,11 +460,11 @@ export namespace CensusOnChainApi {
 
         let siblingIdx = 0
         for (let i = 0; i < bitmap.length; i++) {
-            if (siblingIdx >= bitmap.length) break
+            if (siblingIdx >= siblingsBytes.length) break
             else if (bitmap[i]) {
                 const v = siblingsBytes.slice(siblingIdx, siblingIdx + HASH_FUNCTION_LEN)
                 result.push(bufferLeToBigInt(v))
-                siblingIdx++
+                siblingIdx += HASH_FUNCTION_LEN
             }
             else {
                 result.push(emptySibling)

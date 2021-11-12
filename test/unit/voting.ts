@@ -97,14 +97,29 @@ describe("Governance Process", () => {
         describe("Anonymous votes", () => {
             it("Should produce a valid ZK proof if the user is eligible to vote in an election")
             it("Should allow to verify that a ZK proof is valid")
-            it("Should compute valid anonymous nullifiers")
+            it("Should compute valid anonymous nullifiers", () => {
+                const items = [
+                    { secretKey: BigInt("0"), processId: "0x56570de287d73cd1cb6092bb8fdee6173974955fdef345ae579ee9f475ea7432", output: BigInt("14028599644617424540428454848827729373173527272190915411559843142191111486030") },
+                    { secretKey: BigInt("10000000000"), processId: "0x56570de287d73cd1cb6092bb8fdee6173974955fdef345ae579ee9f475ea7432", output: BigInt("471926944116032573367475862432421920501479013056802055736904890947798361857") },
+                    { secretKey: BigInt("200000000000"), processId: "0x56570de287d73cd1cb6092bb8fdee6173974955fdef345ae579ee9f475ea7432", output: BigInt("13437507934415509171799869274537790015840303298534268369808857225632409841144") },
+                    { secretKey: BigInt("3000000000000"), processId: "0x56570de287d73cd1cb6092bb8fdee6173974955fdef345ae579ee9f475ea7432", output: BigInt("10857265787995584642999882379896458535361621112363521523476801344802401822530") },
+                    { secretKey: BigInt("40000000000000"), processId: "0x56570de287d73cd1cb6092bb8fdee6173974955fdef345ae579ee9f475ea7432", output: BigInt("673513785768439376837662387871573058712918127883794888247884491549757913378") },
+                    { secretKey: BigInt("10000000000"), processId: "0x6adf031833174bbe4c85eafe59ddb54e6584648c2c962c6f94791ab49caa0ad4", output: BigInt("5654022798349817370179709640174642612409431742362483837357771779807864411034") },
+                    { secretKey: BigInt("200000000000"), processId: "0x6adf031833174bbe4c85eafe59ddb54e6584648c2c962c6f94791ab49caa0ad4", output: BigInt("17657630292507439144875939362269273748142322870382982164520011545218827369700") },
+                ]
+
+                for (let item of items) {
+                    const output = Voting.getAnonymousVoteNullifier(item.secretKey, item.processId)
+                    expect(output).to.eq(item.output)
+                }
+            })
             it("Should package an anonymous envelope")
             it("Should digest vote values in a snark friendly format", () => {
                 const items = [
-                    { votePackage: new Uint8Array([1, 2, 3, 4]), expected: "6787106b067651e92b3e1f9f4c6b1907,64c3d8278cb3eeebf96dc2e3a8b907da" },
-                    { votePackage: new Uint8Array([10, 20, 30, 40]), expected: "42b1a47d2a245da1d37494d97c8c2291,ad5a1c43272f9c9c17fdbc1803fddcf5" },
-                    { votePackage: new Uint8Array([1, 5, 10, 50]), expected: "93fdc27fdb77f508905866a77528b650,ae7dd40bf2e5b2dcc9abc87ad47c8e9f" },
-                    { votePackage: new Uint8Array([1, 10, 20, 30]), expected: "4435f65cab83651f39915b4f089dc48c,14415d309276528165fb256c17d141f3" }
+                    { votePackage: new Uint8Array([1, 2, 3, 4]), expected: "9b6c2947b4b6ab1f137fb9e147a7649f,6a806a9be8776c6e35c5b39fe701026f" },
+                    { votePackage: new Uint8Array([10, 20, 30, 40]), expected: "a9b1ab5dc9680e339a5dba07ffc0535f,500000bb9ad9c6a76f3fd59e9fe249bc" },
+                    { votePackage: new Uint8Array([1, 5, 10, 50]), expected: "524754d97e36eef1d4137a3f1133d986,6b627e99711b810e49eb028c9f7c3fea" },
+                    { votePackage: new Uint8Array([1, 10, 20, 30]), expected: "84ad2047d465f165995dc34c2cb898af,be8d8de6c93cf27bf646b07d053960aa" }
                 ]
 
                 items.forEach(item => {
