@@ -1,9 +1,9 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
-import { addCompletionHooks } from "../../../../shared/test/mocha-hooks"
+import { addCompletionHooks } from "../mocha-hooks"
+import { Buffer } from "buffer/"
 
 import { extractUint8ArrayJSONValue } from "../../src"
-import { TextDecoder, TextEncoder } from "util";
 
 addCompletionHooks()
 

@@ -1,6 +1,6 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
-import { addCompletionHooks } from "../../../../shared/test/mocha-hooks"
+import { addCompletionHooks } from "../mocha-hooks"
 
 import { Random } from "../../src"
 
@@ -10,7 +10,7 @@ describe("Random generation", () => {
     it("Should generate a random buffer from given length", () => {
         const bytes = Random.getBytes(8)
 
-        expect(bytes).to.be.instanceof(Buffer)
+        expect(bytes).to.be.instanceof(Uint8Array)
         expect(bytes.length).to.eq(8)
     })
     it("Should generate a random hex", () => {
