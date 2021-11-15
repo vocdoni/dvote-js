@@ -8,6 +8,9 @@
   "author": "Vocdoni <root@vocdoni.io>",
   "license": "GPL-3.0-or-later",
   "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "prepublishOnly": "npm run build",
     "clean": "rimraf dist",
@@ -18,15 +21,15 @@
   },
   "dependencies": {
     "@ethersproject/sha2": "^5.5.0",
+    "@vocdoni/common": "^1.14.0",
     "buffer": "^6.0.3",
     "tweetnacl": "^1.0.3",
-    "tweetnacl-sealedbox-js": "^1.2.0",
-    "vocdoni-common": "file:../common/common.tgz"
+    "tweetnacl-sealedbox-js": "^1.2.0"
   },
   "devDependencies": {
+    "@ethersproject/wallet": "^5.5.0",
     "@types/chai": "^4.1.7",
     "@types/mocha": "^9.0.0",
-    "@ethersproject/wallet": "^5.5.0",
     "chai": "^4.2.0",
     "mocha": "^9.1.1",
     "rimraf": "^3.0.2",

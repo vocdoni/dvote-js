@@ -1,7 +1,7 @@
 import { Buffer } from "buffer/"
 import * as tweetnacl from 'tweetnacl'
 import * as sealedbox from 'tweetnacl-sealedbox-js'
-import { hexStringToBuffer } from "vocdoni-common" // TODO reference the future package
+import { hexStringToBuffer } from "@vocdoni/common"
 import { sha256 } from "@ethersproject/sha2"
 
 (tweetnacl as any).sealedbox = sealedbox

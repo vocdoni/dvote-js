@@ -8,6 +8,9 @@
   "author": "Vocdoni <root@vocdoni.io>",
   "license": "GPL-3.0-or-later",
   "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "prepublishOnly": "npm run build",
     "clean": "rimraf dist",

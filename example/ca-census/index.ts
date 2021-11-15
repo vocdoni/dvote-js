@@ -23,7 +23,7 @@ import {
     ProcessStatus
 } from "vocdoni-contracts" // TODO: Import from the new NPM package
 import axios from "axios"
-import { EthNetworkID, Random, VocdoniEnvironment } from "vocdoni-common" // TODO: Import from the new NPM package
+import { EthNetworkID, Random, VocdoniEnvironment } from "@vocdoni/common"
 
 const CONFIG_PATH = "./config.yaml"
 const config = getConfig()
