@@ -14,7 +14,7 @@
     "ts-node": "^10.2.1",
     "typescript": "^4.4.2",
     "yaml": "^1.9.2",
-    "vocdoni-common": "file:../../packages/common/common.tgz",
+    "@vocdoni/common": "^1.14.0",
     "vocdoni-contracts": "file:../../packages/contracts/contracts.tgz",
     "vocdoni-models": "file:../../packages/models/models.tgz",
     "vocdoni-net": "file:../../packages/net/net.tgz",

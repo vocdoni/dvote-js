@@ -1,5 +1,5 @@
 import { ProcessMetadataTemplate, ProcessMetadata } from "../../src"
-import { URI } from "vocdoni-common" // TODO: Import from the new NPM package
+import { URI } from "@vocdoni/common"
 
 // BUILDER
 export default class ProcessMetadataBuilder {

@@ -1,7 +1,7 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { addCompletionHooks } from "../../../../shared/test/mocha-hooks"
-import { Random } from "../../../common/src" // TODO reference the future package
+import { Random } from "@vocdoni/common"
 
 addCompletionHooks()
 

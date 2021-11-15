@@ -21,7 +21,7 @@
     "postinstall": "rimraf node_modules/ganache-core/node_modules/web3-providers-ws/node_modules/websocket/.git || true"
   },
   "dependencies": {
-    "vocdoni-common": "file:packages/common/common.tgz",
+    "@vocdoni/common": "^1.14.0",
     "vocdoni-contracts": "file:packages/contracts/contracts.tgz",
     "vocdoni-signing": "file:packages/signing/signing.tgz",
     "vocdoni-hashing": "file:packages/hashing/hashing.tgz",

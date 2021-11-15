@@ -6,7 +6,7 @@
 import {
     MultiLanguage,
     URI
-} from "vocdoni-common" // TODO: Import from the new NPM package
+} from "@vocdoni/common"
 import { object, array, string } from "yup"
 import { by639_1 } from 'iso-language-codes'
 export { EntityMetadataTemplate } from "./templates/entity"

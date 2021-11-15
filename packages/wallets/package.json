@@ -24,7 +24,7 @@
     "circomlib": "^0.5.2",
     "ethers": "^5.4.1",
     "ffjavascript": "^0.2.38",
-    "vocdoni-common": "file:../common/common.tgz"
+    "@vocdoni/common": "^1.14.0"
   },
   "devDependencies": {
     "@types/chai": "^4.1.7",

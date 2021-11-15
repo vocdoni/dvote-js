@@ -1,5 +1,5 @@
 // COMMON
-export * from "vocdoni-common" // TODO: Export from the new NPM package
+export * from "@vocdoni/common"
 
 // API
 export * from "vocdoni-client" // TODO: Export from the new NPM package

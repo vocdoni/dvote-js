@@ -1,12 +1,15 @@
 import { keccak256 } from "@ethersproject/keccak256"
-import { EthNetworkID, VocdoniEnvironment } from "vocdoni-common" // TODO: Import from the new NPM package
-import { IGatewayWeb3Client } from "../common"
 import {
+    EthNetworkID,
     VOCDONI_GOERLI_ENTITY_ID,
     VOCDONI_MAINNET_ENTITY_ID,
-    VOCDONI_RINKEBY_ENTITY_ID, VOCDONI_SOKOL_ENTITY_ID,
-    VOCDONI_XDAI_ENTITY_ID, VOCDONI_XDAI_STG_ENTITY_ID
-} from "vocdoni-common" // TODO: Import from the new NPM package
+    VOCDONI_RINKEBY_ENTITY_ID,
+    VOCDONI_SOKOL_ENTITY_ID,
+    VOCDONI_XDAI_ENTITY_ID,
+    VOCDONI_XDAI_STG_ENTITY_ID,
+    VocdoniEnvironment
+} from "@vocdoni/common"
+import { IGatewayWeb3Client } from "../common"
 
 export function getEnsTextRecord(
     gateway: IGatewayWeb3Client,

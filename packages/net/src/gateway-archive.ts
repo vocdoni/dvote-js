@@ -5,7 +5,7 @@ import { TextRecordKeys } from "vocdoni-models" // TODO reference the future pac
 import { VochainProcessStatus } from "vocdoni-models" // TODO reference the future package
 import { getEnsTextRecord } from "./util/ens"
 import { ContentUri } from "./wrappers/content-uri"
-import { EthNetworkID } from "vocdoni-common" // TODO reference the future package
+import { EthNetworkID } from "@vocdoni/common"
 import { IGatewayClient, IGatewayDVoteClient } from "./common"
 
 export interface IArchiveResponseBody {

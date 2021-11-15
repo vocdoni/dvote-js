@@ -8,7 +8,7 @@ import {
     // HexString,
     MultiLanguage,
     ContentUriString,
-} from "vocdoni-common" // TODO: Import from the new NPM package
+} from "@vocdoni/common"
 import { object, array, string, number } from "yup"
 import { by639_1 } from 'iso-language-codes'
 import { IProcessCreateParams } from "vocdoni-contracts" // TODO: Import from the new NPM package

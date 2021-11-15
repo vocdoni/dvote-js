@@ -1,14 +1,8 @@
-import {
-    ContentHashedUri,
-    ContentUri,
-    IGatewayDVoteClient,
-    IPFS,
-    IRequestParameters
-} from ".." // TODO reference the future package
+import { ContentHashedUri, ContentUri, IGatewayDVoteClient, IPFS, IRequestParameters } from ".."
 import { Buffer } from 'buffer/'
 import axios from "axios"
 import { Signer, Wallet } from "ethers"
-import { promiseWithTimeout } from "vocdoni-common" // TODO reference the future package
+import { promiseWithTimeout } from "@vocdoni/common"
 
 const MAX_FETCH_TIMEOUT = 8000
 

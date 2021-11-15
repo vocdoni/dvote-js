@@ -5,7 +5,7 @@ import { DevGatewayService } from "../../../../shared/test/helpers/dvote-service
 import { DevWeb3Service } from "../../../../shared/test/helpers/web3-service"
 
 import { DVoteGateway, Gateway, Web3Gateway } from "vocdoni-net" // TODO: Import from the new NPM package
-import { VOCHAIN_BLOCK_TIME } from "vocdoni-common" // TODO: Import from the new NPM package
+import { VOCHAIN_BLOCK_TIME } from "@vocdoni/common"
 import { BackendApiName, GatewayApiName } from "vocdoni-models" // TODO reference the future package
 
 import { VotingApi } from "../../src"

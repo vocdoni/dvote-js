@@ -24,7 +24,7 @@
     "buffer": "^6.0.3",
     "axios": "^0.21.1",
     "universal-parse-url": "^1.0.2",
-    "vocdoni-common": "file:../common/common.tgz",
+    "@vocdoni/common": "^1.14.0",
     "vocdoni-contracts": "file:../contracts/contracts.tgz",
     "vocdoni-signing": "file:../signing/signing.tgz",
     "vocdoni-models": "file:../models/models.tgz"
@@ -37,7 +37,6 @@
     "rimraf": "^3.0.2",
     "ts-node": "^10.2.1",
     "tslint": "^6.1.3",
-    "typescript": "^4.4.3",
-    "vocdoni-client": "file:../client/client.tgz"
+    "typescript": "^4.4.3"
   }
 }

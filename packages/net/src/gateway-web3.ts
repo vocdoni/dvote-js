@@ -3,39 +3,44 @@
 // It provides a wrapper to use a Vocdoni Gateway, as well as a wrapper a Web3 one
 
 import { parseURL } from 'universal-parse-url'
-import { Contract, ContractFactory, providers, Wallet, Signer, ContractInterface, BigNumber } from "ethers"
+import { BigNumber, Contract, ContractFactory, ContractInterface, providers, Signer, Wallet } from "ethers"
 import { ProviderUtil } from "./util/providers"
 import { GatewayInfo } from "./wrappers/gateway-info"
 import {
+    ENTITY_RESOLVER_ENS_SUBDOMAIN,
+    ERC20_STORAGE_PROOFS_ENS_SUBDOMAIN,
+    EthNetworkID,
     GATEWAY_SELECTION_TIMEOUT,
     GENESIS_ENS_SUBDOMAIN,
+    NAMESPACES_ENS_SUBDOMAIN,
+    PROCESSES_ENS_SUBDOMAIN,
+    promiseWithTimeout,
     RESULTS_ENS_SUBDOMAIN,
     VOCDONI_ENS_ROOT,
-    VOCDONI_ENS_ROOT_STAGING,
     VOCDONI_ENS_ROOT_DEV,
-    ENTITY_RESOLVER_ENS_SUBDOMAIN,
-    PROCESSES_ENS_SUBDOMAIN,
-    NAMESPACES_ENS_SUBDOMAIN,
-    ERC20_STORAGE_PROOFS_ENS_SUBDOMAIN
-} from "vocdoni-common" // TODO: Import from the new NPM package
-import { IProcessesContract, IEnsPublicResolverContract, INamespacesContract, ITokenStorageProofContract, IGenesisContract, IResultsContract } from "vocdoni-contracts"
+    VOCDONI_ENS_ROOT_STAGING,
+    VocdoniEnvironment
+} from "@vocdoni/common"
 import {
-    PublicResolverContractDefinition,
-    GenesisContractDefinition,
-    NamespacesContractDefinition,
-    ProcessesContractDefinition,
-    ResultsContractDefinition,
-    Erc20StorageProofContractDefinition,
-
     EnsResolverContractMethods,
+    Erc20StorageProofContractDefinition,
+    Erc20StorageProofContractMethods,
+    GenesisContractDefinition,
     GenesisContractMethods,
+    IEnsPublicResolverContract,
+    IGenesisContract,
+    INamespacesContract,
+    IProcessesContract,
+    IResultsContract,
+    ITokenStorageProofContract,
+    NamespacesContractDefinition,
     NamespacesContractMethods,
+    ProcessesContractDefinition,
     ProcessesContractMethods,
-    ResultsContractMethods,
-    Erc20StorageProofContractMethods
-} from "vocdoni-contracts"
-import { promiseWithTimeout } from "vocdoni-common" // TODO: Import from the new NPM package
-import { EthNetworkID, VocdoniEnvironment } from "vocdoni-common" // TODO reference the future package
+    PublicResolverContractDefinition,
+    ResultsContractDefinition,
+    ResultsContractMethods
+} from "vocdoni-contracts" // TODO reference the future package
 import { IGatewayWeb3Client } from './common'
 
 const { JsonRpcProvider, Web3Provider, IpcProvider, InfuraProvider, FallbackProvider, EtherscanProvider } = providers

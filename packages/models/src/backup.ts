@@ -5,7 +5,7 @@ import {
     WalletBackup_Recovery_QuestionEnum,
 } from "./protobuf/build/ts/client-store/backup"
 import { Buffer } from "buffer/"
-import { normalizeText } from "vocdoni-common" // TODO: Import from the new NPM package
+import { normalizeText } from "@vocdoni/common"
 
 type AccountBackupCreateParams = {
     /** An arbitrary name given to identify the account when restoring */

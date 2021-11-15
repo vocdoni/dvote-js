@@ -8,7 +8,7 @@ import {
 import { Buffer } from 'buffer/'
 import axios from "axios"
 import { Signer, Wallet } from "ethers"
-import { promiseWithTimeout } from "vocdoni-common" // TODO reference the future package
+import { promiseWithTimeout } from "@vocdoni/common"
 
 const MAX_FETCH_TIMEOUT = 8000
 

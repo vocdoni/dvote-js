@@ -7,7 +7,7 @@ import {
     SOKOL_CHAIN_ID,
     SOKOL_ENS_REGISTRY_ADDRESS,
     XDAI_STG_ENS_REGISTRY_ADDRESS
-} from "vocdoni-common" // TODO: Import from the new NPM package
+} from "@vocdoni/common"
 
 export class ProviderUtil {
     /**

@@ -1,6 +1,6 @@
 import axios from "axios"
 import { Buffer } from 'buffer/'
-import { Random, IPFS_GATEWAY_LIST_URI } from "vocdoni-common" // TODO: Import from the new NPM package
+import { Random, IPFS_GATEWAY_LIST_URI } from "@vocdoni/common"
 
 export class IPFS {
     /**

@@ -6,20 +6,20 @@ import { getEnsTextRecord } from "./util/ens"
 import { ContentUri } from "./wrappers/content-uri"
 import { FileApi } from "./util/file" // TODO !!(should really) reference the future package?
 import {
+    EthNetworkID,
+    SOKOL_CHAIN_ID,
+    SOKOL_ENS_REGISTRY_ADDRESS,
+    SOKOL_PROVIDER_URI,
+    VocdoniEnvironment,
+    XDAI_CHAIN_ID,
     XDAI_ENS_REGISTRY_ADDRESS,
     XDAI_PROVIDER_URI,
-    XDAI_CHAIN_ID,
-    SOKOL_CHAIN_ID,
-    SOKOL_PROVIDER_URI,
-    SOKOL_ENS_REGISTRY_ADDRESS,
     XDAI_STG_ENS_REGISTRY_ADDRESS,
-} from "vocdoni-common" // TODO: Import from the new NPM package
-import { TextRecordKeys } from "vocdoni-models" // TODO reference the future package
-import { JsonBootnodeData } from "vocdoni-models" // TODO reference the future package
+} from "@vocdoni/common"
+import { JsonBootnodeData, TextRecordKeys } from "vocdoni-models" // TODO reference the future package // TODO reference the future package
 import { DVoteGateway } from "./gateway-dvote"
 import { Web3Gateway } from "./gateway-web3"
 import { getDefaultProvider, providers } from "ethers"
-import { EthNetworkID, VocdoniEnvironment } from "vocdoni-common" // TODO reference the future package
 
 export namespace GatewayBootnode {
     /**

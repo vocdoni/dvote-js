@@ -7,7 +7,7 @@ import { ProcessEnvelopeType, ProcessMode } from "vocdoni-contracts" // TODO: Im
 import { DVoteGateway, Gateway, GatewayInfo, GatewayPool, IGatewayDiscoveryParameters } from "vocdoni-net" // TODO: Import from the new NPM package
 import { CensusErc20Api, ProcessState, VochainWaiter, VotingApi, VotingOracleApi } from "vocdoni-client" // TODO: Import from the new NPM package
 import { INewProcessErc20Params, ProcessMetadata, ProcessMetadataTemplate } from "vocdoni-models" // TODO: Import from the new NPM package
-import { EthNetworkID, VocdoniEnvironment } from "vocdoni-common" // TODO: Import from the new NPM package
+import { EthNetworkID, VocdoniEnvironment } from "@vocdoni/common"
 
 
 const CONFIG_PATH = "./config.yaml"

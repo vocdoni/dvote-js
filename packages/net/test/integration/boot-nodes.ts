@@ -1,7 +1,7 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
 
-import { VocdoniEnvironment } from "vocdoni-common" // TODO: Import from the new NPM package
+import { VocdoniEnvironment } from "@vocdoni/common"
 import { DVoteGateway, GatewayBootnode, Web3Gateway } from "../../src"
 
 const DEV_BOOTNODES_URL = "https://bootnodes.vocdoni.net/gateways.dev.json"

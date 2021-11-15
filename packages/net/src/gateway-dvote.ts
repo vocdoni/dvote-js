@@ -1,22 +1,16 @@
-import { Wallet, Signer } from "ethers"
-import { VocdoniEnvironment } from "vocdoni-common" // TODO reference the future package
+import { Signer, Wallet } from "ethers"
+import {
+    extractUint8ArrayJSONValue,
+    GATEWAY_SELECTION_TIMEOUT,
+    promiseWithTimeout,
+    Random,
+    VocdoniEnvironment
+} from "@vocdoni/common"
 import { IGatewayDVoteClient } from "./common"
 import { GatewayInfo } from "./wrappers/gateway-info"
-import {
-    GatewayApiMethod,
-    BackendApiMethod,
-    allApis,
-    registryApiMethods,
-    ApiMethod,
-    GatewayApiName,
-    BackendApiName,
-    InfoApiMethod,
-    RawApiMethod
-} from "vocdoni-models" // TODO reference the future package
-import { JsonSignature, BytesSignature } from "vocdoni-signing" // TODO: Import from the new NPM package
+import { allApis, ApiMethod, BackendApiName, GatewayApiName, InfoApiMethod, RawApiMethod } from "vocdoni-models" // TODO reference the future package
+import { BytesSignature, JsonSignature } from "vocdoni-signing" // TODO: Import from the new NPM package
 import axios, { AxiosInstance, AxiosResponse } from "axios"
-import { extractUint8ArrayJSONValue } from "vocdoni-common" // TODO: Import from the new NPM package
-import { Random, GATEWAY_SELECTION_TIMEOUT, promiseWithTimeout } from "vocdoni-common" // TODO: Import from the new NPM package
 
 ///////////////////////////////////////////////////////////////////////////////
 // DVOTE GATEWAY

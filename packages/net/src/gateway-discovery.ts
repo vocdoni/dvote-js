@@ -4,8 +4,14 @@ import { DVoteGateway } from "./gateway-dvote"
 import { Web3Gateway } from "./gateway-web3"
 import { GatewayBootnode } from "./gateway-bootnode"
 import { JsonBootnodeData } from "vocdoni-models" // TODO reference the future package
-import { Random, GATEWAY_SELECTION_TIMEOUT, allSettled, promiseWithTimeout } from "vocdoni-common" // TODO: Import from the new NPM package
-import { EthNetworkID, VocdoniEnvironment } from "vocdoni-common" // TODO reference the future package
+import {
+    allSettled,
+    EthNetworkID,
+    GATEWAY_SELECTION_TIMEOUT,
+    promiseWithTimeout,
+    Random,
+    VocdoniEnvironment
+} from "@vocdoni/common"
 import { GatewayDiscoveryError, GatewayDiscoveryValidationError } from "./errors/gateway-discovery"
 
 export interface IGatewayDiscoveryParameters {
