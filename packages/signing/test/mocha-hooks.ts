@@ -1,1 +1,1 @@
-../../shared/test/mocha-hooks.ts
+../../../shared/test/mocha-hooks.ts
