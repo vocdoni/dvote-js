@@ -1,4 +1,7 @@
-import { Wallet, Signer, utils, providers } from "ethers"
+import { Wallet, verifyMessage } from "@ethersproject/wallet"
+import { computeAddress } from "@ethersproject/transactions"
+import { Signer } from "@ethersproject/abstract-signer"
+import { JsonRpcSigner } from "@ethersproject/providers"
 
 export namespace BytesSignature {
     /**
@@ -13,7 +16,7 @@ export namespace BytesSignature {
         if (walletOrSigner instanceof Wallet) {
             return walletOrSigner.signMessage(request)
         }
-        else if (walletOrSigner instanceof providers.JsonRpcSigner) {
+        else if (walletOrSigner instanceof JsonRpcSigner) {
             // Some providers will use eth_sign without prepending the Ethereum prefix.
             // This will break signatures in some cases (Wallet Connect, Ledger, Trezor, etc).
             // Using personal_sign instead
@@ -42,10 +45,10 @@ export namespace BytesSignature {
         else if (!signature) return false
 
         const gwPublicKey = publicKey.startsWith("0x") ? publicKey : "0x" + publicKey
-        const expectedAddress = utils.computeAddress(gwPublicKey)
+        const expectedAddress = computeAddress(gwPublicKey)
 
         if (!signature.startsWith("0x")) signature = "0x" + signature
-        const actualAddress = utils.verifyMessage(messageBytes, signature)
+        const actualAddress = verifyMessage(messageBytes, signature)
 
         return actualAddress && expectedAddress && (actualAddress == expectedAddress)
     }

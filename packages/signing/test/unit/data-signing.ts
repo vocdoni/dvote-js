@@ -1,8 +1,8 @@
 import "mocha" // using @types/mocha
 import { expect, } from "chai"
 import { addCompletionHooks } from "../../../../shared/test/mocha-hooks"
-import { utils, Wallet } from "ethers"
-import { TextEncoder } from "util"
+import { computePublicKey } from "@ethersproject/signing-key"
+import { Wallet } from "@ethersproject/wallet"
 
 import { JsonSignature, BytesSignature } from "../../src"
 
@@ -59,14 +59,14 @@ describe("JSON signing", () => {
         const signature1 = await JsonSignature.sign(jsonBody1, wallet)
         const signature2 = await JsonSignature.sign(jsonBody2, wallet)
 
-        expect(JsonSignature.isValid(signature1, utils.computePublicKey(wallet.publicKey, true), jsonBody1)).to.be.true
-        expect(JsonSignature.isValid(signature2, utils.computePublicKey(wallet.publicKey, true), jsonBody2)).to.be.true
+        expect(JsonSignature.isValid(signature1, computePublicKey(wallet.publicKey, true), jsonBody1)).to.be.true
+        expect(JsonSignature.isValid(signature2, computePublicKey(wallet.publicKey, true), jsonBody2)).to.be.true
         expect(JsonSignature.isValid(signature1, wallet.publicKey, jsonBody1)).to.be.true
         expect(JsonSignature.isValid(signature2, wallet.publicKey, jsonBody2)).to.be.true
     })
     it("Should produce and recognize valid signatures with UTF-8 data (BytesSignature.isValid)", async () => {
         const wallet = new Wallet("8d7d56a9efa4158d232edbeaae601021eb3477ad77b5f3c720601fd74e8e04bb")
-        const publicKeyComp = utils.computePublicKey(wallet.publicKey, true)
+        const publicKeyComp = computePublicKey(wallet.publicKey, true)
         const publicKey = wallet.publicKey
 
         const jsonBody1 = '{ "a": "àèìòù", "b": "áéíóú" }'
@@ -99,8 +99,8 @@ describe("JSON signing", () => {
         const signature1 = await BytesSignature.sign(bytesBody1, wallet)
         const signature2 = await BytesSignature.sign(bytesBody2, wallet)
 
-        expect(BytesSignature.isValid(signature1, utils.computePublicKey(wallet.publicKey, true), bytesBody1)).to.be.true
-        expect(BytesSignature.isValid(signature2, utils.computePublicKey(wallet.publicKey, true), bytesBody2)).to.be.true
+        expect(BytesSignature.isValid(signature1, computePublicKey(wallet.publicKey, true), bytesBody1)).to.be.true
+        expect(BytesSignature.isValid(signature2, computePublicKey(wallet.publicKey, true), bytesBody2)).to.be.true
         expect(BytesSignature.isValid(signature1, wallet.publicKey, bytesBody1)).to.be.true
         expect(BytesSignature.isValid(signature2, wallet.publicKey, bytesBody2)).to.be.true
     })
@@ -119,7 +119,7 @@ describe("JSON signing", () => {
         const recoveredPubKey2 = JsonSignature.recoverPublicKey(jsonBody2, signature2, true)
 
         expect(recoveredPubKeyComp1).to.equal(recoveredPubKeyComp2)
-        expect(recoveredPubKeyComp1).to.equal(utils.computePublicKey(wallet.publicKey, true))
+        expect(recoveredPubKeyComp1).to.equal(computePublicKey(wallet.publicKey, true))
         expect(recoveredPubKeyComp1).to.equal("0x02cb3cabb521d84fc998b5649d6b59e27a3e27633d31cc0ca6083a00d68833d5ca")
 
         expect(recoveredPubKey1).to.equal(recoveredPubKey2)
@@ -141,7 +141,7 @@ describe("JSON signing", () => {
         const recoveredPubKey2 = JsonSignature.recoverPublicKey(jsonBody2, signature2, true)
 
         expect(recoveredPubKeyComp1).to.equal(recoveredPubKeyComp2)
-        expect(recoveredPubKeyComp1).to.equal(utils.computePublicKey(wallet.publicKey, true))
+        expect(recoveredPubKeyComp1).to.equal(computePublicKey(wallet.publicKey, true))
         expect(recoveredPubKeyComp1).to.equal("0x02cb3cabb521d84fc998b5649d6b59e27a3e27633d31cc0ca6083a00d68833d5ca")
 
         expect(recoveredPubKey1).to.equal(recoveredPubKey2)

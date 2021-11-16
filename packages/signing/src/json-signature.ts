@@ -1,4 +1,11 @@
-import { Wallet, Signer, utils, providers } from "ethers"
+import { Wallet, verifyMessage } from "@ethersproject/wallet"
+import { computeAddress } from "@ethersproject/transactions"
+import { toUtf8Bytes } from "@ethersproject/strings"
+import { hashMessage } from "@ethersproject/hash"
+import { arrayify } from "@ethersproject/bytes"
+import { recoverPublicKey as signingKeyRecoverPublicKey, computePublicKey } from "@ethersproject/signing-key"
+import { Signer } from "@ethersproject/abstract-signer"
+import { JsonRpcSigner } from "@ethersproject/providers"
 
 export namespace JsonSignature {
     /**
@@ -14,10 +21,10 @@ export namespace JsonSignature {
         const msg = JSON.stringify(sortedRequest)
 
         if (walletOrSigner instanceof Wallet) {
-            const msgBytes = utils.toUtf8Bytes(msg)
+            const msgBytes = toUtf8Bytes(msg)
             return walletOrSigner.signMessage(msgBytes)
         }
-        else if (walletOrSigner instanceof providers.JsonRpcSigner) {
+        else if (walletOrSigner instanceof JsonRpcSigner) {
             // Some providers will use eth_sign without prepending the Ethereum prefix.
             // This will break signatures in some cases (Wallet Connect, Ledger, Trezor, etc).
             // Using personal_sign instead
@@ -31,7 +38,7 @@ export namespace JsonSignature {
         }
 
         // Unexpected case, try to sign with eth_sign, even if we would prefer `personal_sign`
-        const msgBytes = utils.toUtf8Bytes(msg)
+        const msgBytes = toUtf8Bytes(msg)
         return walletOrSigner.signMessage(msgBytes)
     }
 
@@ -47,13 +54,13 @@ export namespace JsonSignature {
         else if (!signature) return false
 
         const gwPublicKey = publicKey.startsWith("0x") ? publicKey : "0x" + publicKey
-        const expectedAddress = utils.computeAddress(gwPublicKey)
+        const expectedAddress = computeAddress(gwPublicKey)
 
         const sortedResponseBody = JsonSignature.sort(responseBody)
-        const bodyBytes = utils.toUtf8Bytes(JSON.stringify(sortedResponseBody))
+        const bodyBytes = toUtf8Bytes(JSON.stringify(sortedResponseBody))
 
         if (!signature.startsWith("0x")) signature = "0x" + signature
-        const actualAddress = utils.verifyMessage(bodyBytes, signature)
+        const actualAddress = verifyMessage(bodyBytes, signature)
 
         return actualAddress && expectedAddress && (actualAddress == expectedAddress)
     }
@@ -70,13 +77,13 @@ export namespace JsonSignature {
 
         responseBody = JsonSignature.sort(responseBody)
         const strBody = JSON.stringify(responseBody)
-        const bodyBytes = utils.toUtf8Bytes(strBody)
-        const msgHash = utils.hashMessage(bodyBytes)
-        const msgHashBytes = utils.arrayify(msgHash)
+        const bodyBytes = toUtf8Bytes(strBody)
+        const msgHash = hashMessage(bodyBytes)
+        const msgHashBytes = arrayify(msgHash)
 
-        const expandedPubKey = utils.recoverPublicKey(msgHashBytes, signature)
+        const expandedPubKey = signingKeyRecoverPublicKey(msgHashBytes, signature)
         if (expanded) return expandedPubKey
-        return utils.computePublicKey(expandedPubKey, true)
+        return computePublicKey(expandedPubKey, true)
     }
 
     /**
