@@ -22,17 +22,18 @@
   },
   "dependencies": {
     "@ethersproject/bignumber": "^5.5.0",
+    "@vocdoni/common": "^1.14.0",
+    "@vocdoni/contract-wrappers": "^1.14.0",
+    "@vocdoni/encryption": "^1.14.0",
     "buffer": "^6.0.3",
     "iso-language-codes": "^1.0.6",
     "protobufjs": "^6.10.2",
-    "yup": "^0.32.9",
-    "@vocdoni/common": "^1.14.0",
-    "@vocdoni/contract-wrappers": "^1.14.0",
-    "@vocdoni/encryption": "^1.14.0"
+    "yup": "^0.32.9"
   },
   "devDependencies": {
     "@types/chai": "^4.1.7",
     "@types/mocha": "^9.0.0",
+    "@types/yup": "^0.29.13",
     "chai": "^4.2.0",
     "mocha": "^9.1.1",
     "rimraf": "^3.0.2",
