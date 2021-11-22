@@ -13,7 +13,7 @@ import { Buffer } from "buffer/"
 
 import { VotingApi, VotePackage } from "../../src"
 
-import { Asymmetric } from "vocdoni-encryption" // TODO: Import from the new NPM package
+import { Asymmetric } from "@vocdoni/encryption"
 import { IProofCA, IProofEVM, ProofCaSignatureTypes } from "vocdoni-models" // TODO: Import from the new NPM package
 import { ProcessCensusOrigin } from "vocdoni-contracts" // TODO: Import from the new NPM package
 

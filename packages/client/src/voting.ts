@@ -14,7 +14,7 @@ import {
 } from "@vocdoni/common"
 import { BytesSignature } from "@vocdoni/signing"
 import { Buffer } from "buffer/"  // Previously using "arraybuffer-to-string"
-import { Asymmetric } from "vocdoni-encryption" // TODO reference the future package
+import { Asymmetric } from "@vocdoni/encryption"
 import { VochainWaiter } from "./util/waiters"
 import { IMethodOverrides, ProcessContractParameters, ProcessStatus, IProcessStatus, ProcessCensusOrigin, IProcessCensusOrigin } from "vocdoni-contracts" // TODO reference the future package
 import {

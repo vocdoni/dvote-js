@@ -1,4 +1,4 @@
-import { Symmetric } from "vocdoni-encryption" // TODO: Import from the new NPM package
+import { Symmetric } from "@vocdoni/encryption"
 import { Wallet as PbWallet, WalletBackup, Account as PbAccount } from "./protobuf"
 import {
     walletBackup_Recovery_QuestionEnumFromJSON,
