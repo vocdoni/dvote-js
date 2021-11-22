@@ -1,4 +1,4 @@
-# @vocdoni/signing - Changelog
+# @vocdoni/wallets - Changelog
 
 ## 1.14.0
 

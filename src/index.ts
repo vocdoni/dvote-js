@@ -14,15 +14,4 @@ export * from "vocdoni-net" // TODO: Export from the new NPM package
 export * from "@vocdoni/signing"
 export * from "@vocdoni/encryption"
 export * from "@vocdoni/hashing"
-export * from "vocdoni-wallets" // TODO: Export from the new NPM package
-
-/**
- * TODO Review
- * Web3Signer::fromInjected not exported
- *
- * Web3Signer::fromInjected is already exported in ProviderUtil from `net` package
- * and in SignerUtil from `wallets` package
- */
-// export * from "./crypto/signers"
-
-
+export * from "@vocdoni/wallets"
