@@ -1,7 +1,7 @@
 /**
  * Extract in bytes (Uint8Array) the JSON value of a unique JSON key from a Uint8Array
  * @param array Uint8Array 
- * @param regex RegExp that defines the beginning of the JSON value to be extracted (that must bey a unique JSON key)
+ * @param regex RegExp that defines the begining of the JSON value to be extracted (that must bey a unique JSON key)
  */
 export function extractUint8ArrayJSONValue(array: Uint8Array, field: string): Uint8Array {
     let c, char2, char3, lastChar

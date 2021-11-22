@@ -9,8 +9,10 @@ import {
     XDAI_CHAIN_ID,
     SOKOL_CHAIN_ID,
     SOKOL_GAS_PRICE,
+    Random,
+    uintArrayToHex
 } from "@vocdoni/common"
-import { BytesSignature } from "vocdoni-signing" // TODO reference the future package
+import { BytesSignature } from "@vocdoni/signing"
 import { Buffer } from "buffer/"  // Previously using "arraybuffer-to-string"
 import { Asymmetric } from "vocdoni-encryption" // TODO reference the future package
 import { VochainWaiter } from "./util/waiters"
@@ -35,7 +37,6 @@ import { CensusErc20Api } from "./census"
 import { ProcessEnvelopeType } from "dvote-solidity" // TODO fix
 import { IGatewayClient, IGatewayDVoteClient, IGatewayWeb3Client } from "vocdoni-net" // TODO reference the future package
 import { Poseidon } from "vocdoni-hashing" // TODO reference the future package
-import { Random, uintArrayToHex } from "@vocdoni/common"
 import { ResultsNotAvailableError } from "./errors/results";
 import { ApiMethod } from "vocdoni-models" // TODO reference the future package
 import { ProofArbo_Type } from "vocdoni-models" // TODO reference the future package

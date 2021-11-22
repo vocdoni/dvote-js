@@ -9,7 +9,7 @@ import {
 import { IGatewayDVoteClient } from "./common"
 import { GatewayInfo } from "./wrappers/gateway-info"
 import { allApis, ApiMethod, BackendApiName, GatewayApiName, InfoApiMethod, RawApiMethod } from "vocdoni-models" // TODO reference the future package
-import { BytesSignature, JsonSignature } from "vocdoni-signing" // TODO: Import from the new NPM package
+import { BytesSignature, JsonSignature } from "@vocdoni/signing"
 import axios, { AxiosInstance, AxiosResponse } from "axios"
 
 ///////////////////////////////////////////////////////////////////////////////

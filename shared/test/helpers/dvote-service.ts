@@ -4,7 +4,7 @@ import { json } from "body-parser"
 import { Server } from "http";
 import { Wallet, utils } from "ethers"
 import { TextEncoder } from "util"
-import { BytesSignature } from "vocdoni-signing" // TODO: Import from the new NPM package
+import { BytesSignature } from "@vocdoni/signing"
 import { DVoteGateway, GatewayInfo } from "vocdoni-net" // TODO: Import from the new NPM package
 import { getWallets } from "./web3-service"
 import { BackendApiName, GatewayApiName } from "vocdoni-models" // TODO reference the future package

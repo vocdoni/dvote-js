@@ -22,8 +22,8 @@
   },
   "dependencies": {
     "@vocdoni/common": "^1.14.0",
+    "@vocdoni/signing": "^1.14.0",
     "vocdoni-contracts": "file:packages/contracts/contracts.tgz",
-    "vocdoni-signing": "file:packages/signing/signing.tgz",
     "vocdoni-hashing": "file:packages/hashing/hashing.tgz",
     "vocdoni-encryption": "file:packages/encryption/encryption.tgz",
     "vocdoni-models": "file:packages/models/models.tgz",

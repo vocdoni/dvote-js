@@ -11,7 +11,7 @@ export * from "vocdoni-models" // TODO: Export from the new NPM package
 export * from "vocdoni-net" // TODO: Export from the new NPM package
 
 // CRYPTO
-export * from "vocdoni-signing" // TODO: Export from the new NPM package
+export * from "@vocdoni/signing"
 export * from "vocdoni-encryption" // TODO: Export from the new NPM package
 export * from "vocdoni-hashing" // TODO: Export from the new NPM package
 export * from "vocdoni-wallets" // TODO: Export from the new NPM package
