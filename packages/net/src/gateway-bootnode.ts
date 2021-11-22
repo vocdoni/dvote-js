@@ -16,7 +16,7 @@ import {
     XDAI_PROVIDER_URI,
     XDAI_STG_ENS_REGISTRY_ADDRESS,
 } from "@vocdoni/common"
-import { JsonBootnodeData, TextRecordKeys } from "vocdoni-models" // TODO reference the future package // TODO reference the future package
+import { JsonBootnodeData, TextRecordKeys } from "@vocdoni/data-models"
 import { DVoteGateway } from "./gateway-dvote"
 import { Web3Gateway } from "./gateway-web3"
 import { getDefaultProvider, providers } from "ethers"

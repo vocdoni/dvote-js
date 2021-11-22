@@ -1,8 +1,8 @@
 // import { FileApi, ProcessSummary } from "../../client/src" // TODO (should really) reference the future package?
 import { FileApi } from "./util/file" // TODO !!(should really) reference the future package?
 import { GatewayArchiveError } from "./errors/gateway-archive"
-import { TextRecordKeys } from "vocdoni-models" // TODO reference the future package
-import { VochainProcessStatus } from "vocdoni-models" // TODO reference the future package
+import { TextRecordKeys } from "@vocdoni/data-models"
+import { VochainProcessStatus } from "@vocdoni/data-models"
 import { getEnsTextRecord } from "./util/ens"
 import { ContentUri } from "./wrappers/content-uri"
 import { EthNetworkID } from "@vocdoni/common"

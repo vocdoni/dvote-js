@@ -2,7 +2,7 @@ import { Wallet, Signer, utils, ContractTransaction, BigNumber, providers } from
 import { GatewayArchive, GatewayArchiveApi } from "vocdoni-net" // TODO reference the future package
 import { FileApi } from "./file"
 import { EntityApi } from "./entity"
-import { ProcessMetadata, checkValidProcessMetadata, INewProcessParams, IProofEVM, IProofCA, IProofArbo, INewProcessErc20Params, ProcessResultsSingleChoice, SingleChoiceQuestionResults, ProcessResultsSingleQuestion } from "vocdoni-models" // TODO reference the future package
+import { ProcessMetadata, checkValidProcessMetadata, INewProcessParams, IProofEVM, IProofCA, IProofArbo, INewProcessErc20Params, ProcessResultsSingleChoice, SingleChoiceQuestionResults, ProcessResultsSingleQuestion } from "@vocdoni/data-models"
 import {
     VOCHAIN_BLOCK_TIME,
     XDAI_GAS_PRICE,
@@ -30,16 +30,16 @@ import {
     VochainCensusOrigin,
     VochainProcessStatus,
     RegisterKeyTx,
-    SourceNetworkId
-} from "vocdoni-models" // TODO reference the future package
+    SourceNetworkId,
+    ApiMethod,
+    ProofArbo_Type
+} from "@vocdoni/data-models"
 import { DVoteGateway, DVoteGatewayResponseBody, IRequestParameters } from "vocdoni-net" // TODO reference the future package
 import { CensusErc20Api } from "./census"
 import { ProcessEnvelopeType } from "dvote-solidity" // TODO fix
 import { IGatewayClient, IGatewayDVoteClient, IGatewayWeb3Client } from "vocdoni-net" // TODO reference the future package
 import { Poseidon } from "@vocdoni/hashing" // TODO reference the future package
 import { ResultsNotAvailableError } from "./errors/results";
-import { ApiMethod } from "vocdoni-models" // TODO reference the future package
-import { ProofArbo_Type } from "vocdoni-models" // TODO reference the future package
 
 export const CaBundleProtobuf: any = CAbundle
 export { VochainWaiter, EthWaiter } from "./util/waiters"

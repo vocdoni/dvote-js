@@ -3,7 +3,7 @@ import { Gateway } from "./gateway"
 import { DVoteGateway } from "./gateway-dvote"
 import { Web3Gateway } from "./gateway-web3"
 import { GatewayBootnode } from "./gateway-bootnode"
-import { JsonBootnodeData } from "vocdoni-models" // TODO reference the future package
+import { JsonBootnodeData } from "@vocdoni/data-models"
 import {
     allSettled,
     EthNetworkID,

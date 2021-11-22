@@ -4,6 +4,5 @@ test
 .env
 .github
 .vscode
-src/models/protobuf/build/dart
-src/models/protobuf/build/go
-src/models/protobuf/src
+packages
+test

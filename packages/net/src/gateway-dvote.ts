@@ -8,7 +8,7 @@ import {
 } from "@vocdoni/common"
 import { IGatewayDVoteClient } from "./common"
 import { GatewayInfo } from "./wrappers/gateway-info"
-import { allApis, ApiMethod, BackendApiName, GatewayApiName, InfoApiMethod, RawApiMethod } from "vocdoni-models" // TODO reference the future package
+import { allApis, ApiMethod, BackendApiName, GatewayApiName, InfoApiMethod, RawApiMethod } from "@vocdoni/data-models"
 import { BytesSignature, JsonSignature } from "@vocdoni/signing"
 import axios, { AxiosInstance, AxiosResponse } from "axios"
 

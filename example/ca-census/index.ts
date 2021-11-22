@@ -13,7 +13,7 @@ import {
     ProcessMetadata,
     ProcessMetadataTemplate,
     ProofCaSignatureTypes
-} from "vocdoni-models" // TODO: Import from the new NPM package
+} from "@vocdoni/data-models"
 import { CaBundleProtobuf, CensusCaApi, EntityApi, EthWaiter, VochainWaiter, VotingApi } from "vocdoni-client" // TODO: Import from the new NPM package
 import {
     ProcessCensusOrigin,

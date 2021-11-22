@@ -5,7 +5,7 @@ export * from "@vocdoni/common"
 export * from "vocdoni-client" // TODO: Export from the new NPM package
 
 // MODELS
-export * from "vocdoni-models" // TODO: Export from the new NPM package
+export * from "@vocdoni/data-models"
 
 // NETWORK
 export * from "vocdoni-net" // TODO: Export from the new NPM package

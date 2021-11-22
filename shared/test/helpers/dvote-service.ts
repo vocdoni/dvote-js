@@ -7,7 +7,7 @@ import { TextEncoder } from "util"
 import { BytesSignature } from "@vocdoni/signing"
 import { DVoteGateway, GatewayInfo } from "vocdoni-net" // TODO: Import from the new NPM package
 import { getWallets } from "./web3-service"
-import { BackendApiName, GatewayApiName } from "vocdoni-models" // TODO reference the future package
+import { BackendApiName, GatewayApiName } from "@vocdoni/data-models"
 
 
 export type TestResponse = {

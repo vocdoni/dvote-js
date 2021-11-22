@@ -4,7 +4,7 @@
 
 import { Contract, providers, utils, Wallet, Signer, ContractInterface } from "ethers"
 import { GatewayInfo } from "./wrappers/gateway-info"
-import { GatewayApiName, BackendApiName, ApiMethod } from "vocdoni-models" // TODO reference the future package
+import { GatewayApiName, BackendApiName, ApiMethod } from "@vocdoni/data-models"
 import { GatewayBootnode } from "./gateway-bootnode"
 import { ContentUri } from "./wrappers/content-uri"
 import { IProcessesContract, IEnsPublicResolverContract, INamespacesContract, ITokenStorageProofContract, IGenesisContract, IResultsContract } from "@vocdoni/contract-wrappers"

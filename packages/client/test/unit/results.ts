@@ -2,7 +2,7 @@ import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
 
-import { ProcessMetadata, ProcessMetadataTemplate } from "vocdoni-models" // TODO: Import from the new NPM package
+import { ProcessMetadata, ProcessMetadataTemplate } from "@vocdoni/data-models"
 import { Voting, VotingApi } from "../../src"
 import { ProcessStatus } from "dvote-solidity" // TODO review this import directly from dvote-solidity
 

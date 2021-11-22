@@ -16,7 +16,7 @@
     "yaml": "^1.9.2",
     "@vocdoni/common": "^1.14.0",
     "@vocdoni/contract-wrappers": "^1.14.0",
-    "vocdoni-models": "file:../../packages/models/models.tgz",
+    "@vocdoni/data-models": "^1.14.0",
     "vocdoni-net": "file:../../packages/net/net.tgz",
     "vocdoni-client": "file:../../packages/client/client.tgz"
   },

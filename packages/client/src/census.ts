@@ -16,7 +16,7 @@ import {
     verify as _verify
 } from "blindsecp256k1"
 import { hexZeroPad } from "ethers/lib/utils"
-import { Census_Type } from "vocdoni-models" // TODO reference the future package
+import { Census_Type } from "@vocdoni/data-models"
 // import ContentURI from "vocdoni-net" // TODO reference the future package
 
 export namespace CensusOffChain {

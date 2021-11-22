@@ -31,7 +31,7 @@
     "@vocdoni/common": "^1.14.0",
     "@vocdoni/encryption": "^1.14.0",
     "@vocdoni/contract-wrappers": "^1.14.0",
-    "vocdoni-models": "file:../models/models.tgz",
+    "@vocdoni/data-models": "^1.14.0",
     "vocdoni-net": "file:../net/net.tgz"
   },
   "devDependencies": {

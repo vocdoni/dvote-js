@@ -4,7 +4,7 @@ import { addCompletionHooks } from "../mocha-hooks"
 import { DevGatewayService } from "../../../../shared/test/helpers/dvote-service"
 import { DevWeb3Service, getWallets } from "../../../../shared/test/helpers/web3-service"
 
-import { BackendApiName, GatewayApiName } from "vocdoni-models" // TODO reference the future package
+import { BackendApiName, GatewayApiName } from "@vocdoni/data-models"
 
 import { DVoteGateway, GatewayInfo, Web3Gateway } from "../../src"
 
