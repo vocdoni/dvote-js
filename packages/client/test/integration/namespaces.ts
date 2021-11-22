@@ -7,9 +7,9 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { Contract, ContractTransaction, providers } from "ethers"
-import { addCompletionHooks } from "../../../../shared/test/mocha-hooks"
+import { addCompletionHooks } from "../mocha-hooks"
 import DevServices, { TestAccount } from "../../../../shared/test/helpers/all-services"
-import { NamespacesContractMethods } from "vocdoni-contracts" // TODO: Import from the new NPM package
+import { NamespacesContractMethods } from "@vocdoni/contract-wrappers"
 
 import NamespaceBuilder, { DEFAULT_NAMESPACE } from "../../../../shared/test/builders/namespace"
 

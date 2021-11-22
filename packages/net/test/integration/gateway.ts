@@ -1,6 +1,6 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
-import { addCompletionHooks } from "../../../../shared/test/mocha-hooks"
+import { addCompletionHooks } from "../mocha-hooks"
 import { DevGatewayService } from "../../../../shared/test/helpers/dvote-service"
 import { DevWeb3Service, getWallets } from "../../../../shared/test/helpers/web3-service"
 

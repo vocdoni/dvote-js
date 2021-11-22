@@ -7,9 +7,9 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { Contract, providers } from "ethers"
-import { addCompletionHooks } from "../../../../shared/test/mocha-hooks"
+import { addCompletionHooks } from "../mocha-hooks"
 import DevServices, { TestAccount } from "../../../../shared/test/helpers/all-services"
-import { GenesisContractMethods } from "vocdoni-contracts" // TODO: Import from the new NPM package
+import { GenesisContractMethods } from "@vocdoni/contract-wrappers"
 
 import GenesisBuilder, { DEFAULT_GENESIS, DEFAULT_ORACLES, DEFAULT_VALIDATORS, DEFAULT_CHAIN_ID } from "../../../../shared/test/builders/genesis"
 

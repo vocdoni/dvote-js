@@ -27,8 +27,8 @@
     "protobufjs": "^6.10.2",
     "yup": "^0.32.9",
     "@vocdoni/common": "^1.14.0",
-    "@vocdoni/encryption": "^1.14.0",
-    "vocdoni-contracts": "file:../contracts/contracts.tgz"
+    "@vocdoni/contract-wrappers": "^1.14.0",
+    "@vocdoni/encryption": "^1.14.0"
   },
   "devDependencies": {
     "@types/chai": "^4.1.7",

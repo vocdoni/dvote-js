@@ -1,6 +1,6 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
-import { addCompletionHooks } from "../../../../shared/test/mocha-hooks"
+import { addCompletionHooks } from "../mocha-hooks"
 
 import { ContentUri, ContentHashedUri, GatewayInfo } from "../../src"
 

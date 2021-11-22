@@ -3,7 +3,7 @@
 import {
     GenesisContractMethods,
     GenesisContractDefinition
-} from "vocdoni-contracts" // TODO: Import from the new NPM package
+} from "@vocdoni/contract-wrappers"
 import { Contract, ContractFactory } from "ethers"
 import { TestAccount } from "../helpers/all-services"
 

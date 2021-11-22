@@ -11,7 +11,7 @@ import {
 } from "@vocdoni/common"
 import { object, array, string, number } from "yup"
 import { by639_1 } from 'iso-language-codes'
-import { IProcessCreateParams } from "vocdoni-contracts" // TODO: Import from the new NPM package
+import { IProcessCreateParams } from "@vocdoni/contract-wrappers"
 import { BigNumber } from "@ethersproject/bignumber"
 import { ProofCA_Type } from "./protobuf"
 

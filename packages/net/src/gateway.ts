@@ -7,7 +7,7 @@ import { GatewayInfo } from "./wrappers/gateway-info"
 import { GatewayApiName, BackendApiName, ApiMethod } from "vocdoni-models" // TODO reference the future package
 import { GatewayBootnode } from "./gateway-bootnode"
 import { ContentUri } from "./wrappers/content-uri"
-import { IProcessesContract, IEnsPublicResolverContract, INamespacesContract, ITokenStorageProofContract, IGenesisContract, IResultsContract } from "vocdoni-contracts" // TODO reference the future package
+import { IProcessesContract, IEnsPublicResolverContract, INamespacesContract, ITokenStorageProofContract, IGenesisContract, IResultsContract } from "@vocdoni/contract-wrappers"
 import { DVoteGateway, IRequestParameters } from "./gateway-dvote"
 import { Web3Gateway } from "./gateway-web3"
 import { EthNetworkID, VocdoniEnvironment } from "@vocdoni/common"

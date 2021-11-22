@@ -25,7 +25,7 @@
     "@vocdoni/signing": "^1.14.0",
     "@vocdoni/hashing": "^1.14.0",
     "@vocdoni/encryption": "^1.14.0",
-    "vocdoni-contracts": "file:packages/contracts/contracts.tgz",
+    "@vocdoni/contract-wrappers": "^1.14.0",
     "vocdoni-models": "file:packages/models/models.tgz",
     "vocdoni-net": "file:packages/net/net.tgz",
     "vocdoni-client": "file:packages/client/client.tgz",

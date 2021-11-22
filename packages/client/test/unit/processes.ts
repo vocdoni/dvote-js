@@ -7,7 +7,7 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { Wallet } from "ethers"
-import { addCompletionHooks } from "../../../../shared/test/mocha-hooks"
+import { addCompletionHooks } from "../mocha-hooks"
 import { DevWeb3Service, TestAccount } from "../../../../shared/test/helpers/web3-service"
 import { Buffer } from "buffer/"
 
@@ -15,7 +15,7 @@ import { VotingApi, VotePackage } from "../../src"
 
 import { Asymmetric } from "@vocdoni/encryption"
 import { IProofCA, IProofEVM, ProofCaSignatureTypes } from "vocdoni-models" // TODO: Import from the new NPM package
-import { ProcessCensusOrigin } from "vocdoni-contracts" // TODO: Import from the new NPM package
+import { ProcessCensusOrigin } from "@vocdoni/contract-wrappers"
 
 import {
     // VoteEnvelope,

@@ -12,7 +12,7 @@ import {
     ProcessEnvelopeType,
     ProcessMode,
     ProcessStatus
-} from "vocdoni-contracts" // TODO: Import from the new NPM package
+} from "@vocdoni/contract-wrappers"
 import { EthNetworkID, VocdoniEnvironment } from "@vocdoni/common"
 
 const CONFIG_PATH = "./config.yaml"

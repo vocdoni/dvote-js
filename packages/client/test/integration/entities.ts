@@ -1,9 +1,9 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { Contract } from "ethers"
-import { addCompletionHooks } from "../../../../shared/test/mocha-hooks"
+import { addCompletionHooks } from "../mocha-hooks"
 import DevServices, { TestAccount } from "../../../../shared/test/helpers/all-services"
-import { ensHashAddress, EnsResolverContractMethods } from "vocdoni-contracts" // TODO: Import from the new NPM package
+import { ensHashAddress, EnsResolverContractMethods } from "@vocdoni/contract-wrappers"
 import { Web3Gateway } from "vocdoni-net" // TODO: Import from the new NPM package
 import EntityResolverBuilder, { DEFAULT_NAME } from "../../../../shared/test/builders/ens-resolver"
 

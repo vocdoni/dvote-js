@@ -1,6 +1,6 @@
 // NOTE: This code is borrowed from dvote-solidity
 
-import { ResultsContractMethods, ResultsContractDefinition } from "vocdoni-contracts" // TODO: Import from the new NPM package
+import { ResultsContractMethods, ResultsContractDefinition } from "@vocdoni/contract-wrappers"
 import { Contract, ContractFactory } from "ethers"
 import { TestAccount } from "../helpers/all-services"
 import GenesisBuilder from "./genesis"

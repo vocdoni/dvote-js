@@ -26,7 +26,7 @@
     "universal-parse-url": "^1.0.2",
     "@vocdoni/common": "^1.14.0",
     "@vocdoni/signing": "^1.14.0",
-    "vocdoni-contracts": "file:../contracts/contracts.tgz",
+    "@vocdoni/contract-wrappers": "^1.14.0",
     "vocdoni-models": "file:../models/models.tgz"
   },
   "devDependencies": {

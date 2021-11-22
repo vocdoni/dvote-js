@@ -40,7 +40,7 @@ import {
     PublicResolverContractDefinition,
     ResultsContractDefinition,
     ResultsContractMethods
-} from "vocdoni-contracts" // TODO reference the future package
+} from "@vocdoni/contract-wrappers"
 import { IGatewayWeb3Client } from './common'
 
 const { JsonRpcProvider, Web3Provider, IpcProvider, InfuraProvider, FallbackProvider, EtherscanProvider } = providers

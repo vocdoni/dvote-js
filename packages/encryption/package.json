@@ -1,6 +1,6 @@
 {
   "name": "@vocdoni/encryption",
-  "version": "1.14.0",
+  "version": "1.14.1",
   "description": "Javascript/Typescript encryption package",
   "main": "dist/index",
   "types": "dist/index",

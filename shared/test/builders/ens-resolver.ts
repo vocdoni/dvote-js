@@ -1,7 +1,7 @@
 import { Contract } from "ethers"
 import { TestAccount } from "../helpers/all-services"
 import { Web3Gateway } from "vocdoni-net" // TODO: Import from the new NPM package
-import { ensHashAddress, EnsResolverContractMethods, PublicResolverContractDefinition } from "vocdoni-contracts" // TODO: Import from the new NPM package
+import { ensHashAddress, EnsResolverContractMethods, PublicResolverContractDefinition } from "@vocdoni/contract-wrappers"
 
 // DEFAULT VALUES
 export const DEFAULT_NAME = "Entity Name"

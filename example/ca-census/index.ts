@@ -21,7 +21,7 @@ import {
     ProcessEnvelopeType,
     ProcessMode,
     ProcessStatus
-} from "vocdoni-contracts" // TODO: Import from the new NPM package
+} from "@vocdoni/contract-wrappers"
 import axios from "axios"
 import { EthNetworkID, Random, VocdoniEnvironment } from "@vocdoni/common"
 

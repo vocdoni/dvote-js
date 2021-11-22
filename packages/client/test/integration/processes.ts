@@ -3,7 +3,7 @@ import { expect } from "chai"
 import DevServices, { TestAccount } from "../../../../shared/test/helpers/all-services"
 
 import { Contract } from "ethers"
-import { ProcessesContractMethods, ProcessContractParameters, ProcessEnvelopeType, ProcessMode } from "vocdoni-contracts" // TODO: Import from the new NPM package
+import { ProcessesContractMethods, ProcessContractParameters, ProcessEnvelopeType, ProcessMode } from "@vocdoni/contract-wrappers"
 import ProcessBuilder, {
     DEFAULT_PROCESS_MODE,
     DEFAULT_ENVELOPE_TYPE,

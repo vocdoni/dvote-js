@@ -2,7 +2,7 @@ import { VocdoniEnvironment } from "@vocdoni/common"
 import { DVoteGatewayResponseBody, IRequestParameters } from "./gateway-dvote"
 import { BackendApiName, GatewayApiName } from "vocdoni-models" // TODO reference the future package
 import { Contract, ContractInterface, providers, Signer, utils, Wallet } from "ethers"
-import { IEnsPublicResolverContract, IGenesisContract, INamespacesContract, IProcessesContract, IResultsContract, ITokenStorageProofContract } from "vocdoni-contracts"
+import { IEnsPublicResolverContract, IGenesisContract, INamespacesContract, IProcessesContract, IResultsContract, ITokenStorageProofContract } from "@vocdoni/contract-wrappers"
 
 // GATEWAY INTERFACES
 
