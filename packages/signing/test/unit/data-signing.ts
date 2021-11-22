@@ -1,6 +1,6 @@
 import "mocha" // using @types/mocha
 import { expect, } from "chai"
-import { addCompletionHooks } from "../../../../shared/test/mocha-hooks"
+import { addCompletionHooks } from "../mocha-hooks"
 import { computePublicKey } from "@ethersproject/signing-key"
 import { Wallet } from "@ethersproject/wallet"
 
