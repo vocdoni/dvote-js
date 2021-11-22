@@ -1,7 +1,7 @@
 {
-  "name": "@vocdoni/contracts",
+  "name": "@vocdoni/contract-wrappers",
   "version": "1.14.0",
-  "description": "Javascript/Typescript contracts package",
+  "description": "Javascript/Typescript contract wrappers package",
   "main": "dist/index",
   "types": "dist/index",
   "repository": "https://github.com/vocdoni/dvote-js.git",
