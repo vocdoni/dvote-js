@@ -1,0 +1,3 @@
+[submodule "packages/data-models/src/protobuf"]
+	path = packages/data-models/src/protobuf
+	url = https://github.com/vocdoni/dvote-protobuf.git
