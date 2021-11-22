@@ -225,7 +225,7 @@ async function launchNewVote(censusRoot: string, censusUri: string) {
 
     console.log("Getting the block height")
     const currentBlock = await VotingApi.getBlockHeight(pool)
-    const startBlock = currentBlock + 7
+    const startBlock = currentBlock + 10
     const blockCount = 60480
 
     const processParamsPre: INewProcessParams = {
@@ -339,7 +339,7 @@ async function submitVotes(accounts: Account[]) {
         process.stdout.write(`Gen Proof [${idx}] ; `)
         const censusProof = await CensusOnChainApi.generateProof(state.rollingCensusRoot, account.secretKey, pool)
             .catch(err => {
-                console.error("\nCensusOnChainApi.generateProof ERR", account, err)
+                console.error("CensusOnChainApi.generateProof ERR", account, err)
                 if (config.stopOnError) throw err
             })
         if (!censusProof) return // skip when !config.stopOnError
