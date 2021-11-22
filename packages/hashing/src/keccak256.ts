@@ -1,4 +1,4 @@
-import { keccak256 } from "@ethersproject/keccak256";
+import { keccak256 } from "@ethersproject/keccak256"
 
 export namespace Keccak256 {
     export function hashText(value: string): string {

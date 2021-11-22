@@ -36,7 +36,7 @@ import { DVoteGateway, DVoteGatewayResponseBody, IRequestParameters } from "vocd
 import { CensusErc20Api } from "./census"
 import { ProcessEnvelopeType } from "dvote-solidity" // TODO fix
 import { IGatewayClient, IGatewayDVoteClient, IGatewayWeb3Client } from "vocdoni-net" // TODO reference the future package
-import { Poseidon } from "vocdoni-hashing" // TODO reference the future package
+import { Poseidon } from "@vocdoni/hashing" // TODO reference the future package
 import { ResultsNotAvailableError } from "./errors/results";
 import { ApiMethod } from "vocdoni-models" // TODO reference the future package
 import { ProofArbo_Type } from "vocdoni-models" // TODO reference the future package

@@ -25,11 +25,11 @@
     "axios": "^0.21.1",
     "@vocdoni/storage-proofs-eth": "^0.4.1",
     "@vocdoni/signing": "^1.14.0",
+    "@vocdoni/hashing": "^1.14.0",
     "blindsecp256k1": "0.0.6",
     "dvote-solidity": "^1.3.1",
     "@vocdoni/common": "^1.14.0",
     "vocdoni-contracts": "file:../contracts/contracts.tgz",
-    "vocdoni-hashing": "file:../hashing/hashing.tgz",
     "vocdoni-encryption": "file:../encryption/encryption.tgz",
     "vocdoni-models": "file:../models/models.tgz",
     "vocdoni-net": "file:../net/net.tgz"

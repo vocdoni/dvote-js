@@ -1,6 +1,6 @@
 import { BigNumber, ContractReceipt, providers, Signer, utils, Wallet } from "ethers"
 import { IGatewayClient, IGatewayWeb3Client, IRequestParameters } from "vocdoni-net" // TODO reference the future package
-import { Keccak256, Poseidon } from "vocdoni-hashing" // TODO reference the future package
+import { Keccak256, Poseidon } from "@vocdoni/hashing" // TODO reference the future package
 import { CENSUS_MAX_BULK_SIZE, hexStringToBuffer } from "@vocdoni/common"
 import { ERC20Proof } from "@vocdoni/storage-proofs-eth"
 import {
