@@ -28,12 +28,12 @@ import {
     CAbundle,
     VochainCensusOrigin,
     VochainProcessStatus,
-    RegisterKeyTx,
+    // RegisterKeyTx,
     SourceNetworkId
 } from "../models/protobuf"
 import { DVoteGateway, DVoteGatewayResponseBody, IRequestParameters } from "../net/gateway-dvote"
 import { CensusErc20Api } from "./census"
-import { ProcessEnvelopeType } from "dvote-solidity"
+import { processCensusOriginValues, ProcessEnvelopeType } from "dvote-solidity"
 import { ApiMethod } from "../models/gateway"
 import { IGatewayClient, IGatewayDVoteClient, IGatewayWeb3Client } from "../common"
 import { Poseidon } from "../crypto/hashing"
@@ -51,6 +51,7 @@ export type SignedEnvelopeParams = {
     censusOrigin: number | ProcessCensusOrigin,
     votes: number[], processId: string, walletOrSigner: Wallet | Signer,
     censusProof: IProofGraviton | IProofCA | IProofEVM,
+    weight?: string,
     processKeys?: ProcessKeys
 }
 
@@ -1174,37 +1175,37 @@ export namespace VotingApi {
      * @param walletOrSigner
      * @param gateway
      */
-    export function registerVoterKey(processId: string, proof: Proof, secretKey: Uint8Array, weight: string = "0x1", walletOrSigner: Wallet | Signer, gateway: IGatewayDVoteClient): Promise<any> {
-        if (!processId || !proof || !secretKey) return Promise.reject(new Error("Invalid parameters"))
-        else if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
-
-        const biKey = BigInt(uintArrayToHex(secretKey))
-        const hexHashedKey = Poseidon.hash([biKey]).toString(16)
-        const newKey = utils.zeroPad("0x" + hexHashedKey, 32)
-
-        const registerKey: RegisterKeyTx = {
-            newKey,
-            processId: Buffer.from(processId.replace("0x", ""), "hex"),
-            nonce: Random.getBytes(32),
-            proof,
-            weight: Buffer.from(weight.replace("0x", ""), "hex")
-        }
-
-        const tx = Tx.encode({ payload: { $case: "registerKey", registerKey } })
-        const txBytes = tx.finish()
-
-        return BytesSignature.sign(txBytes, walletOrSigner).then(hexSignature => {
-            const signature = new Uint8Array(Buffer.from(hexSignature.replace("0x", ""), "hex"))
-            const signedTx = SignedTx.encode({ tx: txBytes, signature })
-            const signedTxBytes = signedTx.finish()
-            const base64Payload = Buffer.from(signedTxBytes).toString("base64")
-
-            return gateway.sendRequest({ method: "submitRawTx", payload: base64Payload })
-        }).catch((error) => {
-            const message = (error.message) ? "The key cannot be registered: " + error.message : "The key cannot be registered"
-            throw new Error(message)
-        })
-    }
+    // export function registerVoterKey(processId: string, proof: Proof, secretKey: Uint8Array, weight: string = "0x1", walletOrSigner: Wallet | Signer, gateway: IGatewayDVoteClient): Promise<any> {
+    //     if (!processId || !proof || !secretKey) return Promise.reject(new Error("Invalid parameters"))
+    //     else if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
+    //
+    //     const biKey = BigInt(uintArrayToHex(secretKey))
+    //     const hexHashedKey = Poseidon.hash([biKey]).toString(16)
+    //     const newKey = utils.zeroPad("0x" + hexHashedKey, 32)
+    //
+    //     const registerKey: RegisterKeyTx = {
+    //         newKey,
+    //         processId: Buffer.from(processId.replace("0x", ""), "hex"),
+    //         nonce: Random.getBytes(32),
+    //         proof,
+    //         weight: Buffer.from(weight.replace("0x", ""), "hex")
+    //     }
+    //
+    //     const tx = Tx.encode({ payload: { $case: "registerKey", registerKey } })
+    //     const txBytes = tx.finish()
+    //
+    //     return BytesSignature.sign(txBytes, walletOrSigner).then(hexSignature => {
+    //         const signature = new Uint8Array(Buffer.from(hexSignature.replace("0x", ""), "hex"))
+    //         const signedTx = SignedTx.encode({ tx: txBytes, signature })
+    //         const signedTxBytes = signedTx.finish()
+    //         const base64Payload = Buffer.from(signedTxBytes).toString("base64")
+    //
+    //         return gateway.sendRequest({ method: "submitRawTx", payload: base64Payload })
+    //     }).catch((error) => {
+    //         const message = (error.message) ? "The key cannot be registered: " + error.message : "The key cannot be registered"
+    //         throw new Error(message)
+    //     })
+    // }
 
     ///////////////////////////////////////////////////////////////////////////////
     // HELPERS
@@ -1259,12 +1260,14 @@ export namespace VotingApi {
             }
         }
 
+
         const censusOrigin = typeof params.censusOrigin == "number" ?
             new ProcessCensusOrigin(params.censusOrigin as IProcessCensusOrigin) :
             params.censusOrigin
 
         try {
-            const proof = packageProof(params.processId, censusOrigin, params.censusProof)
+            const censusProof = params.censusProof as IProofGraviton
+            const proof = packageProof(params.processId, censusOrigin, censusProof)
             const nonce = Random.getHex().substr(2)
             const { votePackage, keyIndexes } = packageVoteContent(params.votes, params.processKeys)
 
@@ -1286,12 +1289,14 @@ export namespace VotingApi {
         const proof = Proof.fromPartial({})
 
         if (censusOrigin.isOffChain || censusOrigin.isOffChainWeighted) {
+            censusProof = censusProof as IProofGraviton
             // Check census proof
-            if (typeof censusProof != "string" || !censusProof.match(/^(0x)?[0-9a-zA-Z]+$/))
-                throw new Error("Invalid census proof (must be a hex string)")
+            // if (typeof censusProof?.siblings != "string" || !(censusProof?.siblings as string).match(/^(0x)?[0-9a-zA-Z]+$/))
+            // throw new Error("Invalid census proof (must be a hex string)")
 
             const gProof = ProofGraviton.fromPartial({
-                siblings: new Uint8Array(Buffer.from((censusProof as string).replace("0x", ""), "hex"))
+                siblings: censusProof?.siblings,
+                value:  censusProof?.censusValue
             })
             proof.payload = { $case: "graviton", graviton: gProof }
         }

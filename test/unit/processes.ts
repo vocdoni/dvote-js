@@ -14,7 +14,7 @@ import { Buffer } from "buffer/"
 
 import { VotingApi, VotePackage } from "../../src/api/voting"
 import { Asymmetric } from "../../src/crypto/encryption"
-import { checkValidProcessMetadata, IProofCA, IProofEVM, ProofCaSignatureTypes } from "../../src/models/process"
+import { checkValidProcessMetadata, IProofCA, IProofEVM, IProofGraviton, ProofCaSignatureTypes } from "../../src/models/process"
 import ProcessMetadataBuilder from "../builders/process-metadata"
 // import { BytesSignature } from "../../src/crypto/data-signing"
 // import { compressPublicKey } from "../../dist"
@@ -93,14 +93,14 @@ describe("Governance Process", () => {
             it("Should package graviton proofs", () => {
                 let processId = "0x8b35e10045faa886bd2e18636cd3cb72e80203a04e568c47205bf0313a0f60d1"
                 let siblings = "0x0003000000000000000000000000000000000000000000000000000000000006f0d72fbd8b3a637488107b0d8055410180ec017a4d76dbb97bee1c3086a25e25b1a6134dbd323c420d6fc2ac3aaf8fff5f9ac5bc0be5949be64b7cfd1bcc5f1f"
-
-                const proof1 = VotingApi.packageProof(processId, new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), siblings)
+                let censusProof1 =  {siblings: new Uint8Array(Buffer.from(siblings.replace('0x',''),'hex')), censusValue:new Uint8Array(0)} as IProofGraviton
+                const proof1 = VotingApi.packageProof(processId, new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), censusProof1)
                 expect(Buffer.from((proof1.payload as ProofGravitonPayload).graviton.siblings).toString("hex")).to.eq(siblings.slice(2))
 
                 processId = "0x36c886bd2e18605bf03a0428be100313a0f6e568c470d135d3cb72e802045faa"
                 siblings = "0x0003000000100000000002000000000300000000000400000000000050000006f0d72fbd8b3a637488107b0d8055410180ec017a4d76dbb97bee1c3086a25e25b1a6134dbd323c420d6fc2ac3aaf8fff5f9ac5bc0be5949be64b7cfd1bcc5f1f"
-
-                const proof2 = VotingApi.packageProof(processId, new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), siblings)
+                let censusProof2 =  {siblings: new Uint8Array(Buffer.from(siblings.replace('0x',''),'hex')), censusValue:new Uint8Array(0)} as IProofGraviton
+                const proof2 = VotingApi.packageProof(processId, new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), censusProof2)
                 expect(Buffer.from((proof2.payload as ProofGravitonPayload).graviton.siblings).toString("hex")).to.eq(siblings.slice(2))
             })
         })
@@ -111,8 +111,9 @@ describe("Governance Process", () => {
 
                 let processId = "0x8b35e10045faa886bd2e18636cd3cb72e80203a04e568c47205bf0313a0f60d1"
                 let siblings = "0x0003000000000000000000000000000000000000000000000000000000000006f0d72fbd8b3a637488107b0d8055410180ec017a4d76dbb97bee1c3086a25e25b1a6134dbd323c420d6fc2ac3aaf8fff5f9ac5bc0be5949be64b7cfd1bcc5f1f"
+                let censusProof1 =  {siblings: new Uint8Array(Buffer.from(siblings.replace('0x',''),'hex')), censusValue:new Uint8Array(0)} as IProofGraviton
 
-                const envelope1 = await VotingApi.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), votes: [1, 2, 3], censusProof: siblings, processId, walletOrSigner: wallet })
+                const envelope1 = await VotingApi.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), votes: [1, 2, 3], censusProof: censusProof1, processId, walletOrSigner: wallet })
                 expect(Buffer.from(envelope1.processId).toString("hex")).to.eq(processId.slice(2))
                 expect(Buffer.from((envelope1.proof.payload as ProofGravitonPayload).graviton.siblings).toString("hex")).to.eq(siblings.slice(2))
                 const pkg1: VotePackage = JSON.parse(Buffer.from(envelope1.votePackage).toString())
@@ -121,8 +122,10 @@ describe("Governance Process", () => {
 
                 processId = "0x36c886bd2e18605bf03a0428be100313a0f6e568c470d135d3cb72e802045faa"
                 siblings = "0x0003000000100000000002000000000300000000000400000000000050000006f0d72fbd8b3a637488107b0d8055410180ec017a4d76dbb97bee1c3086a25e25b1a6134dbd323c420d6fc2ac3aaf8fff5f9ac5bc0be5949be64b7cfd1bcc5f1f"
+                let censusProof2 =  {siblings: new Uint8Array(Buffer.from(siblings.replace('0x',''),'hex')), censusValue:new Uint8Array(0)} as IProofGraviton
 
-                const envelope2 = await VotingApi.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), votes: [5, 6, 7], censusProof: siblings, processId, walletOrSigner: wallet })
+
+                const envelope2 = await VotingApi.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), votes: [5, 6, 7], censusProof: censusProof2, processId, walletOrSigner: wallet })
                 expect(Buffer.from(envelope2.processId).toString("hex")).to.eq(processId.slice(2))
                 expect(Buffer.from((envelope2.proof.payload as ProofGravitonPayload).graviton.siblings).toString("hex")).to.eq(siblings.slice(2))
                 const pkg2: VotePackage = JSON.parse(Buffer.from(envelope2.votePackage).toString())
@@ -245,7 +248,9 @@ describe("Governance Process", () => {
                 // one key
                 for (let item of processes) {
                     const processKeys = { encryptionPubKeys: [{ idx: 1, key: votePublicKey }] }
-                    const envelope = await VotingApi.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), votes: item.votes, censusProof: item.siblings, processId: item.processId, walletOrSigner: wallet, processKeys })
+                    let censusProof =  {siblings: new Uint8Array(Buffer.from(item.siblings.replace('0x',''),'hex')), censusValue:new Uint8Array(0)} as IProofGraviton
+
+                    const envelope = await VotingApi.packageSignedEnvelope({ censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE), votes: item.votes, censusProof: censusProof, processId: item.processId, walletOrSigner: wallet, processKeys })
 
                     expect(Buffer.from(envelope.processId).toString("hex")).to.eq(item.processId.slice(2))
                     expect(Buffer.from((envelope.proof.payload as ProofGravitonPayload).graviton.siblings).toString("hex")).to.eq(item.siblings.slice(2))
@@ -306,7 +311,7 @@ describe("Governance Process", () => {
                     const envelope = await VotingApi.packageSignedEnvelope({
                         censusOrigin: new ProcessCensusOrigin(ProcessCensusOrigin.OFF_CHAIN_TREE),
                         votes: item.votes,
-                        censusProof: item.siblings,
+                        censusProof: {siblings: new Uint8Array(Buffer.from(item.siblings.replace('0x',''),'hex')), censusValue:new Uint8Array(0)} as IProofGraviton,
                         processId: item.processId,
                         walletOrSigner: wallet,
                         processKeys
