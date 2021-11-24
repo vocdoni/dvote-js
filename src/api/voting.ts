@@ -33,7 +33,7 @@ import {
 } from "../models/protobuf"
 import { DVoteGateway, DVoteGatewayResponseBody, IRequestParameters } from "../net/gateway-dvote"
 import { CensusErc20Api } from "./census"
-import { ProcessEnvelopeType } from "dvote-solidity"
+import { processCensusOriginValues, ProcessEnvelopeType } from "dvote-solidity"
 import { ApiMethod } from "../models/gateway"
 import { IGatewayClient, IGatewayDVoteClient, IGatewayWeb3Client } from "../common"
 import { Poseidon } from "../crypto/hashing"
@@ -1260,20 +1260,25 @@ export namespace VotingApi {
             }
         }
 
-        let weight: Uint8Array;
-        if (params.weight) {
-            weight = new Uint8Array(Buffer.from(params.weight, "base64"))
-        } else {
-            weight = new Uint8Array(1)
-            weight[0] = 1
-        }
+        // if (params.censusOrigin == ProcessCensusOrigin.OFF_CHAIN_TREE || censusOrigin.isOffChainWeighted) {
+        //     censusProof = censusProof as IProofGraviton
+
+        // let weight: Uint8Array;
+        // if (params.weight) {
+        //     weight =  new Uint8Array(bigIntToLeBuffer(params.censusProof.weight || BigInt("1")))
+        //     weight = new Uint8Array(Buffer.from(params.weight, "base64"))
+        // } else {
+        //     weight = new Uint8Array(1)
+        //     weight[0] = 1
+        // }
 
         const censusOrigin = typeof params.censusOrigin == "number" ?
             new ProcessCensusOrigin(params.censusOrigin as IProcessCensusOrigin) :
             params.censusOrigin
 
         try {
-            const proof = packageProof(params.processId, censusOrigin, params.censusProof, weight)
+            let censusProof = params.censusProof as IProofGraviton
+            const proof = packageProof(params.processId, censusOrigin, censusProof)
             const nonce = Random.getHex().substr(2)
             const { votePackage, keyIndexes } = packageVoteContent(params.votes, params.processKeys)
             console.log("Data for VoteEnvelope.fromPartial:", {
@@ -1298,17 +1303,20 @@ export namespace VotingApi {
     }
 
     /** Packages the given parameters into a proof that can be submitted to the Vochain */
-    export function packageProof(processId: string, censusOrigin: ProcessCensusOrigin, censusProof: IProofGraviton | IProofCA | IProofEVM, weight: Uint8Array) {
+    export function packageProof(processId: string, censusOrigin: ProcessCensusOrigin, censusProof: IProofGraviton | IProofCA | IProofEVM) {
         const proof = Proof.fromPartial({})
 
         if (censusOrigin.isOffChain || censusOrigin.isOffChainWeighted) {
+            censusProof = censusProof as IProofGraviton
             // Check census proof
-            if (typeof censusProof != "string" || !censusProof.match(/^(0x)?[0-9a-zA-Z]+$/))
-                throw new Error("Invalid census proof (must be a hex string)")
+            if (typeof censusProof?.siblings != "string" || !(censusProof?.siblings as string).match(/^(0x)?[0-9a-zA-Z]+$/))
+            throw new Error("Invalid census proof (must be a hex string)")
+            console.log("packageProof: siblings: ", censusProof?.siblings)
+            console.log("packageProof: value: ", censusProof?.censusValue)
 
             const gProof = ProofGraviton.fromPartial({
-                siblings: new Uint8Array(Buffer.from((censusProof as string).replace("0x", ""), "hex")),
-                value: weight
+                siblings: new Uint8Array(Buffer.from((censusProof.siblings as string).replace("0x", ""), "hex")),
+                value:  censusProof?.censusValue
             })
             proof.payload = { $case: "graviton", graviton: gProof }
         }
@@ -1588,4 +1596,15 @@ export namespace VotingOracleApi {
             throw new Error(message)
         }
     }
+}
+
+function bigIntToBuffer(number: bigint): Buffer {
+    let hexNumber = number.toString(16)
+    while (hexNumber.length < 64) hexNumber = "0" + hexNumber
+    return Buffer.from(hexNumber, "hex")
+}
+
+/** Encodes the given big integer as a little endian buffer */
+export function bigIntToLeBuffer(number: bigint): Buffer {
+    return bigIntToBuffer(number).reverse()
 }

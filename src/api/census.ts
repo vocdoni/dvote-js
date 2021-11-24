@@ -314,7 +314,7 @@ export namespace CensusOffChainApi {
      * @param base64Claim Base64-encoded claim of the leaf to request
      * @param gateway
      */
-    export function generateProof(censusRoot: string, { key, value }: { key: string, value?: number }, isDigested: boolean, gateway: IGatewayClient): Promise<string> {
+    export function generateProof(censusRoot: string, key : string, isDigested: boolean, gateway: IGatewayClient): Promise<{ siblings: string, censusValue: Uint8Array}> {
         if (!censusRoot || !key || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -323,10 +323,12 @@ export namespace CensusOffChainApi {
             censusId: censusRoot,
             digested: isDigested,
             censusKey: key,
-            censusValue: value
         }).then(response => {
             if (typeof response.siblings != "string" || !response.siblings.length) throw new Error("The census proof could not be fetched")
-            return response.siblings
+            return {
+                censusValue: response.censusValue,
+                siblings: response.siblings
+            }
         }).catch((error) => {
             const message = (error.message) ? error.message : "The request could not be completed"
             throw new Error(message)
