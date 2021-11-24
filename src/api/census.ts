@@ -358,7 +358,7 @@ export namespace CensusOffChainApi {
 
 export namespace CensusOnChainApi {
     /**
-     * Get status of an envelope
+     * Registers an ephemeral public key to vote on anonymous processes
      * @param processId
      * @param proof A valid franchise proof. See `packageSignedProof`.
      * @param secretKey The bytes of the secret key to use
@@ -377,24 +377,25 @@ export namespace CensusOnChainApi {
 
         const proof = Proof.fromPartial({})
         const aProof = ProofArbo.fromPartial({
-            siblings: new Uint8Array(Buffer.from(strip0x(censusProof as string), "hex")),
-            type: ProofArbo_Type.BLAKE2B
+            siblings: new Uint8Array(hexStringToBuffer(censusProof as string)),
+            type: ProofArbo_Type.BLAKE2B,
+            value: new Uint8Array(hexStringToBuffer(weight))
         })
         proof.payload = { $case: "arbo", arbo: aProof }
 
         const registerKey: RegisterKeyTx = {
             newKey,
-            processId: Buffer.from(strip0x(processId), "hex"),
+            processId: new Uint8Array(hexStringToBuffer(processId)),
             nonce: Random.getBytes(32),
             proof,
-            weight: Buffer.from(strip0x(weight), "hex")
+            weight: new Uint8Array(hexStringToBuffer(weight))
         }
 
         const tx = Tx.encode({ payload: { $case: "registerKey", registerKey } })
         const txBytes = tx.finish()
 
         return BytesSignature.sign(txBytes, walletOrSigner).then(hexSignature => {
-            const signature = new Uint8Array(Buffer.from(strip0x(hexSignature), "hex"))
+            const signature = new Uint8Array(hexStringToBuffer(hexSignature))
             const signedTx = SignedTx.encode({ tx: txBytes, signature })
             const signedTxBytes = signedTx.finish()
             const base64Payload = Buffer.from(signedTxBytes).toString("base64")

@@ -1,5 +1,5 @@
 import * as Bluebird from "bluebird"
-import { Wallet, utils } from "ethers"
+import { Wallet } from "ethers"
 import * as assert from "assert"
 import { readFileSync, writeFileSync } from "fs"
 import * as YAML from 'yaml'
@@ -11,14 +11,14 @@ import { CensusOffChain, CensusOffChainApi } from "../../src/api/census"
 import { INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "../../src/models/process"
 import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin } from "../../src/net/contracts"
 import { VochainWaiter, EthWaiter } from "../../src/util/waiters"
-import { compressPublicKey, EthNetworkID } from "../../dist"
+import { compressPublicKey, EthNetworkID, IGatewayClient } from "../../dist"
 import { IGatewayDiscoveryParameters, VocdoniEnvironment } from "../../src"
 
 
 const CONFIG_PATH = "./config.yaml"
 const config = getConfig()
 
-let pool: GatewayPool, entityAddr: string, entityWallet: Wallet, processId: string, processParams: ProcessContractParameters, processMetadata: ProcessMetadata, accounts: Account[]
+let pool: IGatewayClient, entityAddr: string, entityWallet: Wallet, processId: string, processParams: ProcessContractParameters, processMetadata: ProcessMetadata, accounts: Account[]
 
 async function main() {
     // Connect to a GW
@@ -152,7 +152,7 @@ function createWallets(amount) {
             mnemonic: wallet.mnemonic.phrase,
             privateKey: wallet.privateKey,
             publicKey: compressPublicKey(wallet.publicKey),
-            publicKeyDigested: CensusOffChain.Public.encodePublicKey(wallet.publicKey)
+            publicKeyEncoded: CensusOffChain.Public.encodePublicKey(wallet.publicKey)
             // address: wallet.address
         })
     }
@@ -166,7 +166,7 @@ async function generatePublicCensusFromAccounts(accounts) {
     console.log("Creating a new census")
 
     const censusIdSuffix = require("crypto").createHash('sha256').update("" + Date.now()).digest().toString("hex")
-    const claimList: { key: string, value?: string }[] = accounts.map(account => ({ key: account.publicKeyDigested, value: "" }))
+    const claimList: { key: string, value?: string }[] = accounts.map(account => ({ key: account.publicKeyEncoded, value: "" }))
     const managerPublicKeys = [compressPublicKey(entityWallet.publicKey)]
 
     if (config.stopOnError) {
@@ -183,7 +183,7 @@ async function generatePublicCensusFromAccounts(accounts) {
     const { censusId } = await CensusOffChainApi.addCensus(censusIdSuffix, managerPublicKeys, entityWallet, pool)
 
     console.log("Adding", claimList.length, "claims")
-    const { invalidClaims, censusRoot } = await CensusOffChainApi.addClaimBulk(censusId, claimList, false, entityWallet, pool)
+    const { invalidClaims, censusRoot } = await CensusOffChainApi.addClaimBulk(censusId, claimList, entityWallet, pool)
 
     if (invalidClaims.length > 0) throw new Error("Census Service invalid claims count is " + invalidClaims.length)
 
@@ -222,7 +222,7 @@ async function launchNewVote(censusRoot, censusUri) {
 
     console.log("Getting the block height")
     const currentBlock = await VotingApi.getBlockHeight(pool)
-    const startBlock = currentBlock + 25
+    const startBlock = currentBlock + 12
     const blockCount = 60480
 
     const processParamsPre: INewProcessParams = {
@@ -303,7 +303,7 @@ async function launchVotes(accounts) {
         const wallet = new Wallet(account.privateKey)
 
         process.stdout.write(`Gen Proof [${idx}] ; `)
-        const censusProof = await CensusOffChainApi.generateProof(processParams.censusRoot, { key: account.publicKeyDigested }, true, pool)
+        const censusProof = await CensusOffChainApi.generateProof(processParams.censusRoot, { key: account.publicKeyEncoded }, pool)
             .catch(err => {
                 console.error("\nCensusOffChainApi.generateProof ERR", account, err)
                 if (config.stopOnError) throw err
@@ -505,5 +505,5 @@ type Account = {
     mnemonic: string
     privateKey: string
     publicKey: string
-    publicKeyDigested: string
+    publicKeyEncoded: string
 }

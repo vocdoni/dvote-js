@@ -51,7 +51,9 @@ export type SignedEnvelopeParams = {
     processId: string,
     walletOrSigner: Wallet | Signer,
     censusProof: IProofArbo | IProofCA | IProofEVM,
-    processKeys?: ProcessKeys
+    processKeys?: ProcessKeys,
+    /** hex string */
+    weight?: string
 }
 
 export type AnonymousEnvelopeParams = {
@@ -71,7 +73,8 @@ export type AnonymousEnvelopeParams = {
     witnessGeneratorWasm: Uint8Array,
     /** The raw bytes of the circuit key */
     zKey: Uint8Array,
-    processKeys?: ProcessKeys
+    processKeys?: ProcessKeys,
+    circuitIndex: number
 }
 
 export type BlockStatus = {
@@ -146,6 +149,8 @@ export type ProcessKeys = {
 }
 
 export type ProcessCircuitInfo = {
+    /** Circuit index */
+    index: number,
     /** Base URI to fetch from */
     uri: string
     /** Relative path where the circuit is hosted */
@@ -352,6 +357,7 @@ export namespace VotingApi {
                 if (!response?.circuitConfig) throw new Error("Invalid response")
 
                 return {
+                    index: response.circuitIndex || 0,
                     uri: response.circuitConfig.uri,
                     circuitPath: response.circuitConfig.circuitPath,
                     maxSize: response.circuitConfig.parameters[0],
@@ -1300,7 +1306,7 @@ export namespace Voting {
             params.censusOrigin
 
         try {
-            const proof = packageSignedProof(params.processId, censusOrigin, params.censusProof)
+            const proof = packageSignedProof(params.processId, censusOrigin, params.censusProof, params.weight)
             const nonce = strip0x(Random.getHex())
             const { votePackage, keyIndexes } = packageVoteContent(params.votes, params.processKeys)
 
@@ -1358,9 +1364,14 @@ export namespace Voting {
                 const { proof: zkProof, publicSignals } = result
 
                 // [w, x, y, z] => [[w, x], [y, z]]
-                const b = [zkProof.b[0][0], zkProof.b[0][1], zkProof.b[1][0], zkProof.b[1][1]]
+                const b = [
+                    zkProof.b[0][0], zkProof.b[0][1],
+                    zkProof.b[1][0], zkProof.b[1][1],
+                    zkProof.b[2][0], zkProof.b[2][1]
+                ]
 
                 const zkSnark = ProofZkSNARK.fromPartial({
+                    circuitParametersIndex: params.circuitIndex,
                     a: zkProof.a,
                     b,
                     c: zkProof.c,
@@ -1437,7 +1448,7 @@ export namespace Voting {
     }
 
     /** Packages the given parameters into a proof that can be submitted to the Vochain */
-    export function packageSignedProof(processId: string, censusOrigin: ProcessCensusOrigin, censusProof: IProofArbo | IProofCA | IProofEVM) {
+    export function packageSignedProof(processId: string, censusOrigin: ProcessCensusOrigin, censusProof: IProofArbo | IProofCA | IProofEVM, weight: string = "0x01") {
         const proof = Proof.fromPartial({})
 
         if (censusOrigin.isOffChain || censusOrigin.isOffChainWeighted) {
@@ -1446,8 +1457,9 @@ export namespace Voting {
                 throw new Error("Invalid census proof (must be a hex string)")
 
             const aProof = ProofArbo.fromPartial({
-                siblings: new Uint8Array(Buffer.from(strip0x(censusProof as string), "hex")),
-                type: ProofArbo_Type.BLAKE2B
+                siblings: new Uint8Array(hexStringToBuffer(censusProof)),
+                type: ProofArbo_Type.BLAKE2B,
+                value: new Uint8Array(hexStringToBuffer(weight))
             })
             proof.payload = { $case: "arbo", arbo: aProof }
         }
@@ -1457,14 +1469,14 @@ export namespace Voting {
             if (!resolvedProof) throw new Error("The proof is not valid")
 
             const caBundle = CAbundle.fromPartial({
-                processId: new Uint8Array(Buffer.from(strip0x(processId), "hex")),
-                address: new Uint8Array(Buffer.from(strip0x(resolvedProof.voterAddress), "hex")),
+                processId: new Uint8Array(hexStringToBuffer(processId)),
+                address: new Uint8Array(hexStringToBuffer(resolvedProof.voterAddress)),
             })
 
             // Populate the proof
             const caProof = ProofCA.fromPartial({
                 type: resolvedProof.type,
-                signature: new Uint8Array(Buffer.from(strip0x(resolvedProof.signature), "hex")),
+                signature: new Uint8Array(hexStringToBuffer(resolvedProof.signature)),
                 bundle: caBundle
             })
 
@@ -1485,11 +1497,11 @@ export namespace Voting {
                 hexValue = resolvedProof.value.replace("0x", "0x0")
             }
 
-            const siblings = resolvedProof.proof.map(sibling => new Uint8Array(Buffer.from(strip0x(sibling), "hex")))
+            const siblings = resolvedProof.proof.map(sibling => new Uint8Array(hexStringToBuffer(sibling)))
 
             const esProof = ProofEthereumStorage.fromPartial({
-                key: new Uint8Array(Buffer.from(strip0x(resolvedProof.key), "hex")),
-                value: Buffer.from(strip0x(hexValue), "hex"),
+                key: new Uint8Array(hexStringToBuffer(resolvedProof.key)),
+                value: new Uint8Array(hexStringToBuffer(hexValue)),
                 siblings: siblings
             })
 

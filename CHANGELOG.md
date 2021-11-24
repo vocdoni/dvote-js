@@ -1,6 +1,7 @@
 # DVote JS changelog
 
 - `Census.addClaim`, `Census.addClaimBulk` and `Census.registerVoterKey` now don't receive the `isDigested` parameter.
+- `packageSignedProof` now receives the `weight` of the voter
 
 ## 1.13.3
 
