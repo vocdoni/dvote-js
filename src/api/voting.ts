@@ -28,7 +28,7 @@ import {
     CAbundle,
     VochainCensusOrigin,
     VochainProcessStatus,
-    RegisterKeyTx,
+    // RegisterKeyTx,
     SourceNetworkId
 } from "../models/protobuf"
 import { DVoteGateway, DVoteGatewayResponseBody, IRequestParameters } from "../net/gateway-dvote"
@@ -51,6 +51,7 @@ export type SignedEnvelopeParams = {
     censusOrigin: number | ProcessCensusOrigin,
     votes: number[], processId: string, walletOrSigner: Wallet | Signer,
     censusProof: IProofGraviton | IProofCA | IProofEVM,
+    weight?: string,
     processKeys?: ProcessKeys
 }
 
@@ -1174,37 +1175,37 @@ export namespace VotingApi {
      * @param walletOrSigner
      * @param gateway
      */
-    export function registerVoterKey(processId: string, proof: Proof, secretKey: Uint8Array, weight: string = "0x1", walletOrSigner: Wallet | Signer, gateway: IGatewayDVoteClient): Promise<any> {
-        if (!processId || !proof || !secretKey) return Promise.reject(new Error("Invalid parameters"))
-        else if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
-
-        const biKey = BigInt(uintArrayToHex(secretKey))
-        const hexHashedKey = Poseidon.hash([biKey]).toString(16)
-        const newKey = utils.zeroPad("0x" + hexHashedKey, 32)
-
-        const registerKey: RegisterKeyTx = {
-            newKey,
-            processId: Buffer.from(processId.replace("0x", ""), "hex"),
-            nonce: Random.getBytes(32),
-            proof,
-            weight: Buffer.from(weight.replace("0x", ""), "hex")
-        }
-
-        const tx = Tx.encode({ payload: { $case: "registerKey", registerKey } })
-        const txBytes = tx.finish()
-
-        return BytesSignature.sign(txBytes, walletOrSigner).then(hexSignature => {
-            const signature = new Uint8Array(Buffer.from(hexSignature.replace("0x", ""), "hex"))
-            const signedTx = SignedTx.encode({ tx: txBytes, signature })
-            const signedTxBytes = signedTx.finish()
-            const base64Payload = Buffer.from(signedTxBytes).toString("base64")
-
-            return gateway.sendRequest({ method: "submitRawTx", payload: base64Payload })
-        }).catch((error) => {
-            const message = (error.message) ? "The key cannot be registered: " + error.message : "The key cannot be registered"
-            throw new Error(message)
-        })
-    }
+    // export function registerVoterKey(processId: string, proof: Proof, secretKey: Uint8Array, weight: string = "0x1", walletOrSigner: Wallet | Signer, gateway: IGatewayDVoteClient): Promise<any> {
+    //     if (!processId || !proof || !secretKey) return Promise.reject(new Error("Invalid parameters"))
+    //     else if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
+    //
+    //     const biKey = BigInt(uintArrayToHex(secretKey))
+    //     const hexHashedKey = Poseidon.hash([biKey]).toString(16)
+    //     const newKey = utils.zeroPad("0x" + hexHashedKey, 32)
+    //
+    //     const registerKey: RegisterKeyTx = {
+    //         newKey,
+    //         processId: Buffer.from(processId.replace("0x", ""), "hex"),
+    //         nonce: Random.getBytes(32),
+    //         proof,
+    //         weight: Buffer.from(weight.replace("0x", ""), "hex")
+    //     }
+    //
+    //     const tx = Tx.encode({ payload: { $case: "registerKey", registerKey } })
+    //     const txBytes = tx.finish()
+    //
+    //     return BytesSignature.sign(txBytes, walletOrSigner).then(hexSignature => {
+    //         const signature = new Uint8Array(Buffer.from(hexSignature.replace("0x", ""), "hex"))
+    //         const signedTx = SignedTx.encode({ tx: txBytes, signature })
+    //         const signedTxBytes = signedTx.finish()
+    //         const base64Payload = Buffer.from(signedTxBytes).toString("base64")
+    //
+    //         return gateway.sendRequest({ method: "submitRawTx", payload: base64Payload })
+    //     }).catch((error) => {
+    //         const message = (error.message) ? "The key cannot be registered: " + error.message : "The key cannot be registered"
+    //         throw new Error(message)
+    //     })
+    // }
 
     ///////////////////////////////////////////////////////////////////////////////
     // HELPERS
@@ -1259,15 +1260,30 @@ export namespace VotingApi {
             }
         }
 
+        let weight: Uint8Array;
+        if (params.weight) {
+            weight = new Uint8Array(Buffer.from(params.weight, "base64"))
+        } else {
+            weight = new Uint8Array(1)
+            weight[0] = 1
+        }
+
         const censusOrigin = typeof params.censusOrigin == "number" ?
             new ProcessCensusOrigin(params.censusOrigin as IProcessCensusOrigin) :
             params.censusOrigin
 
         try {
-            const proof = packageProof(params.processId, censusOrigin, params.censusProof)
+            const proof = packageProof(params.processId, censusOrigin, params.censusProof, weight)
             const nonce = Random.getHex().substr(2)
             const { votePackage, keyIndexes } = packageVoteContent(params.votes, params.processKeys)
-
+            console.log("Data for VoteEnvelope.fromPartial:", {
+                proof,
+                processId: new Uint8Array(Buffer.from(params.processId.replace("0x", ""), "hex")),
+                nonce: new Uint8Array(Buffer.from(nonce, "hex")),
+                votePackage: new Uint8Array(votePackage),
+                encryptionKeyIndexes: keyIndexes ? keyIndexes : [],
+                nullifier: new Uint8Array()
+            })
             return VoteEnvelope.fromPartial({
                 proof,
                 processId: new Uint8Array(Buffer.from(params.processId.replace("0x", ""), "hex")),
@@ -1282,7 +1298,7 @@ export namespace VotingApi {
     }
 
     /** Packages the given parameters into a proof that can be submitted to the Vochain */
-    export function packageProof(processId: string, censusOrigin: ProcessCensusOrigin, censusProof: IProofGraviton | IProofCA | IProofEVM) {
+    export function packageProof(processId: string, censusOrigin: ProcessCensusOrigin, censusProof: IProofGraviton | IProofCA | IProofEVM, weight: Uint8Array) {
         const proof = Proof.fromPartial({})
 
         if (censusOrigin.isOffChain || censusOrigin.isOffChainWeighted) {
@@ -1291,7 +1307,8 @@ export namespace VotingApi {
                 throw new Error("Invalid census proof (must be a hex string)")
 
             const gProof = ProofGraviton.fromPartial({
-                siblings: new Uint8Array(Buffer.from((censusProof as string).replace("0x", ""), "hex"))
+                siblings: new Uint8Array(Buffer.from((censusProof as string).replace("0x", ""), "hex")),
+                value: weight
             })
             proof.payload = { $case: "graviton", graviton: gProof }
         }

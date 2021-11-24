@@ -11,7 +11,6 @@
   "scripts": {
     "prepublishOnly": "npm run build",
     "clean": "rimraf dist",
-    "prebuild": "git submodule init && git submodule update",
     "build": "npm run clean && ./node_modules/.bin/tsc",
     "watch": "./node_modules/.bin/tsc -w -p .",
     "ts-node": "./node_modules/.bin/ts-node",

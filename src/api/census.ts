@@ -123,7 +123,7 @@ export namespace CensusOffChainApi {
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!walletOrSigner || !walletOrSigner._isSigner) return Promise.reject(new Error("Invalid WalletOrSinger object"))
 
-        return gateway.sendRequest({ method: "addClaim", censusId, digested, censusKey: claim.key, censusValue: claim.value || undefined }, walletOrSigner)
+        return gateway.sendRequest({ method: "addClaim", censusId, digested, censusKey: claim.key, weight: claim.value || undefined }, walletOrSigner)
             .then((response) => {
                 if (typeof response.root == "string") return response.root
                 return getRoot(censusId, gateway)
@@ -174,7 +174,7 @@ export namespace CensusOffChainApi {
         const censusValues = claimList.map(c => c.value || undefined).filter(k => !!k)
         if (censusValues.length > 0 && censusKeys.length != censusValues.length) throw new Error("Either all claimList.value elements should be set or all be empty, but not both")
 
-        return gateway.sendRequest({ method: "addClaimBulk", censusId, digested, censusKeys, censusValues: censusValues.length ? censusValues : undefined }, walletOrSigner)
+        return gateway.sendRequest({ method: "addClaimBulk", censusId, digested, censusKeys, weights: censusValues.length ? censusValues : undefined }, walletOrSigner)
             .then(response => {
                 const invalidClaims = ("invalidClaims" in response) ? response.invalidClaims : []
                 return invalidClaims
