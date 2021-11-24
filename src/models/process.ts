@@ -150,7 +150,7 @@ export interface ProcessResultsSingleQuestion {
 
 // Envelope and proofs
 
-export type IProofGraviton = { siblings: string, censusValue?: Uint8Array }
+export type IProofGraviton = { siblings: Uint8Array, censusValue?: Uint8Array }
 export type IProofCA = { type: number, voterAddress: string, signature: string }
 export type IProofEVM = { key: string, proof: string[], value: string }
 

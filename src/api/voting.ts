@@ -1311,11 +1311,10 @@ export namespace VotingApi {
             // Check census proof
             if (typeof censusProof?.siblings != "string" || !(censusProof?.siblings as string).match(/^(0x)?[0-9a-zA-Z]+$/))
             throw new Error("Invalid census proof (must be a hex string)")
-            console.log("packageProof: siblings: ", censusProof?.siblings)
-            console.log("packageProof: value: ", censusProof?.censusValue)
-
+            let cencusvalue = censusProof?.censusValue.toString()
+            while (cencusvalue.length < 64) cencusvalue = "0" + cencusvalue
             const gProof = ProofGraviton.fromPartial({
-                siblings: new Uint8Array(Buffer.from((censusProof.siblings as string).replace("0x", ""), "hex")),
+                siblings: censusProof?.siblings,
                 value:  censusProof?.censusValue
             })
             proof.payload = { $case: "graviton", graviton: gProof }

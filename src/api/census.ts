@@ -97,7 +97,7 @@ export namespace CensusOffChainApi {
                 method: "addCensus",
                 censusId: censusIdSuffix,
                 pubKeys: managerPublicKeys,
-                censusType: Census_Type.ARBO_BLAKE2B
+                censusType: Census_Type.GRAVITON
             }, walletOrSigner)
             const censusRoot = await getRoot(response.censusId, gateway)
             return { censusId: response.censusId, censusRoot }
@@ -314,7 +314,7 @@ export namespace CensusOffChainApi {
      * @param base64Claim Base64-encoded claim of the leaf to request
      * @param gateway
      */
-    export function generateProof(censusRoot: string, key : string, isDigested: boolean, gateway: IGatewayClient): Promise<{ siblings: string, censusValue: Uint8Array}> {
+    export function generateProof(censusRoot: string, key : string, isDigested: boolean, gateway: IGatewayClient): Promise<{ siblings: Uint8Array, censusValue: Uint8Array}> {
         if (!censusRoot || !key || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -324,7 +324,7 @@ export namespace CensusOffChainApi {
             digested: isDigested,
             censusKey: key,
         }).then(response => {
-            if (typeof response.siblings != "string" || !response.siblings.length) throw new Error("The census proof could not be fetched")
+            if (!response.siblings.length) throw new Error("The census proof could not be fetched")
             return {
                 censusValue: response.censusValue,
                 siblings: response.siblings
