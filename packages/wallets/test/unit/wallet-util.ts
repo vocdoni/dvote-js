@@ -3,8 +3,9 @@ import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
 
 import { WalletUtil } from "../../src"
-import { utils } from "ethers"
-import { JsonSignature } from "../../../signing/src" // TODO reference the future package
+import { toUtf8Bytes } from "@ethersproject/strings"
+import { computePublicKey } from "@ethersproject/signing-key"
+import { JsonSignature } from "@vocdoni/signing"
 
 addCompletionHooks()
 
@@ -15,11 +16,11 @@ describe("WalletUtil", () => {
 
         const wallet = WalletUtil.fromSeededPassphrase(passphrase, hexSeed)
         expect(wallet.privateKey).to.eq("0x58c6192cbffe39d20f6dbaa2957a6d6a4116489a2bb66caab5c4a0bfa83d887b")
-        expect(utils.computePublicKey(wallet.publicKey, true)).to.eq("0x02de6d532b6979899729f9e98869888ea7fdbc446f9f3ea732d23c7bcd10c784d0")
+        expect(computePublicKey(wallet.publicKey, true)).to.eq("0x02de6d532b6979899729f9e98869888ea7fdbc446f9f3ea732d23c7bcd10c784d0")
         expect(wallet.publicKey).to.eq("0x04de6d532b6979899729f9e98869888ea7fdbc446f9f3ea732d23c7bcd10c784d041887d48ebc392c4ff51882ae569ca1553f6ab6538664bced6cca6855acbbade")
         expect(await wallet.getAddress()).to.eq("0xf76564CBF51B1F050c84fC01400088ACD2704F2e")
 
-        const msg = utils.toUtf8Bytes("Hello")
+        const msg = toUtf8Bytes("Hello")
         const signature = await wallet.signMessage(msg)
         expect(signature).to.eq("0xc7f89fabf5185f7b63b5f13ad11a79e69412174ed250e6df7116a27588a820cf21aa94a440519e3a19b545e26b457fc39a0b8e904e1ba591f3bbd9842960c58a1c")
     })
@@ -108,7 +109,7 @@ describe("WalletUtil", () => {
 
         const signature = await JsonSignature.sign(jsonBody, wallet)
 
-        expect(JsonSignature.isValid(signature, utils.computePublicKey(wallet.publicKey, true), jsonBody)).to.be.true
+        expect(JsonSignature.isValid(signature, computePublicKey(wallet.publicKey, true), jsonBody)).to.be.true
         expect(JsonSignature.isValid(signature, wallet.publicKey, jsonBody)).to.be.true
     })
 })

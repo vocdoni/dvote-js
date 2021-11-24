@@ -1,4 +1,4 @@
-import { providers } from "ethers"
+import { Web3Provider } from "@ethersproject/providers"
 
 export namespace SignerUtil {
     /**
@@ -8,7 +8,7 @@ export namespace SignerUtil {
     export function fromInjectedWeb3() {
         if (typeof window == "undefined" || typeof window["web3"] == "undefined") return null
 
-        const provider = new providers.Web3Provider(window["web3"].currentProvider)
+        const provider = new Web3Provider(window["web3"].currentProvider)
         if (!provider.getSigner) return null
         return provider.getSigner()
     }

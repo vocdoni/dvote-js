@@ -1,4 +1,4 @@
-import { utils } from "ethers"
+import { keccak256 } from "@ethersproject/keccak256"
 import * as createBlakeHash from "blake-hash"
 import { eddsa, babyJub } from "circomlib"
 // Note: Importing ffjavascript as an ES module will not work
@@ -24,7 +24,7 @@ export class WalletBabyJub {
      */
     static fromHexSeed(hexSeed: string) {
         const seedBytes = Buffer.from(hexSeed.replace("0x", ""), "hex")
-        const hashedBytes = utils.keccak256(seedBytes).slice(2)
+        const hashedBytes = keccak256(seedBytes).slice(2)
 
         return new WalletBabyJub(Buffer.from(hashedBytes, "hex"))
     }
