@@ -1,4 +1,4 @@
-import { Wallet, Signer, providers, BigNumber, ContractReceipt, Contract } from "ethers"
+import { Wallet, Signer, providers, BigNumber, ContractReceipt } from "ethers"
 import { IRequestParameters } from "../net/gateway-dvote"
 import { Keccak256, Poseidon } from "../crypto/hashing"
 import { bigIntToLeBuffer, bufferLeToBigInt, hexStringToBuffer } from "../util/encoding"
@@ -251,7 +251,7 @@ export namespace CensusOffChainApi {
 
         return gateway.sendRequest(msg, walletOrSigner)
             .then(response => {
-                return (response.censusDump && response.censusDump.length) ? response.censusDump : []
+                return response.censusDump || ""
             }).catch(error => {
                 const message = (error.message) ? "The census merkle root could not be fetched: " + error.message : "The census merkle root could not be fetched"
                 throw new Error(message)
@@ -318,7 +318,7 @@ export namespace CensusOffChainApi {
      * @param base64Claim Base64-encoded claim of the leaf to request
      * @param gateway
      */
-    export function generateProof(censusRoot: string, { key, value }: { key: string, value?: number }, gateway: IGatewayClient): Promise<string> {
+    export function generateProof(censusRoot: string, { key, value }: { key: string, value?: number }, gateway: IGatewayClient): Promise<{ siblings: string, weight: bigint }> {
         if (!censusRoot || !key || !gateway) return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
 
@@ -330,7 +330,10 @@ export namespace CensusOffChainApi {
             censusValue: value
         }).then(response => {
             if (typeof response.siblings != "string" || !response.siblings.length) throw new Error("The census proof could not be fetched")
-            return response.siblings
+            return {
+                weight: BigInt(response.weight || "1"),
+                siblings: response.siblings
+            }
         }).catch((error) => {
             const message = (error.message) ? error.message : "The request could not be completed"
             throw new Error(message)
@@ -362,14 +365,13 @@ export namespace CensusOnChainApi {
      * @param processId
      * @param proof A valid franchise proof. See `packageSignedProof`.
      * @param secretKey The bytes of the secret key to use
-     * @param weight Hex string (by default "0x1")
      * @param walletOrSigner
      * @param gateway
      */
-    export function registerVoterKey(processId: string, censusProof: IProofArbo, secretKey: bigint, weight: string = "0x01", walletOrSigner: Wallet | Signer, gateway: IGatewayDVoteClient): Promise<any> {
+    export function registerVoterKey(processId: string, censusProof: IProofArbo, secretKey: bigint, walletOrSigner: Wallet | Signer, gateway: IGatewayDVoteClient): Promise<any> {
         if (!processId || typeof secretKey !== "bigint") return Promise.reject(new Error("Invalid parameters"))
         else if (!gateway) return Promise.reject(new Error("Invalid gateway client"))
-        else if (typeof censusProof != "string" || !censusProof.match(/^(0x)?[0-9a-zA-Z]+$/))
+        else if (typeof censusProof?.siblings != "string" || !censusProof?.siblings.match(/^(0x)?[0-9a-zA-Z]+$/))
             throw new Error("Invalid census proof (must be a hex string)")
 
         const hashedKey = Poseidon.hash([secretKey])
@@ -377,9 +379,9 @@ export namespace CensusOnChainApi {
 
         const proof = Proof.fromPartial({})
         const aProof = ProofArbo.fromPartial({
-            siblings: new Uint8Array(hexStringToBuffer(censusProof as string)),
+            siblings: new Uint8Array(hexStringToBuffer(censusProof.siblings)),
             type: ProofArbo_Type.BLAKE2B,
-            value: new Uint8Array(hexStringToBuffer(weight))
+            value: new Uint8Array(bigIntToLeBuffer(censusProof.weight || BigInt("1")))
         })
         proof.payload = { $case: "arbo", arbo: aProof }
 
@@ -388,7 +390,7 @@ export namespace CensusOnChainApi {
             processId: new Uint8Array(hexStringToBuffer(processId)),
             nonce: Random.getBytes(32),
             proof,
-            weight: new Uint8Array(hexStringToBuffer(weight))
+            weight: new Uint8Array(bigIntToLeBuffer(censusProof.weight || BigInt("1")))
         }
 
         const tx = Tx.encode({ payload: { $case: "registerKey", registerKey } })

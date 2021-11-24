@@ -36,7 +36,7 @@ import { ProofZkSNARK } from "../models/protobuf/build/ts/vochain/vochain"
 import { getZkProof, ZkInputs } from "../crypto/snarks"
 import { ensure0x, strip0x } from "../util/hex"
 import { bigIntToLeBuffer, bufferLeToBigInt, hexStringToBuffer } from "../util/encoding"
-import { ContentHashedUri } from "../wrappers/content-hashed-uri";
+import { ContentHashedUri } from "../wrappers/content-hashed-uri"
 
 export const CaBundleProtobuf: any = CAbundle
 
@@ -53,7 +53,6 @@ export type SignedEnvelopeParams = {
     censusProof: IProofArbo | IProofCA | IProofEVM,
     processKeys?: ProcessKeys,
     /** hex string */
-    weight?: string
 }
 
 export type AnonymousEnvelopeParams = {
@@ -1289,7 +1288,7 @@ export namespace Voting {
      * If `encryptionPublicKey` is defined, it will be used to encrypt the vote package.
      * @param params
      */
-    export async function packageSignedEnvelope(params: SignedEnvelopeParams): Promise<VoteEnvelope> {
+    export function packageSignedEnvelope(params: SignedEnvelopeParams): VoteEnvelope {
         if (!params) throw new Error("Invalid parameters")
         else if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
         else if (typeof params.processId != "string" || !params.processId.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid processId")
@@ -1306,14 +1305,14 @@ export namespace Voting {
             params.censusOrigin
 
         try {
-            const proof = packageSignedProof(params.processId, censusOrigin, params.censusProof, params.weight)
-            const nonce = strip0x(Random.getHex())
+            const proof = packageSignedProof(params.processId, censusOrigin, params.censusProof)
+            const nonce = hexStringToBuffer(Random.getHex())
             const { votePackage, keyIndexes } = packageVoteContent(params.votes, params.processKeys)
 
             return VoteEnvelope.fromPartial({
                 proof,
                 processId: new Uint8Array(Buffer.from(strip0x(params.processId), "hex")),
-                nonce: new Uint8Array(Buffer.from(nonce, "hex")),
+                nonce: new Uint8Array(nonce),
                 votePackage: new Uint8Array(votePackage),
                 encryptionKeyIndexes: keyIndexes ? keyIndexes : [],
                 nullifier: new Uint8Array()
@@ -1448,18 +1447,20 @@ export namespace Voting {
     }
 
     /** Packages the given parameters into a proof that can be submitted to the Vochain */
-    export function packageSignedProof(processId: string, censusOrigin: ProcessCensusOrigin, censusProof: IProofArbo | IProofCA | IProofEVM, weight: string = "0x01") {
+    export function packageSignedProof(processId: string, censusOrigin: ProcessCensusOrigin, censusProof: IProofArbo | IProofCA | IProofEVM) {
         const proof = Proof.fromPartial({})
 
         if (censusOrigin.isOffChain || censusOrigin.isOffChainWeighted) {
+            censusProof = censusProof as IProofArbo
+
             // Check census proof
-            if (typeof censusProof != "string" || !censusProof.match(/^(0x)?[0-9a-zA-Z]+$/))
+            if (typeof censusProof?.siblings != "string" || !censusProof?.siblings.match(/^(0x)?[0-9a-zA-Z]+$/))
                 throw new Error("Invalid census proof (must be a hex string)")
 
             const aProof = ProofArbo.fromPartial({
-                siblings: new Uint8Array(hexStringToBuffer(censusProof)),
+                siblings: new Uint8Array(hexStringToBuffer(censusProof.siblings)),
                 type: ProofArbo_Type.BLAKE2B,
-                value: new Uint8Array(hexStringToBuffer(weight))
+                value: new Uint8Array(bigIntToLeBuffer(censusProof.weight || BigInt("1")))
             })
             proof.payload = { $case: "arbo", arbo: aProof }
         }
@@ -1471,6 +1472,7 @@ export namespace Voting {
             const caBundle = CAbundle.fromPartial({
                 processId: new Uint8Array(hexStringToBuffer(processId)),
                 address: new Uint8Array(hexStringToBuffer(resolvedProof.voterAddress)),
+                // weight
             })
 
             // Populate the proof
@@ -1478,6 +1480,7 @@ export namespace Voting {
                 type: resolvedProof.type,
                 signature: new Uint8Array(hexStringToBuffer(resolvedProof.signature)),
                 bundle: caBundle
+                // weight
             })
 
             proof.payload = { $case: "ca", ca: caProof }

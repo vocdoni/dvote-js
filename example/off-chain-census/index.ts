@@ -305,7 +305,7 @@ async function launchVotes(accounts) {
         process.stdout.write(`Gen Proof [${idx}] ; `)
         const censusProof = await CensusOffChainApi.generateProof(processParams.censusRoot, { key: account.publicKeyEncoded }, pool)
             .catch(err => {
-                console.error("\nCensusOffChainApi.generateProof ERR", account, err)
+                console.error("CensusOffChainApi.generateProof ERR", account, err)
                 if (config.stopOnError) throw err
                 return null
             })
@@ -315,13 +315,13 @@ async function launchVotes(accounts) {
         const choices = getChoicesForVoter(idx)
 
         const envelope = processParams.envelopeType.hasEncryptedVotes ?
-            await Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet, processKeys }) :
-            await Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet })
+            Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet, processKeys }) :
+            Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet })
 
         process.stdout.write(`Sending [${idx}] ; `)
         await VotingApi.submitEnvelope(envelope, wallet, pool)
             .catch(err => {
-                console.error("\nsubmitEnvelope ERR", account.publicKey, envelope, err)
+                console.error("submitEnvelope ERR", account.publicKey, envelope, err)
                 if (config.stopOnError) throw err
             })
 
@@ -332,7 +332,7 @@ async function launchVotes(accounts) {
         const nullifier = Voting.getSignedVoteNullifier(wallet.address, processId)
         const { registered, date, block } = await VotingApi.getEnvelopeStatus(processId, nullifier, pool)
             .catch(err => {
-                console.error("\ngetEnvelopeStatus ERR", account.publicKey, nullifier, err)
+                console.error("getEnvelopeStatus ERR", account.publicKey, nullifier, err)
                 if (config.stopOnError) throw err
             }) as any
 

@@ -290,10 +290,8 @@ async function createProcessRaw() {
     console.log("process-metadata.json\nDATA STORED ON:", origin)
 
     const metaCuri = new ContentHashedUri(origin)
-    metaCuri.setHashFrom(strData)
 
     const censusCuri = new ContentHashedUri("http://localhost/")
-    censusCuri.setHashFrom("")
 
     console.log("Creating process with parameters:", metaCuri.toString(), "0x0", censusCuri.toString())
 
@@ -543,7 +541,7 @@ async function useVoteApi() {
     const votes = [1, 2, 1]
 
     // Open vote version:
-    const envelope = await Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet })
+    const envelope = Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet })
 
     // Encrypted vote version:
     // const voteEnvelope = await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
@@ -602,7 +600,7 @@ async function submitVoteBatch() {
             const publicKeyDigest = CensusOffChain.Public.encodePublicKey(wallet.publicKey)
             const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: publicKeyDigest }, true, pool)
             const votes = [1]
-            const envelope = await Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet })
+            const envelope = Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet })
             // Encrypted version:
             // const voteEnvelope = await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
 

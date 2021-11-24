@@ -12,8 +12,8 @@ import { INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "../
 import { ProcessContractParameters, ProcessMode, ProcessEnvelopeType, ProcessStatus, IProcessCreateParams, ProcessCensusOrigin, ensHashAddress } from "../../src/net/contracts"
 import { VochainWaiter, EthWaiter } from "../../src/util/waiters"
 import { compressPublicKey, EthNetworkID, IGatewayClient } from "../../dist"
-import { IGatewayDiscoveryParameters, Random, VocdoniEnvironment } from "../../src"
-import axios from "axios"
+import { IGatewayDiscoveryParameters, Poseidon, VocdoniEnvironment } from "../../src"
+import { bufferLeToBigInt, hexStringToBuffer } from "../../src/util/encoding"
 
 
 const CONFIG_PATH = "./config.yaml"
@@ -288,13 +288,13 @@ async function registerVoterKeys(censusRoot: string) {
         // Get a census proof to be able to register the new key
         const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: account.publicKeyEncoded }, pool)
             .catch(err => {
-                console.error("\nCensusOffChainApi.generateProof ERR", account, err)
+                console.error("CensusOffChainApi.generateProof ERR", account, err)
                 if (config.stopOnError) throw err
                 return null
             })
         if (!censusProof) return // skip when !config.stopOnError
 
-        return CensusOnChainApi.registerVoterKey(processId, censusProof, secretKey, "0x01", wallet, pool)
+        return CensusOnChainApi.registerVoterKey(processId, censusProof, secretKey, wallet, pool)
     })
 }
 
@@ -326,7 +326,7 @@ async function submitVotes(accounts: Account[]) {
 
     const state = await VotingApi.getProcessState(processId, pool)
     const circuitInfo = await VotingApi.getProcessCircuitInfo(processId, pool)
-    const { maxSize } = circuitInfo
+    const { maxSize, index: circuitIndex } = circuitInfo
 
     const processKeys = processParams.envelopeType.hasEncryptedVotes ? await VotingApi.getProcessKeys(processId, pool) : null
 
@@ -356,7 +356,8 @@ async function submitVotes(accounts: Account[]) {
             witnessGeneratorWasm,
             secretKey: account.secretKey,
             zKey,
-            processId
+            processId,
+            circuitIndex
         }
         if (processParams.envelopeType.hasEncryptedVotes) {
             params.processKeys = processKeys
@@ -367,7 +368,7 @@ async function submitVotes(accounts: Account[]) {
         process.stdout.write(`Sending [${idx}] ; `)
         await VotingApi.submitEnvelope(envelope, null, pool)
             .catch(err => {
-                console.error("\nsubmitEnvelope ERR", account.publicKeyEncoded, envelope, err)
+                console.error("submitEnvelope ERR", account.publicKeyEncoded, envelope, err)
                 if (config.stopOnError) throw err
             })
 
