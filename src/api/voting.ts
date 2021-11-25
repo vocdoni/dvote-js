@@ -1260,17 +1260,6 @@ export namespace VotingApi {
             }
         }
 
-        // if (params.censusOrigin == ProcessCensusOrigin.OFF_CHAIN_TREE || censusOrigin.isOffChainWeighted) {
-        //     censusProof = censusProof as IProofGraviton
-
-        // let weight: Uint8Array;
-        // if (params.weight) {
-        //     weight =  new Uint8Array(bigIntToLeBuffer(params.censusProof.weight || BigInt("1")))
-        //     weight = new Uint8Array(Buffer.from(params.weight, "base64"))
-        // } else {
-        //     weight = new Uint8Array(1)
-        //     weight[0] = 1
-        // }
 
         const censusOrigin = typeof params.censusOrigin == "number" ?
             new ProcessCensusOrigin(params.censusOrigin as IProcessCensusOrigin) :
@@ -1309,14 +1298,15 @@ export namespace VotingApi {
         if (censusOrigin.isOffChain || censusOrigin.isOffChainWeighted) {
             censusProof = censusProof as IProofGraviton
             // Check census proof
-            if (typeof censusProof?.siblings != "string" || !(censusProof?.siblings as string).match(/^(0x)?[0-9a-zA-Z]+$/))
-            throw new Error("Invalid census proof (must be a hex string)")
-            let cencusvalue = censusProof?.censusValue.toString()
-            while (cencusvalue.length < 64) cencusvalue = "0" + cencusvalue
+            // if (typeof censusProof?.siblings != "string" || !(censusProof?.siblings as string).match(/^(0x)?[0-9a-zA-Z]+$/))
+            // throw new Error("Invalid census proof (must be a hex string)")
+
             const gProof = ProofGraviton.fromPartial({
                 siblings: censusProof?.siblings,
                 value:  censusProof?.censusValue
             })
+            console.log(gProof)
+
             proof.payload = { $case: "graviton", graviton: gProof }
         }
         else if (censusOrigin.isOffChainCA) {
@@ -1595,15 +1585,4 @@ export namespace VotingOracleApi {
             throw new Error(message)
         }
     }
-}
-
-function bigIntToBuffer(number: bigint): Buffer {
-    let hexNumber = number.toString(16)
-    while (hexNumber.length < 64) hexNumber = "0" + hexNumber
-    return Buffer.from(hexNumber, "hex")
-}
-
-/** Encodes the given big integer as a little endian buffer */
-export function bigIntToLeBuffer(number: bigint): Buffer {
-    return bigIntToBuffer(number).reverse()
 }
