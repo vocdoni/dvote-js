@@ -2,13 +2,15 @@
 export * from "@vocdoni/common"
 
 // API
-export * from "vocdoni-client" // TODO: Export from the new NPM package
+export * from "@vocdoni/census"
+export * from "@vocdoni/voting"
 
 // MODELS
 export * from "@vocdoni/data-models"
+export * from "@vocdoni/contract-wrappers"
 
-// NETWORK
-export * from "vocdoni-net" // TODO: Export from the new NPM package
+// CLIENT
+export * from "@vocdoni/client" 
 
 // CRYPTO
 export * from "@vocdoni/signing"
