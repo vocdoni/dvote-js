@@ -3,6 +3,7 @@
 ## 1.14.1
 
 - Moving `registerVoterKey` to `CensusOnChainApi.registerVoterKey`
+- Dependency bump
 
 ## 1.14.0
 

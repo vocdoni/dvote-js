@@ -1,0 +1,7 @@
+# Covers JetBrains IDEs
+.idea/
+# Project
+node_modules
+dist
+.env
+.cache
