@@ -145,9 +145,6 @@ async function launchNewVote() {
     const startBlock = currentBlock + 5
     const blockCount = 6 * 1 // 1 minute
 
-    // TODO: COMPUTE THE PARAMS SIGNATURE
-    // TODO: INCLUDE THE BALANCE SLOT IN SUCH SIGNATURE
-
     const processParams: INewProcessErc20Params = {
         mode: ProcessMode.make({ autoStart: true }),
         envelopeType: ProcessEnvelopeType.make({}), // bit mask
@@ -163,8 +160,30 @@ async function launchNewVote() {
         tokenAddress: config.tokenAddress,
         paramsSignature: "0x0000000000000000000000000000000000000000000000000000000000000000"
     }
+
+    const holderAddress = await creatorWallet.getAddress()
+
+    // Check that the token exists
+    const tokenInfo = await CensusErc20Api.getTokenInfo(config.tokenAddress, pool)
+    if (!tokenInfo.isRegistered) return Promise.reject(new Error("The token is not yet registered"))
+
+    // Generate the census proof
+    const proof = await CensusErc20Api.generateProof(config.tokenAddress, holderAddress, tokenInfo.balanceMappingPosition, sourceBlockHeight, pool.provider)
+    if (!proof?.storageProof?.length)
+        return Promise.reject(new Error("Invalid storage proof"))
+
+    const tokenDetails = {
+        balanceMappingPosition: tokenInfo.balanceMappingPosition,
+        storageHash: proof.storageHash,
+        storageProof: {
+            key: proof.storageProof[0].key,
+            value: proof.storageProof[0].value,
+            proof: proof.storageProof[0].proof
+        }
+    }
+
     console.log("Creating the process")
-    processId = await VotingOracleApi.newProcessErc20(processParams, creatorWallet, pool, oracleClient)
+    processId = await VotingOracleApi.newProcessErc20(processParams, tokenDetails, creatorWallet, pool, oracleClient)
     assert(processId)
     console.log("Created the process", processId)
 

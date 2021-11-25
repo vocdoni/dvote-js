@@ -1,5 +1,4 @@
 import { allSettled } from "@vocdoni/common"
-import { ITokenStorageProofContract } from "@vocdoni/contract-wrappers"
 import { IGatewayClient, IGatewayWeb3Client } from "../interfaces"
 
 export namespace Erc20TokensApi {
@@ -8,13 +7,8 @@ export namespace Erc20TokensApi {
      * @param gateway A gateway client instance
      */
     export async function getTokenList(gateway: IGatewayClient): Promise<string[]> {
-        let tokenInstance: ITokenStorageProofContract
-        return gateway.getTokenStorageProofInstance()
-            .then(instance => {
-                tokenInstance = instance
-
-                return tokenInstance.tokenCount()
-            }).then(count => {
+        return getTokenCount(gateway)
+            .then(count => {
                 const indexes = new Array(count).fill(0).map((_, i) => i)
 
                 // TODO Promise.allSettled is the correct one, should be used when target = ES2020 is fixed
@@ -26,10 +20,18 @@ export namespace Erc20TokensApi {
             })
     }
 
-    // NOTE: This function mimics CensusErc20Api.getTokenAddressAt, in order to prevent unnecessary coupling
-    //       with the census library
-    function getTokenAddressAt(index: number, gw: IGatewayWeb3Client, customContractAddress?: string): Promise<string> {
+    export function isRegistered(tokenAddress: string, gw: IGatewayWeb3Client, customContractAddress?: string) {
+        return gw.getTokenStorageProofInstance(null, customContractAddress)
+            .then((contractInstance) => contractInstance.isRegistered(tokenAddress))
+    }
+
+    export function getTokenAddressAt(index: number, gw: IGatewayWeb3Client, customContractAddress?: string): Promise<string> {
         return gw.getTokenStorageProofInstance(null, customContractAddress)
             .then((contractInstance) => contractInstance.tokenAddresses(index))
+    }
+
+    export function getTokenCount(gw: IGatewayWeb3Client, customContractAddress?: string): Promise<number> {
+        return gw.getTokenStorageProofInstance(null, customContractAddress)
+            .then((contractInstance) => contractInstance.tokenCount())
     }
 }

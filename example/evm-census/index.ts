@@ -106,7 +106,7 @@ async function connectGateways(accounts: Account[]): Promise<GatewayPool | Gatew
 async function launchNewVote() {
     console.log("Computing the storage proof of creator the account")
 
-    if (!await CensusErc20Api.isRegistered(config.tokenAddress, pool)) {
+    if (!await Erc20TokensApi.isRegistered(config.tokenAddress, pool)) {
         await CensusErc20Api.registerTokenAuto(
             config.tokenAddress,
             creatorWallet,
