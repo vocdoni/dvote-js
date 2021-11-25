@@ -96,23 +96,6 @@ const entityMetadataSchema = object().shape({
 type ProtocolVersion = "1.0"
 
 /**
- * ENS keys used to store the Text Records on the Smart Contract
- */
-export const TextRecordKeys = {
-    JSON_METADATA_CONTENT_URI: "vnd.vocdoni.meta",
-    VOCDONI_ARCHIVE: "vnd.vocdoni.archive",
-    VOCDONI_BOOT_NODES: "vnd.vocdoni.boot-nodes",
-    VOCDONI_GATEWAY_HEARTBEAT: "vnd.vocdoni.gateway-heartbeat",
-}
-
-/**
- * ENS keys used to store the Text List Records on the Smart Contract
- */
-export const TextListRecordKeys = {
-    // Not used currently
-}
-
-/**
  * JSON metadata. Intended to be stored on IPFS or similar.
  * More info: https://vocdoni.io/docs/#/architecture/components/entity?id=meta
  */

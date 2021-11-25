@@ -1,5 +1,10 @@
 # @vocdoni/data-models - Changelog
 
+## 1.14.2
+
+- Moving the gateway API definitions to the client package
+- Moving `TextRecordKeys` to `common`
+
 ## 1.14.1
 
 - Lighter set of artifacts on NPM
