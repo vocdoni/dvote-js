@@ -1,4 +1,6 @@
-import { utils } from "ethers"
+import { toUtf8Bytes } from "@ethersproject/strings"
+import { keccak256 } from "@ethersproject/keccak256"
+import { arrayify } from "@ethersproject/bytes"
 
 /**
  * Returns `false` if the passphrase is shorter than 8 characters, or it doesn't contain
@@ -26,14 +28,14 @@ export function digestSeededPassphrase(passphrase: string, hexSeed: string, roun
     if (hexSeed.length != 64) throw new Error("The hashed passphrase should be 64 characters long instead of " + hexSeed.length)
 
     // Conver the passphrase into UTF8 bytes and hash them
-    const passphraseBytes = utils.toUtf8Bytes(passphrase)
-    const passphraseBytesHashed = utils.keccak256(passphraseBytes).substr(2) // skip 0x
+    const passphraseBytes = toUtf8Bytes(passphrase)
+    const passphraseBytesHashed = keccak256(passphraseBytes).substr(2) // skip 0x
 
     if (passphraseBytesHashed.length != 64)
         throw new Error("Internal error: The hashed passphrase should be 64 characters long instead of " + passphraseBytesHashed.length)
 
     // Concatenating the bytes of the hashed passphrase + the seed's
-    const sourceBytes = utils.arrayify("0x" + passphraseBytesHashed + hexSeed)
+    const sourceBytes = arrayify("0x" + passphraseBytesHashed + hexSeed)
     if (sourceBytes.length != 64)
         throw new Error("Internal error: The sourceBytes array should be 64 bytes long instead of " + sourceBytes.length)
 
@@ -41,8 +43,8 @@ export function digestSeededPassphrase(passphrase: string, hexSeed: string, roun
 
     // Perform N rounds of keccak256
     for (let i = 0; i < rounds; i++) {
-        if (typeof result == "undefined") result = utils.keccak256(sourceBytes)
-        else result = utils.keccak256(result)
+        if (typeof result == "undefined") result = keccak256(sourceBytes)
+        else result = keccak256(result)
     }
 
     return result
