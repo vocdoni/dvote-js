@@ -1266,18 +1266,11 @@ export namespace VotingApi {
             params.censusOrigin
 
         try {
-            let censusProof = params.censusProof as IProofGraviton
+            const censusProof = params.censusProof as IProofGraviton
             const proof = packageProof(params.processId, censusOrigin, censusProof)
             const nonce = Random.getHex().substr(2)
             const { votePackage, keyIndexes } = packageVoteContent(params.votes, params.processKeys)
-            console.log("Data for VoteEnvelope.fromPartial:", {
-                proof,
-                processId: new Uint8Array(Buffer.from(params.processId.replace("0x", ""), "hex")),
-                nonce: new Uint8Array(Buffer.from(nonce, "hex")),
-                votePackage: new Uint8Array(votePackage),
-                encryptionKeyIndexes: keyIndexes ? keyIndexes : [],
-                nullifier: new Uint8Array()
-            })
+
             return VoteEnvelope.fromPartial({
                 proof,
                 processId: new Uint8Array(Buffer.from(params.processId.replace("0x", ""), "hex")),
@@ -1305,8 +1298,6 @@ export namespace VotingApi {
                 siblings: censusProof?.siblings,
                 value:  censusProof?.censusValue
             })
-            console.log(gProof)
-
             proof.payload = { $case: "graviton", graviton: gProof }
         }
         else if (censusOrigin.isOffChainCA) {
