@@ -1,11 +1,11 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
-import { Contract } from "ethers"
+import { Contract } from "@ethersproject/contracts"
 import { addCompletionHooks } from "../mocha-hooks"
-import DevServices, { TestAccount } from "../../../../shared/test/helpers/all-services"
+import DevServices, { TestAccount } from "../helpers/all-services"
+import EntityResolverBuilder, { DEFAULT_NAME } from "../builders/ens-resolver"
 import { ensHashAddress, EnsResolverContractMethods } from "@vocdoni/contract-wrappers"
-import { Web3Gateway } from "vocdoni-net" // TODO: Import from the new NPM package
-import EntityResolverBuilder, { DEFAULT_NAME } from "../../../../shared/test/builders/ens-resolver"
+import { Web3Gateway } from "../../src"
 
 let server: DevServices
 let accounts: TestAccount[]

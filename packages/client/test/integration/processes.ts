@@ -1,8 +1,8 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
-import DevServices, { TestAccount } from "../../../../shared/test/helpers/all-services"
+import DevServices, { TestAccount } from "../helpers/all-services"
 
-import { Contract } from "ethers"
+import { Contract } from "@ethersproject/contracts"
 import { ProcessesContractMethods, ProcessContractParameters, ProcessEnvelopeType, ProcessMode } from "@vocdoni/contract-wrappers"
 import ProcessBuilder, {
     DEFAULT_PROCESS_MODE,
@@ -20,12 +20,11 @@ import ProcessBuilder, {
     DEFAULT_COST_EXPONENT,
     DEFAULT_MAX_VOTE_OVERWRITES,
     DEFAULT_PARAMS_SIGNATURE
-} from "../../../../shared/test/builders/process"
-import NamespaceBuilder from "../../../../shared/test/builders/namespace"
-import { Web3Gateway } from "vocdoni-net" // TODO: Import from the new NPM package
-import GenesisBuilder, { DEFAULT_CHAIN_ID } from "../../../../shared/test/builders/genesis"
-import ResultsBuilder from "../../../../shared/test/builders/results"
-import { VotingApi } from "../../src"
+} from "../builders/process"
+import NamespaceBuilder from "../builders/namespace"
+import { Web3Gateway } from "../../src/gateway-web3"
+import GenesisBuilder, { DEFAULT_CHAIN_ID } from "../builders/genesis"
+import ResultsBuilder from "../builders/results"
 
 let server: DevServices
 
@@ -143,21 +142,6 @@ describe("Process", () => {
             expect(data.maxVoteOverwrites).to.eq(DEFAULT_MAX_VOTE_OVERWRITES)
             expect(data.paramsSignature).to.eq(null)  // Not retrieved by contract.get(...)
         })
-
-        it("Should compute process ID's in the same way as the on-chain version", async () => {
-            const indexes = []
-            for (let i = 0; i < 30; i++) {
-                indexes.push(Math.round(Math.random() * 1000000000))
-            }
-
-            for (let account of accounts.filter(() => Math.random() >= 0.5)) {
-                for (let index of indexes) {
-                    let expected = VotingApi.getProcessId(account.address, index, DEFAULT_NAMESPACE, chainId)
-                    let received = await contractInstance.getProcessId(account.address, index, DEFAULT_NAMESPACE, chainId)
-                    expect(received).to.equal(expected)
-                }
-            }
-        }).timeout(10000)
 
         it("The getProcessId() should match getNextProcessId()", async () => {
             // entityAddress has one process created by default from the builder

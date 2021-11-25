@@ -1,8 +1,7 @@
 node_modules
 example
 test
+packages
 .env
 .github
 .vscode
-packages
-test

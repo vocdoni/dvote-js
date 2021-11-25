@@ -1,12 +1,12 @@
 import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
-import { DevGatewayService } from "../../../../shared/test/helpers/dvote-service"
-import { DevWeb3Service } from "../../../../shared/test/helpers/web3-service"
+import { DevGatewayService } from "../helpers/dvote-service"
+import { DevWeb3Service } from "../helpers/web3-service"
 
 import { FileApi } from "../../src"
 import { Buffer } from "buffer/"
-import { DVoteGateway } from "vocdoni-net" // TODO reference the future package
+import { DVoteGateway } from "../../src"
 
 let baseAccount = new DevWeb3Service({ port: 80000 }).accounts[0]
 let port: number = 9200
