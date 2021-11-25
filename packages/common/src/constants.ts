@@ -1,8 +1,6 @@
 import { parseUnits } from "@ethersproject/units"
 import { BigNumber } from "@ethersproject/bignumber"
 
-export const IPFS_GATEWAY_LIST_URI = "https://ipfs.github.io/public-gateway-checker/gateways.json"
-
 export const VOCDONI_ENS_ROOT = "voc.eth"
 export const VOCDONI_ENS_ROOT_STAGING = "stg." + VOCDONI_ENS_ROOT
 export const VOCDONI_ENS_ROOT_DEV = "dev." + VOCDONI_ENS_ROOT
@@ -37,3 +35,13 @@ export const SOKOL_ENS_REGISTRY_ADDRESS = "0xDb6C74071116D17a47D9c191cbE6d640111
 export const VOCHAIN_BLOCK_TIME = 12 // seconds
 export const CENSUS_MAX_BULK_SIZE = 400 // # of claims per addClaimBulk request
 export const GATEWAY_SELECTION_TIMEOUT = 4000  // milliseconds
+
+/**
+ * ENS keys used to store the Text Records on the Smart Contract
+ */
+export namespace TextRecordKeys {
+  export const JSON_METADATA_CONTENT_URI = "vnd.vocdoni.meta"
+  export const VOCDONI_ARCHIVE = "vnd.vocdoni.archive"
+  export const VOCDONI_BOOT_NODES = "vnd.vocdoni.boot-nodes"
+  export const VOCDONI_GATEWAY_HEARTBEAT = "vnd.vocdoni.gateway-heartbeat"
+}
