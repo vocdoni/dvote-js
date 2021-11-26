@@ -44,7 +44,7 @@ jobs:
         npm install ../common/vocdoni-common*.tgz
         cd ..
 
-        cd packages/signing
+        cd signing
         npm install
         npm run test
         npm pack
@@ -59,7 +59,7 @@ jobs:
         npm install ../common/vocdoni-signing*.tgz
         cd ..
 
-        cd packages/hashing
+        cd hashing
         npm install
         npm run test
         npm pack
@@ -70,7 +70,7 @@ jobs:
         npm install ../common/vocdoni-hashing*.tgz
         cd ..
 
-        cd packages/encryption
+        cd encryption
         npm install
         npm run test
         npm pack
@@ -81,7 +81,7 @@ jobs:
         npm install ../common/vocdoni-encryption*.tgz
         cd ..
 
-        cd packages/contract-wrappers
+        cd contract-wrappers
         npm install
         npm run test
         npm pack
@@ -94,7 +94,7 @@ jobs:
         npm install ../common/vocdoni-contract-wrappers*.tgz
         cd ..
 
-        cd packages/data-models
+        cd data-models
         npm install
         npm run test
         npm pack
@@ -107,14 +107,14 @@ jobs:
         npm install ../common/vocdoni-data-models*.tgz
         cd ..
 
-        cd packages/wallets
+        cd wallets
         npm install
         npm run test
         npm pack
 
         cd ..
 
-        cd packages/client
+        cd client
         npm install
         npm run test
         npm pack
@@ -125,14 +125,14 @@ jobs:
         npm install ../common/vocdoni-client*.tgz
         cd ..
 
-        cd packages/census
+        cd census
         npm install
         npm run test
         npm pack
 
         cd ..
 
-        cd packages/voting
+        cd voting
         npm install
         npm run test
         npm pack
