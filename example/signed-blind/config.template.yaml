@@ -1,0 +1,28 @@
+readExistingProcess: false        # if set, will read the voteMetadata from the JSON instead of creating a new one
+stopOnError: false
+
+processInfoFilePath: "./cached-process-info.json"
+
+cspPublicKey: 032a8da91187785109404da8ecdb293110a2ee9decdf049a145fe3b9ac86b4fee7
+cspUri: https://server/uri
+
+# Either the private key or the wallet/hdPath of the entity
+privateKey:
+mnemonic: ""
+hdPath: "m/44'/60'/0'/0/1"
+ethNetworkId: "rinkeby"
+
+vocdoniEnvironment: "dev" # "stg" or "prod"
+bootnodesUrlRw: "https://server/gateways.json"     # Bootnode used by default
+dvoteGatewayUri:                                   # If set, overrides bootnodesUrlRw
+dvoteGatewayPublicKey:                             # If set, overrides bootnodesUrlRw
+
+numAccounts: 10000
+maxConcurrency: 4500
+
+encryptedVote: true
+votesPattern: "all-0"   #  Vote the first option on all questions
+#votesPattern: "all-1"  #  Vote the second option on all questions
+#votesPattern: "all-2"  #  Vote the third option on all questions
+#votesPattern: "all-even"      #  Vote 0 on even voters and 1 on odd voters
+#votesPattern: "incremental"   #  Vote 0 on question 0, 1 on question 1, 2 on question 2, etc

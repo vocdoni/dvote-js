@@ -1,9 +1,7 @@
 node_modules
 example
 test
+packages
 .env
 .github
 .vscode
-src/models/protobuf/build/dart
-src/models/protobuf/build/go
-src/models/protobuf/src

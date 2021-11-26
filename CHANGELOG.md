@@ -1,5 +1,16 @@
 # DVote JS changelog
 
+## 1.14.0
+
+- Major internal refactor. The codebase is now structured in independent packages.
+
+Breaking changes:
+- `CensusErc20Api.isRegistered`, `CensusErc20Api.getTokenAddressAt` and `CensusErc20Api.getTokenCount` are now `Erc20TokensApi.isRegistered`, `Erc20TokensApi.getTokenAddressAt` and `Erc20TokensApi.getTokenCount`
+-  `VotingOracleApi.newProcessErc20()`
+    - Now expecting `tokenDetails` as the second parameter
+    - See `VotingOracleApi.newProcessErc20` comment in `packages > voting > src > voting.ts`
+- `VotingApi.registerVoterKey` is now `CensusOnChainApi.registerVoterKey`
+
 ## 1.13.3
 
 - Fix an internal import
