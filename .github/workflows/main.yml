@@ -24,4 +24,118 @@ jobs:
         npm run build
 
     - name: Run tests
-      run: npm run test
+      run: |
+        cd packages/common
+        npm install
+        npm run test
+        npm pack
+
+        cd ../census
+        npm install ../common/vocdoni-common*.tgz
+        cd ../client
+        npm install ../common/vocdoni-common*.tgz
+        cd ../data-models
+        npm install ../common/vocdoni-common*.tgz
+        cd ../encryption
+        npm install ../common/vocdoni-common*.tgz
+        cd ../voting
+        npm install ../common/vocdoni-common*.tgz
+        cd ../wallets
+        npm install ../common/vocdoni-common*.tgz
+        cd ..
+
+        cd packages/signing
+        npm install
+        npm run test
+        npm pack
+
+        cd ../census
+        npm install ../common/vocdoni-common*.tgz
+        cd ../client
+        npm install ../common/vocdoni-common*.tgz
+        cd ../voting
+        npm install ../common/vocdoni-common*.tgz
+        cd ../wallets
+        npm install ../common/vocdoni-common*.tgz
+        cd ..
+
+        cd packages/hashing
+        npm install
+        npm run test
+        npm pack
+
+        cd ../census
+        npm install ../common/vocdoni-common*.tgz
+        cd ../voting
+        npm install ../common/vocdoni-common*.tgz
+        cd ..
+
+        cd packages/encryption
+        npm install
+        npm run test
+        npm pack
+
+        cd ../data-models
+        npm install ../common/vocdoni-common*.tgz
+        cd ../voting
+        npm install ../common/vocdoni-common*.tgz
+        cd ..
+
+        cd packages/contract-wrappers
+        npm install
+        npm run test
+        npm pack
+
+        cd ../data-models
+        npm install ../common/vocdoni-common*.tgz
+        cd ../census
+        npm install ../common/vocdoni-common*.tgz
+        cd ../voting
+        npm install ../common/vocdoni-common*.tgz
+        cd ..
+
+        cd packages/data-models
+        npm install
+        npm run test
+        npm pack
+
+        cd ../client
+        npm install ../common/vocdoni-common*.tgz
+        cd ../census
+        npm install ../common/vocdoni-common*.tgz
+        cd ../voting
+        npm install ../common/vocdoni-common*.tgz
+        cd ..
+
+        cd packages/wallets
+        npm install
+        npm run test
+        npm pack
+
+        cd ..
+
+        cd packages/client
+        npm install
+        npm run test
+        npm pack
+
+        cd ../census
+        npm install ../common/vocdoni-common*.tgz
+        cd ../voting
+        npm install ../common/vocdoni-common*.tgz
+        cd ..
+
+        cd packages/census
+        npm install
+        npm run test
+        npm pack
+
+        cd ..
+
+        cd packages/voting
+        npm install
+        npm run test
+        npm pack
+
+        cd ..
+
