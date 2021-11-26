@@ -4,8 +4,9 @@ import * as assert from "assert"
 import { readFileSync, writeFileSync } from "fs"
 import * as YAML from 'yaml'
 import { ProcessCensusOrigin, ProcessContractParameters, ProcessEnvelopeType, ProcessMode } from "@vocdoni/contract-wrappers"
-import { Gateway, GatewayInfo, GatewayPool, IGatewayDiscoveryParameters } from "vocdoni-net" // TODO: Import from the new NPM package
-import { CensusErc20Api, Erc20TokensApi, VochainWaiter, VotingApi } from "vocdoni-client" // TODO: Import from the new NPM package
+import { Gateway, GatewayInfo, GatewayPool, IGatewayDiscoveryParameters, Erc20TokensApi } from "@vocdoni/client"
+import { CensusErc20Api } from "@vocdoni/census"
+import { VochainWaiter, VotingApi } from "@vocdoni/voting"
 import { INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "@vocdoni/data-models"
 import { EthNetworkID, VocdoniEnvironment } from "@vocdoni/common"
 

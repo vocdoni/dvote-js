@@ -10,17 +10,19 @@
   "license": "ISC",
   "homepage": "https://vocdoni.io",
   "devDependencies": {
+    "@vocdoni/census": "^1.14.1",
+    "@vocdoni/client": "^1.14.2",
+    "@vocdoni/common": "^1.14.1",
+    "@vocdoni/contract-wrappers": "^1.14.1",
+    "@vocdoni/data-models": "^1.14.2",
+    "@vocdoni/voting": "^1.14.0",
     "bluebird": "^3.7.2",
     "ts-node": "^9.1.1",
     "typescript": "^4.1.3",
-    "yaml": "^1.10.0",
-    "@vocdoni/common": "^1.14.0",
-    "@vocdoni/contract-wrappers": "^1.14.0",
-    "@vocdoni/data-models": "^1.14.0",
-    "vocdoni-net": "file:../../packages/net/net.tgz",
-    "vocdoni-client": "file:../../packages/client/client.tgz"
+    "yaml": "^1.10.0"
   },
   "dependencies": {
+    "@ethersproject/providers": "^5.5.0",
     "@vocdoni/storage-proofs-eth": "^0.2.2",
     "buffer": "^6.0.3"
   }
