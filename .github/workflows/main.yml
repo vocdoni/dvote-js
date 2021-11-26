@@ -17,14 +17,11 @@ jobs:
       with:
         node-version: 14.x
 
-    - name: Build
+    - name: Build and test
       run: |
-        rm -Rf node_modules/ganache-core/node_modules/web3-providers-ws/node_modules/websocket/.git
         npm install
         npm run build
 
-    - name: Run tests
-      run: |
         cd packages/common
         npm install
         npm run test
