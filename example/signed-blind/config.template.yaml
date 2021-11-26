@@ -3,15 +3,14 @@ stopOnError: false
 
 processInfoFilePath: "./cached-process-info.json"
 
-censusRoot: 032a8da91187785109404da8ecdb293110a2ee9decdf049a145fe3b9ac86b4fee7
-censusUri: https://server/uri
+cspPublicKey: 032a8da91187785109404da8ecdb293110a2ee9decdf049a145fe3b9ac86b4fee7
+cspUri: https://server/uri
 
 # Either the private key or the wallet/hdPath of the entity
 privateKey:
 mnemonic: ""
 hdPath: "m/44'/60'/0'/0/1"
-# ethNetworkId: "goerli"
-ethNetworkId: "xdai"
+ethNetworkId: "rinkeby"
 
 vocdoniEnvironment: "dev" # "stg" or "prod"
 bootnodesUrlRw: "https://server/gateways.json"     # Bootnode used by default
