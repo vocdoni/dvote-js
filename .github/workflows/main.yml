@@ -50,13 +50,13 @@ jobs:
         npm pack
 
         cd ../census
-        npm install ../common/vocdoni-common*.tgz
+        npm install ../common/vocdoni-signing*.tgz
         cd ../client
-        npm install ../common/vocdoni-common*.tgz
+        npm install ../common/vocdoni-signing*.tgz
         cd ../voting
-        npm install ../common/vocdoni-common*.tgz
+        npm install ../common/vocdoni-signing*.tgz
         cd ../wallets
-        npm install ../common/vocdoni-common*.tgz
+        npm install ../common/vocdoni-signing*.tgz
         cd ..
 
         cd packages/hashing
@@ -65,9 +65,9 @@ jobs:
         npm pack
 
         cd ../census
-        npm install ../common/vocdoni-common*.tgz
+        npm install ../common/vocdoni-hashing*.tgz
         cd ../voting
-        npm install ../common/vocdoni-common*.tgz
+        npm install ../common/vocdoni-hashing*.tgz
         cd ..
 
         cd packages/encryption
@@ -76,9 +76,9 @@ jobs:
         npm pack
 
         cd ../data-models
-        npm install ../common/vocdoni-common*.tgz
+        npm install ../common/vocdoni-encryption*.tgz
         cd ../voting
-        npm install ../common/vocdoni-common*.tgz
+        npm install ../common/vocdoni-encryption*.tgz
         cd ..
 
         cd packages/contract-wrappers
@@ -87,11 +87,11 @@ jobs:
         npm pack
 
         cd ../data-models
-        npm install ../common/vocdoni-common*.tgz
+        npm install ../common/vocdoni-contract-wrappers*.tgz
         cd ../census
-        npm install ../common/vocdoni-common*.tgz
+        npm install ../common/vocdoni-contract-wrappers*.tgz
         cd ../voting
-        npm install ../common/vocdoni-common*.tgz
+        npm install ../common/vocdoni-contract-wrappers*.tgz
         cd ..
 
         cd packages/data-models
@@ -100,11 +100,11 @@ jobs:
         npm pack
 
         cd ../client
-        npm install ../common/vocdoni-common*.tgz
+        npm install ../common/vocdoni-data-models*.tgz
         cd ../census
-        npm install ../common/vocdoni-common*.tgz
+        npm install ../common/vocdoni-data-models*.tgz
         cd ../voting
-        npm install ../common/vocdoni-common*.tgz
+        npm install ../common/vocdoni-data-models*.tgz
         cd ..
 
         cd packages/wallets
@@ -120,9 +120,9 @@ jobs:
         npm pack
 
         cd ../census
-        npm install ../common/vocdoni-common*.tgz
+        npm install ../common/vocdoni-client*.tgz
         cd ../voting
-        npm install ../common/vocdoni-common*.tgz
+        npm install ../common/vocdoni-client*.tgz
         cd ..
 
         cd packages/census
