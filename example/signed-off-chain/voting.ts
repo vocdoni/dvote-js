@@ -58,7 +58,7 @@ export async function launchNewVote(censusRoot: string, censusUri: string, entit
     maxCount: 1,
     maxValue,
     maxTotalCost: 0,
-    costExponent: 10000,
+    costExponent: 10000,  // 1.0000
     maxVoteOverwrites: 1,
     paramsSignature: "0x0000000000000000000000000000000000000000000000000000000000000000"
   }

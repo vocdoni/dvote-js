@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { useState } from 'react'
-import { VotingApi, EntityApi, ProcessDetails, EntityMetadata } from 'dvote-js'
+import { VotingApi, EntityApi, ProcessDetails } from "@vocdoni/voting"
+import { EntityMetadata } from "@vocdoni/data-models"
 import { getClient } from "../lib/net"
 
 const ENTITY_ID = "0x6047d71960cefbe27239a202e48dc7a76094fd6d"

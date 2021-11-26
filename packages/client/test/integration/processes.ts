@@ -245,7 +245,7 @@ describe("Process", () => {
         //         maxValue: 5,
         //         maxTotalCost: 10,
         //         maxVoteOverwrites: 0,
-        //         costExponent: 10000,
+        //         costExponent: 10000, // 1.0000
         //         namespace: DEFAULT_NAMESPACE,
         //         paramsSignature: DEFAULT_PARAMS_SIGNATURE
         //     }

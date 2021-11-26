@@ -7,24 +7,25 @@ config({ path: __dirname + "/.env" })
 
 import * as fs from "fs"
 import { utils, providers, Wallet } from "ethers"
-import { FileApi } from "../packages/client/src" // TODO: Import from the new NPM package
-import { EntityApi, VotingApi } from "../packages/client/src" // TODO: Import from the new NPM package
-import { CensusOffChainApi, CensusOffChain } from "../packages/client/src" // TODO: Import from the new NPM package
-import { ProcessContractParameters } from "../packages/net/src" // TODO: Import from the new NPM package
-import { Gateway } from "../packages/net/src" // TODO: Import from the new NPM package
-import { DVoteGateway } from "../packages/net/src" // TODO: Import from the new NPM package
-import { Web3Gateway } from "../packages/net/src" // TODO: Import from the new NPM package
-import { GatewayPool } from "../packages/net/src" // TODO: Import from the new NPM package
-import { GatewayBootnode } from "../packages/net/src" // TODO: Import from the new NPM package
-import { EntityMetadataTemplate, EntityMetadata, TextRecordKeys } from "../packages/models/src" // TODO: Import from the new NPM package
-import { INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "../packages/models/src" // TODO: Import from the new NPM package
-import { GatewayInfo } from "../packages/net/src" // TODO: Import from the new NPM package
-import { XDAI_CHAIN_ID, XDAI_ENS_REGISTRY_ADDRESS, VOCHAIN_BLOCK_TIME } from "../packages/common/src" // TODO: Import from the new NPM package
-import { JsonSignature } from "../packages/signing/src" // TODO: Import from the new NPM package
-import { GatewayApiMethod, BackendApiMethod, ApiMethod } from "../packages/models/src" // TODO: Import from the new NPM package
-import { IGatewayDiscoveryParameters } from "../packages/net/src" // TODO: Import from the new NPM package
-import { ProcessEnvelopeType, ProcessMode, ProcessStatus, ProcessCensusOrigin, ensHashAddress } from "../packages/net/src" // TODO: Import from the new NPM package
-import { ContentHashedUri } from "../packages/net/src" // TODO: Import from the new NPM package
+import { FileApi } from "@vocdoni/client"
+import { EntityApi, VotingApi } from "@vocdoni/voting"
+import { CensusOffChainApi, CensusOffChain } from "@vocdoni/census"
+import { ProcessContractParameters } from "@vocdoni/contract-wrappers"
+import { Gateway } from "@vocdoni/client"
+import { DVoteGateway } from "@vocdoni/client"
+import { Web3Gateway } from "@vocdoni/client"
+import { GatewayPool } from "@vocdoni/client"
+import { GatewayBootnode } from "@vocdoni/client"
+import { GatewayInfo } from "@vocdoni/client"
+import { EntityMetadataTemplate, EntityMetadata } from "@vocdoni/data-models"
+import { TextRecordKeys } from "@vocdoni/common"
+import { INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "@vocdoni/data-models"
+import { XDAI_CHAIN_ID, XDAI_ENS_REGISTRY_ADDRESS, VOCHAIN_BLOCK_TIME } from "../packages/common/src"
+import { JsonSignature } from "../packages/signing/src"
+import { GatewayApiMethod, BackendApiMethod, ApiMethod } from "@vocdoni/client"
+import { IGatewayDiscoveryParameters } from "@vocdoni/client"
+import { ProcessEnvelopeType, ProcessMode, ProcessStatus, ProcessCensusOrigin, ensHashAddress } from "@vocdoni/contract-wrappers"
+import { ContentHashedUri } from "@vocdoni/client"
 
 const { Buffer } = require("buffer/")
 
@@ -308,7 +309,7 @@ async function createProcessRaw() {
         maxCount: 1,
         maxValue: 3,
         maxTotalCost: 0,
-        costExponent: 10000,
+        costExponent: 10000,  // 1.0000
         maxVoteOverwrites: 1,
         paramsSignature: "0x0000000000000000000000000000000000000000000000000000000000000000"
     })
@@ -419,7 +420,7 @@ async function setProcessStatus() {
         maxValue: 3,
         maxTotalCost: 0,
         uniqueValues: false,
-        costExponent: 10000,
+        costExponent: 10000,  // 1.0000
         maxVoteOverwrites: 1,
         namespace: 0,
         paramsSignature: "0x0000000000000000000000000000000000000000000000000000000000000000"
@@ -505,10 +506,9 @@ async function useVoteApi() {
     await pool.init()
 
     const entityMeta = await EntityApi.getMetadata(myEntityAddress, pool)
-    console.log("- Active processes:", entityMeta.votingProcesses.active)
+    console.log("- Entity:", entityMeta)
 
-    const processId = entityMeta.votingProcesses.active[entityMeta.votingProcesses.active.length - 1]
-    // const processId = "0xf36b729d6226b8257922a60cea6ab80e47686c3f86edbd0749b1c3291e2651ed"
+    const processId = "0xf36b729d6226b8257922a60cea6ab80e47686c3f86edbd0749b1c3291e2651ed"
     // const processId = "0x55b6f0b5180c918d8e815e5a6e7b093caf3c496bd104a177d90bd81bfe1bd312"
     const processParams = await VotingApi.getProcessContractParameters(processId, pool)
     // const processMeta = await VotingApi.getProcessMetadata(processId, pool)

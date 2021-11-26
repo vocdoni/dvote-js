@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { useEffect } from 'react'
 import { useState } from 'react'
-import { BytesSignature, FileApi, JsonSignature } from 'dvote-js'
+import { BytesSignature, JsonSignature } from "@vocdoni/signing"
 import { useWallet, UseWalletProvider } from 'use-wallet'
 import { providers, utils, Wallet } from 'ethers'
 

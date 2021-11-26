@@ -1,4 +1,4 @@
-import { GatewayDiscovery, GatewayPool } from 'dvote-js'
+import { GatewayDiscovery, GatewayPool } from "@vocdoni/client"
 
 const BOOTNODE_URI = "https://bootnodes.vocdoni.net/gateways.dev.json"
 const ENVIRONMENT = "dev"
