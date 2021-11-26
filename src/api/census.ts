@@ -1,7 +1,7 @@
 import { Wallet, Signer, providers, BigNumber, ContractReceipt } from "ethers"
 import { IRequestParameters } from "../net/gateway-dvote"
 import { Keccak256, Poseidon } from "../crypto/hashing"
-import { bigIntToLeBuffer, bufferLeToBigInt, hexStringToBuffer } from "../util/encoding"
+import { bigIntToBuffer, bigIntToLeBuffer, bufferLeToBigInt, hexStringToBuffer } from "../util/encoding"
 import { CENSUS_MAX_BULK_SIZE } from "../constants"
 import { ERC20Proof } from "@vocdoni/storage-proofs-eth"
 import { compressPublicKey } from "../crypto/elliptic"
@@ -390,7 +390,7 @@ export namespace CensusOnChainApi {
             processId: new Uint8Array(hexStringToBuffer(processId)),
             nonce: Random.getBytes(32),
             proof,
-            weight: new Uint8Array(bigIntToLeBuffer(censusProof.weight || BigInt("1")))
+            weight: (censusProof.weight || BigInt("1")).toString()
         }
 
         const tx = Tx.encode({ payload: { $case: "registerKey", registerKey } })
