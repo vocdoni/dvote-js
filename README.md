@@ -12,148 +12,29 @@ This library implements the protocol defined on https://docs.vocdoni.io/architec
 npm install dvote-js ethers
 ```
 
-- Gateways can serve as a **DVote** gateway and as a **Web3** Gateway
-  - `DVoteGateway` and `Web3Gateway`
-- **Signers** and **Wallets** are both used to sign Web3 transactions, as well as authenticating DVote requests
+DVoteJS is a superset of smaller NPM packages that can be installed individually:
+
+- [`@vocdoni/client`](packages/client/README.md)
+- [`@vocdoni/voting`](packages/voting/README.md)
+- [`@vocdoni/census`](packages/census/README.md)
+- [`@vocdoni/contract-wrappers`](packages/contract-wrappers/README.md)
+- [`@vocdoni/common`](packages/common/README.md)
+- [`@vocdoni/data-models`](packages/data-models/README.md)
+- [`@vocdoni/encryption`](packages/encryption/README.md)
+- [`@vocdoni/wallets`](packages/wallets/README.md)
+- [`@vocdoni/signing`](packages/signing/README.md)
+- [`@vocdoni/hashing`](packages/hashing/README.md)
+
+If you are developing a frontend application using React, you can check out [@vocdoni/react-hooks](https://github.com/vocdoni/react-hooks).
 
 **Ethers.js**
 
 The library depends on [Ethers.js](https://docs.ethers.io/ethers.js/html/) providers, wallets and signers. Ethers.js is fully compatible with Web3.
 
+**Signers** and **Wallets** are both used to sign Web3 transactions, as well as authenticating DVote requests
+
 - To interact with the blockchain, we need a [Provider](https://docs.ethers.io/ethers.js/html/api-providers.html).
 - In order to send transactions we need a [Wallet](https://docs.ethers.io/ethers.js/html/api-wallet.html) (with a private key) or a [Signer](https://docs.ethers.io/ethers.js/html/api-wallet.html#signer-api) (like Metamask) to sign them.
-
-### File API
-
-To upload a file and pin it on IPFS, you need the data as a `String` or o as a `UInt8Array` and a signer. Gateways will probably not let you upload arbitrary data unless you are authorised to do so.
-
-```javascript
-
-const { FileApi, Gateway } = require("dvote-js")
-const { Wallet } = require("ethers")
-
-const MNEMONIC = "..."
-const PATH = "m/44'/60'/0'/0/0"
-const GATEWAY_DVOTE_URI = "wss://host:port/dvote"
-const GATEWAY_PUB_KEY = "02..."
-const NETWORK_ID = ""
-
-const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
-
-gateway = await Gateway.fromInfo({ uri: GATEWAY_DVOTE_URI, supportedApis: ["file"], publicKey: GATEWAY_PUB_KEY })
-await gateway.init()
-
-// alternatively for a pool of gateways
-// const options = {
-//         networkId: "goerli",
-//         bootnodesContentUri: GATEWAY_DVOTE_URI,
-//         numberOfGateways: 2,
-//         race: false,
-//         timeout: 10000,
-//     }
-// gateway = await pool.discover(options)
-
-
-// Wallet to sign requests
-const wallet = Wallet.fromMnemonic(MNEMONIC)
-console.log("SIGNING FROM ADDRESS", wallet.address)
-
-// Upload the file
-const strData = "HELLO WORLD"
-const origin = await FileApi.add(Buffer.from(strData), "my-file.txt", wallet, dvoteGw)
-console.log("DATA STORED ON:", origin)
-
-// Read the contents back as a string
-const data = await FileApi.fetchString(origin, dvoteGw)
-console.log("DATA:", data)
-
-// Read the contents back as a byte array
-const data = await FileApi.fetchBytes(origin, dvoteGw)
-console.log("DATA:", data)
-```
-
-### Entity
-
-#### Register or update an Entity:
-
-```javascript
-const { EntityApi, Gateway } = require("dvote-js")
-const { Wallet, providers } = require("ethers")
-
-const MNEMONIC = "..."
-
-// Use a random GW from Vocdoni at "goerli" network
-const gw = await Gateway.randomFromDefault("goerli")
-await gw.init()
-
-const provider = gw.provider
-const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
-
-// Attach to the Entity Resolver contract
-const resolverInstance = await gw.getEnsPublicResolverInstance(wallet)
-
-const myEntityAddress = await wallet.getAddress()
-const jsonMetadata = { ... } // EDIT THIS
-
-// Request the update
-const contentUri = await EntityApi.setMetadata(myEntityAddress, jsonMetadata, wallet, gw)
-
-console.log("IPFS ORIGIN:", contentUri)
-```
-
-#### Fetch the metadata of an Entity:
-
-```javascript
-const { EntityApi, Gateway } = require("dvote-js")
-const { Wallet, providers } = require("ethers")
-
-const GATEWAY_DVOTE_URI = "wss://host:443/dvote"
-const GATEWAY_SUPPORTED_APIS = ["file", "vote", "census"]
-const GATEWAY_PUBLIC_KEY = "03..."
-const GATEWAY_WEB3_PROVIDER_URI = "https://rpc.slock.it/goerli"
-const MNEMONIC = "..."
-
-const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_PROVIDER_URI)
-const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
-
-const myEntityAddress = await wallet.getAddress()
-const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, GATEWAY_SUPPORTED_APIS, GATEWAY_WEB3_PROVIDER_URI, GATEWAY_PUBLIC_KEY)
-const gateway = await Gateway.fromInfo(gwInfo)
-await gateway.init()
-
-const meta = await EntityApi.getMetadata(myEntityAddress, gateway)
-console.log("JSON METADATA", meta)
-```
-
-#### Set ENS text records
-
-```javascript
-const { Gateway, ensHashAddress } = require("dvote-js")
-const { Wallet, providers } = require("ethers")
-
-const GATEWAY_WEB3_PROVIDER_URI = "https://rpc.slock.it/goerli"
-const MNEMONIC = "..."
-
-const wallet = Wallet.fromMnemonic(MNEMONIC, PATH)
-const gwInfo = new GatewayInfo(GATEWAY_DVOTE_URI, GATEWAY_SUPPORTED_APIS, GATEWAY_WEB3_PROVIDER_URI, GATEWAY_PUBLIC_KEY)
-const gateway = await Gateway.fromInfo(gwInfo)
-
-// Attach to the Entity Resolver contract
-const resolverInstance = await gateway.getEnsPublicResolverInstance({ provider, wallet })
-await gateway.init()
-
-const myEntityAddress = await wallet.getAddress()
-const entityNode = ensHashAddress(myEntityAddress)
-
-// Set an ENS Text record
-const tx = await contractInstance.setText(entityNode, "my-key", "1234")
-await tx.wait()
-
-// Read the value
-const val = await contractInstance.text(entityNode, "my-key")
-console.log("Value stored on the blockchain:", val)
-```
-
 
 ### Using providers
 
@@ -161,19 +42,19 @@ Ethers.js providers can connect using different sources.
 
 ```javascript
 const ethers = require("ethers")   // NodeJS
-import { ethers } from "ethers"    // ES6 Browser
+import { providers } from "ethers"    // ES6 Browser
 
 // Well-known
 const provider = ethers.getDefaultProvider('homestead') // mainnet
 
 // Etherscan
-const altProvider = new ethers.providers.EtherscanProvider('ropsten')
+const altProvider = new providers.EtherscanProvider('ropsten')
 
 // Using injected web3 on a browser
-const web3Provider1 = new ethers.providers.Web3Provider(web3.currentProvider)
+const web3Provider1 = new providers.Web3Provider(web3.currentProvider)
 
 const currentProvider2 = new web3.providers.HttpProvider('http://localhost:8545')
-const web3Provider2 = new ethers.providers.Web3Provider(currentProvider2)
+const web3Provider2 = new providers.Web3Provider(currentProvider2)
 ```
 
 [More information](https://docs.ethers.io/ethers.js/html/api-providers.html#connecting-to-ethereum)
