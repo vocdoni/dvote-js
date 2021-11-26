@@ -3,9 +3,18 @@ import { providers, utils, Wallet } from "ethers"
 import * as assert from "assert"
 import { readFileSync, writeFileSync } from "fs"
 import * as YAML from 'yaml'
+import { JsonRpcProvider } from "@ethersproject/providers"
 import { ProcessEnvelopeType, ProcessMode } from "@vocdoni/contract-wrappers"
-import { DVoteGateway, Gateway, GatewayInfo, GatewayPool, IGatewayDiscoveryParameters } from "vocdoni-net" // TODO: Import from the new NPM package
-import { CensusErc20Api, ProcessState, VochainWaiter, VotingApi, VotingOracleApi } from "vocdoni-client" // TODO: Import from the new NPM package
+import {
+    DVoteGateway,
+    Erc20TokensApi,
+    Gateway,
+    GatewayInfo,
+    GatewayPool,
+    IGatewayDiscoveryParameters
+} from "@vocdoni/client"
+import { CensusErc20Api } from "@vocdoni/census"
+import { VochainWaiter, VotingApi, VotingOracleApi, ProcessState } from "@vocdoni/voting"
 import { INewProcessErc20Params, ProcessMetadata, ProcessMetadataTemplate } from "@vocdoni/data-models"
 import { EthNetworkID, VocdoniEnvironment } from "@vocdoni/common"
 
@@ -112,7 +121,7 @@ async function connectGateways(accounts: Account[]): Promise<GatewayPool | Gatew
 async function launchNewVote() {
     console.log("Computing the storage proof of creator the account")
 
-    if (!await CensusErc20Api.isRegistered(config.tokenAddress, pool)) {
+    if (!await Erc20TokensApi.isRegistered(config.tokenAddress, pool)) {
         await CensusErc20Api.registerTokenAuto(
             config.tokenAddress,
             creatorWallet,
@@ -168,7 +177,7 @@ async function launchNewVote() {
     if (!tokenInfo.isRegistered) return Promise.reject(new Error("The token is not yet registered"))
 
     // Generate the census proof
-    const proof = await CensusErc20Api.generateProof(config.tokenAddress, holderAddress, tokenInfo.balanceMappingPosition, sourceBlockHeight, pool.provider)
+    const proof = await CensusErc20Api.generateProof(config.tokenAddress, holderAddress, tokenInfo.balanceMappingPosition, sourceBlockHeight, pool.provider as JsonRpcProvider)
     if (!proof?.storageProof?.length)
         return Promise.reject(new Error("Invalid storage proof"))
 

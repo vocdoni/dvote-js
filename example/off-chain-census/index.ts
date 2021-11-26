@@ -3,9 +3,10 @@ import { utils, Wallet } from "ethers"
 import * as assert from "assert"
 import { readFileSync, writeFileSync } from "fs"
 import * as YAML from 'yaml'
-import { GatewayPool, IGatewayDiscoveryParameters } from "vocdoni-net" // TODO: Import from the new NPM package
+import { GatewayPool, IGatewayDiscoveryParameters } from "@vocdoni/client"
 import { EntityMetadataTemplate, INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "@vocdoni/data-models"
-import { CensusOffChain, CensusOffChainApi, EntityApi, EthWaiter, VochainWaiter, VotingApi } from "vocdoni-client" // TODO: Import from the new NPM package
+import { CensusOffChain, CensusOffChainApi } from "@vocdoni/census"
+import { EntityApi, EthWaiter, VochainWaiter, VotingApi } from "@vocdoni/voting"
 import {
     ProcessCensusOrigin,
     ProcessContractParameters,

@@ -14,11 +14,12 @@
     "ts-node": "^8.8.2",
     "typescript": "^3.8.3",
     "yaml": "^1.9.2",
-    "@vocdoni/common": "^1.14.0",
-    "@vocdoni/contract-wrappers": "^1.14.0",
-    "@vocdoni/data-models": "^1.14.0",
-    "vocdoni-net": "file:../../packages/net/net.tgz",
-    "vocdoni-client": "file:../../packages/client/client.tgz"
+    "@vocdoni/common": "^1.14.1",
+    "@vocdoni/contract-wrappers": "^1.14.1",
+    "@vocdoni/data-models": "^1.14.2",
+    "@vocdoni/census": "^1.14.1",
+    "@vocdoni/voting": "^1.14.0",
+    "@vocdoni/client": "^1.14.2"
   },
   "dependencies": {}
 }

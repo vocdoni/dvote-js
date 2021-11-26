@@ -4,7 +4,7 @@ import * as assert from "assert"
 import { readFileSync, writeFileSync } from "fs"
 import * as YAML from 'yaml'
 import { Buffer } from "buffer"
-import { GatewayPool, IGatewayDiscoveryParameters } from "vocdoni-net" // TODO: Import from the new NPM package
+import { GatewayPool, IGatewayDiscoveryParameters } from "@vocdoni/client"
 import {
     EntityMetadata,
     EntityMetadataTemplate,
@@ -14,7 +14,8 @@ import {
     ProcessMetadataTemplate,
     ProofCaSignatureTypes
 } from "@vocdoni/data-models"
-import { CaBundleProtobuf, CensusCaApi, EntityApi, EthWaiter, VochainWaiter, VotingApi } from "vocdoni-client" // TODO: Import from the new NPM package
+import { CensusBlind } from "@vocdoni/census"
+import { EntityApi, EthWaiter, VochainWaiter, VotingApi, CaBundleProtobuf } from "@vocdoni/voting"
 import {
     ProcessCensusOrigin,
     ProcessContractParameters,
@@ -315,7 +316,7 @@ async function launchBlindedVotes() {
         const hexTokenR: string = res1.data?.response?.token
         assert(hexTokenR)
 
-        const tokenR = CensusCaApi.decodePoint(hexTokenR)
+        const tokenR = CensusBlind.decodePoint(hexTokenR)
         const wallet = Wallet.createRandom()
         const caBundle = CaBundleProtobuf.fromPartial({
             processId: new Uint8Array(Buffer.from((processId).replace("0x", ""), "hex")),
@@ -325,7 +326,7 @@ async function launchBlindedVotes() {
         const hexCaBundle = utils.hexlify(CaBundleProtobuf.encode(caBundle).finish())
         const hexCaHashedBundle = utils.keccak256(hexCaBundle).substr(2)
 
-        const { hexBlinded, userSecretData } = CensusCaApi.blind(hexCaHashedBundle, tokenR)
+        const { hexBlinded, userSecretData } = CensusBlind.blind(hexCaHashedBundle, tokenR)
 
         process.stdout.write(`Get Proof [${idx}] ; `)
 
@@ -341,7 +342,7 @@ async function launchBlindedVotes() {
 
         const hexBlindSignature = res2.data.response.caSignature
 
-        const unblindedSignature = CensusCaApi.unblind(hexBlindSignature, userSecretData)
+        const unblindedSignature = CensusBlind.unblind(hexBlindSignature, userSecretData)
         assert(unblindedSignature)
 
         const proof: IProofCA = {
