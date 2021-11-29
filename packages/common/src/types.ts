@@ -12,5 +12,3 @@ export type MultiLanguage<T> = {
 export type URI = string
 
 export type ContentUriString = string
-export type ContentHashedUriString = string
-export type MessagingUriString = string

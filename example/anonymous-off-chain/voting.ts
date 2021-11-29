@@ -1,7 +1,7 @@
 import * as Bluebird from "bluebird"
 import * as assert from "assert"
 import { INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "@vocdoni/data-models"
-import { EthWaiter, VochainWaiter, VotingApi } from "@vocdoni/voting"
+import { AnonymousEnvelopeParams, EthWaiter, VochainWaiter, Voting, VotingApi, ProcessState } from "@vocdoni/voting"
 import {
   ProcessCensusOrigin,
   ProcessContractParameters,
@@ -12,7 +12,7 @@ import {
 import { getConfig } from "./config"
 import { TestAccount } from "./census"
 import { getChoicesForVoter } from "./util"
-import { CensusOffChainApi } from "@vocdoni/census"
+import { CensusOffChainApi, CensusOnChainApi, ZkInputs, ZkSnarks } from "@vocdoni/census"
 import { Wallet } from "@ethersproject/wallet"
 import { IGatewayClient } from "@vocdoni/client"
 import { Random } from "@vocdoni/common"
@@ -82,7 +82,7 @@ export async function launchNewVote(censusRoot: string, censusUri: string, entit
   return { processId, processParams, processMetadata }
 }
 
-export async function registerVoterKeys(censusRoot: string, accounts: TestAccount[]) {
+export async function registerVoterKeys(processId: string, processParams: ProcessContractParameters, accounts: TestAccount[], gwPool: IGatewayClient) {
   console.log("Registering keys")
 
   await Bluebird.map(accounts, async (account: TestAccount, idx: number) => {
@@ -96,62 +96,67 @@ export async function registerVoterKeys(censusRoot: string, accounts: TestAccoun
     account.secretKey = secretKey
 
     // Get a census proof to be able to register the new key
-    const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: account.publicKeyEncoded }, pool)
-      .catch(err => {
-        console.error("CensusOffChainApi.generateProof ERR", account, err)
-        if (config.stopOnError) throw err
-        return null
-      })
-    if (!censusProof) return // skip when !config.stopOnError
+    const censusProof = await CensusOffChainApi.generateProof(processParams.censusRoot, { key: account.publicKeyEncoded }, gwPool)
+    const requestedWeight = censusProof.weight
 
-    return CensusOnChainApi.registerVoterKey(processId, censusProof, secretKey, wallet, pool)
+    const proof = Voting.packageSignedProof(processId, processParams.censusOrigin, censusProof)
+
+    return CensusOnChainApi.registerVoterKey(processId, proof, secretKey, requestedWeight, wallet, gwPool)
   })
 }
 
 
-export async function submitVotes(processId: string, processParams: ProcessContractParameters, processMetadata: ProcessMetadata, accounts: TestAccount[], gwPool: IGatewayClient) {
+export async function submitVotes(processId: string, processParams: ProcessState, processMetadata: ProcessMetadata, accounts: TestAccount[], gwPool: IGatewayClient) {
   console.log("Launching votes")
 
   const state = await VotingApi.getProcessState(processId, gwPool)
   const circuitInfo = await VotingApi.getProcessCircuitInfo(processId, gwPool)
-  const { maxSize, index: circuitIndex } = circuitInfo
   const witnessGeneratorWasm = await VotingApi.fetchAnonymousWitnessGenerator(circuitInfo)
   const zKey = await VotingApi.fetchAnonymousVotingZKey(circuitInfo)
 
-  const processKeys = processParams.envelopeType.hasEncryptedVotes ? await VotingApi.getProcessKeys(processId, gwPool) : null
+  const processKeys = processParams.envelopeType.encryptedVotes ? await VotingApi.getProcessKeys(processId, gwPool) : null
 
   await Bluebird.map(accounts, async (account: TestAccount, idx: number) => {
 
     // VOTER
     const censusProof = await CensusOnChainApi.generateProof(state.rollingCensusRoot, account.secretKey, gwPool)
 
-    const wallet = new Wallet(account.privateKey)
-
     const choices = getChoicesForVoter(processMetadata.questions.length, idx)
 
-    const params: AnonymousEnvelopeParams = {
-      votes: choices,
-      rollingCensusRoot: state.rollingCensusRoot,
-      siblings: censusProof.siblings,
+    // Prepare ZK Proof
+    const nullifier = Voting.getAnonymousVoteNullifier(account.secretKey, processId)
+    const { votePackage, keyIndexes } = Voting.packageVoteContent(choices, processKeys)
+
+    const inputs: ZkInputs = {
+      censusRoot: processParams.rollingCensusRoot,
+      censusSiblings: censusProof.siblings,
+      maxSize: circuitInfo.maxSize,
       keyIndex: censusProof.index,
-      maxSize,
-      witnessGeneratorWasm,
+      nullifier,
       secretKey: account.secretKey,
-      zKey,
-      processId,
-      circuitIndex
-    }
-    if (processParams.envelopeType.hasEncryptedVotes) {
-      params.processKeys = processKeys
+      processId: Voting.getSnarkProcessId(processId),
+      votePackage
     }
 
-    const envelope = await Voting.packageAnonymousEnvelope(params)
+    const zkProof = await ZkSnarks.computeProof(inputs, witnessGeneratorWasm, zKey)
+
+    const envelopeParams: AnonymousEnvelopeParams = {
+      votePackage,
+      processId,
+      zkProof,
+      nullifier,
+      circuitIndex: circuitInfo.index,
+      encryptionKeyIndexes: keyIndexes
+    }
+
+    // Package and submit
+    const envelope = Voting.packageAnonymousEnvelope(envelopeParams)
 
     await VotingApi.submitEnvelope(envelope, null, gwPool)
 
     await new Promise(resolve => setTimeout(resolve, 11000))
 
-    const nullifier = Voting.getAnonymousVoteNullifier(account.secretKey, processId)
+    // const nullifier = Voting.getAnonymousVoteNullifier(account.secretKey, processId)
     const { registered, date, block } = await VotingApi.getEnvelopeStatus(processId, nullifier, gwPool)
 
     if (config.stopOnError) assert(registered)

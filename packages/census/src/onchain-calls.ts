@@ -1,4 +1,3 @@
-import { zeroPad } from "@ethersproject/bytes"
 import { hexStringToBuffer, Random, bigIntToLeBuffer, bufferLeToBigInt } from "@vocdoni/common"
 import { IGatewayDVoteClient } from "@vocdoni/client"
 import { Proof, IProofArbo, IProofCA, IProofEVM, RegisterKeyTx, SignedTx, Tx } from "@vocdoni/data-models"
@@ -6,6 +5,7 @@ import { Poseidon } from "@vocdoni/hashing"
 import { BytesSignature } from "@vocdoni/signing"
 import { Signer } from "@ethersproject/abstract-signer"
 import { Wallet } from "@ethersproject/wallet"
+import { CensusOnChain } from "./onchain"
 
 export namespace CensusOnChainApi {
   /**

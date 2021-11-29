@@ -1,5 +1,5 @@
 import { IGatewayDVoteClient, IGatewayWeb3Client } from "@vocdoni/client"
-import { VotingApi } from "../voting"
+import { VotingApi } from "../voting-calls"
 
 // VOTING BLOCKCHAIN
 

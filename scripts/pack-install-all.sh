@@ -1,9 +1,12 @@
 #!/bin/bash
 
-rm -Rf node_modules
+set -e
+
+rm -Rf node_modules packages/*/package-lock.json packages/*/*.tgz packages/*/dist
 
 cd packages/common
 npm install
+npm run build
 npm pack
 
 cd ../census
@@ -22,6 +25,7 @@ cd ..
 
 cd signing
 npm install
+npm run build
 npm pack
 
 cd ../census
@@ -36,6 +40,7 @@ cd ..
 
 cd hashing
 npm install
+npm run build
 npm pack
 
 cd ../census
@@ -46,6 +51,7 @@ cd ..
 
 cd encryption
 npm install
+npm run build
 npm pack
 
 cd ../data-models
@@ -56,6 +62,7 @@ cd ..
 
 cd contract-wrappers
 npm install
+npm run build
 npm pack
 
 cd ../data-models
@@ -68,6 +75,7 @@ cd ..
 
 cd data-models
 npm install
+npm run build
 npm pack
 
 cd ../client
@@ -80,12 +88,14 @@ cd ..
 
 cd wallets
 npm install
+npm run build
 npm pack
 
 cd ..
 
 cd client
 npm install
+npm run build
 npm pack
 
 cd ../census
@@ -96,12 +106,14 @@ cd ..
 
 cd census
 npm install
+npm run build
 npm pack
 
 cd ..
 
 cd voting
 npm install
+npm run build
 npm pack
 
 cd ..
