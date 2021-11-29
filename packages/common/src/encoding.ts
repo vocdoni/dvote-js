@@ -1,20 +1,11 @@
 import { Buffer } from "buffer/"
 
-const BI_ZERO = BigInt("0")
-const BI_256 = BigInt("256")
-
 export function hexStringToBuffer(hexString: string): Buffer {
     if (!/^(0x)?[0-9a-fA-F]+$/.test(hexString)) throw new Error("Invalid hex string")
     else if (hexString.length % 2 != 0) throw new Error("The hex string contains an odd length")
-    hexString = hexString.replace(/^0x/, "")
 
-    const result = new Buffer(hexString.length / 2)
-    for (let i = 0; i < result.length; i++) {
-        result[i] = parseInt(hexString.substr(i * 2, 2), 16)
-    }
-    return result
+    return Buffer.from(strip0x(hexString), "hex")
 }
-
 export function uintArrayToHex(buff: Uint8Array, prepend0x?: boolean): string {
     const bytes: string[] = []
     for (let byte of buff) {
@@ -25,21 +16,33 @@ export function uintArrayToHex(buff: Uint8Array, prepend0x?: boolean): string {
     return bytes.join("")
 }
 
+/** Encodes the given big integer as a 32 byte big endian buffer */
 export function bigIntToBuffer(number: bigint): Buffer {
-    const resultBytes: number[] = []
+    let hexNumber = number.toString(16)
+    while (hexNumber.length < 64) hexNumber = "0" + hexNumber
+    return Buffer.from(hexNumber, "hex")
+}
 
-    do {
-        const byte = number % BI_256
-        number /= BI_256
-        resultBytes.unshift(Number(byte))
-    }
-    while (number > BI_ZERO)
-
-    return Buffer.from(resultBytes)
+/** Encodes the given big integer as a 32 byte little endian buffer */
+export function bigIntToLeBuffer(number: bigint): Buffer {
+    return bigIntToBuffer(number).reverse()
 }
 
 export function bufferToBigInt(bytes: Buffer | Uint8Array): bigint {
     // Ensure that it is a buffer
     bytes = Buffer.from(bytes)
-    return BigInt("0x" + bytes.toString("hex"))
+    return BigInt(ensure0x(bytes.toString("hex")))
+}
+
+export function bufferLeToBigInt(bytes: Buffer | Uint8Array): bigint {
+    bytes = Buffer.from(bytes)
+    return bufferToBigInt(bytes.reverse())
+}
+
+export function ensure0x(value: string): string {
+    return value.startsWith("0x") ? value : "0x" + value
+}
+
+export function strip0x(value: string): string {
+    return value.startsWith("0x") ? value.substr(2) : value
 }

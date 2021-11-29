@@ -3,7 +3,7 @@ import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
 import { Buffer } from "buffer/"
 
-import { bigIntToBuffer, bufferToBigInt, hexStringToBuffer, uintArrayToHex } from "../../src"
+import { bigIntToBuffer, bigIntToLeBuffer, bufferLeToBigInt, bufferToBigInt, ensure0x, hexStringToBuffer, strip0x, uintArrayToHex } from "../../src"
 
 addCompletionHooks()
 
@@ -47,47 +47,91 @@ describe("Value encoding", () => {
 
   it("Should convert big integers into a buffer", () => {
     const inputs = [
-      { bigint: BigInt("0"), hexBuffer: "00" },
-      { bigint: BigInt("1"), hexBuffer: "01" },
-      { bigint: BigInt("10"), hexBuffer: "0a" },
-      { bigint: BigInt("16"), hexBuffer: "10" },
-      { bigint: BigInt("100"), hexBuffer: "64" },
-      { bigint: BigInt("10000"), hexBuffer: "2710" },
-      { bigint: BigInt("20000"), hexBuffer: "4e20" },
-      { bigint: BigInt("5000000000000"), hexBuffer: "048c27395000" },
-      { bigint: BigInt("999999999999999999999999999999999"), hexBuffer: "314dc6448d9338c15b09ffffffff" },
+      { bigint: BigInt("0"), hexBuffer: "0000000000000000000000000000000000000000000000000000000000000000" },
+      { bigint: BigInt("1"), hexBuffer: "0000000000000000000000000000000000000000000000000000000000000001" },
+      { bigint: BigInt("10"), hexBuffer: "000000000000000000000000000000000000000000000000000000000000000a" },
+      { bigint: BigInt("16"), hexBuffer: "0000000000000000000000000000000000000000000000000000000000000010" },
+      { bigint: BigInt("100"), hexBuffer: "0000000000000000000000000000000000000000000000000000000000000064" },
+      { bigint: BigInt("10000"), hexBuffer: "0000000000000000000000000000000000000000000000000000000000002710" },
+      { bigint: BigInt("20000"), hexBuffer: "0000000000000000000000000000000000000000000000000000000000004e20" },
+      { bigint: BigInt("5000000000000"), hexBuffer: "0000000000000000000000000000000000000000000000000000048c27395000" },
+      { bigint: BigInt("999999999999999999999999999999999"), hexBuffer: "000000000000000000000000000000000000314dc6448d9338c15b09ffffffff" },
       {
-        bigint: BigInt("11112222333344445555666677778888999900001111222233334444555566667777888899990000"),
-        hexBuffer: "5ff78ef4da793532a1837391cd5ff1ce74947cadc89a86168c783b908b98b681f0"
+        bigint: BigInt("111122223333444455556666777788889999000011112222333344445555666677778888999900"),
+        hexBuffer: "f5acf316aa2c0d4e6a464693f94789be9b15ba0ece586181679a3215e03f43dc"
       },
     ]
 
     for (let input of inputs) {
       const result = bigIntToBuffer(input.bigint)
       expect(result.toString("hex")).to.eq(input.hexBuffer)
+
+      const leResult = bigIntToLeBuffer(input.bigint)
+      expect(leResult.reverse().toString("hex")).to.eq(input.hexBuffer)
     }
   })
 
   it("Should convert buffers into big integers", () => {
     const inputs = [
-      { bigint: BigInt("0"), hexBuffer: "00" },
-      { bigint: BigInt("1"), hexBuffer: "01" },
-      { bigint: BigInt("10"), hexBuffer: "0a" },
-      { bigint: BigInt("16"), hexBuffer: "10" },
-      { bigint: BigInt("100"), hexBuffer: "64" },
-      { bigint: BigInt("10000"), hexBuffer: "2710" },
-      { bigint: BigInt("20000"), hexBuffer: "4e20" },
-      { bigint: BigInt("5000000000000"), hexBuffer: "048c27395000" },
-      { bigint: BigInt("999999999999999999999999999999999"), hexBuffer: "314dc6448d9338c15b09ffffffff" },
+      { bigint: BigInt("0"), hexBuffer: "0000000000000000000000000000000000000000000000000000000000000000" },
+      { bigint: BigInt("1"), hexBuffer: "0000000000000000000000000000000000000000000000000000000000000001" },
+      { bigint: BigInt("10"), hexBuffer: "000000000000000000000000000000000000000000000000000000000000000a" },
+      { bigint: BigInt("16"), hexBuffer: "0000000000000000000000000000000000000000000000000000000000000010" },
+      { bigint: BigInt("100"), hexBuffer: "0000000000000000000000000000000000000000000000000000000000000064" },
+      { bigint: BigInt("10000"), hexBuffer: "0000000000000000000000000000000000000000000000000000000000002710" },
+      { bigint: BigInt("20000"), hexBuffer: "0000000000000000000000000000000000000000000000000000000000004e20" },
+      { bigint: BigInt("5000000000000"), hexBuffer: "0000000000000000000000000000000000000000000000000000048c27395000" },
+      { bigint: BigInt("999999999999999999999999999999999"), hexBuffer: "000000000000000000000000000000000000314dc6448d9338c15b09ffffffff" },
       {
-        bigint: BigInt("11112222333344445555666677778888999900001111222233334444555566667777888899990000"),
-        hexBuffer: "5ff78ef4da793532a1837391cd5ff1ce74947cadc89a86168c783b908b98b681f0"
+        bigint: BigInt("111122223333444455556666777788889999000011112222333344445555666677778888999900"),
+        hexBuffer: "f5acf316aa2c0d4e6a464693f94789be9b15ba0ece586181679a3215e03f43dc"
       },
     ]
 
     for (let input of inputs) {
       const result = bufferToBigInt(Buffer.from(input.hexBuffer, "hex"))
       expect(result).to.eq(input.bigint)
+
+      const result2 = bufferLeToBigInt(Buffer.from(input.hexBuffer, "hex").reverse())
+      expect(result2).to.eq(input.bigint)
+    }
+  })
+
+  it("Should strip 0x prefixes", () => {
+    const inputs = [
+      // strip
+      { in: "0x0", out: "0" },
+      { in: "0x00", out: "00" },
+      { in: "0x1234", out: "1234" },
+      { in: "0x55555555555555555555", out: "55555555555555555555" },
+      // skip
+      { in: "1234", out: "1234" },
+      { in: "abcd", out: "abcd" },
+      { in: "1234567890abcdef", out: "1234567890abcdef" },
+    ]
+
+    for (let input of inputs) {
+      const result = strip0x(input.in)
+      expect(result).to.eq(input.out)
+    }
+  })
+
+  it("Should ensure 0x prefixes", () => {
+    const inputs = [
+      // strip
+      { in: "0", out: "0x0" },
+      { in: "00", out: "0x00" },
+      { in: "1234", out: "0x1234" },
+      { in: "55555555555555555555", out: "0x55555555555555555555" },
+      // skip
+      { in: "0x1234", out: "0x1234" },
+      { in: "0xabcd", out: "0xabcd" },
+      { in: "0x1234567890abcdef", out: "0x1234567890abcdef" },
+    ]
+
+    for (let input of inputs) {
+      const result = ensure0x(input.in)
+      expect(result).to.eq(input.out)
     }
   })
 })

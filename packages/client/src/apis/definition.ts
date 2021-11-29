@@ -8,7 +8,7 @@ export type ApiName = GatewayApiName | BackendApiName | "info" | "raw"
 export const infoApiMethods = ["getInfo", "getStats", "getBlockList"] as const
 export const rawApiMethods = ["submitRawTx"] as const
 export const fileApiMethods = ["fetchFile", "addFile", "pinList", "pinFile", "unpinFile"] as const
-export const voteApiMethods = ["submitEnvelope", "getEnvelopeStatus", "getEnvelope", "getEnvelopeHeight", "getProcessKeys", "getProcessList", "getEnvelopeList", "getBlockHeight", "getBlockStatus", "getProcessInfo", "getProcessSummary"] as const
+export const voteApiMethods = ["submitEnvelope", "getEnvelopeStatus", "getEnvelope", "getEnvelopeHeight", "getProcessKeys", "getProcessList", "getEnvelopeList", "getBlockHeight", "getBlockStatus", "getProcessInfo", "getProcessSummary", "getProcessCircuitConfig"] as const
 export const censusApiMethods = ["addCensus", "addClaim", "addClaimBulk", "getRoot", "genProof", "getSize", "checkProof", "dump", "dumpPlain", "importDump", "publish", "importRemote", "getCensusList"] as const
 export const resultsApiMethods = ["getResults", "getResultsWeight", "getEntityList"] as const
 

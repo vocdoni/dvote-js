@@ -118,15 +118,15 @@ export async function submitVotes(processId: string, processParams: ProcessContr
         const censusProof = result.storageProof[0]
 
         const envelope = processParams.envelopeType.hasEncryptedVotes ?
-            await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet, processKeys }) :
-            await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet })
+            Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet, processKeys }) :
+            Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet })
 
         await VotingApi.submitEnvelope(envelope, wallet, gwPool)
 
         // wait a bit
         await new Promise(resolve => setTimeout(resolve, 11000))
 
-        const nullifier = VotingApi.getSignedVoteNullifier(wallet.address, processId)
+        const nullifier = Voting.getSignedVoteNullifier(wallet.address, processId)
         const { registered, date, block } = await VotingApi.getEnvelopeStatus(processId, nullifier, gwPool)
 
         if (config.stopOnError) assert(registered)

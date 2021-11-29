@@ -3,7 +3,7 @@ import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
 
 import { ProcessMetadata, ProcessMetadataTemplate } from "@vocdoni/data-models"
-import { Voting, VotingApi } from "../../src"
+import { RawResults, Voting } from "../../src"
 import { ProcessStatus } from "dvote-solidity" // TODO review this import directly from dvote-solidity
 
 addCompletionHooks()
@@ -19,7 +19,7 @@ describe("Results", () => {
         description: { default: "Desc" }
       }
     ]
-    const rawResults: VotingApi.RawResults = {
+    const rawResults: RawResults = {
       results: [["10", "20", "30"]],
       status: new ProcessStatus(0),
       envelopHeight: 1234
@@ -49,7 +49,7 @@ describe("Results", () => {
         description: { default: "Desc" }
       }
     ]
-    const rawResults2: VotingApi.RawResults = {
+    const rawResults2: RawResults = {
       results: [["100", "200", "300"], ["400", "500", "600"]],
       status: new ProcessStatus(0),
       envelopHeight: 2345
@@ -84,7 +84,7 @@ describe("Results", () => {
         description: { default: "Desc" }
       }
     ]
-    const rawResults: VotingApi.RawResults = {
+    const rawResults: RawResults = {
       results: [["0", "0", "3"], ["0", "10", "0"]],
       status: new ProcessStatus(0),
       envelopHeight: 1234
@@ -113,7 +113,7 @@ describe("Results", () => {
         description: { default: "Desc" }
       }
     ]
-    const rawResults2: VotingApi.RawResults = {
+    const rawResults2: RawResults = {
       results: [["3", "0", "0"], ["2", "1", "0"], ["0", "0", "3"], ["0", "0", "1000000000000000000000000000000000"]],
       status: new ProcessStatus(0),
       envelopHeight: 2345
@@ -146,7 +146,7 @@ describe("Results", () => {
         description: { default: "Desc" }
       }
     ]
-    const rawResults3: VotingApi.RawResults = {
+    const rawResults3: RawResults = {
       results: [["3", "0", "0", "10"], ["10000000", "1000000000000000000000000000000000", "0", "0"], ["0", "0", "5000000000000000000000000000000000"], ["5000", "0", "0", "1"]],
       status: new ProcessStatus(0),
       envelopHeight: 3456

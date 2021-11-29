@@ -24,7 +24,7 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Signed E2E (off-chain)",
+            "name": "Signed E2E (off-chain census)",
             "runtimeArgs": [
                 "--nolazy",
                 "-r",
@@ -60,7 +60,7 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Signed E2E (ERC20)",
+            "name": "Signed E2E (ERC20 census)",
             "runtimeArgs": [
                 "--nolazy",
                 "-r",
@@ -78,7 +78,7 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Signed E2E (ERC20 signaling)",
+            "name": "Signed E2E (ERC20 census signaling)",
             "runtimeArgs": [
                 "--nolazy",
                 "-r",
@@ -86,6 +86,24 @@
             ],
             "program": "${workspaceFolder}/example/signed-erc20-signal/index.ts",
             "cwd": "${workspaceFolder}/example/signed-erc20-signal",
+            "internalConsoleOptions": "openOnSessionStart",
+            "skipFiles": [
+                "<node_internals>/**",
+                "node_modules/**"
+            ],
+            "preLaunchTask": "npm: build"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Anonymous E3E (off-chain census)",
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register/transpile-only"
+            ],
+            "program": "${workspaceFolder}/example/off-chain-census-snark/index.ts",
+            "cwd": "${workspaceFolder}/example/off-chain-census-snark",
             "internalConsoleOptions": "openOnSessionStart",
             "skipFiles": [
                 "<node_internals>/**",

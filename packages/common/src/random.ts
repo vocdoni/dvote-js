@@ -1,4 +1,5 @@
 import { keccak256 } from "@ethersproject/keccak256"
+// import { Poseidon } from "@vocdoni/hashing"
 
 export namespace Random {
     /**

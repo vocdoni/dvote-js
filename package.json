@@ -15,7 +15,7 @@
     "build": "npm run clean && ./node_modules/.bin/tsc",
     "watch": "./node_modules/.bin/tsc -w -p .",
     "ts-node": "./node_modules/.bin/ts-node",
-    "postinstall": "rimraf node_modules/ganache-core/node_modules/web3-providers-ws/node_modules/websocket/.git || true"
+    "postinstall": "./scripts/post-install.sh"
   },
   "dependencies": {
     "@vocdoni/census": "^1.14.1",
