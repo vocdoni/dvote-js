@@ -6,3 +6,4 @@ dist
 .env
 .cache
 *.tgz
+.DS_Store

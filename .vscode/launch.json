@@ -7,6 +7,95 @@
         {
             "type": "node",
             "request": "launch",
+            "name": "Mocha Tests",
+            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "args": [
+                "-r",
+                "ts-node/register",
+                "--timeout",
+                "999999",
+                "--colors",
+                "${workspaceFolder}/test/**/*.ts",
+            ],
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "openOnSessionStart",
+            "protocol": "inspector"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Signed E2E (off-chain)",
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register/transpile-only"
+            ],
+            "program": "${workspaceFolder}/example/signed-off-chain/index.ts",
+            "cwd": "${workspaceFolder}/example/signed-off-chain",
+            "internalConsoleOptions": "openOnSessionStart",
+            "skipFiles": [
+                "<node_internals>/**",
+                "node_modules/**"
+            ],
+            "preLaunchTask": "npm: build"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Signed E2E (blind)",
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register/transpile-only"
+            ],
+            "program": "${workspaceFolder}/example/signed-blind/index.ts",
+            "cwd": "${workspaceFolder}/example/signed-blind",
+            "internalConsoleOptions": "openOnSessionStart",
+            "skipFiles": [
+                "<node_internals>/**",
+                "node_modules/**"
+            ],
+            "preLaunchTask": "npm: build"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Signed E2E (ERC20)",
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register/transpile-only"
+            ],
+            "program": "${workspaceFolder}/example/signed-erc20/index.ts",
+            "cwd": "${workspaceFolder}/example/signed-erc20",
+            "internalConsoleOptions": "openOnSessionStart",
+            "skipFiles": [
+                "<node_internals>/**",
+                "node_modules/**"
+            ],
+            "preLaunchTask": "npm: build"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Signed E2E (ERC20 signaling)",
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register/transpile-only"
+            ],
+            "program": "${workspaceFolder}/example/signed-erc20-signal/index.ts",
+            "cwd": "${workspaceFolder}/example/signed-erc20-signal",
+            "internalConsoleOptions": "openOnSessionStart",
+            "skipFiles": [
+                "<node_internals>/**",
+                "node_modules/**"
+            ],
+            "preLaunchTask": "npm: build"
+        },
+        {
+            "type": "node",
+            "request": "launch",
             "name": "Example",
             "runtimeArgs": [
                 "--nolazy",
@@ -20,95 +109,6 @@
                 "<node_internals>/**",
                 "node_modules/**"
             ]
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "Standard votes (off-chain)",
-            "runtimeArgs": [
-                "--nolazy",
-                "-r",
-                "ts-node/register/transpile-only"
-            ],
-            "program": "${workspaceFolder}/example/off-chain-census/index.ts",
-            "cwd": "${workspaceFolder}/example/off-chain-census",
-            "internalConsoleOptions": "openOnSessionStart",
-            "skipFiles": [
-                "<node_internals>/**",
-                "node_modules/**"
-            ],
-            "preLaunchTask": "npm: build"
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "CA votes",
-            "runtimeArgs": [
-                "--nolazy",
-                "-r",
-                "ts-node/register/transpile-only"
-            ],
-            "program": "${workspaceFolder}/example/ca-census/index.ts",
-            "cwd": "${workspaceFolder}/example/ca-census",
-            "internalConsoleOptions": "openOnSessionStart",
-            "skipFiles": [
-                "<node_internals>/**",
-                "node_modules/**"
-            ],
-            "preLaunchTask": "npm: build"
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "ERC20 votes",
-            "runtimeArgs": [
-                "--nolazy",
-                "-r",
-                "ts-node/register/transpile-only"
-            ],
-            "program": "${workspaceFolder}/example/evm-census/index.ts",
-            "cwd": "${workspaceFolder}/example/evm-census",
-            "internalConsoleOptions": "openOnSessionStart",
-            "skipFiles": [
-                "<node_internals>/**",
-                "node_modules/**"
-            ],
-            "preLaunchTask": "npm: build"
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "ERC20 signaling votes",
-            "runtimeArgs": [
-                "--nolazy",
-                "-r",
-                "ts-node/register/transpile-only"
-            ],
-            "program": "${workspaceFolder}/example/evm-census-signaling/index.ts",
-            "cwd": "${workspaceFolder}/example/evm-census-signaling",
-            "internalConsoleOptions": "openOnSessionStart",
-            "skipFiles": [
-                "<node_internals>/**",
-                "node_modules/**"
-            ],
-            "preLaunchTask": "npm: build"
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "Mocha Test",
-            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
-            "args": [
-                "-r",
-                "ts-node/register",
-                "--timeout",
-                "999999",
-                "--colors",
-                "${workspaceFolder}/test/**/*.ts",
-            ],
-            "console": "integratedTerminal",
-            "internalConsoleOptions": "openOnSessionStart",
-            "protocol": "inspector"
         }
     ]
 }
