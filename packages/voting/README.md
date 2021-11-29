@@ -63,7 +63,7 @@ const processKeys = processParams.envelopeType.hasEncryptedVotes ?
     await VotingApi.getProcessKeys(processId, pool) : null
 
 const envelope = processParams.envelopeType.hasEncryptedVotes ?
-    await VotingApi.ºpackageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet, processKeys }) :
+    await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet, processKeys }) :
     await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet })
 
 await VotingApi.submitEnvelope(envelope, wallet, pool)
