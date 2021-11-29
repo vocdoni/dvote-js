@@ -1,8 +1,8 @@
 import * as Bluebird from "bluebird"
 import axios from 'axios'
 import * as assert from "assert"
-import { INewProcessParams, IProofCA, ProcessMetadata, ProcessMetadataTemplate, ProofCaSignatureTypes } from "@vocdoni/data-models"
-import { CaBundleProtobuf, EthWaiter, VochainWaiter, VotingApi } from "@vocdoni/voting"
+import { INewProcessParams, IProofCA, ProcessMetadata, ProcessMetadataTemplate, ProofCaSignatureTypes, CAbundle } from "@vocdoni/data-models"
+import { EthWaiter, VochainWaiter, VotingApi } from "@vocdoni/voting"
 import {
   ProcessCensusOrigin,
   ProcessContractParameters,
@@ -53,7 +53,7 @@ export async function launchNewVote(cspPublicKey: string, cspUri: string, entity
     mode: ProcessMode.make({ autoStart: true, interruptible: true }), // helper
     envelopeType: ProcessEnvelopeType.ENCRYPTED_VOTES, // bit mask
     censusOrigin: ProcessCensusOrigin.OFF_CHAIN_CA,
-    metadata: ProcessMetadataTemplate,
+    metadata: processMetadataPre,
     censusRoot: cspPublicKey,
     censusUri: cspUri,
     startBlock,
@@ -109,13 +109,13 @@ export async function submitVotes(processId: string, processParams: ProcessContr
     // Blinding
     const tokenR = CensusBlind.decodePoint(hexTokenR)
     const wallet = Wallet.createRandom()
-    const caBundle = CaBundleProtobuf.fromPartial({
+    const caBundle = CAbundle.fromPartial({
       processId: new Uint8Array(hexStringToBuffer(processId)),
       address: new Uint8Array(hexStringToBuffer(wallet.address)),
     })
 
     // hash(bundle)
-    const hexCaBundle = hexlify(CaBundleProtobuf.encode(caBundle).finish())
+    const hexCaBundle = hexlify(CAbundle.encode(caBundle).finish())
     const hexCaHashedBundle = keccak256(hexCaBundle).substr(2)
 
     const { hexBlinded, userSecretData } = CensusBlind.blind(hexCaHashedBundle, tokenR)
@@ -148,15 +148,15 @@ export async function submitVotes(processId: string, processParams: ProcessContr
 
     // Package the proof + votes
     const envelope = processParams.envelopeType.hasEncryptedVotes ?
-      await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof: proof, processId, walletOrSigner: wallet, processKeys }) :
-      await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof: proof, processId, walletOrSigner: wallet })
+      Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof: proof, processId, walletOrSigner: wallet, processKeys }) :
+      Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof: proof, processId, walletOrSigner: wallet })
 
     await VotingApi.submitEnvelope(envelope, wallet, gwPool)
 
     // Wait a bit
     await new Promise(resolve => setTimeout(resolve, 11000))
 
-    const nullifier = VotingApi.getSignedVoteNullifier(wallet.address, processId)
+    const nullifier = Voting.getSignedVoteNullifier(wallet.address, processId)
     const { registered, date, block } = await VotingApi.getEnvelopeStatus(processId, nullifier, gwPool)
 
     if (config.stopOnError) assert(registered)

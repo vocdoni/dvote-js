@@ -5,7 +5,7 @@ import { eddsa, babyJub } from "circomlib"
 // import { Scalar, utils as ffutils } from "ffjavascript"
 // const { Scalar, utils: ffutils } = require("../../node_modules/ffjavascript/build/main.cjs")
 const { Scalar, utils: ffutils } = require("ffjavascript")
-import { bufferToBigInt } from "@vocdoni/common"
+import { bufferToBigInt, Random, strip0x } from "@vocdoni/common"
 
 export type PublicKeyBabyJub = { x: bigint, y: bigint }
 
@@ -19,12 +19,19 @@ export class WalletBabyJub {
         this._rawPrivKey = rawPrivateKey
     }
 
+    /** Creates a random wallet */
+    static createRandom() {
+        const bytes = Random.getBytes(31)
+        return WalletBabyJub.fromHexSeed(bytes.toString("hex"))
+    }
+
+
     /** Creates a given wallet by hashing the given hex seed into a 32 byte buffer
      * and using it as a raw private key
      */
     static fromHexSeed(hexSeed: string) {
-        const seedBytes = Buffer.from(hexSeed.replace("0x", ""), "hex")
-        const hashedBytes = keccak256(seedBytes).slice(2)
+        const seedBytes = Buffer.from(strip0x(hexSeed), "hex")
+        const hashedBytes = strip0x(keccak256(seedBytes))
 
         return new WalletBabyJub(Buffer.from(hashedBytes, "hex"))
     }

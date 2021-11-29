@@ -3,7 +3,7 @@ import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
 import { Wallet, utils } from "ethers"
 import { Buffer } from "buffer/"
-import { CensusOffChain } from "../../src"
+import { CensusOffChain, CensusOnChain, ZkSnarks } from "../../src"
 
 addCompletionHooks()
 
@@ -84,7 +84,7 @@ describe("Census", () => {
         })
     })
 
-    describe("Hashing", () => {
+    describe("Key digest", () => {
         it("Should hash and encode public keys in base64 properly", () => {
             const inputs = [
                 { x: BigInt("1"), y: BigInt("2"), result: "EVzA9efWkEE99kxrlmLpzyo2F/J0MkVRnhlgekQXGJo=" },
@@ -160,6 +160,48 @@ describe("Census", () => {
                 buff = Buffer.from(hashed, "base64")
                 expect(buff.length).to.eq(input.len)
             }
+        })
+    })
+
+    describe("Vote digest", () => {
+        it("Should digest vote values in a snark friendly format", () => {
+            const items = [
+                { votePackage: new Uint8Array([1, 2, 3, 4]), expected: "9b6c2947b4b6ab1f137fb9e147a7649f,6a806a9be8776c6e35c5b39fe701026f" },
+                { votePackage: new Uint8Array([10, 20, 30, 40]), expected: "a9b1ab5dc9680e339a5dba07ffc0535f,500000bb9ad9c6a76f3fd59e9fe249bc" },
+                { votePackage: new Uint8Array([1, 5, 10, 50]), expected: "524754d97e36eef1d4137a3f1133d986,6b627e99711b810e49eb028c9f7c3fea" },
+                { votePackage: new Uint8Array([1, 10, 20, 30]), expected: "84ad2047d465f165995dc34c2cb898af,be8d8de6c93cf27bf646b07d053960aa" }
+            ]
+
+            items.forEach(item => {
+                const output = ZkSnarks.digestVotePackage(item.votePackage).map(v => v.toString(16)).join(",")
+                expect(output).to.eq(item.expected)
+            })
+        })
+    })
+
+    describe("Sibling proofs", () => {
+        it("Should unpack a buffer with the siblings", () => {
+            const buff = Buffer.from("a6000200c604" +
+                "0100000000000000000000000000000000000000000000000000000000000000" +
+                "0200000000000000000000000000000000000000000000000000000000000000" +
+                "0300000000000000000000000000000000000000000000000000000000000000" +
+                "0400000000000000000000000000000000000000000000000000000000000000" +
+                "0500000000000000000000000000000000000000000000000000000000000000", "hex")
+
+            const siblings = CensusOnChain.unpackSiblings(buff)
+            expect(siblings.length).to.eq(11)
+
+            expect(siblings[0].toString(16)).to.eq("0")
+            expect(siblings[1].toString(16)).to.eq("1")
+            expect(siblings[2].toString(16)).to.eq("2")
+            expect(siblings[3].toString(16)).to.eq("0")
+            expect(siblings[4].toString(16)).to.eq("0")
+            expect(siblings[5].toString(16)).to.eq("0")
+            expect(siblings[6].toString(16)).to.eq("3")
+            expect(siblings[7].toString(16)).to.eq("4")
+            expect(siblings[8].toString(16)).to.eq("0")
+            expect(siblings[9].toString(16)).to.eq("0")
+            expect(siblings[10].toString(16)).to.eq("5")
         })
     })
 })

@@ -150,9 +150,9 @@ export interface ProcessResultsSingleQuestion {
 
 // Envelope and proofs
 
-export type IProofArbo = string
-export type IProofCA = { type: number, voterAddress: string, signature: string }
-export type IProofEVM = { key: string, proof: string[], value: string }
+export type IProofArbo = { siblings: string, weight?: bigint }
+export type IProofCA = { type: number, voterAddress: string, signature: string, weight?: bigint }
+export type IProofEVM = { key: string, proof: string[], value: string, weight?: bigint }
 
 type IProofCaSignatureType = {
     UNKNOWN: number,

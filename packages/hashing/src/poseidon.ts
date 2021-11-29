@@ -5,8 +5,10 @@ export namespace Poseidon {
 
     /** Computes the raw poseidon hash of an array of big integers */
     export function hash(inputs: bigint[]): bigint {
-        const modInputs = inputs.map(value => value % Q)
-        return poseidon(modInputs)
+        if (inputs.some(value => value >= Q || value < BigInt("0"))) {
+            throw new Error("One or more inputs are out of the Poseidon field")
+        }
+        return poseidon(inputs)
     }
 
     /** Computes the poseidon hash of the uncompressed coordinates of a
@@ -14,12 +16,5 @@ export namespace Poseidon {
      */
     export function hashBabyJubJubPublicKey(x: bigint, y: bigint) {
         return Poseidon.hash([x, y])
-    }
-
-    /** Computes the nullifier of a voter for a given process ID.
-     * The private key should be a decimal string containing a big number. */
-    export function getNullifier(privateKey: string, processId: bigint) {
-        const sKey = BigInt(privateKey)
-        return Poseidon.hash([sKey, processId])
     }
 }

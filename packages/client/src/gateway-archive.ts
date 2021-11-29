@@ -1,6 +1,6 @@
 import { FileApi } from "./apis/file"
 import { GatewayArchiveError } from "./errors/archive"
-import { TextRecordKeys } from "@vocdoni/common"
+import { TextRecordKeys, strip0x } from "@vocdoni/common"
 import { VochainProcessStatus } from "@vocdoni/data-models"
 import { getEnsTextRecord } from "./net/ens"
 import { ContentUri } from "./wrappers/content-uri"
@@ -107,8 +107,7 @@ export namespace GatewayArchiveApi {
      * @param gateway
      */
     function fetchArchivedProcess(archiveUri: ContentUri, processId: string, gateway: IGatewayDVoteClient): Promise<IArchiveResponseBody> {
-        // TODO Replacing should be done with `strip0x` function
-        return FileApi.fetchString("ipfs:///ipns/" + archiveUri + "/" + processId.replace("0x", ""), gateway)
+        return FileApi.fetchString("ipfs:///ipns/" + archiveUri + "/" + strip0x(processId), gateway)
             .then((result: string) => JSON.parse(result))
     }
 }

@@ -95,7 +95,7 @@ const proof = await CensusErc20Api.generateProof(
 ```ts
 import { CensusCaApi } from "@vocdoni/census"
 import { hexStringToBuffer } from "@vocdoni/common"
-import { CaBundleProtobuf, IProofCA, ProofCaSignatureTypes } from "@vocdoni/data-models"
+import { CAbundle, IProofCA, ProofCaSignatureTypes } from "@vocdoni/data-models"
 import { keccak256 } from "@ethersproject/keccak256"
 import { hexlify } from "@ethersproject/bytes"
 
@@ -110,11 +110,11 @@ const hexTokenR: string = (await axios.post("https://csp/auth", cspRequest1)).da
 // Blinding
 const tokenR = CensusCaApi.decodePoint(hexTokenR)
 const wallet = Wallet.createRandom() // ephemeral wallet
-const caBundle = CaBundleProtobuf.fromPartial({
+const caBundle = CAbundle.fromPartial({
     processId: new Uint8Array(hexStringToBuffer(processId)),
     address: new Uint8Array(hexStringToBuffer(wallet.address)),
 })
-const hexCaBundle = hexlify(CaBundleProtobuf.encode(caBundle).finish())
+const hexCaBundle = hexlify(CAbundle.encode(caBundle).finish())
 const hexCaHashedBundle = keccak256(hexCaBundle).substr(2)
 
 const { hexBlinded, userSecretData } = CensusCaApi.blind(hexCaHashedBundle, tokenR)

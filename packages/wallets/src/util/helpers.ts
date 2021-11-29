@@ -1,6 +1,7 @@
 import { toUtf8Bytes } from "@ethersproject/strings"
 import { keccak256 } from "@ethersproject/keccak256"
 import { arrayify } from "@ethersproject/bytes"
+import { strip0x, ensure0x } from "@vocdoni/common"
 
 /**
  * Returns `false` if the passphrase is shorter than 8 characters, or it doesn't contain
@@ -24,18 +25,18 @@ export function isStrongPassphrase(passphrase: string): boolean {
 export function digestSeededPassphrase(passphrase: string, hexSeed: string, rounds: number = 10): string {
     if (typeof passphrase != "string" || typeof hexSeed != "string") throw new Error("Invalid parameters")
 
-    if (hexSeed.startsWith("0x")) hexSeed = hexSeed.substr(2)
+    hexSeed = strip0x(hexSeed)
     if (hexSeed.length != 64) throw new Error("The hashed passphrase should be 64 characters long instead of " + hexSeed.length)
 
     // Conver the passphrase into UTF8 bytes and hash them
     const passphraseBytes = toUtf8Bytes(passphrase)
-    const passphraseBytesHashed = keccak256(passphraseBytes).substr(2) // skip 0x
+    const passphraseBytesHashed = strip0x(keccak256(passphraseBytes))
 
     if (passphraseBytesHashed.length != 64)
         throw new Error("Internal error: The hashed passphrase should be 64 characters long instead of " + passphraseBytesHashed.length)
 
     // Concatenating the bytes of the hashed passphrase + the seed's
-    const sourceBytes = arrayify("0x" + passphraseBytesHashed + hexSeed)
+    const sourceBytes = arrayify(ensure0x(passphraseBytesHashed + hexSeed))
     if (sourceBytes.length != 64)
         throw new Error("Internal error: The sourceBytes array should be 64 bytes long instead of " + sourceBytes.length)
 

@@ -1,7 +1,7 @@
 import * as Bluebird from "bluebird"
 import * as assert from "assert"
 import { INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "@vocdoni/data-models"
-import { EthWaiter, VochainWaiter, VotingApi, Voting } from "@vocdoni/voting"
+import { EthWaiter, VochainWaiter, VotingApi } from "@vocdoni/voting"
 import {
   ProcessCensusOrigin,
   ProcessContractParameters,
@@ -15,6 +15,8 @@ import { getChoicesForVoter } from "./util"
 import { CensusOffChainApi } from "@vocdoni/census"
 import { Wallet } from "@ethersproject/wallet"
 import { IGatewayClient } from "@vocdoni/client"
+import { Random } from "@vocdoni/common"
+import { Poseidon } from "@vocdoni/hashing"
 
 const config = getConfig()
 
@@ -43,12 +45,12 @@ export async function launchNewVote(censusRoot: string, censusUri: string, entit
 
   console.log("Getting the block height")
   const currentBlock = await VotingApi.getBlockHeight(gwPool)
-  const startBlock = currentBlock + 25
+  const startBlock = currentBlock + 15
   const blockCount = 60480
 
   const processParamsPre: INewProcessParams = {
-    mode: ProcessMode.make({ autoStart: true, interruptible: true }), // helper
-    envelopeType: ProcessEnvelopeType.ENCRYPTED_VOTES, // bit mask
+    mode: ProcessMode.make({ autoStart: true, interruptible: true, preregister: true }),
+    envelopeType: ProcessEnvelopeType.make({ encryptedVotes: true, anonymousVoters: true }),
     censusOrigin: ProcessCensusOrigin.OFF_CHAIN_TREE,
     metadata: processMetadataPre,
     censusRoot,
@@ -80,31 +82,76 @@ export async function launchNewVote(censusRoot: string, censusUri: string, entit
   return { processId, processParams, processMetadata }
 }
 
+export async function registerVoterKeys(censusRoot: string, accounts: TestAccount[]) {
+  console.log("Registering keys")
+
+  await Bluebird.map(accounts, async (account: TestAccount, idx: number) => {
+    process.stdout.write(`Registering [${idx}] ; `)
+
+    // The key (within the census) to sign the request
+    const wallet = new Wallet(account.privateKey)
+
+    // Generate the random secret key that will be used for voting
+    const secretKey = Random.getBigInt(Poseidon.Q)
+    account.secretKey = secretKey
+
+    // Get a census proof to be able to register the new key
+    const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: account.publicKeyEncoded }, pool)
+      .catch(err => {
+        console.error("CensusOffChainApi.generateProof ERR", account, err)
+        if (config.stopOnError) throw err
+        return null
+      })
+    if (!censusProof) return // skip when !config.stopOnError
+
+    return CensusOnChainApi.registerVoterKey(processId, censusProof, secretKey, wallet, pool)
+  })
+}
+
+
 export async function submitVotes(processId: string, processParams: ProcessContractParameters, processMetadata: ProcessMetadata, accounts: TestAccount[], gwPool: IGatewayClient) {
   console.log("Launching votes")
+
+  const state = await VotingApi.getProcessState(processId, gwPool)
+  const circuitInfo = await VotingApi.getProcessCircuitInfo(processId, gwPool)
+  const { maxSize, index: circuitIndex } = circuitInfo
+  const witnessGeneratorWasm = await VotingApi.fetchAnonymousWitnessGenerator(circuitInfo)
+  const zKey = await VotingApi.fetchAnonymousVotingZKey(circuitInfo)
 
   const processKeys = processParams.envelopeType.hasEncryptedVotes ? await VotingApi.getProcessKeys(processId, gwPool) : null
 
   await Bluebird.map(accounts, async (account: TestAccount, idx: number) => {
 
     // VOTER
-    const wallet = new Wallet(account.privateKey)
+    const censusProof = await CensusOnChainApi.generateProof(state.rollingCensusRoot, account.secretKey, gwPool)
 
-    const censusProof = await CensusOffChainApi.generateProof(processParams.censusRoot, { key: account.publicKeyEncoded }, true, gwPool)
+    const wallet = new Wallet(account.privateKey)
 
     const choices = getChoicesForVoter(processMetadata.questions.length, idx)
 
-    const envelope = processParams.envelopeType.hasEncryptedVotes ?
-      Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet, processKeys }) :
-      Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet })
+    const params: AnonymousEnvelopeParams = {
+      votes: choices,
+      rollingCensusRoot: state.rollingCensusRoot,
+      siblings: censusProof.siblings,
+      keyIndex: censusProof.index,
+      maxSize,
+      witnessGeneratorWasm,
+      secretKey: account.secretKey,
+      zKey,
+      processId,
+      circuitIndex
+    }
+    if (processParams.envelopeType.hasEncryptedVotes) {
+      params.processKeys = processKeys
+    }
 
-    await VotingApi.submitEnvelope(envelope, wallet, gwPool)
+    const envelope = await Voting.packageAnonymousEnvelope(params)
 
-    // Wait a bit
+    await VotingApi.submitEnvelope(envelope, null, gwPool)
+
     await new Promise(resolve => setTimeout(resolve, 11000))
 
-    // Check
-    const nullifier = Voting.getSignedVoteNullifier(wallet.address, processId)
+    const nullifier = Voting.getAnonymousVoteNullifier(account.secretKey, processId)
     const { registered, date, block } = await VotingApi.getEnvelopeStatus(processId, nullifier, gwPool)
 
     if (config.stopOnError) assert(registered)
@@ -149,29 +196,29 @@ export async function checkVoteResults(processId: string, processParams: Process
   switch (config.votesPattern) {
     case "all-0":
       assert(rawResults.results[0].length >= 2)
-      assert.strictEqual(rawResults.results[0][0], config.numAccounts + "000000000000000000")
-      assert.strictEqual(rawResults.results[0][1], "0")
+      assert.strictEqual(rawResults.results[0][0], config.numAccounts)
+      assert.strictEqual(rawResults.results[0][1], 0)
       break
     case "all-1":
       assert(rawResults.results[0].length >= 2)
-      assert.strictEqual(rawResults.results[0][0], "0")
-      assert.strictEqual(rawResults.results[0][1], config.numAccounts + "000000000000000000")
+      assert.strictEqual(rawResults.results[0][0], 0)
+      assert.strictEqual(rawResults.results[0][1], config.numAccounts)
       break
     case "all-2":
       assert(rawResults.results[0].length >= 3)
-      assert.strictEqual(rawResults.results[0][0], "0")
-      assert.strictEqual(rawResults.results[0][1], "0")
-      assert.strictEqual(rawResults.results[0][2], config.numAccounts + "000000000000000000")
+      assert.strictEqual(rawResults.results[0][0], 0)
+      assert.strictEqual(rawResults.results[0][1], 0)
+      assert.strictEqual(rawResults.results[0][2], config.numAccounts)
       break
     case "all-even":
       assert(rawResults.results[0].length >= 2)
       if (config.numAccounts % 2 == 0) {
-        assert.strictEqual(rawResults.results[0][0], (config.numAccounts / 2) + "000000000000000000")
-        assert.strictEqual(rawResults.results[0][1], (config.numAccounts / 2) + "000000000000000000")
+        assert.strictEqual(rawResults.results[0][0], config.numAccounts / 2)
+        assert.strictEqual(rawResults.results[0][1], config.numAccounts / 2)
       }
       else {
-        assert.strictEqual(rawResults.results[0][0], Math.ceil((config.numAccounts / 2)) + "000000000000000000")
-        assert.strictEqual(rawResults.results[0][1], Math.floor((config.numAccounts / 2)) + "000000000000000000")
+        assert.strictEqual(rawResults.results[0][0], Math.ceil(config.numAccounts / 2))
+        assert.strictEqual(rawResults.results[0][1], Math.floor(config.numAccounts / 2))
       }
       break
     case "incremental":
