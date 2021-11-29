@@ -6,7 +6,7 @@ import {
 } from "@vocdoni/data-models"
 import { Signer } from "@ethersproject/abstract-signer"
 import { Wallet } from "@ethersproject/wallet"
-import { ProcessMetadata, IProofEVM, IProofCA, IProofArbo } from "@vocdoni/data-models"
+import { ProcessMetadata, IProofEVM, IProofCA, IProofArbo, ZkProof } from "@vocdoni/data-models"
 
 export type VoteValues = Array<number | bigint>
 
@@ -26,24 +26,13 @@ export type SignedEnvelopeParams = {
 }
 
 export type AnonymousEnvelopeParams = {
-    votes: VoteValues,
+    /** Serialized votePackage */
+    votePackage: Uint8Array,
     processId: string,
-    /** The BabyJubJub secret key registered early */
-    secretKey: bigint,
-    /** Hex string */
-    rollingCensusRoot: string,
-    /** Array containing the Merkle Tree sibling nodes for the key */
-    siblings: bigint[],
-    /** The index where the key is stored within the Merkle Tree */
-    keyIndex: bigint,
-    /** The max census size */
-    maxSize: number,
-    /** The raw bytes of the wasm file implementing the witness generation */
-    witnessGeneratorWasm: Uint8Array,
-    /** The raw bytes of the circuit key */
-    zKey: Uint8Array,
-    processKeys?: ProcessKeys,
-    circuitIndex: number
+    zkProof: ZkProof,
+    nullifier: bigint,
+    circuitIndex: number,
+    encryptionKeyIndexes?: number[]
 }
 export interface BlockStatus {
     /** The current block height */

@@ -1,7 +1,7 @@
 import * as Bluebird from "bluebird"
 import * as assert from "assert"
 import { INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "@vocdoni/data-models"
-import { EthWaiter, VochainWaiter, VotingApi, Voting } from "@vocdoni/voting"
+import { EthWaiter, VochainWaiter, Voting, VotingApi } from "@vocdoni/voting"
 import {
   ProcessCensusOrigin,
   ProcessContractParameters,

@@ -1,14 +1,15 @@
 // @ts-ignore  
 import { groth16 } from "snarkjs"
 import { bufferLeToBigInt, hexStringToBuffer } from "@vocdoni/common"
+import { ZkProof } from "@vocdoni/data-models"
 import { sha256 } from "@ethersproject/sha2"
 
 export type ZkInputs = {
     processId: [bigint, bigint]
     /** hex string */
     censusRoot: string
-    /** hex strings */
     censusSiblings: bigint[]
+    maxSize: number
     keyIndex: bigint
     secretKey: bigint
     votePackage: Uint8Array
@@ -16,27 +17,23 @@ export type ZkInputs = {
     nullifier: bigint
 }
 
-type ZkReturn = {
-    proof: {
-        a: string[]
-        b: string[][]
-        c: string[]
-        protocol: string
-        // curve: <string>proof.curve || "bn128",
-    },
-    publicSignals: string[]
-}
 export namespace ZkSnarks {
-    export function computeProof(input: ZkInputs, witnessGeneratorWasm: Uint8Array, zKey: Uint8Array): Promise<ZkReturn> {
+    export function computeProof(input: ZkInputs, witnessGeneratorWasm: Uint8Array, zKey: Uint8Array): Promise<ZkProof> {
         return getWitnessCalculator(witnessGeneratorWasm)
             .then(witnessCalculator => {
                 const censusRootLe = Buffer.from(input.censusRoot, "hex")
                 const censusRoot = bufferLeToBigInt(censusRootLe)
                 const voteHash = digestVotePackage(input.votePackage)
 
+                const censusSiblings = [].concat(input.censusSiblings)
+                const levels = Math.ceil(Math.log2(input.maxSize))
+                for (let i = censusSiblings.length; i < levels; i++) {
+                    censusSiblings.push(BigInt("0"))
+                }
+
                 const proverInputs = {
                     censusRoot,
-                    censusSiblings: input.censusSiblings,
+                    censusSiblings,
                     index: input.keyIndex,
                     secretKey: input.secretKey,
                     voteHash,

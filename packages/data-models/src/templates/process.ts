@@ -1,4 +1,4 @@
-import { ProcessMetadata } from "../process"
+import { ProcessMetadata } from "../voting-meta"
 
 export const ProcessMetadataTemplate: ProcessMetadata = {
     version: "1.1",

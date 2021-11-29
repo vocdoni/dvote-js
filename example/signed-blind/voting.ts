@@ -2,7 +2,7 @@ import * as Bluebird from "bluebird"
 import axios from 'axios'
 import * as assert from "assert"
 import { INewProcessParams, IProofCA, ProcessMetadata, ProcessMetadataTemplate, ProofCaSignatureTypes, CAbundle } from "@vocdoni/data-models"
-import { EthWaiter, VochainWaiter, VotingApi } from "@vocdoni/voting"
+import { EthWaiter, VochainWaiter, VotingApi, Voting } from "@vocdoni/voting"
 import {
   ProcessCensusOrigin,
   ProcessContractParameters,

@@ -9,7 +9,7 @@ import { connectGateways } from "./net"
 import { ensureEntityMetadata } from "./entity"
 import { createWallets, generatePublicCensusFromAccounts, TestAccount } from "./census"
 import { waitUntilPresent, waitUntilStarted } from "./util"
-import { checkVoteResults, launchNewVote, submitVotes } from "./voting"
+import { checkVoteResults, launchNewVote, registerVoterKeys, submitVotes } from "./voting"
 
 const config = getConfig()
 
@@ -73,7 +73,7 @@ async function main() {
 
         await waitUntilPresent(processId, gwPool)
 
-        await registerVoterKeys(processParams.censusRoot)
+        await registerVoterKeys(processId, processParams, accounts, gwPool)
     }
 
     console.log("- Entity Addr", processParams.entityAddress)
@@ -86,7 +86,9 @@ async function main() {
 
     await waitUntilStarted(processId, processParams.startBlock, gwPool)
 
-    await submitVotes(processId, processParams, processMetadata, accounts, gwPool)
+    const processState = await VotingApi.getProcessState(processId, gwPool)
+
+    await submitVotes(processId, processState, processMetadata, accounts, gwPool)
 
     await checkVoteResults(processId, processParams, entityWallet, gwPool)
 }

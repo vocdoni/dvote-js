@@ -19,7 +19,6 @@ import {
 } from "@vocdoni/data-models"
 import { Poseidon } from "@vocdoni/hashing"
 import { ProofZkSNARK } from "@vocdoni/data-models"
-import { getZkProof, ZkInputs } from "@vocdoni/census"
 import { ensure0x, strip0x, bigIntToLeBuffer, bufferLeToBigInt, hexStringToBuffer } from "@vocdoni/common"
 import { ProcessKeys, SignedEnvelopeParams, VotePackage, AnonymousEnvelopeParams, VoteValues, RawResults } from "./types"
 
@@ -98,74 +97,48 @@ export namespace Voting {
      * If `encryptionPublicKey` is defined, it will be used to encrypt the vote package.
      * @param params
      */
-    export function packageAnonymousEnvelope(params: AnonymousEnvelopeParams): Promise<VoteEnvelope> {
+    export function packageAnonymousEnvelope(params: AnonymousEnvelopeParams): VoteEnvelope {
         if (!params) throw new Error("Invalid parameters")
-        else if (!Array.isArray(params.votes)) throw new Error("Invalid votes array")
-        else if (typeof params.processId != "string" || !params.processId.match(/^(0x)?[0-9a-zA-Z]+$/)) throw new Error("Invalid processId")
-        else if (typeof params.secretKey != "bigint") throw new Error("Invalid private key")
-        else if (params.processKeys) {
-            if (!Array.isArray(params.processKeys.encryptionPubKeys) || !params.processKeys.encryptionPubKeys.every(
-                item => item && typeof item.idx == "number" && typeof item.key == "string" && item.key.match(/^(0x)?[0-9a-zA-Z]+$/))) {
-                throw new Error("Some encryption public keys are not valid")
-            }
-        }
+        else if (!Array.isArray(params.votePackage)) throw new Error("Invalid vote package")
+        else if (typeof params.nullifier != "bigint") throw new Error("Invalid nullifier")
+        else if (typeof params.circuitIndex != "number") throw new Error("Invalid nullifier")
+        else if (typeof params.zkProof != "object") throw new Error("Invalid proof")
 
-        const censusSiblings = [].concat(params.siblings)
-        const levels = Math.ceil(Math.log2(params.maxSize))
-        for (let i = censusSiblings.length; i < levels; i++) {
-            censusSiblings.push(BigInt("0"))
-        }
-        const nullifier = getAnonymousVoteNullifier(params.secretKey, params.processId)
-        const { votePackage, keyIndexes } = packageVoteContent(params.votes, params.processKeys)
+        const { zkProof, processId, nullifier, votePackage, encryptionKeyIndexes } = params
 
-        const inputs: ZkInputs = {
-            censusRoot: params.rollingCensusRoot,
-            censusSiblings,
-            keyIndex: params.keyIndex,
-            nullifier,
-            secretKey: params.secretKey,
-            processId: getSnarkProcessId(params.processId),
-            votePackage
-        }
+        // [w, x, y, z] => [[w, x], [y, z]]
+        const b = [
+            zkProof.proof.b[0][0], zkProof.proof.b[0][1],
+            zkProof.proof.b[1][0], zkProof.proof.b[1][1],
+            zkProof.proof.b[2][0], zkProof.proof.b[2][1]
+        ]
 
-        return getZkProof(inputs, params.witnessGeneratorWasm, params.zKey)
-            .then(result => {
-                const { proof: zkProof, publicSignals } = result
+        const zkSnark = ProofZkSNARK.fromPartial({
+            circuitParametersIndex: params.circuitIndex,
+            a: zkProof.proof.a,
+            b,
+            c: zkProof.proof.c,
+            publicInputs: zkProof.publicSignals,
+            // type: ProofZkSNARK_Type.UNKNOWN
+        })
 
-                // [w, x, y, z] => [[w, x], [y, z]]
-                const b = [
-                    zkProof.b[0][0], zkProof.b[0][1],
-                    zkProof.b[1][0], zkProof.b[1][1],
-                    zkProof.b[2][0], zkProof.b[2][1]
-                ]
+        const proof = Proof.fromPartial({})
+        proof.payload = { $case: "zkSnark", zkSnark }
 
-                const zkSnark = ProofZkSNARK.fromPartial({
-                    circuitParametersIndex: params.circuitIndex,
-                    a: zkProof.a,
-                    b,
-                    c: zkProof.c,
-                    publicInputs: publicSignals,
-                    // type: ProofZkSNARK_Type.UNKNOWN
-                })
+        const nonce = strip0x(Random.getHex())
 
-                const proof = Proof.fromPartial({})
-                proof.payload = { $case: "zkSnark", zkSnark }
-
-                const nonce = strip0x(Random.getHex())
-                const nullifier = getAnonymousVoteNullifier(params.secretKey, params.processId)
-
-                return VoteEnvelope.fromPartial({
-                    proof,
-                    processId: new Uint8Array(Buffer.from(strip0x(params.processId), "hex")),
-                    nonce: new Uint8Array(Buffer.from(nonce, "hex")),
-                    votePackage: new Uint8Array(votePackage),
-                    encryptionKeyIndexes: keyIndexes ? keyIndexes : [],
-                    nullifier: new Uint8Array(bigIntToLeBuffer(nullifier))
-                })
+        try {
+            return VoteEnvelope.fromPartial({
+                proof,
+                processId: new Uint8Array(hexStringToBuffer(processId)),
+                nonce: new Uint8Array(hexStringToBuffer(nonce)),
+                votePackage: new Uint8Array(votePackage),
+                encryptionKeyIndexes: encryptionKeyIndexes ? encryptionKeyIndexes : [],
+                nullifier: new Uint8Array(bigIntToLeBuffer(nullifier))
             })
-            .catch(err => {
-                throw new Error("The anonymous vote envelope could not be generated")
-            })
+        } catch (error) {
+            throw new Error("The poll vote envelope could not be generated")
+        }
     }
 
     /**
