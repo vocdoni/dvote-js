@@ -99,7 +99,6 @@ export namespace Voting {
      */
     export function packageAnonymousEnvelope(params: AnonymousEnvelopeParams): VoteEnvelope {
         if (!params) throw new Error("Invalid parameters")
-        else if (!Array.isArray(params.votePackage)) throw new Error("Invalid vote package")
         else if (typeof params.nullifier != "bigint") throw new Error("Invalid nullifier")
         else if (typeof params.circuitIndex != "number") throw new Error("Invalid nullifier")
         else if (typeof params.zkProof != "object") throw new Error("Invalid proof")
