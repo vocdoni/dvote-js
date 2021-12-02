@@ -18,16 +18,16 @@
     "postinstall": "./scripts/post-install.sh"
   },
   "dependencies": {
-    "@vocdoni/census": "^1.14.1",
-    "@vocdoni/client": "^1.14.2",
-    "@vocdoni/common": "^1.14.1",
-    "@vocdoni/contract-wrappers": "^1.14.1",
-    "@vocdoni/data-models": "^1.14.2",
-    "@vocdoni/encryption": "^1.14.0",
-    "@vocdoni/hashing": "^1.14.0",
-    "@vocdoni/signing": "^1.14.0",
-    "@vocdoni/voting": "^1.14.0",
-    "@vocdoni/wallets": "^1.14.0"
+    "@vocdoni/census": "file:./packages/census/vocdoni-census-1.14.1.tgz",
+    "@vocdoni/client": "file:./packages/client/vocdoni-client-1.14.2.tgz",
+    "@vocdoni/common": "file:packages/common/vocdoni-common-1.14.1.tgz",
+    "@vocdoni/contract-wrappers": "file:./packages/contract-wrappers/vocdoni-contract-wrappers-1.14.1.tgz",
+    "@vocdoni/data-models": "file:./packages/data-models/vocdoni-data-models-1.14.2.tgz",
+    "@vocdoni/encryption": "file:./packages/encryption/vocdoni-encryption-1.14.1.tgz",
+    "@vocdoni/hashing": "file:./packages/hashing/vocdoni-hashing-1.14.0.tgz",
+    "@vocdoni/signing": "file:./packages/signing/vocdoni-signing-1.14.0.tgz",
+    "@vocdoni/voting": "file:packages/voting/vocdoni-voting-1.14.0.tgz",
+    "@vocdoni/wallets": "file:./packages/wallets/vocdoni-wallets-1.14.1.tgz"
   },
   "devDependencies": {
     "dotenv": "^10.0.0",

@@ -1,4 +1,4 @@
-// @ts-ignore  
+// @ts-ignore
 import { groth16 } from "snarkjs"
 import { bufferLeToBigInt, hexStringToBuffer } from "@vocdoni/common"
 import { ZkProof } from "@vocdoni/data-models"
@@ -21,15 +21,21 @@ export namespace ZkSnarks {
     export function computeProof(input: ZkInputs, witnessGeneratorWasm: Uint8Array, zKey: Uint8Array): Promise<ZkProof> {
         return getWitnessCalculator(witnessGeneratorWasm)
             .then(witnessCalculator => {
+                console.log("ZKSnarks.computeProof function")
+                console.log("input.censusRoot:", input.censusRoot)
                 const censusRootLe = Buffer.from(input.censusRoot, "hex")
                 const censusRoot = bufferLeToBigInt(censusRootLe)
+                console.log("censusRoot:", censusRoot)
+                console.log("input.votePackage:", input.votePackage)
                 const voteHash = digestVotePackage(input.votePackage)
-
+                console.log("voteHash:", voteHash)
+                console.log("input.censusSiblings:", input.censusSiblings)
                 const censusSiblings = [].concat(input.censusSiblings)
                 const levels = Math.ceil(Math.log2(input.maxSize))
                 for (let i = censusSiblings.length; i < levels; i++) {
                     censusSiblings.push(BigInt("0"))
                 }
+                console.log("censusSiblings:", censusSiblings)
 
                 const proverInputs = {
                     censusRoot,
@@ -45,6 +51,9 @@ export namespace ZkSnarks {
             })
             .then(wtnsBuff => groth16.prove(zKey, wtnsBuff))
             .then(({ proof, publicSignals }) => {
+                console.log("After groth16.prove")
+                console.log("proof", proof)
+                console.log("publicSignals", publicSignals)
                 return {
                     proof: {
                         a: <string[]>proof.pi_a,

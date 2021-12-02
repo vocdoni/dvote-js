@@ -121,15 +121,19 @@ export async function submitVotes(processId: string, processParams: ProcessState
 
   await Bluebird.map(accounts, async (account: TestAccount, idx: number) => {
 
+    console.log("account.secretKey:", account.secretKey)
+    console.log("state.rollingCensusRoot:", state.rollingCensusRoot)
+    console.log("processId:", processId)
     // VOTER
     const censusProof = await CensusOnChainApi.generateProof(state.rollingCensusRoot, account.secretKey, gwPool)
-
+    console.log("censusProof:", censusProof)
     const choices = getChoicesForVoter(processMetadata.questions.length, idx)
 
     // Prepare ZK Proof
     const nullifier = Voting.getAnonymousVoteNullifier(account.secretKey, processId)
+    console.log("nullifier:", nullifier)
     const { votePackage, keyIndexes } = Voting.packageVoteContent(choices, processKeys)
-
+    console.log("votePackage:", votePackage)
     const inputs: ZkInputs = {
       censusRoot: processParams.rollingCensusRoot,
       censusSiblings: censusProof.siblings,

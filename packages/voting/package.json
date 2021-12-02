@@ -20,12 +20,13 @@
     "test": "npm run build && ./node_modules/.bin/mocha -r ts-node/register test/**/*.ts"
   },
   "dependencies": {
-    "@vocdoni/client": "^1.14.2",
-    "@vocdoni/common": "^1.14.0",
-    "@vocdoni/contract-wrappers": "^1.14.0",
-    "@vocdoni/data-models": "^1.14.1",
-    "@vocdoni/hashing": "^1.14.0",
-    "@vocdoni/signing": "^1.14.0",
+    "@vocdoni/client": "file:../client/vocdoni-client-1.14.2.tgz",
+    "@vocdoni/common": "file:../common/vocdoni-common-1.14.1.tgz",
+    "@vocdoni/contract-wrappers": "file:../contract-wrappers/vocdoni-contract-wrappers-1.14.1.tgz",
+    "@vocdoni/data-models": "file:../data-models/vocdoni-data-models-1.14.2.tgz",
+    "@vocdoni/encryption": "file:../encryption/vocdoni-encryption-1.14.1.tgz",
+    "@vocdoni/hashing": "file:../hashing/vocdoni-hashing-1.14.0.tgz",
+    "@vocdoni/signing": "file:../signing/vocdoni-signing-1.14.0.tgz",
     "buffer": "^6.0.3"
   },
   "devDependencies": {

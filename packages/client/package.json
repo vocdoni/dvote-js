@@ -26,9 +26,9 @@
     "@ethersproject/contracts": "^5.5.0",
     "@ethersproject/keccak256": "^5.5.0",
     "@ethersproject/providers": "^5.5.0",
-    "@vocdoni/common": "^1.14.1",
-    "@vocdoni/data-models": "^1.14.2",
-    "@vocdoni/signing": "^1.14.0",
+    "@vocdoni/common": "file:../common/vocdoni-common-1.14.1.tgz",
+    "@vocdoni/data-models": "file:../data-models/vocdoni-data-models-1.14.2.tgz",
+    "@vocdoni/signing": "file:../signing/vocdoni-signing-1.14.0.tgz",
     "axios": "^0.24.0",
     "buffer": "^6.0.3",
     "universal-parse-url": "^1.0.2"

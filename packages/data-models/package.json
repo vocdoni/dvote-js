@@ -22,9 +22,9 @@
   },
   "dependencies": {
     "@ethersproject/bignumber": "^5.5.0",
-    "@vocdoni/common": "^1.14.0",
-    "@vocdoni/contract-wrappers": "^1.14.0",
-    "@vocdoni/encryption": "^1.14.0",
+    "@vocdoni/common": "file:../common/vocdoni-common-1.14.1.tgz",
+    "@vocdoni/contract-wrappers": "file:../contract-wrappers/vocdoni-contract-wrappers-1.14.1.tgz",
+    "@vocdoni/encryption": "file:../encryption/vocdoni-encryption-1.14.1.tgz",
     "buffer": "^6.0.3",
     "iso-language-codes": "^1.0.6",
     "protobufjs": "^6.10.2",
