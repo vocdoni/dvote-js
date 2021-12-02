@@ -199,7 +199,7 @@ export namespace VotingApi {
 
                 return {
                     index: response.circuitIndex || 0,
-                    uri: response.circuitConfig.uri,
+                    uri: response.circuitConfig.url,
                     circuitPath: response.circuitConfig.circuitPath,
                     maxSize: response.circuitConfig.parameters[0],
                     witnessHash: "0x" + Buffer.from(response.circuitConfig.witnessHash, "base64").toString("hex"),
