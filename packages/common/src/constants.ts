@@ -37,7 +37,7 @@ export const CENSUS_MAX_BULK_SIZE = 400 // # of claims per addClaimBulk request
 export const GATEWAY_SELECTION_TIMEOUT = 4000  // milliseconds
 
 export const ZK_VOTING_CIRCUIT_WASM_FILE_NAME = "circuit.wasm"
-export const ZK_VOTING_ZKEY_FILE_NAME = "circuit.zkey"
+export const ZK_VOTING_ZKEY_FILE_NAME = "circuit_final.zkey"
 export const ZK_VOTING_VERIFICATION_KEY_FILE_NAME = "verification-key.json"
 
 /**

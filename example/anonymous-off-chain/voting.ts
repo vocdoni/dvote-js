@@ -113,7 +113,7 @@ export async function submitVotes(processId: string, processParams: ProcessState
   const circuitInfo = await VotingApi.getProcessCircuitInfo(processId, gwPool)
   const witnessGeneratorWasm = await VotingApi.fetchAnonymousWitnessGenerator(circuitInfo)
   const zKey = await VotingApi.fetchAnonymousVotingZKey(circuitInfo)
-
+  const vKey = await VotingApi.fetchAnonymousVotingVerificationKey(circuitInfo)
   const processKeys = processParams.envelopeType.encryptedVotes ? await VotingApi.getProcessKeys(processId, gwPool) : null
 
   await Bluebird.map(accounts, async (account: TestAccount, idx: number) => {
@@ -139,6 +139,9 @@ export async function submitVotes(processId: string, processParams: ProcessState
     }
 
     const zkProof = await ZkSnarks.computeProof(inputs, witnessGeneratorWasm, zKey)
+
+    const verifyProof = await ZkSnarks.verifyProof(JSON.parse(vKey.toString()), zkProof.publicSignals as any, zkProof.proof as any)
+    if (config.stopOnError) assert(verifyProof)
 
     const envelopeParams: AnonymousEnvelopeParams = {
       votePackage,
