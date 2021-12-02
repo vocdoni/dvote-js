@@ -38,7 +38,7 @@ export const GATEWAY_SELECTION_TIMEOUT = 4000  // milliseconds
 
 export const ZK_VOTING_CIRCUIT_WASM_FILE_NAME = "circuit.wasm"
 export const ZK_VOTING_ZKEY_FILE_NAME = "circuit_final.zkey"
-export const ZK_VOTING_VERIFICATION_KEY_FILE_NAME = "verification-key.json"
+export const ZK_VOTING_VERIFICATION_KEY_FILE_NAME = "verification_key.json"
 
 /**
  * ENS keys used to store the Text Records on the Smart Contract
