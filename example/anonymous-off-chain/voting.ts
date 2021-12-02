@@ -11,7 +11,7 @@ import {
 } from "@vocdoni/contract-wrappers"
 import { getConfig } from "./config"
 import { TestAccount } from "./census"
-import { getChoicesForVoter } from "./util"
+import { getChoicesForVoter, waitUntilPresent } from "./util"
 import { CensusOffChainApi, CensusOnChainApi, ZkInputs, ZkSnarks } from "@vocdoni/census"
 import { Wallet } from "@ethersproject/wallet"
 import { IGatewayClient } from "@vocdoni/client"
@@ -68,6 +68,9 @@ export async function launchNewVote(censusRoot: string, censusUri: string, entit
   console.log("Creating the process")
   const processId = await VotingApi.newProcess(processParamsPre, entityWallet, gwPool)
   assert(processId)
+
+  // Waiting a bit
+  await waitUntilPresent(processId, gwPool)
 
   // Reading back
   const processParams = await VotingApi.getProcessContractParameters(processId, gwPool)
@@ -140,7 +143,7 @@ export async function submitVotes(processId: string, processParams: ProcessState
 
     const zkProof = await ZkSnarks.computeProof(inputs, witnessGeneratorWasm, zKey)
 
-    const verifyProof = await ZkSnarks.verifyProof(JSON.parse(vKey.toString()), zkProof.publicSignals as any, zkProof.proof as any)
+    const verifyProof = await ZkSnarks.verifyProof(JSON.parse(Buffer.from(vKey).toString()), zkProof.publicSignals as any, zkProof.proof as any)
     if (config.stopOnError) assert(verifyProof)
 
     const envelopeParams: AnonymousEnvelopeParams = {
