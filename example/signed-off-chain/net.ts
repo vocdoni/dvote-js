@@ -10,7 +10,7 @@ export async function connectGateways(): Promise<GatewayPool> {
         networkId: config.ethNetworkId as EthNetworkID,
         environment: config.vocdoniEnvironment,
         bootnodesContentUri: config.bootnodesUrlRw,
-        numberOfGateways: 2,
+        // numberOfGateways: 2,
         // timeout: 10000,
     }
     const pool = await GatewayPool.discover(options)

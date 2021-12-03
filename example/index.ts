@@ -768,7 +768,7 @@ async function testGatewayInitialization() {
     let options: IGatewayDiscoveryParameters = {
         networkId: ETH_NETWORK_ID,
         bootnodesContentUri: BOOTNODES_URL_RW,
-        numberOfGateways: 2,
+        // numberOfGateways: 2,
         timeout: 5 * 1000,
     }
 

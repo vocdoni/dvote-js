@@ -1,15 +1,14 @@
 import * as Bluebird from "bluebird"
 import * as assert from "assert"
 import { INewProcessErc20Params, ProcessMetadata, ProcessMetadataTemplate } from "@vocdoni/data-models"
-import { VochainWaiter, VotingApi, VotingOracleApi } from "@vocdoni/voting"
+import { ProcessState, VochainWaiter, VotingApi, VotingOracleApi } from "@vocdoni/voting"
 import {
-    ProcessContractParameters,
     ProcessEnvelopeType,
     ProcessMode,
 } from "@vocdoni/contract-wrappers"
 import { getConfig } from "./config"
 import { TestAccount } from "./census"
-import { getChoicesForVoter } from "./util"
+import { getChoicesForVoter, waitUntilPresent } from "./util"
 import { getOracleClient } from "./net"
 import { CensusErc20Api } from "@vocdoni/census"
 import { Wallet } from "@ethersproject/wallet"
@@ -67,7 +66,7 @@ export async function launchNewVote(creatorWallet: Wallet, gwPool: IGatewayClien
     const startBlock = currentBlock + 15
     const blockCount = 6 * 4 // 4m
 
-    const processParamsPre: INewProcessErc20Params = {
+    const processParams: INewProcessErc20Params = {
         mode: ProcessMode.make({ autoStart: true }),
         envelopeType: ProcessEnvelopeType.make({}), // bit mask
         metadata: processMetadataPre,
@@ -97,28 +96,27 @@ export async function launchNewVote(creatorWallet: Wallet, gwPool: IGatewayClien
     const oracleClient = await getOracleClient()
 
     console.log("Creating the process")
-    const processId = await VotingOracleApi.newProcessErc20(processParamsPre, tokenDetails, creatorWallet, gwPool, oracleClient)
+    const processId = await VotingOracleApi.newProcessErc20(processParams, tokenDetails, creatorWallet, gwPool, oracleClient)
     assert(processId)
     console.log("Created the process", processId)
 
-    await VochainWaiter.wait(1, gwPool)
+    await waitUntilPresent(processId, gwPool)
 
     // Reading back
-    const processParams = await VotingApi.getProcessContractParameters(processId, gwPool)
-    assert.strictEqual(processParams.entityAddress.toLowerCase(), creatorWallet.address.toLowerCase())
-    assert.strictEqual(processParams.startBlock, processParamsPre.startBlock, "SENT " + JSON.stringify(processParamsPre) + " GOT " + JSON.stringify(processParams))
-    assert.strictEqual(processParams.blockCount, processParamsPre.blockCount)
-    assert.strictEqual(processParams.censusUri, processParamsPre.censusUri)
+    const processState = await VotingApi.getProcessState(processId, gwPool)
+    assert.strictEqual(processState.entityId.toLowerCase(), config.tokenAddress.toLowerCase())
+    assert.strictEqual(processState.startBlock, processParams.startBlock, "SENT " + JSON.stringify(processParams) + " GOT " + JSON.stringify(processParams))
+    assert.strictEqual(processState.endBlock, processState.startBlock + processParams.blockCount)
 
     const processMetadata = await VotingApi.getProcessMetadata(processId, gwPool)
 
-    return { processId, processParams, processMetadata }
+    return { processId, processState, processMetadata }
 }
 
-export async function submitVotes(processId: string, processParams: ProcessContractParameters, processMetadata: ProcessMetadata, accounts: TestAccount[], gwPool: IGatewayClient) {
+export async function submitVotes(processId: string, processParams: ProcessState, processMetadata: ProcessMetadata, accounts: TestAccount[], gwPool: IGatewayClient) {
     console.log("Launching votes")
 
-    const processKeys = processParams.envelopeType.hasEncryptedVotes ? await VotingApi.getProcessKeys(processId, gwPool) : null
+    const processKeys = processParams.envelopeType.encryptedVotes ? await VotingApi.getProcessKeys(processId, gwPool) : null
     const balanceMappingPosition = (await CensusErc20Api.getTokenInfo(config.tokenAddress, gwPool)).balanceMappingPosition
 
     await Bluebird.map(accounts, async (account: TestAccount, idx: number) => {
@@ -131,7 +129,7 @@ export async function submitVotes(processId: string, processParams: ProcessContr
         const choices = getChoicesForVoter(processMetadata.questions.length, idx)
         const censusProof = result.storageProof[0]
 
-        const envelope = processParams.envelopeType.hasEncryptedVotes ?
+        const envelope = processParams.envelopeType.encryptedVotes ?
             await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet, processKeys }) :
             await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof, processId, walletOrSigner: wallet })
 
@@ -149,7 +147,7 @@ export async function submitVotes(processId: string, processParams: ProcessContr
     console.log()
 }
 
-export async function checkVoteResults(processId: string, processMetadata: ProcessMetadata, gwPool: IGatewayClient) {
+export async function checkVoteResults(processId: string, gwPool: IGatewayClient) {
     assert.strictEqual(typeof processId, "string")
 
     if (config.encryptedVote) {
