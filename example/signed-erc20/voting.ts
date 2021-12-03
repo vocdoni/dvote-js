@@ -165,29 +165,29 @@ export async function checkVoteResults(processId: string, gwPool: IGatewayClient
     switch (config.votesPattern) {
         case "all-0":
             assert(rawResults.results[0].length >= 2)
-            assert.strictEqual(rawResults.results[0][0], config.privKeys.length)
-            assert.strictEqual(rawResults.results[0][1], 0)
+            assert.strictEqual(rawResults.results[0][0], config.privKeys.length + "000000000000000000")
+            assert.strictEqual(rawResults.results[0][1], "0")
             break
         case "all-1":
             assert(rawResults.results[0].length >= 2)
-            assert.strictEqual(rawResults.results[0][0], 0)
-            assert.strictEqual(rawResults.results[0][1], config.privKeys.length)
+            assert.strictEqual(rawResults.results[0][0], "0")
+            assert.strictEqual(rawResults.results[0][1], config.privKeys.length + "000000000000000000")
             break
         case "all-2":
             assert(rawResults.results[0].length >= 3)
-            assert.strictEqual(rawResults.results[0][0], 0)
-            assert.strictEqual(rawResults.results[0][1], 0)
-            assert.strictEqual(rawResults.results[0][2], config.privKeys.length)
+            assert.strictEqual(rawResults.results[0][0], "0")
+            assert.strictEqual(rawResults.results[0][1], "0")
+            assert.strictEqual(rawResults.results[0][2], config.privKeys.length + "000000000000000000")
             break
         case "all-even":
             assert(rawResults.results[0].length >= 2)
             if (config.privKeys.length % 2 == 0) {
-                assert.strictEqual(rawResults.results[0][0], config.privKeys.length / 2)
-                assert.strictEqual(rawResults.results[0][1], config.privKeys.length / 2)
+                assert.strictEqual(rawResults.results[0][0], (config.privKeys.length / 2) + "000000000000000000")
+                assert.strictEqual(rawResults.results[0][1], (config.privKeys.length / 2) + "000000000000000000")
             }
             else {
-                assert.strictEqual(rawResults.results[0][0], Math.ceil(config.privKeys.length / 2))
-                assert.strictEqual(rawResults.results[0][1], Math.floor(config.privKeys.length / 2))
+                assert.strictEqual(rawResults.results[0][0], Math.ceil((config.privKeys.length / 2)) + "000000000000000000")
+                assert.strictEqual(rawResults.results[0][1], Math.floor((config.privKeys.length / 2)) + "000000000000000000")
             }
             break
         case "incremental":
