@@ -27,7 +27,7 @@ export namespace ZkSnarks {
 
                 const censusSiblings = [].concat(input.censusSiblings)
                 const levels = Math.ceil(Math.log2(input.maxSize))
-                for (let i = censusSiblings.length; i <= levels; i++) {
+                for (let i = censusSiblings.length; i < levels + 1; i++) {
                     censusSiblings.push(BigInt("0"))
                 }
 
