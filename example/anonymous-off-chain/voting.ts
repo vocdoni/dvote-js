@@ -50,7 +50,7 @@ export async function launchNewVote(censusRoot: string, censusUri: string, entit
 
   const processParamsPre: INewProcessParams = {
     mode: ProcessMode.make({ autoStart: true, interruptible: true, preregister: true }),
-    envelopeType: ProcessEnvelopeType.make({ encryptedVotes: true, anonymousVoters: true }),
+    envelopeType: ProcessEnvelopeType.make({ encryptedVotes: false, anonymousVoters: true }),
     censusOrigin: ProcessCensusOrigin.OFF_CHAIN_TREE,
     metadata: processMetadataPre,
     censusRoot,
@@ -153,7 +153,7 @@ export async function submitVotes(processId: string, processParams: ProcessState
     // itself. And the Vochain only needs the 'nullifier' being in the first
     // position of the array. In fact, the array could contain only 1 element
     // (the 'nullifier').
-    zkProof.publicSignals = [nullifier];
+    zkProof.publicSignals = [nullifier.toString()]
     // alternatively:
     // zkProof.publicSignals[0] = zkProof.publicSignals[3];
 
@@ -218,37 +218,37 @@ export async function checkVoteResults(processId: string, processParams: Process
   switch (config.votesPattern) {
     case "all-0":
       assert(rawResults.results[0].length >= 2)
-      assert.strictEqual(rawResults.results[0][0], config.numAccounts)
-      assert.strictEqual(rawResults.results[0][1], 0)
+      assert.strictEqual(+rawResults.results[0][0], config.numAccounts)
+      assert.strictEqual(+rawResults.results[0][1], 0)
       break
     case "all-1":
       assert(rawResults.results[0].length >= 2)
-      assert.strictEqual(rawResults.results[0][0], 0)
-      assert.strictEqual(rawResults.results[0][1], config.numAccounts)
+      assert.strictEqual(+rawResults.results[0][0], 0)
+      assert.strictEqual(+rawResults.results[0][1], config.numAccounts)
       break
     case "all-2":
       assert(rawResults.results[0].length >= 3)
-      assert.strictEqual(rawResults.results[0][0], 0)
-      assert.strictEqual(rawResults.results[0][1], 0)
-      assert.strictEqual(rawResults.results[0][2], config.numAccounts)
+      assert.strictEqual(+rawResults.results[0][0], 0)
+      assert.strictEqual(+rawResults.results[0][1], 0)
+      assert.strictEqual(+rawResults.results[0][2], config.numAccounts)
       break
     case "all-even":
       assert(rawResults.results[0].length >= 2)
       if (config.numAccounts % 2 == 0) {
-        assert.strictEqual(rawResults.results[0][0], config.numAccounts / 2)
-        assert.strictEqual(rawResults.results[0][1], config.numAccounts / 2)
+        assert.strictEqual(+rawResults.results[0][0], config.numAccounts / 2)
+        assert.strictEqual(+rawResults.results[0][1], config.numAccounts / 2)
       }
       else {
-        assert.strictEqual(rawResults.results[0][0], Math.ceil(config.numAccounts / 2))
-        assert.strictEqual(rawResults.results[0][1], Math.floor(config.numAccounts / 2))
+        assert.strictEqual(+rawResults.results[0][0], Math.ceil(config.numAccounts / 2))
+        assert.strictEqual(+rawResults.results[0][1], Math.floor(config.numAccounts / 2))
       }
       break
     case "incremental":
-      assert.strictEqual(rawResults.results[0].length, 2)
+      assert.strictEqual(+rawResults.results[0].length, 2)
       rawResults.results.forEach((question, i) => {
         for (let j = 0; j < question.length; j++) {
-          if (i == j) assert.strictEqual(question[j], config.numAccounts)
-          else assert.strictEqual(question[j], 0)
+          if (i == j) assert.strictEqual(+question[j], config.numAccounts)
+          else assert.strictEqual(+question[j], 0)
         }
       })
       break

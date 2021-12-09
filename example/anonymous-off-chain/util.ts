@@ -33,7 +33,7 @@ export async function waitUntilStarted(processId: string, startBlock: number, gw
     console.log("Waiting for the process to be ready")
     const state = await VotingApi.getProcessState(processId, gwPool)
 
-    assert.strictEqual(state.status, ProcessStatus.READY, "Should be ready but is not")
+    // assert.strictEqual(state.status, ProcessStatus.READY, "Should be ready but is not")
 }
 
 export function getChoicesForVoter(questionCount: number, voterIdx: number) {
