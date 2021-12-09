@@ -1,7 +1,7 @@
 import { IGatewayClient } from "@vocdoni/client"
+import { VochainProcessStatus } from "@vocdoni/data-models"
 import { VochainWaiter, VotingApi } from "@vocdoni/voting"
 import * as assert from "assert"
-import { ProcessStatus } from "dvote-solidity"
 import { getConfig } from "./config"
 
 const config = getConfig()
@@ -33,7 +33,7 @@ export async function waitUntilStarted(processId: string, startBlock: number, gw
     console.log("Waiting for the process to be ready")
     const state = await VotingApi.getProcessState(processId, gwPool)
 
-    // assert.strictEqual(state.status, ProcessStatus.READY, "Should be ready but is not")
+    assert.strictEqual(state.status, VochainProcessStatus.READY, "Should be ready but is not")
 }
 
 export function getChoicesForVoter(questionCount: number, voterIdx: number) {
