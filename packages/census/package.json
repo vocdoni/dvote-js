@@ -37,6 +37,7 @@
     "blindsecp256k1": "^0.0.6",
     "buffer": "^6.0.3",
     "ethers": "^5.4.1",
+    "snarkjs": "^0.4.10",
     "universal-parse-url": "^1.0.2"
   },
   "devDependencies": {

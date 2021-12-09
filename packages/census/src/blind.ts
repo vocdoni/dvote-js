@@ -11,6 +11,7 @@ import {
     verify as _verify
 } from "blindsecp256k1"
 import { hexZeroPad } from "@ethersproject/bytes"
+import { ensure0x } from "@vocdoni/common"
 
 export namespace CensusBlind {
     /** Decodes the given hex-encoded point */
@@ -23,7 +24,7 @@ export namespace CensusBlind {
         const msg = BigInteger.fromHex(hexMessage)
         const { mBlinded, userSecretData } = _blind(msg, signerR)
 
-        return { hexBlinded: hexZeroPad("0x" + mBlinded.toString(16), 32).slice(2), userSecretData }
+        return { hexBlinded: hexZeroPad(ensure0x(mBlinded.toString(16)), 32).slice(2), userSecretData }
     }
 
     /** Unblinds the given blinded signature and returns it as a hex string */

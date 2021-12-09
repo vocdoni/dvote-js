@@ -1,27 +1,25 @@
+readExistingAccounts: false       # if set, will use the wallets from the JSON file instead of creating them
 readExistingProcess: false        # if set, will read the voteMetadata from the JSON instead of creating a new one
 stopOnError: false
 
+accountListFilePath: "./cached-accounts.json"
 processInfoFilePath: "./cached-process-info.json"
 
+mnemonic: ""                     # The mnemonic of the entity
+ethPath: "m/44'/60'/0'/0/1"
 ethNetworkId: "rinkeby"
-vocdoniEnvironment: "dev"
-tokenAddress: "0x2b7222146a805bba0dbb61869c4b3a03209dffba"
-tokenBalanceMappingPosition: 2
-privKeys:
-- "0x...."
-- "0x...."
-- "0x...."
-- "0x...."
-- "0x...."
 
+vocdoniEnvironment: "dev" # "stg" or "prod"
 bootnodesUrlRw: "https://server/gateways.json"     # Bootnode used by default
 dvoteGatewayUri:                                   # If set, overrides bootnodesUrlRw
 dvoteGatewayPublicKey:                             # If set, overrides bootnodesUrlRw
-web3Uri:
+
+numAccounts: 1000
+maxConcurrency: 450
 
 encryptedVote: true
 votesPattern: "all-0"   #  Vote the first option on all questions
 #votesPattern: "all-1"  #  Vote the second option on all questions
 #votesPattern: "all-2"  #  Vote the third option on all questions
 #votesPattern: "all-even"      #  Vote 0 on even voters and 1 on odd voters
-#votesPattern: "incremental"   #  Vote 0 on question 0, 1 on question 1, 2 on question 2, etc
+#votesPattern: "incremental"   #  Vote 0 on question 0, 1 on question 1, 2 on question 2, etc 

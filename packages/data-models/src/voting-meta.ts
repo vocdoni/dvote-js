@@ -1,24 +1,11 @@
-// This file provides:
-// - Typescript type definitions for ProcessMetadata objects
-// - Metadata JSON validation checker
-// - A metadata JSON template
-// - Enum's for vote envelopes
-
-import {
-    // HexString,
-    MultiLanguage,
-    ContentUriString,
-} from "@vocdoni/common"
+import { MultiLanguage, ContentUriString } from "@vocdoni/common"
 import { object, array, string, number } from "yup"
 import { by639_1 } from 'iso-language-codes'
-import { IProcessCreateParams } from "@vocdoni/contract-wrappers"
-import { BigNumber } from "@ethersproject/bignumber"
-import { ProofCA_Type } from "./protobuf"
 
 export { ProcessMetadataTemplate } from "./templates/process"
 
 ///////////////////////////////////////////////////////////////////////////////
-// VALIDATION
+// DATA VALIDATION
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
@@ -120,46 +107,3 @@ export interface ProcessMetadata {
         display: ProcessResultsDisplay
     }
 }
-
-export type INewProcessParams = Omit<Omit<IProcessCreateParams, "metadata">, "questionCount"> & { metadata: ProcessMetadata }
-export type INewProcessErc20Params = Omit<Omit<INewProcessParams, "censusRoot">, "censusOrigin">
-
-// Single choice
-export interface ProcessResultsSingleChoice {
-    totalVotes: number,
-    questions: SingleChoiceQuestionResults[],
-}
-
-export interface SingleChoiceQuestionResults {
-    title: MultiLanguage<string>,
-    voteResults: Array<{
-        title: MultiLanguage<string>,
-        votes: BigNumber,
-    }>,
-}
-
-// Multiple choice
-export interface ProcessResultsSingleQuestion {
-    totalVotes: number,
-    title: MultiLanguage<string>,
-    options: Array<{
-        title: MultiLanguage<string>,
-        votes: BigNumber
-    }>
-}
-
-// Envelope and proofs
-
-export type IProofArbo = string
-export type IProofCA = { type: number, voterAddress: string, signature: string }
-export type IProofEVM = { key: string, proof: string[], value: string }
-
-type IProofCaSignatureType = {
-    UNKNOWN: number,
-    ECDSA: number,
-    ECDSA_PIDSALTED: number,
-    ECDSA_BLIND: number,
-    ECDSA_BLIND_PIDSALTED: number
-}
-const ProofCaSignatureTypes = ProofCA_Type as IProofCaSignatureType
-export { ProofCaSignatureTypes }

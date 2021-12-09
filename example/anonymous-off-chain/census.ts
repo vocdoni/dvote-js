@@ -10,8 +10,10 @@ export type TestAccount = {
     idx: number,
     mnemonic: string
     privateKey: string
-    publicKey: string
+    // publicKey: string
     publicKeyEncoded: string
+    /** Snark friendly secret key */
+    secretKey: bigint
 }
 
 export function createWallets(amount: number) {
@@ -24,7 +26,7 @@ export function createWallets(amount: number) {
             idx: i,
             mnemonic: wallet.mnemonic.phrase,
             privateKey: wallet.privateKey,
-            publicKey: utils.computePublicKey(wallet.publicKey, true),
+            // publicKey: utils.computePublicKey(wallet.publicKey, true),
             publicKeyEncoded: CensusOffChain.Public.encodePublicKey(wallet.publicKey)
             // address: wallet.address
         })

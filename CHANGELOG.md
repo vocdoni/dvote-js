@@ -1,5 +1,16 @@
 # DVote JS changelog
 
+- Adding support for Anonymous voting, using ZK Snarks
+- `Census.addClaim`, `Census.addClaimBulk` and `Census.registerVoterKey` now don't receive the `isDigested` parameter.
+- `generateProof` now returns the siblings and the weight
+- `IProofArbo`, `IProofCA` and `IProofEVM` now require a `weight` bigint
+- Adding `VotingApi.registerVotingKey`
+- Implementing `Voting.packageAnonymousEnvelope`
+- Adding `Voting.getAnonymousVoteNullifier()`
+- [Breaking]
+    - `VotingApi.getProcessId`,  `VotingApi.packageAnonymousEnvelope`, `VotingApi.packageVoteContent`, `VotingApi.packageSignedProof` and `VotingApi.getSignedVoteNullifier` are moved from `VotingApi` to the `Voting` namespace
+- `CAbundleprotobuf` is now exported from `@vocdoni/data-models` as `CAbundle`
+
 ## 1.14.0
 
 - Major internal refactor. The codebase is now structured in independent packages.

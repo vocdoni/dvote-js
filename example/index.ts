@@ -8,12 +8,12 @@ config({ path: __dirname + "/.env" })
 import * as fs from "fs"
 import { utils, providers, Wallet } from "ethers"
 import { FileApi } from "@vocdoni/client"
-import { EntityApi, VotingApi } from "@vocdoni/voting"
+import { EntityApi, VotingApi, Voting } from "@vocdoni/voting"
 import { CensusOffChainApi, CensusOffChain } from "@vocdoni/census"
 import { ProcessContractParameters } from "@vocdoni/contract-wrappers"
 import { Gateway } from "@vocdoni/client"
-import { DVoteGateway } from "@vocdoni/client"
-import { Web3Gateway } from "@vocdoni/client"
+// import { DVoteGateway } from "@vocdoni/client"
+// import { Web3Gateway } from "@vocdoni/client"
 import { GatewayPool } from "@vocdoni/client"
 import { GatewayBootnode } from "@vocdoni/client"
 import { GatewayInfo } from "@vocdoni/client"
@@ -246,11 +246,11 @@ async function censusMethods() {
 
     // Add a claim to the new census
     const censusId = result1.censusId
-    let result2 = await CensusOffChainApi.addClaim(censusId, publicKeyClaims[0], false, wallet, pool)
+    let result2 = await CensusOffChainApi.addClaim(censusId, publicKeyClaims[0], wallet, pool)
     console.log("ADDED", publicKeyClaims[0], "TO", censusId)
 
     // Add claims to the new census
-    let result3 = await CensusOffChainApi.addClaimBulk(censusId, publicKeyClaims.slice(1), false, wallet, pool)
+    let result3 = await CensusOffChainApi.addClaimBulk(censusId, publicKeyClaims.slice(1), wallet, pool)
     console.log("ADDED", publicKeyClaims.slice(1), "TO", censusId)
     if (result3.invalidClaims.length > 0) console.log("INVALID CLAIMS", result3.invalidClaims)
 
@@ -288,10 +288,8 @@ async function createProcessRaw() {
     console.log("process-metadata.json\nDATA STORED ON:", origin)
 
     const metaCuri = new ContentHashedUri(origin)
-    metaCuri.setHashFrom(strData)
 
     const censusCuri = new ContentHashedUri("http://localhost/")
-    censusCuri.setHashFrom("")
 
     console.log("Creating process with parameters:", metaCuri.toString(), "0x0", censusCuri.toString())
 
@@ -445,7 +443,10 @@ async function showProcessResults() {
 
     const processId = "0x75599e74bcbf7f3ad16ac8a256861ca36e9d1338726ac2612e1b5e259e7c025e"
 
-    console.log("getResults", JSON.stringify(await VotingApi.getResults(processId, pool), null, 2))
+    const results = await VotingApi.getResults(processId, pool)
+    const digestedResults = Voting.digestSingleChoiceResults(results, ProcessMetadataTemplate)
+    console.log("Raw results", results)
+    console.log("Digested results", digestedResults)
     console.log("getResultsWeight", await VotingApi.getResultsWeight(processId, pool))
 }
 
@@ -505,13 +506,13 @@ async function useVoteApi() {
     const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL_RW })
     await pool.init()
 
-    const entityMeta = await EntityApi.getMetadata(myEntityAddress, pool)
-    console.log("- Entity:", entityMeta)
+    // const entityMeta = await EntityApi.getMetadata(myEntityAddress, pool)
+    const readyProcessList = await VotingApi.getProcessList({ entityId: myEntityAddress, status: ProcessStatus.READY }, pool)
+    console.log("- Active processes:", readyProcessList)
 
-    const processId = "0xf36b729d6226b8257922a60cea6ab80e47686c3f86edbd0749b1c3291e2651ed"
-    // const processId = "0x55b6f0b5180c918d8e815e5a6e7b093caf3c496bd104a177d90bd81bfe1bd312"
+    const processId = readyProcessList[readyProcessList.length - 1]
     const processParams = await VotingApi.getProcessContractParameters(processId, pool)
-    // const processMeta = await VotingApi.getProcessMetadata(processId, pool)
+    const processMeta = await VotingApi.getProcessMetadata(processId, pool)
 
     const censusRoot = processParams.censusRoot
 
@@ -538,10 +539,10 @@ async function useVoteApi() {
     const votes = [1, 2, 1]
 
     // Open vote version:
-    const envelope = await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet })
+    const envelope = await Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet })
 
     // Encrypted vote version:
-    // const voteEnvelope = await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
+    // const voteEnvelope = Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
 
     console.log("- Poll Envelope:", envelope)
 
@@ -553,7 +554,11 @@ async function useVoteApi() {
     if (envelopeList.length > 0)
         console.log("- Retrieved Vote:", await VotingApi.getEnvelope(envelopeList[envelopeList.length - 1].nullifier, pool))
 
-    console.log("getResults", JSON.stringify(await VotingApi.getResults(processId, pool), null, 2))
+    const results = await VotingApi.getResults(processId, pool)
+    const digestedResults = Voting.digestSingleChoiceResults(results, processMeta)
+    console.log("Raw results", results)
+    console.log("Digested results", digestedResults)
+    console.log("getResultsWeight", await VotingApi.getResultsWeight(processId, pool))
 }
 
 async function submitVoteBatch() {
@@ -593,9 +598,9 @@ async function submitVoteBatch() {
             const publicKeyDigest = CensusOffChain.Public.encodePublicKey(wallet.publicKey)
             const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: publicKeyDigest }, true, pool)
             const votes = [1]
-            const envelope = await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet })
+            const envelope = Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet })
             // Encrypted version:
-            // const voteEnvelope = await VotingApi.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
+            // const voteEnvelope = Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
 
             console.log("- Submitting vote envelope")
             await VotingApi.submitEnvelope(envelope, wallet, pool)

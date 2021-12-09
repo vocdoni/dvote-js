@@ -5,15 +5,12 @@
 
 import {
     MultiLanguage,
+    ContentUriString,
     URI
 } from "@vocdoni/common"
 import { object, array, string } from "yup"
 import { by639_1 } from 'iso-language-codes'
 export { EntityMetadataTemplate } from "./templates/entity"
-
-// LOCAL TYPE ALIASES
-type ContentUriString = string
-type ContentHashedUriString = string
 
 ///////////////////////////////////////////////////////////////////////////////
 // VALIDATION

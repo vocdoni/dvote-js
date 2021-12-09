@@ -8,7 +8,7 @@ export namespace CensusOffChain {
      * This function returns the full Census ID
      */
     export function generateCensusId(censusName: string, entityAddress: string) {
-        const prefix = "0x" + entityAddress.toLowerCase().substr(2)
+        const prefix = entityAddress.toLowerCase()
         const suffix = generateCensusIdSuffix(censusName)
         return prefix + "/" + suffix
     }
