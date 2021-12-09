@@ -96,7 +96,7 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Anonymous E3E (off-chain census)",
+            "name": "Anonymous E2E (off-chain census)",
             "runtimeArgs": [
                 "--nolazy",
                 "-r",
