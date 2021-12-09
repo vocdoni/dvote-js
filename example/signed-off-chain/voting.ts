@@ -11,7 +11,7 @@ import {
 } from "@vocdoni/contract-wrappers"
 import { getConfig } from "./config"
 import { TestAccount } from "./census"
-import { getChoicesForVoter } from "./util"
+import { getChoicesForVoter, waitUntilPresent } from "./util"
 import { CensusOffChainApi } from "@vocdoni/census"
 import { Wallet } from "@ethersproject/wallet"
 import { IGatewayClient } from "@vocdoni/client"
@@ -48,7 +48,7 @@ export async function launchNewVote(censusRoot: string, censusUri: string, entit
 
   const processParamsPre: INewProcessParams = {
     mode: ProcessMode.make({ autoStart: true, interruptible: true }), // helper
-    envelopeType: ProcessEnvelopeType.ENCRYPTED_VOTES, // bit mask
+    envelopeType: ProcessEnvelopeType.make({ encryptedVotes: false }),
     censusOrigin: ProcessCensusOrigin.OFF_CHAIN_TREE,
     metadata: processMetadataPre,
     censusRoot,
@@ -66,6 +66,9 @@ export async function launchNewVote(censusRoot: string, censusUri: string, entit
   console.log("Creating the process")
   const processId = await VotingApi.newProcess(processParamsPre, entityWallet, gwPool)
   assert(processId)
+
+  // Waiting a bit
+  await waitUntilPresent(processId, gwPool)
 
   // Reading back
   const processParams = await VotingApi.getProcessContractParameters(processId, gwPool)
@@ -90,7 +93,7 @@ export async function submitVotes(processId: string, processParams: ProcessContr
     // VOTER
     const wallet = new Wallet(account.privateKey)
 
-    const censusProof = await CensusOffChainApi.generateProof(processParams.censusRoot, { key: account.publicKeyEncoded }, true, gwPool)
+    const censusProof = await CensusOffChainApi.generateProof(processParams.censusRoot, { key: account.publicKeyEncoded }, gwPool)
 
     const choices = getChoicesForVoter(processMetadata.questions.length, idx)
 
@@ -149,37 +152,37 @@ export async function checkVoteResults(processId: string, processParams: Process
   switch (config.votesPattern) {
     case "all-0":
       assert(rawResults.results[0].length >= 2)
-      assert.strictEqual(rawResults.results[0][0], config.numAccounts + "000000000000000000")
+      assert.strictEqual(rawResults.results[0][0], config.numAccounts.toString())
       assert.strictEqual(rawResults.results[0][1], "0")
       break
     case "all-1":
       assert(rawResults.results[0].length >= 2)
       assert.strictEqual(rawResults.results[0][0], "0")
-      assert.strictEqual(rawResults.results[0][1], config.numAccounts + "000000000000000000")
+      assert.strictEqual(rawResults.results[0][1], config.numAccounts.toString())
       break
     case "all-2":
       assert(rawResults.results[0].length >= 3)
       assert.strictEqual(rawResults.results[0][0], "0")
       assert.strictEqual(rawResults.results[0][1], "0")
-      assert.strictEqual(rawResults.results[0][2], config.numAccounts + "000000000000000000")
+      assert.strictEqual(rawResults.results[0][2], config.numAccounts.toString())
       break
     case "all-even":
       assert(rawResults.results[0].length >= 2)
       if (config.numAccounts % 2 == 0) {
-        assert.strictEqual(rawResults.results[0][0], (config.numAccounts / 2) + "000000000000000000")
-        assert.strictEqual(rawResults.results[0][1], (config.numAccounts / 2) + "000000000000000000")
+        assert.strictEqual(rawResults.results[0][0], (config.numAccounts / 2).toString())
+        assert.strictEqual(rawResults.results[0][1], (config.numAccounts / 2).toString())
       }
       else {
-        assert.strictEqual(rawResults.results[0][0], Math.ceil((config.numAccounts / 2)) + "000000000000000000")
-        assert.strictEqual(rawResults.results[0][1], Math.floor((config.numAccounts / 2)) + "000000000000000000")
+        assert.strictEqual(rawResults.results[0][0], Math.ceil((config.numAccounts / 2)).toString())
+        assert.strictEqual(rawResults.results[0][1], Math.floor((config.numAccounts / 2)).toString())
       }
       break
     case "incremental":
       assert.strictEqual(rawResults.results[0].length, 2)
       rawResults.results.forEach((question, i) => {
         for (let j = 0; j < question.length; j++) {
-          if (i == j) assert.strictEqual(question[j], config.numAccounts)
-          else assert.strictEqual(question[j], 0)
+          if (i == j) assert.strictEqual(question[j], config.numAccounts.toString())
+          else assert.strictEqual(question[j], "0")
         }
       })
       break

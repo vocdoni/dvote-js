@@ -14,7 +14,7 @@ import { CensusBlind } from "@vocdoni/census"
 import { hexlify } from "@ethersproject/bytes"
 import { keccak256 } from "@ethersproject/keccak256"
 import { getConfig } from "./config"
-import { getChoicesForVoter } from "./util"
+import { getChoicesForVoter, waitUntilPresent } from "./util"
 import { Wallet } from "@ethersproject/wallet"
 import { IGatewayClient } from "@vocdoni/client"
 import { hexStringToBuffer, Random } from "@vocdoni/common"
@@ -69,6 +69,8 @@ export async function launchNewVote(cspPublicKey: string, cspUri: string, entity
   console.log("Creating the process")
   const processId = await VotingApi.newProcess(processParamsPre, entityWallet, gwPool)
   assert(processId)
+
+  await waitUntilPresent(processId, gwPool)
 
   // Reading back
   const processParams = await VotingApi.getProcessContractParameters(processId, gwPool)
@@ -201,37 +203,37 @@ export async function checkVoteResults(processId: string, processParams: Process
   switch (config.votesPattern) {
     case "all-0":
       assert(rawResults.results[0].length >= 2)
-      assert.strictEqual(rawResults.results[0][0], config.numAccounts + "000000000000000000")
+      assert.strictEqual(rawResults.results[0][0], config.numAccounts.toString())
       assert.strictEqual(rawResults.results[0][1], "0")
       break
     case "all-1":
       assert(rawResults.results[0].length >= 2)
       assert.strictEqual(rawResults.results[0][0], "0")
-      assert.strictEqual(rawResults.results[0][1], config.numAccounts + "000000000000000000")
+      assert.strictEqual(rawResults.results[0][1], config.numAccounts.toString())
       break
     case "all-2":
       assert(rawResults.results[0].length >= 3)
       assert.strictEqual(rawResults.results[0][0], "0")
       assert.strictEqual(rawResults.results[0][1], "0")
-      assert.strictEqual(rawResults.results[0][2], config.numAccounts + "000000000000000000")
+      assert.strictEqual(rawResults.results[0][2], config.numAccounts.toString())
       break
     case "all-even":
       assert(rawResults.results[0].length >= 2)
       if (config.numAccounts % 2 == 0) {
-        assert.strictEqual(rawResults.results[0][0], (config.numAccounts / 2) + "000000000000000000")
-        assert.strictEqual(rawResults.results[0][1], (config.numAccounts / 2) + "000000000000000000")
+        assert.strictEqual(rawResults.results[0][0], (config.numAccounts / 2).toString())
+        assert.strictEqual(rawResults.results[0][1], (config.numAccounts / 2).toString())
       }
       else {
-        assert.strictEqual(rawResults.results[0][0], Math.ceil((config.numAccounts / 2)) + "000000000000000000")
-        assert.strictEqual(rawResults.results[0][1], Math.floor((config.numAccounts / 2)) + "000000000000000000")
+        assert.strictEqual(rawResults.results[0][0], Math.ceil((config.numAccounts / 2)).toString())
+        assert.strictEqual(rawResults.results[0][1], Math.floor((config.numAccounts / 2)).toString())
       }
       break
     case "incremental":
       assert.strictEqual(rawResults.results[0].length, 2)
       rawResults.results.forEach((question, i) => {
         for (let j = 0; j < question.length; j++) {
-          if (i == j) assert.strictEqual(question[j], config.numAccounts)
-          else assert.strictEqual(question[j], 0)
+          if (i == j) assert.strictEqual(question[j], config.numAccounts.toString())
+          else assert.strictEqual(question[j], "0")
         }
       })
       break
