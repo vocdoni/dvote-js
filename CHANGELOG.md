@@ -1,5 +1,7 @@
 # DVote JS changelog
 
+## 1.15.0
+
 - Adding support for Anonymous voting, using ZK Snarks
 - `Census.addClaim`, `Census.addClaimBulk` and `Census.registerVoterKey` now don't receive the `isDigested` parameter.
 - `generateProof` now returns the siblings and the weight
