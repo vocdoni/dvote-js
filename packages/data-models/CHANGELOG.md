@@ -1,5 +1,9 @@
 # @vocdoni/data-models - Changelog
 
+## 1.15.0
+
+- Adding support for anonymous voting (zkSnarks)
+
 ## 1.14.2
 
 - Moving the gateway API definitions to the client package

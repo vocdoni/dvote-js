@@ -1,5 +1,11 @@
 # @vocdoni/census - Changelog
 
+## 1.15.0
+
+- Adding support for Anonymous voting (zkSnarks)
+  - `CensusOnChainApi.registerVoterKey`, `CensusOnChainApi.generateProof`
+- Breaking: all census keys are assumed to be undigested
+
 ## 1.14.1
 
 - Moving `registerVoterKey` to `CensusOnChainApi.registerVoterKey`

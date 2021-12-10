@@ -1,5 +1,9 @@
 # @vocdoni/wallets - Changelog
 
+## 1.15.0
+
+- Allowing to create random BabyJubJub wallets
+
 ## 1.14.1
 
 - Removed `ethers` dependency and added minor ones from `@ethersproject`

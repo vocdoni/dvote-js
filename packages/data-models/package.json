@@ -1,6 +1,6 @@
 {
   "name": "@vocdoni/data-models",
-  "version": "1.14.2",
+  "version": "1.15.0",
   "description": "Javascript/Typescript models package",
   "main": "dist/index",
   "types": "dist/index",
@@ -22,8 +22,8 @@
   },
   "dependencies": {
     "@ethersproject/bignumber": "^5.5.0",
-    "@vocdoni/common": "^1.14.0",
-    "@vocdoni/contract-wrappers": "^1.14.0",
+    "@vocdoni/common": "^1.15.0",
+    "@vocdoni/contract-wrappers": "^1.15.0",
     "@vocdoni/encryption": "^1.14.0",
     "buffer": "^6.0.3",
     "iso-language-codes": "^1.0.6",

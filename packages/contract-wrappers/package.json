@@ -1,6 +1,6 @@
 {
   "name": "@vocdoni/contract-wrappers",
-  "version": "1.14.1",
+  "version": "1.15.0",
   "description": "Javascript/Typescript contract wrappers package",
   "main": "dist/index",
   "types": "dist/index",

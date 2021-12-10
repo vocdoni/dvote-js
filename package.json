@@ -1,6 +1,6 @@
 {
   "name": "dvote-js",
-  "version": "1.14.0",
+  "version": "1.15.0",
   "description": "Javascript/Typescript library to interact with Vocdoni voting processes",
   "main": "dist/index",
   "types": "dist/index",
@@ -18,16 +18,16 @@
     "postinstall": "./scripts/post-install.sh"
   },
   "dependencies": {
-    "@vocdoni/census": "^1.14.1",
-    "@vocdoni/client": "^1.14.2",
-    "@vocdoni/common": "^1.14.1",
-    "@vocdoni/contract-wrappers": "^1.14.1",
-    "@vocdoni/data-models": "^1.14.2",
-    "@vocdoni/encryption": "^1.14.0",
-    "@vocdoni/hashing": "^1.14.0",
+    "@vocdoni/census": "^1.15.0",
+    "@vocdoni/client": "^1.15.0",
+    "@vocdoni/common": "^1.15.0",
+    "@vocdoni/contract-wrappers": "^1.15.0",
+    "@vocdoni/data-models": "^1.15.0",
+    "@vocdoni/encryption": "^1.14.1",
+    "@vocdoni/hashing": "^1.15.0",
     "@vocdoni/signing": "^1.14.0",
-    "@vocdoni/voting": "^1.14.0",
-    "@vocdoni/wallets": "^1.14.0"
+    "@vocdoni/voting": "^1.15.1",
+    "@vocdoni/wallets": "^1.15.0"
   },
   "devDependencies": {
     "@types/node": "^16.11.11",

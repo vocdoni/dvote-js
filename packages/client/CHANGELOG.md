@@ -1,5 +1,10 @@
 # @vocdoni/client - Changelog
 
+## 1.15.0
+
+- Supporting anonymous voting (registerVoterKey added)
+- Allowing to verify content hashed URI's
+
 ## 1.14.2
 
 - Adding `Erc20TokensApi.isRegistered`, `Erc20TokensApi.getTokenAddressAt` and `Erc20TokensApi.getTokenCount`

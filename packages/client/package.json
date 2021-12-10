@@ -1,6 +1,6 @@
 {
   "name": "@vocdoni/client",
-  "version": "1.14.2",
+  "version": "1.15.0",
   "description": "Javascript/Typescript client package",
   "main": "dist/index",
   "types": "dist/index",
@@ -26,8 +26,8 @@
     "@ethersproject/contracts": "^5.5.0",
     "@ethersproject/keccak256": "^5.5.0",
     "@ethersproject/providers": "^5.5.0",
-    "@vocdoni/common": "^1.14.1",
-    "@vocdoni/data-models": "^1.14.2",
+    "@vocdoni/common": "^1.15.0",
+    "@vocdoni/data-models": "^1.15.0",
     "@vocdoni/signing": "^1.14.0",
     "axios": "^0.24.0",
     "buffer": "^6.0.3",

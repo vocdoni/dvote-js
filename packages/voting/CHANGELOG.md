@@ -1,5 +1,10 @@
 # @vocdoni/voting - Changelog
 
+## 1.15.0
+
+- Allowing to compute ZK Proofs for anonymous voting
+- Splitting remote/local methods into `VotingApi.xxx` and `Voting.xxx`
+
 ## 1.14.0
 
 - First version of the package, starting from dvote-js version 1.13.2

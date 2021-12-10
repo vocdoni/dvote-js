@@ -1,5 +1,9 @@
 # @vocdoni/contract-wrappers - Changelog
 
+## 1.15.0
+
+- Upgrading dvote-solidity
+
 ## 1.14.1
 
 - Added `@ethersproject/contracts` dependency

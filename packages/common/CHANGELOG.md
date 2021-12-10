@@ -1,5 +1,9 @@
 # @vocdoni/common - Changelog
 
+## 1.15.0
+
+- Adding support for Little Endian bigint buffer encoding and decoding
+
 ## 1.14.1
 
 - Moving `IPFS_GATEWAY_LIST_URI` to the client package
