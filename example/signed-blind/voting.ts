@@ -150,8 +150,8 @@ export async function submitVotes(processId: string, processParams: ProcessContr
 
     // Package the proof + votes
     const envelope = processParams.envelopeType.hasEncryptedVotes ?
-      Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof: proof, processId, walletOrSigner: wallet, processKeys }) :
-      Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof: proof, processId, walletOrSigner: wallet })
+      Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof: proof, processId, processKeys }) :
+      Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes: choices, censusProof: proof, processId })
 
     await VotingApi.submitEnvelope(envelope, wallet, gwPool)
 

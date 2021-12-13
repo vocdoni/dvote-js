@@ -19,7 +19,6 @@ export type SignedEnvelopeParams = {
     censusOrigin: number | ProcessCensusOrigin,
     votes: VoteValues,
     processId: string,
-    walletOrSigner: Wallet | Signer,
     censusProof: IProofArbo | IProofCA | IProofEVM,
     processKeys?: ProcessKeys,
     /** hex string */

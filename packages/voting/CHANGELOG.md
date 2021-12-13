@@ -1,5 +1,10 @@
 # @vocdoni/voting - Changelog
 
+## 1.15.2
+
+- Removing the unneeded `walletOrSigner` parameter from `packageSignedEnvelope`
+
+## 1.15.1
 ## 1.15.0
 
 - Allowing to compute ZK Proofs for anonymous voting
