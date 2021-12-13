@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.15.1
+
+- Removing the unneeded `walletOrSigner` parameter from `Voting.packageSignedEnvelope`
+
 ## 1.15.0
 
 - Adding support for Anonymous voting, using ZK Snarks
