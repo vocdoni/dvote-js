@@ -15,7 +15,7 @@ import { Buffer } from "buffer/"  // Previously using "arraybuffer-to-string"
 import { Asymmetric } from "../crypto/encryption"
 import { VochainWaiter } from "../util/waiters"
 import { Random } from "../util/random"
-import { IMethodOverrides, ProcessContractParameters, ProcessStatus, IProcessStatus, ProcessCensusOrigin, IProcessCensusOrigin } from "../net/contracts"
+import { IMethodOverrides, ProcessContractParameters, IProcessStatus, ProcessCensusOrigin, IProcessCensusOrigin } from "../net/contracts"
 import {
     Tx, SignedTx,
     VoteEnvelope,
@@ -1022,7 +1022,7 @@ export namespace VotingApi {
     }
 
     // Results
-    export type RawResults = { results: string[][], status: ProcessStatus, envelopHeight: number }
+    export type RawResults = { results: string[][], status: VochainProcessStatus, envelopHeight: number }
 
     function fetchRawResults(processId: string, gateway: IGatewayClient, params: { skipArchive?: boolean } = {}): Promise<RawResults> {
         if (!processId)
@@ -1063,14 +1063,14 @@ export namespace VotingApi {
         processId = processId.startsWith("0x") ? processId : "0x" + processId
         const emptyResults = {
             results: [[]] as string[][],
-            status: new ProcessStatus(ProcessStatus.READY),
+            status: VochainProcessStatus.READY,
             envelopHeight: 0
         }
 
         try {
             const processState = await getProcessState(processId, gateway)
-            if (processState.status == ProcessStatus.CANCELED) {
-                emptyResults.status = new ProcessStatus(ProcessStatus.CANCELED)
+            if (processState.status == VochainProcessStatus.CANCELED) {
+                emptyResults.status = VochainProcessStatus.CANCELED
                 return emptyResults
             }
 
@@ -1080,11 +1080,11 @@ export namespace VotingApi {
             if (processState.envelopeType.encryptedVotes) {
                 if (currentBlock < processState.startBlock) return emptyResults // not started
                 else if (processState.processMode["interruptible"]) {
-                    if (processState.status !== ProcessStatus.RESULTS &&
-                        processState.status !== ProcessStatus.ENDED &&
+                    if (processState.status !== VochainProcessStatus.RESULTS &&
+                        processState.status !== VochainProcessStatus.ENDED &&
                         (currentBlock < processState.endBlock)) return emptyResults // not ended
                 } else {
-                    if (processState.status !== ProcessStatus.RESULTS &&
+                    if (processState.status !== VochainProcessStatus.RESULTS &&
                         (currentBlock < processState.endBlock)) return emptyResults // not ended
                 }
 
@@ -1296,7 +1296,7 @@ export namespace VotingApi {
 
             const gProof = ProofGraviton.fromPartial({
                 siblings: censusProof?.siblings,
-                value:  censusProof?.censusValue
+                value: censusProof?.censusValue
             })
             proof.payload = { $case: "graviton", graviton: gProof }
         }
