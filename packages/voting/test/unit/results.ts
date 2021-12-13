@@ -2,9 +2,8 @@ import "mocha" // using @types/mocha
 import { expect } from "chai"
 import { addCompletionHooks } from "../mocha-hooks"
 
-import { ProcessMetadata, ProcessMetadataTemplate } from "@vocdoni/data-models"
+import { ProcessMetadata, ProcessMetadataTemplate, VochainProcessStatus } from "@vocdoni/data-models"
 import { RawResults, Voting } from "../../src"
-import { ProcessStatus } from "dvote-solidity" // TODO review this import directly from dvote-solidity
 
 addCompletionHooks()
 
@@ -21,7 +20,7 @@ describe("Results", () => {
     ]
     const rawResults: RawResults = {
       results: [["10", "20", "30"]],
-      status: new ProcessStatus(0),
+      status: VochainProcessStatus.READY,
       envelopHeight: 1234
     }
 
@@ -51,7 +50,7 @@ describe("Results", () => {
     ]
     const rawResults2: RawResults = {
       results: [["100", "200", "300"], ["400", "500", "600"]],
-      status: new ProcessStatus(0),
+      status: VochainProcessStatus.READY,
       envelopHeight: 2345
     }
 
@@ -86,7 +85,7 @@ describe("Results", () => {
     ]
     const rawResults: RawResults = {
       results: [["0", "0", "3"], ["0", "10", "0"]],
-      status: new ProcessStatus(0),
+      status: VochainProcessStatus.READY,
       envelopHeight: 1234
     }
 
@@ -115,7 +114,7 @@ describe("Results", () => {
     ]
     const rawResults2: RawResults = {
       results: [["3", "0", "0"], ["2", "1", "0"], ["0", "0", "3"], ["0", "0", "1000000000000000000000000000000000"]],
-      status: new ProcessStatus(0),
+      status: VochainProcessStatus.READY,
       envelopHeight: 2345
     }
 
@@ -148,7 +147,7 @@ describe("Results", () => {
     ]
     const rawResults3: RawResults = {
       results: [["3", "0", "0", "10"], ["10000000", "1000000000000000000000000000000000", "0", "0"], ["0", "0", "5000000000000000000000000000000000"], ["5000", "0", "0", "1"]],
-      status: new ProcessStatus(0),
+      status: VochainProcessStatus.READY,
       envelopHeight: 3456
     }
 

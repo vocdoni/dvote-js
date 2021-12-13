@@ -1,5 +1,9 @@
 # @vocdoni/voting - Changelog
 
+## 1.15.3
+
+- Fixing the double source of truth problem with the process status
+
 ## 1.15.2
 
 - Removing the unneeded `walletOrSigner` parameter from `packageSignedEnvelope`

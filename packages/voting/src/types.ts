@@ -1,11 +1,9 @@
-import { ProcessCensusOrigin, ProcessStatus } from "@vocdoni/contract-wrappers"
+import { ProcessCensusOrigin } from "@vocdoni/contract-wrappers"
 import {
     VochainCensusOrigin,
     VochainProcessStatus,
     SourceNetworkId,
 } from "@vocdoni/data-models"
-import { Signer } from "@ethersproject/abstract-signer"
-import { Wallet } from "@ethersproject/wallet"
 import { ProcessMetadata, IProofEVM, IProofCA, IProofArbo, ZkProof } from "@vocdoni/data-models"
 
 export type VoteValues = Array<number | bigint>
@@ -139,6 +137,6 @@ export type EnvelopeFull = {
 
 export type RawResults = {
     results: string[][],
-    status: ProcessStatus,
+    status: VochainProcessStatus,
     envelopHeight: number
 }

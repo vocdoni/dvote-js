@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.15.2
+
+- Fixing the double source of truth problem with the process status
+
 ## 1.15.1
 
 - Removing the unneeded `walletOrSigner` parameter from `Voting.packageSignedEnvelope`

@@ -10,7 +10,7 @@ import { VOCHAIN_BLOCK_TIME, XDAI_GAS_PRICE, XDAI_CHAIN_ID, SOKOL_CHAIN_ID, SOKO
 import { BytesSignature } from "@vocdoni/signing"
 import { Buffer } from "buffer/"
 import { VochainWaiter } from "./util/waiters"
-import { IMethodOverrides, ProcessContractParameters, ProcessStatus, IProcessStatus, ProcessCensusOrigin } from "@vocdoni/contract-wrappers"
+import { IMethodOverrides, ProcessContractParameters, IProcessStatus, ProcessCensusOrigin } from "@vocdoni/contract-wrappers"
 import {
     Tx, SignedTx,
     VoteEnvelope,
@@ -951,12 +951,12 @@ export namespace VotingApi {
             throw new Error("Invalid gateway client")
 
         processId = ensure0x(processId)
-        const emptyResults: RawResults = { envelopHeight: 0, results: [], status: new ProcessStatus(ProcessStatus.READY) }
+        const emptyResults: RawResults = { envelopHeight: 0, results: [], status: VochainProcessStatus.READY }
 
         try {
             const processState = await getProcessState(processId, gateway)
-            if (processState.status == ProcessStatus.CANCELED) {
-                emptyResults.status = new ProcessStatus(processState.status)
+            if (processState.status == VochainProcessStatus.CANCELED) {
+                emptyResults.status = processState.status
                 return emptyResults
             }
 
@@ -966,11 +966,11 @@ export namespace VotingApi {
             if (processState.envelopeType.encryptedVotes) {
                 if (currentBlock < processState.startBlock) return emptyResults // not started
                 else if (processState.processMode["interruptible"]) {
-                    if (processState.status !== ProcessStatus.RESULTS &&
-                        processState.status !== ProcessStatus.ENDED &&
+                    if (processState.status !== VochainProcessStatus.RESULTS &&
+                        processState.status !== VochainProcessStatus.ENDED &&
                         (currentBlock < processState.endBlock)) return emptyResults // not ended
                 } else {
-                    if (processState.status !== ProcessStatus.RESULTS &&
+                    if (processState.status !== VochainProcessStatus.RESULTS &&
                         (currentBlock < processState.endBlock)) return emptyResults // not ended
                 }
 
