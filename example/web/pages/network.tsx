@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { FileApi } from "@vocdoni/client"
 import { getClient } from "../lib/net"
 
-const IPFS_URI = "ipfs://QmZfA85BB2MWbkUWhg86SCe64QqAtWaMhwFxgTMTDv4rjC"
+const IPFS_URI = "ipfs://QmaPrHy12pkxthX8CHeYegGRgVdumv5TEFhUpGAvCyTXPt"
 
 const Page = () => {
   const [loading, setLoading] = useState(false)
