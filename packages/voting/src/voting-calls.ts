@@ -368,7 +368,7 @@ export namespace VotingApi {
      * @param blockNumber
      * @param blockStatus The block status to use for the estimation (reported by gateways)
      */
-    export function estimateDateAtBlockSync(blockNumber: number, blockStatus?: BlockStatus): Date {
+    export function estimateDateAtBlockSync(blockNumber: number, blockStatus: BlockStatus): Date {
         if (!blockNumber) return null
 
         // Diff between the last mined block and the given one
