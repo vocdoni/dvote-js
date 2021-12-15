@@ -4,12 +4,10 @@ import { VotingApi, EntityApi, ProcessDetails } from "@vocdoni/voting"
 import { EntityMetadata } from "@vocdoni/data-models"
 import { getClient } from "../lib/net"
 
-const ENTITY_ID = "0x6047d71960cefbe27239a202e48dc7a76094fd6d"
+const ENTITY_ID = "0x9b2dd5db2b5ba506453a832fffa886e10ec9ac71"
 const PROCESS_IDS = [
-  "0x732493935542b276402ad380e905d5363df798e19342a4d59c057f02060de313",
-  "0xb499d66d6262e76d35a596d05a8b2a5c53a04431d71be767ab0d39b71c1d7ceb",
-  "0xc0f019b3497412e49107b7eb8e01e72a29e54643aa1e109971c0db7495426539",
-  "0x29a4637797076a0620ecf1f4c6565616bbdbb80ed12df36f4125efe9e12706ad"
+  "0x0ff269fddb899671d1f54c81a906f6becd1a3770781c04f7b4f8fcdd96226af8",
+  "0x8e4948bd579628b49d865705f07ea5d100bbf99d254c22649dea850feef62abe"
 ]
 
 const Page = () => {
