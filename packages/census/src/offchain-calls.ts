@@ -63,7 +63,7 @@ export namespace CensusOffChainApi {
         else if (!gateway) return Promise.reject(new Error("Invalid Gateway object"))
         else if (!walletOrSigner || !walletOrSigner._isSigner) return Promise.reject(new Error("Invalid WalletOrSinger object"))
 
-        return gateway.sendRequest({ method: "addClaim", censusId, censusKey: claim.key, digested: false, censusValue: claim.value || undefined }, walletOrSigner)
+        return gateway.sendRequest({ method: "addClaim", censusId, censusKey: claim.key, digested: false, weight: claim.value || undefined }, walletOrSigner)
             .then((response) => {
                 if (typeof response.root == "string") return response.root
                 return getRoot(censusId, gateway)
@@ -114,7 +114,7 @@ export namespace CensusOffChainApi {
         const censusValues = claimList.map(c => c.value || undefined).filter(k => !!k)
         if (censusValues.length > 0 && censusKeys.length != censusValues.length) throw new Error("Either all claimList.value elements should be set or all be empty, but not both")
 
-        return gateway.sendRequest({ method: "addClaimBulk", censusId, digested: false, censusKeys, censusValues: censusValues.length ? censusValues : undefined }, walletOrSigner)
+        return gateway.sendRequest({ method: "addClaimBulk", censusId, digested: false, censusKeys, weights: censusValues.length ? censusValues : undefined }, walletOrSigner)
             .then(response => {
                 const invalidClaims = ("invalidClaims" in response) ? response.invalidClaims : []
                 return invalidClaims
@@ -194,7 +194,7 @@ export namespace CensusOffChainApi {
     }
 
     /** Dumps the contents of a census in raw string format. Not valid to use with `importDump`
-     * 
+     *
      * @param censusId Full Census ID containing the Entity ID and the hash of the original name
      * @param walletOrSigner
      * @param gateway A Gateway instance pointing to a remote Gateway
