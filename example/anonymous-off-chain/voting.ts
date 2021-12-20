@@ -146,16 +146,10 @@ export async function submitVotes(processId: string, processParams: ProcessState
     const verifyProof = await ZkSnarks.verifyProof(JSON.parse(Buffer.from(vKey).toString()), zkProof.publicSignals as any, zkProof.proof as any)
     if (config.stopOnError) assert(verifyProof)
 
-    // the next line is to place the 'nullifier' into the position 0 of
-    // publicSignals array. This is because in the Vochain, the rest of
-    // publicSignals from the array are not going to be used, as those inputs
-    // are going to be computed from known info of the process by the Vochain
-    // itself. And the Vochain only needs the 'nullifier' being in the first
-    // position of the array. In fact, the array could contain only 1 element
-    // (the 'nullifier').
-    zkProof.publicSignals = [nullifier.toString()]
-    // alternatively:
-    // zkProof.publicSignals[0] = zkProof.publicSignals[3];
+    // zkProof.publicSignals is not used in the anonymous-voting flow, as the
+    // only needed public input from user's side is the nullifier, which is
+    // already in the AnonymousEnvelopeParams struct
+    zkProof.publicSignals = [];
 
     const envelopeParams: AnonymousEnvelopeParams = {
       votePackage,
