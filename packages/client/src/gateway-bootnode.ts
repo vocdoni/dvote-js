@@ -6,6 +6,12 @@ import { getEnsTextRecord } from "./net/ens"
 import { ContentUri } from "./wrappers/content-uri"
 import { FileApi } from "./apis/file"
 import {
+    AVAX_CHAIN_ID,
+    AVAX_ENS_REGISTRY_ADDRESS,
+    AVAX_FUJI_CHAIN_ID,
+    AVAX_FUJI_ENS_REGISTRY_ADDRESS,
+    AVAX_FUJI_PROVIDER,
+    AVAX_PROVIDER,
     EthNetworkID,
     SOKOL_CHAIN_ID,
     SOKOL_ENS_REGISTRY_ADDRESS,
@@ -60,6 +66,12 @@ export namespace GatewayBootnode {
                 break
             case "sokol":
                 provider = new providers.StaticJsonRpcProvider(SOKOL_PROVIDER_URI, { chainId: SOKOL_CHAIN_ID, name: "sokol", ensAddress: SOKOL_ENS_REGISTRY_ADDRESS });
+                break
+            case "avalanche":
+                provider = new providers.StaticJsonRpcProvider(AVAX_PROVIDER, { chainId: AVAX_CHAIN_ID, name: "sokol", ensAddress: AVAX_ENS_REGISTRY_ADDRESS });
+                break;
+            case "fuji":
+                provider = new providers.StaticJsonRpcProvider(AVAX_FUJI_PROVIDER, { chainId: AVAX_FUJI_CHAIN_ID, name: "sokol", ensAddress: AVAX_FUJI_ENS_REGISTRY_ADDRESS });
                 break
             default: throw new Error("Invalid Network ID")
         }

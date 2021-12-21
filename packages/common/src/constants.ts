@@ -40,6 +40,18 @@ export const ZK_VOTING_CIRCUIT_WASM_FILE_NAME = "circuit.wasm"
 export const ZK_VOTING_ZKEY_FILE_NAME = "circuit_final.zkey"
 export const ZK_VOTING_VERIFICATION_KEY_FILE_NAME = "verification_key.json"
 
+// Const Values for Avax and Fuji
+
+export declare const VOCDONI_AVAX_FUJI_ENTITY_ID= "0xc50820384fbAA3e2E608abb7e49B86e9F09399A8"; // This is a wallet address not to be confused by anything else.
+export declare const AVAX_FUJI_CHAIN_ID = 43113;
+export declare const AVAX_CHAIN_ID = 43114;
+export declare const AVAX_FUJI_PROVIDER = "https://api.avax-test.network/ext/bc/C/rpc"
+export declare const AVAX_PROVIDER = "https://api.avax-test.network/ext/bc/C/rpc"
+export declare const AVAX_GAS_PRICE: BigNumber;
+export declare const AVAX_FUJI_ENS_REGISTRY_ADDRESS = "0x21a60F4a895769bE78436CC0D83956db83A4297c"
+export declare const AVAX_ENS_REGISTRY_ADDRESS = "" // not yet next round 
+
+
 /**
  * ENS keys used to store the Text Records on the Smart Contract
  */
