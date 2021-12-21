@@ -63,14 +63,22 @@ export type ProcessState = {
     /** The index of the current process within the entity's list */
     entityIndex: number,
     envelopeType: {
-        encryptedVotes: boolean
+        serial?: boolean,
+        anonymous?: boolean,
+        encryptedVotes?: boolean,
+        uniqueValues?: boolean,
+        costFromWeight?: boolean
     },
     finalResults: boolean,
     haveResults: boolean,
     namespace: number,
     processId: string,
     processMode: {
-        autoStart: boolean
+        autoStart?: boolean,
+        interruptible?: boolean,
+        dynamicCensus?: boolean,
+        encryptedMetadata?: boolean,
+        preRegister?: boolean
     },
     questionIndex: number,
     sourceBlockHeight: number,
