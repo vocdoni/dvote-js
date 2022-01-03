@@ -1,5 +1,10 @@
 # @vocdoni/common - Changelog
 
+## 1.15.1
+
+- Fixed zkey file name `ZK_VOTING_ZKEY_FILE_NAME`
+- Adding support for Avax and Fuji networks
+
 ## 1.15.0
 
 - Adding support for Little Endian bigint buffer encoding and decoding

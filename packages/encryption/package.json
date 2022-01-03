@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@ethersproject/sha2": "^5.5.0",
-    "@vocdoni/common": "^1.14.0",
+    "@vocdoni/common": "^1.15.1",
     "buffer": "^6.0.3",
     "tweetnacl": "^1.0.3",
     "tweetnacl-sealedbox-js": "^1.2.0"

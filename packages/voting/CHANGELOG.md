@@ -1,5 +1,9 @@
 # @vocdoni/voting - Changelog
 
+## 1.15.4
+
+- Adding missing flags in `ProcessState`
+
 ## 1.15.3
 
 - Fixing the double source of truth problem with the process status

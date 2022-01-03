@@ -1,5 +1,9 @@
 # @vocdoni/client - Changelog
 
+## 1.15.1
+
+- Adding support for Avax and Fuji networks
+
 ## 1.15.0
 
 - Supporting anonymous voting (registerVoterKey added)

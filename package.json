@@ -1,6 +1,6 @@
 {
   "name": "dvote-js",
-  "version": "1.15.2",
+  "version": "1.15.3",
   "description": "Javascript/Typescript library to interact with Vocdoni voting processes",
   "main": "dist/index",
   "types": "dist/index",
@@ -19,14 +19,14 @@
   },
   "dependencies": {
     "@vocdoni/census": "^1.15.0",
-    "@vocdoni/client": "^1.15.0",
-    "@vocdoni/common": "^1.15.0",
+    "@vocdoni/client": "^1.15.1",
+    "@vocdoni/common": "^1.15.1",
     "@vocdoni/contract-wrappers": "^1.15.0",
-    "@vocdoni/data-models": "^1.15.0",
+    "@vocdoni/data-models": "^1.15.1",
     "@vocdoni/encryption": "^1.14.1",
     "@vocdoni/hashing": "^1.15.0",
     "@vocdoni/signing": "^1.14.0",
-    "@vocdoni/voting": "^1.15.3",
+    "@vocdoni/voting": "^1.15.4",
     "@vocdoni/wallets": "^1.15.0"
   },
   "devDependencies": {

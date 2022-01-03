@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@ethersproject/bignumber": "^5.5.0",
-    "@vocdoni/common": "^1.15.0",
+    "@vocdoni/common": "^1.15.1",
     "@vocdoni/contract-wrappers": "^1.15.0",
     "@vocdoni/encryption": "^1.14.0",
     "buffer": "^6.0.3",
