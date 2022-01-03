@@ -37,7 +37,7 @@ export const CENSUS_MAX_BULK_SIZE = 400 // # of claims per addClaimBulk request
 export const GATEWAY_SELECTION_TIMEOUT = 4000  // milliseconds
 
 export const ZK_VOTING_CIRCUIT_WASM_FILE_NAME = "circuit.wasm"
-export const ZK_VOTING_ZKEY_FILE_NAME = "circuit_final.zkey"
+export const ZK_VOTING_ZKEY_FILE_NAME = "circuit.zkey"
 export const ZK_VOTING_VERIFICATION_KEY_FILE_NAME = "verification_key.json"
 
 // Const Values for Avax and Fuji
@@ -49,7 +49,7 @@ export declare const AVAX_FUJI_PROVIDER = "https://api.avax-test.network/ext/bc/
 export declare const AVAX_PROVIDER = "https://api.avax-test.network/ext/bc/C/rpc"
 export declare const AVAX_GAS_PRICE: BigNumber;
 export declare const AVAX_FUJI_ENS_REGISTRY_ADDRESS = "0x21a60F4a895769bE78436CC0D83956db83A4297c"
-export declare const AVAX_ENS_REGISTRY_ADDRESS = "" // not yet next round 
+export declare const AVAX_ENS_REGISTRY_ADDRESS = "" // not yet next round
 
 
 /**
