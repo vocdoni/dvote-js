@@ -18,7 +18,7 @@
     "postinstall": "./scripts/post-install.sh"
   },
   "dependencies": {
-    "@vocdoni/census": "^1.15.0",
+    "@vocdoni/census": "^1.15.1",
     "@vocdoni/client": "^1.15.1",
     "@vocdoni/common": "^1.15.1",
     "@vocdoni/contract-wrappers": "^1.15.0",

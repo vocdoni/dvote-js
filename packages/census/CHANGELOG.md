@@ -1,5 +1,9 @@
 # @vocdoni/census - Changelog
 
+## 1.15.1
+
+- Fixed weight values when adding claims in `CensusOffChainApi.addClaim` and `CensusOffChainApi.addClaimChunk`
+
 ## 1.15.0
 
 - Adding support for Anonymous voting (zkSnarks)
