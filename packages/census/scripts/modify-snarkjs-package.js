@@ -1,27 +1,35 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
-let packagePath = path.dirname(require.resolve("snarkjs"));
+try {
+    const startPath = path.dirname(require.resolve("snarkjs"));
+    const packagePath = findSnarkJsPackageFile(startPath);
+    const packageJson = require(packagePath);
 
-while(!fs.existsSync(path.join(packagePath, "package.json"))) {
-    const packagePathSplit = packagePath.split(path.sep);
-    packagePathSplit.pop();
-    if(packagePathSplit.length === 0 || !packagePathSplit.includes("snarkjs")) {
-        console.error("Snarkjs dependency not found");
-        process.exit(1);
+    if (packageJson.name !== "snarkjs") {
+        throw new Error("Cannot find the snarkjs package.json file");
+    } else if (!packageJson.module) {
+        process.exit(0);
     }
-    packagePath = packagePathSplit.join(path.sep)
-}
-packagePath = path.join(packagePath, "package.json")
 
-const packageJson = require(packagePath);
-
-if (packageJson.hasOwnProperty('name') && packageJson.name !== "snarkjs") {
-    console.error("Snarkjs dependency not found");
+    delete packageJson.module;
+    fs.writeFileSync(packagePath, JSON.stringify(packageJson, null, 2));
+} catch (err) {
+    console.error(err);
     process.exit(1);
 }
 
-if (packageJson.hasOwnProperty('module')) {
-    delete packageJson.module;
-    fs.writeFileSync(packagePath, JSON.stringify(packageJson, null, 2));
+// Helpers
+
+function findSnarkJsPackageFile(basePath) {
+    while (!fs.existsSync(path.join(basePath, "package.json"))) {
+        const basePathItems = basePath.split(path.sep);
+        basePathItems.pop();
+
+        if (basePathItems.length === 0 || !basePathItems.includes("snarkjs")) {
+            throw new Error("Cannot find the snarkjs package.json file");
+        }
+        basePath = basePathItems.join(path.sep);
+    }
+    return path.join(basePath, "package.json");
 }
