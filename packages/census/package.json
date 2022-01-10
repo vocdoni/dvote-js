@@ -1,6 +1,6 @@
 {
   "name": "@vocdoni/census",
-  "version": "1.15.1",
+  "version": "1.15.2",
   "description": "Javascript/Typescript census package",
   "main": "dist/index",
   "types": "dist/index",
@@ -17,7 +17,8 @@
     "build": "npm run clean && ./node_modules/.bin/tsc",
     "watch": "./node_modules/.bin/tsc -w -p .",
     "ts-node": "./node_modules/.bin/ts-node",
-    "test": "npm run build && ./node_modules/.bin/mocha -r ts-node/register test/**/*.ts"
+    "test": "npm run build && ./node_modules/.bin/mocha -r ts-node/register test/**/*.ts",
+    "postinstall": "node scripts/modify-snarkjs-package"
   },
   "dependencies": {
     "@ethersproject/abstract-signer": "^5.5.0",

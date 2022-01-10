@@ -1,5 +1,9 @@
 # @vocdoni/census - Changelog
 
+## 1.15.2
+
+- Added `postinstall` script for `snarkjs` dependency for browser compatibility
+
 ## 1.15.1
 
 - Fixed weight values when adding claims in `CensusOffChainApi.addClaim` and `CensusOffChainApi.addClaimChunk`
