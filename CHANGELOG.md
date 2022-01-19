@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.13.4
+
+- Fixing the retrieval of results weight
+
 ## 1.13.3
 
 - Fix an internal import
