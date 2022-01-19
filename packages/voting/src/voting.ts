@@ -19,7 +19,7 @@ import {
 } from "@vocdoni/data-models"
 import { Poseidon } from "@vocdoni/hashing"
 import { ProofZkSNARK } from "@vocdoni/data-models"
-import { ensure0x, strip0x, bigIntToLeBuffer, bufferLeToBigInt, hexStringToBuffer } from "@vocdoni/common"
+import { ensure0x, strip0x, bigIntToLeBuffer, bufferLeToBigInt, hexStringToBuffer, uintArrayToHex } from "@vocdoni/common"
 import { ProcessKeys, SignedEnvelopeParams, VotePackage, AnonymousEnvelopeParams, VoteValues, RawResults } from "./types"
 
 export { VochainWaiter, EthWaiter } from "./util/waiters"
@@ -291,6 +291,15 @@ export namespace Voting {
     export function getAnonymousVoteNullifier(secretKey: bigint, processId: string) {
         const snarkProcessId = getSnarkProcessId(processId)
         return Poseidon.hash([secretKey, snarkProcessId[0], snarkProcessId[1]])
+    }
+
+    /** Computes the hexadecimal nullifier of the vote in little endian within a process where `envelopeType.ANONYMOUS` is enabled.
+     * @param secretKey BigInt that has been registered on the Vochain for the given proposal
+     * @param processId
+     * @param prepend0x */
+    export function getAnonymousHexNullifier(secretKey: bigint, processId: string, prepend0x?: boolean) {
+        const nullifier = new Uint8Array(bigIntToLeBuffer(getAnonymousVoteNullifier(secretKey, processId)))
+        return uintArrayToHex(nullifier, prepend0x)
     }
 
     /**

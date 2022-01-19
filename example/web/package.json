@@ -13,7 +13,7 @@
     "@vocdoni/client": "^1.15.0",
     "@vocdoni/data-models": "^1.15.0",
     "@vocdoni/signing": "^1.14.0",
-    "@vocdoni/voting": "^1.15.3",
+    "@vocdoni/voting": "^1.15.5",
     "ethers": "^5.4.1",
     "next": "10.0.5",
     "react": "^17.0.1",

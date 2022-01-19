@@ -118,6 +118,22 @@ describe("Governance Process", () => {
                     expect(output).to.eq(item.output)
                 }
             })
+            it("Should compute valid anonymous hexadecimal nullifiers", () => {
+                const items = [
+                    { secretKey: BigInt("0"), processId: "0x56570de287d73cd1cb6092bb8fdee6173974955fdef345ae579ee9f475ea7432", output: "0x4e3a949da6df2f1c2f55a0dcea7c138b078b677c1cda842599499bdff0e7031f" },
+                    { secretKey: BigInt("10000000000"), processId: "0x56570de287d73cd1cb6092bb8fdee6173974955fdef345ae579ee9f475ea7432", output: "0x01e7dc453a0029bf50067ae3343a1a9e89ef1f7ed0256ca33137e73ce7190b01" },
+                    { secretKey: BigInt("200000000000"), processId: "0x56570de287d73cd1cb6092bb8fdee6173974955fdef345ae579ee9f475ea7432", output: "0xf8ed65f4be8c2eb424b7c78aa5abd1a0c9dd2a2b2c2905ce9d626dcd265cb51d" },
+                    { secretKey: BigInt("3000000000000"), processId: "0x56570de287d73cd1cb6092bb8fdee6173974955fdef345ae579ee9f475ea7432", output: "0x422794d1ea7a67eafffe98df46e1429db90b5a3fe8d3cf7015d9a167a2fe0018" },
+                    { secretKey: BigInt("40000000000000"), processId: "0x56570de287d73cd1cb6092bb8fdee6173974955fdef345ae579ee9f475ea7432", output: "0x22b9a3e4be7fd631f1679aaa9ace99061efefd4e8da7a77c6ca577c4fe317d01" },
+                    { secretKey: BigInt("10000000000"), processId: "0x6adf031833174bbe4c85eafe59ddb54e6584648c2c962c6f94791ab49caa0ad4", output: "0x9ad3270ff121c00abf6a6725529ee2e028bbdeebd1e73e7adf13cd654110800c" },
+                    { secretKey: BigInt("200000000000"), processId: "0x6adf031833174bbe4c85eafe59ddb54e6584648c2c962c6f94791ab49caa0ad4", output: "0xe43cafa2f22f35faea88cb5640e6178272e288cf588d01d26eb515e054dd0927" },
+                ]
+
+                for (let item of items) {
+                    const output = Voting.getAnonymousHexNullifier(item.secretKey, item.processId, true)
+                    expect(output).to.eq(item.output)
+                }
+            })
             it("Should package an anonymous envelope")
         })
 
