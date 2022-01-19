@@ -1,5 +1,9 @@
 # @vocdoni/voting - Changelog
 
+## 1.15.5
+
+- Added `getAnonymousHexNullifier` for calculating the anonymous hexadecimal nullifier
+
 ## 1.15.4
 
 - Adding missing flags in `ProcessState`
