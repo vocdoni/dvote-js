@@ -40,6 +40,10 @@ Breaking changes:
     - See `VotingOracleApi.newProcessErc20` comment in `packages > voting > src > voting.ts`
 - `VotingApi.registerVoterKey` is now `CensusOnChainApi.registerVoterKey`
 
+## 1.13.4
+
+- Fixing the retrieval of results weight
+
 ## 1.13.3
 
 - Fix an internal import

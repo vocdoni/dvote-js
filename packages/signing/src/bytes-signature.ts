@@ -2,11 +2,12 @@ import { Wallet, verifyMessage } from "@ethersproject/wallet"
 import { computeAddress } from "@ethersproject/transactions"
 import { Signer } from "@ethersproject/abstract-signer"
 import { JsonRpcSigner } from "@ethersproject/providers"
+import { digestVocdoniSignedPayload } from "./common"
+import { ensure0x } from "@vocdoni/common"
 
 export namespace BytesSignature {
     /**
-     * Sign a JSON payload using the given Ethers wallet or signer.
-     * Ensures that the object keys are alphabetically sorted.
+     * Sign a binary payload using the given Ethers wallet or signer.
      * @param request
      * @param walletOrSigner
      */
@@ -34,23 +35,48 @@ export namespace BytesSignature {
     }
 
     /**
-     * Checks whether the given public key signed the given JSON with its fields
-     * sorted alphabetically
+     * Prefix and Sign a binary payload using the given Ethers wallet or signer.
+     * @param request
+     * @param chainId The ID of the Vocdoni blockchain deployment for which the message is intended to
+     * @param walletOrSigner
+     */
+    export function signVocdoni(request: Uint8Array, chainId: number, walletOrSigner: Wallet | Signer): Promise<string> {
+        if (!walletOrSigner) throw new Error("Invalid wallet/signer")
+        const digestedRequest = digestVocdoniSignedPayload(request, chainId)
+
+        return sign(digestedRequest, walletOrSigner)
+    }
+
+    /**
+     * Checks whether the given public key signed the given payload
      * @param signature Hex encoded signature (created with the Ethereum prefix)
      * @param publicKey
-     * @param messageBytes Uint8Array of the inner response JSON object
+     * @param messageBytes Uint8Array of the message
      */
     export function isValid(signature: string, publicKey: string, messageBytes: Uint8Array): boolean {
         if (!publicKey) return true
         else if (!signature) return false
 
-        const gwPublicKey = publicKey.startsWith("0x") ? publicKey : "0x" + publicKey
-        const expectedAddress = computeAddress(gwPublicKey)
-
-        if (!signature.startsWith("0x")) signature = "0x" + signature
-        const actualAddress = verifyMessage(messageBytes, signature)
+        const actualAddress = verifyMessage(messageBytes, ensure0x(signature))
+        const expectedAddress = computeAddress(ensure0x(publicKey))
 
         return actualAddress && expectedAddress && (actualAddress == expectedAddress)
+    }
+
+    /**
+     * Checks whether the given public key signed the given payload with its fields
+     * sorted alphabetically
+     * @param signature Hex encoded signature (created with the Ethereum prefix)
+     * @param publicKey
+     * @param messageBytes Uint8Array of the message
+     * @param chainId The ID of the Vocdoni blockchain deployment for which the message is intended to
+     */
+    export function isValidVocdoni(signature: string, publicKey: string, messageBytes: Uint8Array, chainId: number): boolean {
+        if (!publicKey) return true
+        else if (!signature) return false
+        const digestedRequest = digestVocdoniSignedPayload(messageBytes, chainId)
+
+        return isValid(signature, publicKey, digestedRequest)
     }
 
     // Helpers

@@ -1,7 +1,7 @@
 {
   "name": "dvote-js",
   "version": "1.15.4",
-  "description": "Javascript/Typescript library to interact with Vocdoni voting processes",
+  "description": "JavaScript/TypeScript library to interact with Vocdoni voting processes",
   "main": "dist/index",
   "types": "dist/index",
   "repository": "https://github.com/vocdoni/dvote-js.git",
@@ -30,8 +30,12 @@
     "@vocdoni/wallets": "^1.15.0"
   },
   "devDependencies": {
+    "@types/chai": "^4.1.7",
+    "@types/mocha": "^9.0.0",
     "@types/node": "^16.11.11",
+    "chai": "^4.2.0",
     "dotenv": "^10.0.0",
+    "mocha": "^9.1.1",
     "rimraf": "^3.0.2",
     "ts-node": "^10.2.1",
     "tslint": "^6.1.3",
