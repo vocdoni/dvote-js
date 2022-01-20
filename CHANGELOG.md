@@ -1,5 +1,13 @@
 # DVote JS changelog
 
+## 1.15.4
+
+- Version bump for `voting` package
+
+## 1.15.3
+
+- Version bump for `common`, `client`, `data-models` and `voting` packages
+
 ## 1.15.2
 
 - Fixing the double source of truth problem with the process status
@@ -55,7 +63,7 @@ Breaking changes:
 - BREAKING:
     - `VotingApi.getRawResults` no longer exists
         - Use `VotingApi.getResults()` instead
-    - `VotingApi.getResultsDigest()` no longer exists. 
+    - `VotingApi.getResultsDigest()` no longer exists.
     - Arrange results with:
         - `Voting.digestSingleChoiceResults(results, metadata)`
         - `Voting.digestSingleQuestionResults(results, metadata)`
