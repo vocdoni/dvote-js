@@ -35,19 +35,6 @@ export namespace BytesSignature {
     }
 
     /**
-     * Prefix and Sign a binary payload using the given Ethers wallet or signer.
-     * @param request
-     * @param chainId The ID of the Vocdoni blockchain deployment for which the message is intended to
-     * @param walletOrSigner
-     */
-    export function signVocdoni(request: Uint8Array, chainId: number, walletOrSigner: Wallet | Signer): Promise<string> {
-        if (!walletOrSigner) throw new Error("Invalid wallet/signer")
-        const digestedRequest = digestVocdoniSignedPayload(request, chainId)
-
-        return sign(digestedRequest, walletOrSigner)
-    }
-
-    /**
      * Checks whether the given public key signed the given payload
      * @param signature Hex encoded signature (created with the Ethereum prefix)
      * @param publicKey
@@ -63,22 +50,6 @@ export namespace BytesSignature {
         return actualAddress && expectedAddress && (actualAddress == expectedAddress)
     }
 
-    /**
-     * Checks whether the given public key signed the given payload with its fields
-     * sorted alphabetically
-     * @param signature Hex encoded signature (created with the Ethereum prefix)
-     * @param publicKey
-     * @param messageBytes Uint8Array of the message
-     * @param chainId The ID of the Vocdoni blockchain deployment for which the message is intended to
-     */
-    export function isValidVocdoni(signature: string, publicKey: string, messageBytes: Uint8Array, chainId: number): boolean {
-        if (!publicKey) return true
-        else if (!signature) return false
-        const digestedRequest = digestVocdoniSignedPayload(messageBytes, chainId)
-
-        return isValid(signature, publicKey, digestedRequest)
-    }
-
     // Helpers
 
     function uint8ArrayToArray(buff: Uint8Array): number[] {
@@ -87,5 +58,36 @@ export namespace BytesSignature {
             result.push(buff[i])
         }
         return result
+    }
+}
+
+export namespace BytesSignatureVocdoni {
+    /**
+     * Prefix and Sign a binary payload using the given Ethers wallet or signer.
+     * @param request
+     * @param chainId The ID of the Vocdoni blockchain deployment for which the message is intended to
+     * @param walletOrSigner
+     */
+    export function sign(request: Uint8Array, chainId: string, walletOrSigner: Wallet | Signer): Promise<string> {
+        if (!walletOrSigner) throw new Error("Invalid wallet/signer")
+        const digestedRequest = digestVocdoniSignedPayload(request, chainId)
+
+        return BytesSignature.sign(digestedRequest, walletOrSigner)
+    }
+
+    /**
+     * Checks whether the given public key signed the given payload with its fields
+     * sorted alphabetically
+     * @param signature Hex encoded signature (created with the Ethereum prefix)
+     * @param publicKey
+     * @param messageBytes Uint8Array of the message
+     * @param chainId The ID of the Vocdoni blockchain deployment for which the message is intended to
+     */
+    export function isValid(signature: string, publicKey: string, messageBytes: Uint8Array, chainId: string): boolean {
+        if (!publicKey) return true
+        else if (!signature) return false
+        const digestedRequest = digestVocdoniSignedPayload(messageBytes, chainId)
+
+        return BytesSignature.isValid(signature, publicKey, digestedRequest)
     }
 }
