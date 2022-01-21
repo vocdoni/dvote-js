@@ -14,6 +14,8 @@ npm install @vocdoni/signing
 
 #### BytesSignature
 
+(See also [`BytesSignatureVocdoni`](#vocdoni-salted-signing))
+
 ```ts
 import { BytesSignature } from "@vocdoni/signing"
 import { computePublicKey } from "@ethersproject/signing-key"
@@ -34,6 +36,8 @@ BytesSignature.isValid(signature, wallet.publicKey, bytesBody)
 ```
 
 #### JsonSignature
+
+(See also [`JsonSignatureVocdoni`](#vocdoni-salted-signing))
 
 ```ts
 import { JsonSignature } from "@vocdoni/signing"
@@ -60,6 +64,12 @@ JsonSignature.isValid(signature, computePublicKey(wallet.publicKey, true), jsonB
 JsonSignature.isValid(signature, wallet.publicKey, jsonBody)
 // returns 'true'
 ```
+
+#### Vocdoni salted signing
+
+`BytesSignatureVocdoni` and `JsonSignatureVocdoni` do the same job as `BytesSignature` and `JsonSignature`, but salting the payload and digesting it to reduce its size. These payloads are expected in requests being sent to the Vochain.
+
+The only difference is that both require the `chainId` to sign and verify.
 
 ## Testing
 

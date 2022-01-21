@@ -90,7 +90,7 @@ describe("Plain eth", () => {
             const publicKey = "026d619ede0fe5db4213acec7a989b46f94b00fdfb28f80532e1182037f36e2ef3"
             expect(BytesSignature.isValid(signature, publicKey, bodyBytes)).to.be.true
         })
-        it("Should create the sanme signature as go-dvote", async () => {
+        it("Should create the same signature as go-dvote", async () => {
             const wallet = new Wallet("c6446f24d08a34fdefc2501d6177b25e8a1d0f589b7a06f5a0131e9a8d0307e4")
             const jsonBody = '{"a":"1"}'
             const bytesBody = new TextEncoder().encode(jsonBody)
