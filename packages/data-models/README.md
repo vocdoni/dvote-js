@@ -55,6 +55,20 @@ checkValidProcessMetadata({})
 // throws an Error
 ```
 
+#### Raw transactions
+
+```ts
+import { Tx, wrapRawTransaction } from "@vocdoni/data-models"
+import { BytesSignatureVocdoni } from "@vocdoni/signing"
+
+const tx = Tx.encode(...)
+const txBytes = tx.finish()
+const signature = await BytesSignatureVocdoni.sign(txBytes, chainId, signer)
+
+const result = wrapRawTransaction(txBytes, signature)
+// { method: "submitRawTx", payload: "base64..."}
+```
+
 ## Testing
 
 To execute library tests just run
