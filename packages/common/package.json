@@ -1,7 +1,7 @@
 {
   "name": "@vocdoni/common",
   "version": "1.15.1",
-  "description": "Javascript/Typescript common package",
+  "description": "JavaScript/TypeScript common package",
   "main": "dist/index",
   "types": "dist/index",
   "repository": "https://github.com/vocdoni/dvote-js.git",

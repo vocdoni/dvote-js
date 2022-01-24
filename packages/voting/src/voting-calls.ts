@@ -5,14 +5,14 @@ import { Wallet } from "@ethersproject/wallet"
 
 import { GatewayArchive, GatewayArchiveApi, FileApi } from "@vocdoni/client"
 import { EntityApi } from "./entity-calls"
-import { ProcessMetadata, checkValidProcessMetadata, INewProcessParams } from "@vocdoni/data-models"
+import { ProcessMetadata, checkValidProcessMetadata, INewProcessParams, wrapRawTransaction } from "@vocdoni/data-models"
 import { VOCHAIN_BLOCK_TIME, XDAI_GAS_PRICE, XDAI_CHAIN_ID, SOKOL_CHAIN_ID, SOKOL_GAS_PRICE, ZK_VOTING_CIRCUIT_WASM_FILE_NAME, ZK_VOTING_ZKEY_FILE_NAME, ZK_VOTING_VERIFICATION_KEY_FILE_NAME, Random } from "@vocdoni/common"
 import { BytesSignature } from "@vocdoni/signing"
 import { Buffer } from "buffer/"
 import { VochainWaiter } from "./util/waiters"
 import { IMethodOverrides, ProcessContractParameters, IProcessStatus, ProcessCensusOrigin } from "@vocdoni/contract-wrappers"
 import {
-    Tx, SignedTx,
+    Tx,
     VoteEnvelope,
     VochainProcessStatus
 } from "@vocdoni/data-models"
@@ -579,7 +579,7 @@ export namespace VotingApi {
             contractParameters.metadata = metadataOrigin
 
             // REGISTER THE NEW PROCESS
-            const ethChainId = await gateway.chainId
+            const ethChainId = await gateway.getEthChainId()
             const options: IMethodOverrides = {
                 value: await getProcessPrice(gateway)
             }
@@ -656,7 +656,7 @@ export namespace VotingApi {
             contractParameters.metadata = metadataOrigin
 
             // REGISTER THE NEW PROCESS
-            const ethChainId = await gateway.chainId
+            const ethChainId = await gateway.getEthChainId()
             const options: IMethodOverrides = {
                 value: await getProcessPrice(gateway)
             }
@@ -1041,20 +1041,14 @@ export namespace VotingApi {
         const tx = Tx.encode({ payload: { $case: "vote", vote: voteEnvelope } })
         const txBytes = tx.finish()
 
-        let signature: Uint8Array
-        if (voteEnvelope.proof.payload.$case == "zkSnark") {
-            signature = new Uint8Array()
-        }
-        else {
-            const hexSignature = await BytesSignature.sign(txBytes, walletOrSigner)
+        let signature = new Uint8Array()
+        if (voteEnvelope.proof.payload.$case !== "zkSnark") {
+            const hexSignature = await BytesSignature.signMessage(txBytes, walletOrSigner)
             signature = new Uint8Array(Buffer.from(strip0x(hexSignature), "hex"))
         }
 
-        const signedTx = SignedTx.encode({ tx: txBytes, signature })
-        const signedTxBytes = signedTx.finish()
-
-        const base64Payload = Buffer.from(signedTxBytes).toString("base64")
-        return gateway.sendRequest({ method: "submitRawTx", payload: base64Payload })
+        const request = wrapRawTransaction(txBytes, signature)
+        return gateway.sendRequest(request)
             .catch((error) => {
                 const message = (error.message) ? "Could not submit the vote envelope: " + error.message : "Could not submit the vote envelope"
                 throw new Error(message)

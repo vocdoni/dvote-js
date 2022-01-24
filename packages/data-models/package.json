@@ -1,7 +1,7 @@
 {
   "name": "@vocdoni/data-models",
-  "version": "1.15.1",
-  "description": "Javascript/Typescript models package",
+  "version": "1.15.3",
+  "description": "JavaScript/TypeScript models package",
   "main": "dist/index",
   "types": "dist/index",
   "repository": "https://github.com/vocdoni/dvote-js.git",

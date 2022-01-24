@@ -1,7 +1,7 @@
 {
   "name": "dvote-js",
-  "version": "1.15.4",
-  "description": "Javascript/Typescript library to interact with Vocdoni voting processes",
+  "version": "1.16.0",
+  "description": "JavaScript/TypeScript library to interact with Vocdoni voting processes",
   "main": "dist/index",
   "types": "dist/index",
   "repository": "https://github.com/vocdoni/dvote-js.git",
@@ -18,20 +18,24 @@
     "postinstall": "./scripts/post-install.sh"
   },
   "dependencies": {
-    "@vocdoni/census": "^1.15.1",
-    "@vocdoni/client": "^1.15.1",
+    "@vocdoni/census": "^1.16.0",
+    "@vocdoni/client": "^1.16.0",
     "@vocdoni/common": "^1.15.1",
     "@vocdoni/contract-wrappers": "^1.15.0",
-    "@vocdoni/data-models": "^1.15.1",
+    "@vocdoni/data-models": "^1.15.3",
     "@vocdoni/encryption": "^1.14.1",
     "@vocdoni/hashing": "^1.15.0",
-    "@vocdoni/signing": "^1.14.0",
-    "@vocdoni/voting": "^1.15.5",
-    "@vocdoni/wallets": "^1.15.0"
+    "@vocdoni/signing": "^1.16.0",
+    "@vocdoni/voting": "^1.16.0",
+    "@vocdoni/wallets": "^1.16.0"
   },
   "devDependencies": {
+    "@types/chai": "^4.1.7",
+    "@types/mocha": "^9.0.0",
     "@types/node": "^16.11.11",
+    "chai": "^4.2.0",
     "dotenv": "^10.0.0",
+    "mocha": "^9.1.1",
     "rimraf": "^3.0.2",
     "ts-node": "^10.2.1",
     "tslint": "^6.1.3",

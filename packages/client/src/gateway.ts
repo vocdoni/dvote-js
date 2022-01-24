@@ -169,14 +169,6 @@ export class Gateway implements IGatewayClient {
 
     public get dvoteUri() { return this.dvote.uri }
 
-    public get chainId(): Promise<number> {
-        return this.provider.getNetwork().then(network => network.chainId)
-    }
-
-    public get networkId(): Promise<string> {
-        return this.provider.getNetwork().then(network => network.name)
-    }
-
     /**
      * Send a message to a Vocdoni Gateway and return the response
      * @param requestBody Parameters of the request to send. The timestamp (in seconds) will be added to the object.
@@ -187,8 +179,12 @@ export class Gateway implements IGatewayClient {
         return this.dvote.sendRequest(requestBody, wallet, params)
     }
 
-    public getInfo(timeout: number = 2 * 1000): Promise<{ apiList: (GatewayApiName | BackendApiName)[], health: number }> {
-        return this.dvote.getInfo(timeout)
+    public getVocdoniInfo(timeout: number = 2 * 1000) {
+        return this.dvote.getVocdoniInfo(timeout)
+    }
+
+    public getVocdoniChainId() {
+        return this.dvote.getVocdoniChainId()
     }
 
     public supportsMethod(method: ApiMethod): boolean {
@@ -204,6 +200,14 @@ export class Gateway implements IGatewayClient {
 
     public get provider(): providers.BaseProvider { return this.web3.provider }
     public get web3Uri(): string { return this.web3.web3Uri }
+
+    public getEthChainId(): Promise<number> {
+        return this.provider.getNetwork().then(network => network.chainId)
+    }
+
+    public getEthNetworkId(): Promise<string> {
+        return this.provider.getNetwork().then(network => network.name)
+    }
 
     public deploy<CustomContractMethods>(abi: string | (string | utils.ParamType)[] | utils.Interface, bytecode: string,
         signParams: { signer?: Signer, wallet?: Wallet } = {}, deployArguments: any[] = []): Promise<(Contract & CustomContractMethods)> {

@@ -1,7 +1,7 @@
 {
   "name": "@vocdoni/wallets",
-  "version": "1.15.0",
-  "description": "Javascript/Typescript wallets package",
+  "version": "1.16.0",
+  "description": "JavaScript/TypeScript wallets package",
   "main": "dist/index",
   "types": "dist/index",
   "repository": "https://github.com/vocdoni/dvote-js.git",
@@ -34,7 +34,7 @@
     "@ethersproject/signing-key": "^5.5.0",
     "@types/chai": "^4.1.7",
     "@types/mocha": "^9.0.0",
-    "@vocdoni/signing": "^1.14.0",
+    "@vocdoni/signing": "^1.16.0",
     "chai": "^4.2.0",
     "mocha": "^9.1.1",
     "rimraf": "^3.0.2",

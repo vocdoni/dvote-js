@@ -1,7 +1,7 @@
 {
   "name": "@vocdoni/signing",
-  "version": "1.14.0",
-  "description": "Javascript/Typescript signing package",
+  "version": "1.16.1",
+  "description": "JavaScript/TypeScript signing package",
   "main": "dist/index",
   "types": "dist/index",
   "repository": "https://github.com/vocdoni/dvote-js.git",
@@ -23,9 +23,9 @@
     "@ethersproject/abstract-signer": "^5.5.0",
     "@ethersproject/bytes": "^5.5.0",
     "@ethersproject/hash": "^5.5.0",
+    "@ethersproject/keccak256": "^5.5.0",
     "@ethersproject/providers": "^5.5.0",
     "@ethersproject/signing-key": "^5.5.0",
-    "@ethersproject/strings": "^5.5.0",
     "@ethersproject/transactions": "^5.5.0",
     "@ethersproject/wallet": "^5.5.0"
   },

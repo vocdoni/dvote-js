@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.16.0
+
+- Adding support for Vocdoni salted signatures
+
 ## 1.15.4
 
 - Version bump for `voting` package
@@ -39,6 +43,10 @@ Breaking changes:
     - Now expecting `tokenDetails` as the second parameter
     - See `VotingOracleApi.newProcessErc20` comment in `packages > voting > src > voting.ts`
 - `VotingApi.registerVoterKey` is now `CensusOnChainApi.registerVoterKey`
+
+## 1.13.4
+
+- Fixing the retrieval of results weight
 
 ## 1.13.3
 

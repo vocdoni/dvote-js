@@ -1,5 +1,9 @@
 # @vocdoni/census - Changelog
 
+## 1.16.0
+
+- Using salted signatures
+
 ## 1.15.2
 
 - Added `postinstall` script for `snarkjs` dependency for browser compatibility

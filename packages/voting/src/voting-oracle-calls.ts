@@ -71,7 +71,7 @@ export namespace VotingOracleApi {
             const metadataOrigin = await FileApi.add(strJsonMeta, "process-metadata.json", walletOrSigner, gateway)
             if (!metadataOrigin) return Promise.reject(new Error("The process metadata could not be uploaded"))
 
-            const networkId = await gateway.networkId
+            const networkId = await gateway.getEthNetworkId()
             const envelopetype = typeof processParameters.envelopeType == "number" ?
                 new ProcessEnvelopeType(processParameters.envelopeType)
                 : processParameters.envelopeType

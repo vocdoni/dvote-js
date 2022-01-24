@@ -1,6 +1,6 @@
 import { hexStringToBuffer, Random, bigIntToLeBuffer, bufferLeToBigInt } from "@vocdoni/common"
 import { IGatewayDVoteClient } from "@vocdoni/client"
-import { Proof, IProofArbo, IProofCA, IProofEVM, RegisterKeyTx, SignedTx, Tx } from "@vocdoni/data-models"
+import { Proof, IProofArbo, IProofCA, IProofEVM, RegisterKeyTx, SignedTx, Tx, wrapRawTransaction } from "@vocdoni/data-models"
 import { Poseidon } from "@vocdoni/hashing"
 import { BytesSignature } from "@vocdoni/signing"
 import { Signer } from "@ethersproject/abstract-signer"
@@ -35,14 +35,13 @@ export namespace CensusOnChainApi {
     const tx = Tx.encode({ payload: { $case: "registerKey", registerKey } })
     const txBytes = tx.finish()
 
-    return BytesSignature.sign(txBytes, walletOrSigner)
+    return gateway.getVocdoniChainId()
+      .then(chainId => BytesSignature.signTransaction(txBytes, chainId, walletOrSigner))
       .then(hexSignature => {
         const signature = new Uint8Array(hexStringToBuffer(hexSignature))
-        const signedTx = SignedTx.encode({ tx: txBytes, signature })
-        const signedTxBytes = signedTx.finish()
-        const base64Payload = Buffer.from(signedTxBytes).toString("base64")
 
-        return gateway.sendRequest({ method: "submitRawTx", payload: base64Payload })
+        const request = wrapRawTransaction(txBytes, signature)
+        return gateway.sendRequest(request)
       }).catch((error) => {
         const message = (error.message) ? "The key cannot be registered: " + error.message : "The key cannot be registered"
         throw new Error(message)

@@ -54,7 +54,7 @@ export class DevGatewayService {
 
         // Choose a pseudorandom wallet from the end of the ones available [5..9]
         const wallets = getWallets().slice(5)
-        const idx = Number(Math.random().toString().substr(2)) % wallets.length
+        const idx = Number(Math.random().toString().substring(2)) % wallets.length
         this.wallet = wallets[idx]
     }
 
@@ -96,7 +96,7 @@ export class DevGatewayService {
                 signature: ""
             }
             const responseBytes = new TextEncoder().encode(JSON.stringify(response))
-            responseData.signature = await BytesSignature.sign(responseBytes, this.wallet)
+            responseData.signature = await BytesSignature.signMessage(responseBytes, this.wallet)
             this.interactionCount++
             res.send(responseData)
         }

@@ -38,6 +38,7 @@ export class DVoteGateway implements IGatewayDVoteClient {
     private client: AxiosInstance = null
     private _hasTimeOutLastRequest: boolean
     private _environment: VocdoniEnvironment
+    private _chainId: string
 
     /**
      * Returns a new DVote Gateway web socket client
@@ -169,19 +170,18 @@ export class DVoteGateway implements IGatewayDVoteClient {
         }
 
         const request: MessageRequestContent = JsonSignature.sort({
-            id: Random.getHex().substr(2, 10),
+            id: Random.getHex().substring(2, 12),
             request: requestBody,
             signature: "",
         })
 
         if (wallet) {
-            return JsonSignature.sign(requestBody, wallet)
+            return JsonSignature.signMessage(requestBody, wallet)
                 .then((signature: string) => {
                     request.signature = signature
                     return request
                 })
         }
-
         return Promise.resolve(request)
     }
 
@@ -208,7 +208,7 @@ export class DVoteGateway implements IGatewayDVoteClient {
 
         // Check the signature of the response
         if (this.publicKey) {
-            if (!BytesSignature.isValid(msg.signature, this.publicKey, msgBytes)) {
+            if (!BytesSignature.isValidMessage(msgBytes, msg.signature, this.publicKey)) {
                 throw new Error("The signature of the response does not match the expected one")
             }
         }
@@ -232,7 +232,7 @@ export class DVoteGateway implements IGatewayDVoteClient {
      */
     public checkStatus(timeout: number = GATEWAY_SELECTION_TIMEOUT): Promise<void> {
         const responseTime = new Date().getTime()
-        return this.getInfo(timeout)
+        return this.getVocdoniInfo(timeout)
             .then((result) => {
                 this._health = result.health
                 this._responseTime = Math.round(new Date().getTime() - responseTime)
@@ -249,7 +249,7 @@ export class DVoteGateway implements IGatewayDVoteClient {
      * Retrieves the status of the given gateway and returns an object indicating the services it provides.
      * If there is no connection open, the method returns null.
      */
-    public getInfo(timeout?: number): Promise<{ apiList: Array<GatewayApiName | BackendApiName>, health: number }> {
+    public getVocdoniInfo(timeout?: number): Promise<{ apiList: Array<GatewayApiName | BackendApiName>, health: number, chainId: string }> {
         if (!this.isPrepared) {
             return Promise.reject(new Error("Gateway is not ready"))
         }
@@ -262,7 +262,7 @@ export class DVoteGateway implements IGatewayDVoteClient {
                     throw new Error("invalid gateway reply")
                 }
 
-                return { apiList: result.apiList, health: result.health }
+                return { apiList: result.apiList, health: result.health, chainId: result.chainId }
             })
             .catch((error) => {
                 // TODO refactor errors
@@ -270,6 +270,17 @@ export class DVoteGateway implements IGatewayDVoteClient {
                 let message = "The status of the gateway could not be retrieved"
                 message = (error.message) ? message + ": " + error.message : message
                 return Promise.reject(message)
+            })
+    }
+
+    /** Retrieves the chainId of the Vochain */
+    public getVocdoniChainId() {
+        if (this._chainId) return Promise.resolve(this._chainId)
+
+        return this.getVocdoniInfo()
+            .then(({ chainId }) => {
+                this._chainId = chainId
+                return chainId
             })
     }
 

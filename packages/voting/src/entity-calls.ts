@@ -50,7 +50,7 @@ export namespace EntityApi {
         const resolverInstance = await gateway.getEnsPublicResolverInstance(walletOrSigner)
 
         const entityAddrHash = ensHashAddress(address)
-        const chainId = await gateway.chainId
+        const chainId = await gateway.getEthChainId()
         let options: IMethodOverrides
         let tx: ContractTransaction
         switch (chainId) {

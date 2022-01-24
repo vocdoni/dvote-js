@@ -7,16 +7,9 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Mocha Tests",
-            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
-            "args": [
-                "-r",
-                "ts-node/register",
-                "--timeout",
-                "999999",
-                "--colors",
-                "${workspaceFolder}/test/**/*.ts",
-            ],
+            "name": "Tests - Signing",
+            "program": "${workspaceFolder}/packages/signing/node_modules/mocha/bin/_mocha",
+            "args": [ "-r", "ts-node/register", "--timeout", "999999", "--colors", "${workspaceFolder}/packages/signing/test/**/*.ts"],
             "console": "integratedTerminal",
             "internalConsoleOptions": "openOnSessionStart",
             "protocol": "inspector"

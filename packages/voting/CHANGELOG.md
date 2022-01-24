@@ -1,5 +1,9 @@
 # @vocdoni/voting - Changelog
 
+## 1.16.0
+
+- Using salted signatures
+
 ## 1.15.5
 
 - Added `getAnonymousHexNullifier` for calculating the anonymous hexadecimal nullifier

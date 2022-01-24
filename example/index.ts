@@ -230,7 +230,7 @@ async function censusMethods() {
     const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL_RW })
     await pool.init()
 
-    const censusName = "My census name " + Math.random().toString().substr(2)
+    const censusName = "My census name " + Math.random().toString().substring(2)
     const adminPublicKeys = [utils.computePublicKey(wallet.publicKey, true)]
     const publicKeyClaims: { key: string, value?: string }[] = [
         { key: Buffer.from("0212d6dc30db7d2a32dddd0ba080d244cc26fcddcc29beb3fcb369564b468b49f1", "hex").toString("base64"), value: "" },
@@ -535,14 +535,14 @@ async function useVoteApi() {
     console.log("- Block in 200 seconds:", await VotingApi.estimateBlockAtDateTime(new Date(Date.now() + VOCHAIN_BLOCK_TIME * 20), pool))
 
     const publicKeyDigest = CensusOffChain.Public.encodePublicKey(wallet.publicKey)
-    const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: publicKeyDigest }, true, pool)
+    const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: publicKeyDigest }, pool)
     const votes = [1, 2, 1]
 
     // Open vote version:
-    const envelope = await Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet })
+    const envelope = Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId })
 
     // Encrypted vote version:
-    // const voteEnvelope = Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
+    // const voteEnvelope = Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
 
     console.log("- Poll Envelope:", envelope)
 
@@ -596,11 +596,11 @@ async function submitVoteBatch() {
             // const myEntityAddress = await wallet.getAddress()
 
             const publicKeyDigest = CensusOffChain.Public.encodePublicKey(wallet.publicKey)
-            const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: publicKeyDigest }, true, pool)
+            const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: publicKeyDigest }, pool)
             const votes = [1]
-            const envelope = Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet })
+            const envelope = Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId })
             // Encrypted version:
-            // const voteEnvelope = Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
+            // const voteEnvelope = Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
 
             console.log("- Submitting vote envelope")
             await VotingApi.submitEnvelope(envelope, wallet, pool)
@@ -619,7 +619,7 @@ async function checkSignature() {
     // const expectedAddress = "0xe3A0ba4B2Ec804869d9D78857C5c4c6aA493aD00"
     // const body = { "method": "getVisibility", "timestamp": Date.now()}
     //const message = JSON.stringify(body)
-    //const signature = await JsonSignature.sign(body, wallet)
+    //const signature = await JsonSignature.signMessage(body, wallet)
 
     const expectedAddress = await wallet.getAddress()
     const expectedPublicKey = utils.computePublicKey(wallet.publicKey, true)
@@ -632,7 +632,7 @@ async function checkSignature() {
 
     const message = JSON.stringify(body)
 
-    const computedSignature = await JsonSignature.sign(body, wallet)
+    const computedSignature = await JsonSignature.signMessage(body, wallet)
 
     console.log("Issuing signature\n")
     console.log("- ADDR:        ", expectedAddress)
@@ -642,8 +642,8 @@ async function checkSignature() {
     console.log()
 
     // Approach 1
-    const isValid = JsonSignature.isValid(givenSignature, expectedPublicKey, body)
-    const actualPubKey = JsonSignature.recoverPublicKey(body, givenSignature)
+    const isValid = JsonSignature.isValidMessage(body, givenSignature, expectedPublicKey)
+    const actualPubKey = JsonSignature.recoverMessagePublicKey(body, givenSignature)
 
     console.log("Approach 1")
     console.log("- Expected PUB K:   ", expectedPublicKey)
@@ -690,7 +690,7 @@ async function fetchMerkleProof() {
     console.log("FETCHING CLAIM", process.env.BASE64_CLAIM_DATA)
     console.log("on Merkle Tree", process.env.CENSUS_MERKLE_ROOT)
 
-    const siblings = await CensusOffChainApi.generateProof(process.env.CENSUS_MERKLE_ROOT, { key: process.env.BASE64_CLAIM_DATA }, true, pool)
+    const siblings = await CensusOffChainApi.generateProof(process.env.CENSUS_MERKLE_ROOT, { key: process.env.BASE64_CLAIM_DATA }, pool)
     console.log("SIBLINGS:", siblings)
 }
 

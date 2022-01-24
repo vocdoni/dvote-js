@@ -17,10 +17,10 @@ describe("Standalone Ethereum wallets", () => {
         expect(seed3.length).to.eq(66)
         expect(seed4.length).to.eq(66)
 
-        expect(seed1.substr(0, 2)).to.eq('0x')
-        expect(seed2.substr(0, 2)).to.eq('0x')
-        expect(seed3.substr(0, 2)).to.eq('0x')
-        expect(seed4.substr(0, 2)).to.eq('0x')
+        expect(seed1.substring(0, 2)).to.eq('0x')
+        expect(seed2.substring(0, 2)).to.eq('0x')
+        expect(seed3.substring(0, 2)).to.eq('0x')
+        expect(seed4.substring(0, 2)).to.eq('0x')
 
         expect(seed1.match(/^0x[0-9a-fA-F]{64}$/)).to.be.ok
         expect(seed2.match(/^0x[0-9a-fA-F]{64}$/)).to.be.ok

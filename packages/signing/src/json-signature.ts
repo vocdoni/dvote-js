@@ -1,113 +1,142 @@
-import { Wallet, verifyMessage } from "@ethersproject/wallet"
-import { computeAddress } from "@ethersproject/transactions"
-import { toUtf8Bytes } from "@ethersproject/strings"
-import { hashMessage } from "@ethersproject/hash"
-import { arrayify } from "@ethersproject/bytes"
-import { recoverPublicKey as signingKeyRecoverPublicKey, computePublicKey } from "@ethersproject/signing-key"
+import { Wallet } from "@ethersproject/wallet"
 import { Signer } from "@ethersproject/abstract-signer"
-import { JsonRpcSigner } from "@ethersproject/providers"
+import { BytesSignature } from "./bytes-signature"
+
+export type JsonLike = boolean | number | string | JsonLike[] | { [k: string]: JsonLike } | null
 
 export namespace JsonSignature {
+    // MESSAGES
+
     /**
-     * Sign a JSON payload using the given Ethers wallet or signer.
+     * Sign a JSON message using the given Ethers wallet or signer.
      * Ensures that the object keys are alphabetically sorted.
-     * @param request
+     * @param message JSON object of the `response` or `error` fields
      * @param walletOrSigner
      */
-    export function sign(request: any, walletOrSigner: Wallet | Signer): Promise<string> {
+    export function signMessage(message: JsonLike, walletOrSigner: Wallet | Signer): Promise<string> {
         if (!walletOrSigner) throw new Error("Invalid wallet/signer")
 
-        const sortedRequest = JsonSignature.sort(request)
-        const msg = JSON.stringify(sortedRequest)
+        const strMessage = normalizedJsonString(message)
+        const msgBytes = new TextEncoder().encode(strMessage)
 
-        if (walletOrSigner instanceof Wallet) {
-            const msgBytes = toUtf8Bytes(msg)
-            return walletOrSigner.signMessage(msgBytes)
-        }
-        else if (walletOrSigner instanceof JsonRpcSigner) {
-            // Some providers will use eth_sign without prepending the Ethereum prefix.
-            // This will break signatures in some cases (Wallet Connect, Ledger, Trezor, etc).
-            // Using personal_sign instead
-            return walletOrSigner.getAddress()
-                .then(address => (
-                    walletOrSigner.provider.send("personal_sign", [
-                        msg,
-                        address.toLowerCase()
-                    ])
-                ))
-        }
-
-        // Unexpected case, try to sign with eth_sign, even if we would prefer `personal_sign`
-        const msgBytes = toUtf8Bytes(msg)
-        return walletOrSigner.signMessage(msgBytes)
+        return BytesSignature.signMessage(msgBytes, walletOrSigner)
     }
 
     /**
-     * Checks whether the given public key signed the given JSON with its fields
+     * Checks whether the given public key signed the given JSON message with its fields
      * sorted alphabetically
+     * @param message JSON object of the `response` or `error` fields
      * @param signature Hex encoded signature (created with the Ethereum prefix)
      * @param publicKey
-     * @param responseBody JSON object of the `response` or `error` fields
      */
-    export function isValid(signature: string, publicKey: string, responseBody: any): boolean {
+    export function isValidMessage(message: JsonLike, signature: string, publicKey: string): boolean {
         if (!publicKey) return true
         else if (!signature) return false
 
-        const gwPublicKey = publicKey.startsWith("0x") ? publicKey : "0x" + publicKey
-        const expectedAddress = computeAddress(gwPublicKey)
+        const strMessage = normalizedJsonString(message)
+        const msgBytes = new TextEncoder().encode(strMessage)
 
-        const sortedResponseBody = JsonSignature.sort(responseBody)
-        const bodyBytes = toUtf8Bytes(JSON.stringify(sortedResponseBody))
-
-        if (!signature.startsWith("0x")) signature = "0x" + signature
-        const actualAddress = verifyMessage(bodyBytes, signature)
-
-        return actualAddress && expectedAddress && (actualAddress == expectedAddress)
+        return BytesSignature.isValidMessage(msgBytes, signature, publicKey)
     }
 
     /**
-     * Returns the public key that signed the given JSON data, with its fields sorted alphabetically
+     * Returns the public key that signed the given JSON message, having its fields sorted alphabetically
      *
+     * @param message JSON object of the `response` or `error` fields
      * @param signature Hex encoded signature (created with the Ethereum prefix)
-     * @param responseBody JSON object of the `response` or `error` fields
+     * @param expanded Whether the resulting public key should be expanded or not (default: no)
      */
-    export function recoverPublicKey(responseBody: any, signature: string, expanded: boolean = false): string {
+    export function recoverMessagePublicKey(message: JsonLike, signature: string, expanded: boolean = false): string {
         if (!signature) throw new Error("Invalid signature")
-        else if (!responseBody) throw new Error("Invalid body")
+        else if (!message) throw new Error("Invalid body")
 
-        responseBody = JsonSignature.sort(responseBody)
-        const strBody = JSON.stringify(responseBody)
-        const bodyBytes = toUtf8Bytes(strBody)
-        const msgHash = hashMessage(bodyBytes)
-        const msgHashBytes = arrayify(msgHash)
+        const strMessage = normalizedJsonString(message)
+        const msgBytes = new TextEncoder().encode(strMessage)
 
-        const expandedPubKey = signingKeyRecoverPublicKey(msgHashBytes, signature)
-        if (expanded) return expandedPubKey
-        return computePublicKey(expandedPubKey, true)
+        return BytesSignature.recoverMessagePublicKey(msgBytes, signature, expanded)
+    }
+
+    // TRANSACTIONS
+
+    /**
+     * Sign a JSON transaction using the given Ethers wallet or signer.
+     * Ensures that the object keys are alphabetically sorted.
+     * @param message JSON object
+     * @param walletOrSigner
+     */
+    export function signTransaction(message: JsonLike, chainId: string, walletOrSigner: Wallet | Signer): Promise<string> {
+        if (!walletOrSigner) throw new Error("Invalid wallet/signer")
+
+        const strMessage = normalizedJsonString(message)
+        const msgBytes = new TextEncoder().encode(strMessage)
+
+        return BytesSignature.signTransaction(msgBytes, chainId, walletOrSigner)
     }
 
     /**
-     * Returns a copy of the JSON data so that fields are ordered alphabetically and signatures are 100% reproduceable
-     * @param data Any valid JSON payload
+     * Checks whether the given public key signed the given JSON transaction with its fields
+     * sorted alphabetically
+     * @param message JSON object
+     * @param signature Hex encoded signature (created with the Ethereum prefix)
+     * @param publicKey
      */
-    export function sort(data: any) {
+    export function isValidTransaction(message: JsonLike, chainId: string, signature: string, publicKey: string): boolean {
+        if (!publicKey) return true
+        else if (!signature) return false
+
+        const strMessage = normalizedJsonString(message)
+        const msgBytes = new TextEncoder().encode(strMessage)
+
+        return BytesSignature.isValidTransaction(msgBytes, chainId, signature, publicKey)
+    }
+
+    /**
+     * Returns the public key that signed the given JSON transaction, having its fields sorted alphabetically
+     *
+     * @param message JSON object
+     * @param signature Hex encoded signature (created with the Ethereum prefix)
+     * @param expanded Whether the resulting public key should be expanded or not (default: no)
+     */
+    export function recoverTransactionPublicKey(message: JsonLike, chainId: string, signature: string, expanded: boolean = false): string {
+        if (!signature) throw new Error("Invalid signature")
+        else if (!message) throw new Error("Invalid body")
+
+        const strMessage = normalizedJsonString(message)
+        const msgBytes = new TextEncoder().encode(strMessage)
+
+        return BytesSignature.recoverTransactionPublicKey(msgBytes, chainId, signature, expanded)
+    }
+
+    // HELPERS
+
+    export function normalizedJsonString(body: JsonLike): string {
+        const sortedRequest = sort(body)
+        return JSON.stringify(sortedRequest)
+    }
+
+    /**
+    * Returns a copy of the JSON data so that fields are ordered alphabetically and signatures are 100% reproduceable
+    * @param data Any valid JSON payload
+    */
+    export function sort<T extends JsonLike>(data: T): T {
         switch (typeof data) {
             case "bigint":
-            case "boolean":
             case "function":
-            case "number":
-            case "string":
             case "symbol":
             case "undefined":
+                throw new Error("JSON objects with " + typeof data + " values are not supported")
+            case "boolean":
+            case "number":
+            case "string":
                 return data
         }
 
-        if (Array.isArray(data)) return data.map(item => JsonSignature.sort(item))
+        if (Array.isArray(data)) return data.map(item => sort(item)) as typeof data
 
         // Ensure ordered key names
         return Object.keys(data).sort().reduce((prev, cur) => {
-            prev[cur] = JsonSignature.sort(data[cur])
+            prev[cur] = sort(data[cur])
             return prev
-        }, {})
+        }, {}) as typeof data
     }
 }

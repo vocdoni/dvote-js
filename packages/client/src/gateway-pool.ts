@@ -113,6 +113,14 @@ export class GatewayPool implements IGatewayClient {
         return this.activeGateway.dvoteUri
     }
 
+    public getVocdoniInfo() {
+        return this.activeGateway.getVocdoniInfo()
+    }
+
+    public getVocdoniChainId() {
+        return this.activeGateway.getVocdoniChainId()
+    }
+
     public sendRequest(requestBody: IRequestParameters, wallet: Wallet | Signer = null, params?: { timeout: number }): Promise<DVoteGatewayResponseBody> {
         if (!this.activeGateway.supportsMethod(requestBody.method)) {
             this.errorCount += 1
@@ -152,11 +160,11 @@ export class GatewayPool implements IGatewayClient {
     public get provider(): BaseProvider { return this.activeGateway.provider }
     public get web3Uri(): string { return this.activeGateway.web3Uri }
 
-    public get chainId(): Promise<number> {
+    public getEthChainId(): Promise<number> {
         return this.provider.getNetwork().then(network => network.chainId)
     }
 
-    public get networkId(): Promise<string> {
+    public getEthNetworkId(): Promise<string> {
         return this.provider.getNetwork().then(network => network.name)
     }
 

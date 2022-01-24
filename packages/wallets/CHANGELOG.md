@@ -1,5 +1,9 @@
 # @vocdoni/wallets - Changelog
 
+## 1.16.0
+
+- Version bump (dependency upgrades)
+
 ## 1.15.0
 
 - Allowing to create random BabyJubJub wallets

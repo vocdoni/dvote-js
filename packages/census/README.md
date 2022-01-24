@@ -115,7 +115,7 @@ const caBundle = CAbundle.fromPartial({
     address: new Uint8Array(hexStringToBuffer(wallet.address)),
 })
 const hexCaBundle = hexlify(CAbundle.encode(caBundle).finish())
-const hexCaHashedBundle = keccak256(hexCaBundle).substr(2)
+const hexCaHashedBundle = keccak256(hexCaBundle).substring(2)
 
 const { hexBlinded, userSecretData } = CensusCaApi.blind(hexCaHashedBundle, tokenR)
 
