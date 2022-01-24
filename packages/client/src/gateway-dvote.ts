@@ -170,7 +170,7 @@ export class DVoteGateway implements IGatewayDVoteClient {
         }
 
         const request: MessageRequestContent = JsonSignature.sort({
-            id: Random.getHex().substr(2, 10),
+            id: Random.getHex().substring(2, 12),
             request: requestBody,
             signature: "",
         })

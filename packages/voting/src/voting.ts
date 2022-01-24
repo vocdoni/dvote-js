@@ -155,7 +155,7 @@ export namespace Voting {
         }
 
         // produce a 8 byte nonce
-        const nonce = Random.getHex().substr(2, 16)
+        const nonce = Random.getHex().substring(2, 18)
 
         const payload: VotePackage = {
             nonce,

@@ -98,7 +98,7 @@ export async function submitVotes(processId: string, processParams: ProcessContr
 
     // Request a blinding token
     const request1 = {
-      id: Random.getHex().substr(2, 10),
+      id: Random.getHex().substring(2, 11),
       request: { method: "auth", signatureType: "ECDSA_BLIND" },
 
       // any custom fields to prove that you are an eligible voter and uniquely idenfity you
@@ -118,13 +118,13 @@ export async function submitVotes(processId: string, processParams: ProcessContr
 
     // hash(bundle)
     const hexCaBundle = hexlify(CAbundle.encode(caBundle).finish())
-    const hexCaHashedBundle = keccak256(hexCaBundle).substr(2)
+    const hexCaHashedBundle = keccak256(hexCaBundle).substring(2)
 
     const { hexBlinded, userSecretData } = CensusBlind.blind(hexCaHashedBundle, tokenR)
 
     // Request signature
     const request2 = {
-      id: Random.getHex().substr(2, 10),
+      id: Random.getHex().substring(2, 11),
       request: {
         method: "sign",
         "signatureType": "ECDSA_BLIND",

@@ -230,7 +230,7 @@ async function censusMethods() {
     const pool = await GatewayPool.discover({ networkId: NETWORK_ID, bootnodesContentUri: BOOTNODES_URL_RW })
     await pool.init()
 
-    const censusName = "My census name " + Math.random().toString().substr(2)
+    const censusName = "My census name " + Math.random().toString().substring(2)
     const adminPublicKeys = [utils.computePublicKey(wallet.publicKey, true)]
     const publicKeyClaims: { key: string, value?: string }[] = [
         { key: Buffer.from("0212d6dc30db7d2a32dddd0ba080d244cc26fcddcc29beb3fcb369564b468b49f1", "hex").toString("base64"), value: "" },

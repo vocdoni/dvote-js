@@ -17,7 +17,7 @@ describe("Random generation", () => {
         const hex = Random.getHex()
 
         expect(hex).to.be.a("string")
-        expect(hex.substr(0, 2)).to.eq("0x")
+        expect(hex.substring(0, 2)).to.eq("0x")
         expect(hex.slice(2).length).to.eq(64)
     })
     it("Should generate a random bigint", () => {
