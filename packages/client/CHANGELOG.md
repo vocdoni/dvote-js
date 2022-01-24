@@ -1,5 +1,16 @@
 # @vocdoni/client - Changelog
 
+## 1.16.0
+
+- Adding support to fetch the chainId
+- Using salted JSON signatures
+- Adding `dvoteGateway.getVocdoniChainId()`
+- BREAKING:
+  - `web3Gateway.networkId` is now `web3Gateway.getEthNetworkId()`
+  - `web3Gateway.chainId` is now `web3Gateway.getEthChainId()`
+  - `dvoteGateway.getInfo()` is now `dvoteGateway.getVocdoniInfo()`
+- `getVocdoniInfo` now returns the `chainId`
+
 ## 1.15.1
 
 - Adding support for Avax and Fuji networks
@@ -11,7 +22,8 @@
 
 ## 1.14.2
 
-- Adding `Erc20TokensApi.isRegistered`, `Erc20TokensApi.getTokenAddressAt` and `Erc20TokensApi.getTokenCount`
+- Adding `Erc20TokensApi.isRegistered`, `Erc20TokensApi.getTokenAddressAt` and
+  `Erc20TokensApi.getTokenCount`
 
 ## 1.14.1
 

@@ -162,11 +162,11 @@ export class Web3Gateway implements IGatewayWeb3Client {
     }
 
     public get web3Uri(): string { return this._provider["connection"].url }
-    public get chainId(): Promise<number> {
+    public getEthChainId(): Promise<number> {
         return this._provider.getNetwork().then(network => network.chainId)
     }
 
-    public get networkId(): Promise<string> {
+    public getEthNetworkId(): Promise<string> {
         return this._provider.getNetwork().then(network => network.name)
     }
 

@@ -88,7 +88,7 @@ export namespace GatewayArchiveApi {
             return Promise.resolve(new ContentUri(gateway.archiveIpnsId))
         }
 
-        return gateway.networkId
+        return gateway.getEthNetworkId()
             .then(networkId => getEnsTextRecord(gateway, TextRecordKeys.VOCDONI_ARCHIVE, { environment: gateway.environment, networkId: networkId as EthNetworkID }))
             .then((uri: string) => {
                 if (!uri) {

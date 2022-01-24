@@ -17,17 +17,19 @@ export interface IGatewayDVoteClient {
     get dvoteUri(): string
     get environment(): VocdoniEnvironment
 
-    sendRequest(requestBody: IRequestParameters, wallet?: Wallet | Signer, params?: { timeout: number }): Promise<DVoteGatewayResponseBody>
+    sendRequest(requestBody: IRequestParameters, walletOrSigner?: Wallet | Signer, params?: { timeout: number }): Promise<DVoteGatewayResponseBody>
+    getVocdoniInfo(timeout?: number): Promise<{ apiList: Array<GatewayApiName | BackendApiName>, health: number, chainId: string }>
+    getVocdoniChainId(): Promise<string>
 }
 
 export interface IGatewayWeb3Client {
-    get chainId(): Promise<number>
-    get networkId(): Promise<string>
     get provider(): BaseProvider
     get web3Uri(): string
     get archiveIpnsId(): string
     set archiveIpnsId(ipnsId: string)
     disconnect(): void
+    getEthChainId(): Promise<number>
+    getEthNetworkId(): Promise<string>
 
     deploy<CustomContractMethods>(abi: string | (string | ParamType)[] | Interface, bytecode: string,
                                   signParams: { signer?: Signer, wallet?: Wallet }, deployArguments: any[]): Promise<(Contract & CustomContractMethods)>
