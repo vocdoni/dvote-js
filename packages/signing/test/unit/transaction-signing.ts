@@ -4,7 +4,7 @@ import { addCompletionHooks } from "../mocha-hooks"
 import { computePublicKey } from "@ethersproject/signing-key"
 import { Wallet } from "@ethersproject/wallet"
 
-import { JsonSignatureVocdoni, BytesSignatureVocdoni } from "../../src"
+import { JsonSignature, BytesSignature } from "../../src"
 
 const MAIN_CHAIN_ID = "production"
 const ALT_CHAIN_ID = "dvelopment"
@@ -12,19 +12,19 @@ const DUMMY_WALLET_SK = "8d7d56a9efa4158d232edbeaae601021eb3477ad77b5f3c720601fd
 
 addCompletionHooks()
 
-describe("Salted Vocdoni", () => {
-  describe("JSON signing", () => {
+describe("Transaction signing", () => {
+  describe("JSON payloads", () => {
     it("Should sign a JSON payload, regardless of the order of the fields", async () => {
       const wallet = new Wallet(DUMMY_WALLET_SK)
 
       const jsonBody1 = { "method": "getVisibility", "timestamp": 1582196988554 }
       const jsonBody2 = { "timestamp": 1582196988554, "method": "getVisibility" }
 
-      const signature1 = await JsonSignatureVocdoni.sign(jsonBody1, MAIN_CHAIN_ID, wallet)
-      const signature2 = await JsonSignatureVocdoni.sign(jsonBody2, MAIN_CHAIN_ID, wallet)
+      const signature1 = await JsonSignature.signTransaction(jsonBody1, MAIN_CHAIN_ID, wallet)
+      const signature2 = await JsonSignature.signTransaction(jsonBody2, MAIN_CHAIN_ID, wallet)
 
-      expect(signature1).to.equal("0xc60131b9c2cc2a847b6a08193cf9cac8f87c58102cc2b4f73b2140409a035b441f21ed260cc6743b185b99570630adea208961bc04ef2215c2f5fca614c4bb361c")
-      expect(signature2).to.equal("0xc60131b9c2cc2a847b6a08193cf9cac8f87c58102cc2b4f73b2140409a035b441f21ed260cc6743b185b99570630adea208961bc04ef2215c2f5fca614c4bb361c")
+      expect(signature1).to.equal("0x44d31937862e1f835f92d8b3f93858636bad075bd2429cf79404a81e42bd3d00196613c37a99b054c32339dde53ce3c25932c5d5f89483ccdf93234d3c4808b81b")
+      expect(signature2).to.equal("0x44d31937862e1f835f92d8b3f93858636bad075bd2429cf79404a81e42bd3d00196613c37a99b054c32339dde53ce3c25932c5d5f89483ccdf93234d3c4808b81b")
     })
     it("Should produce and recognize valid signatures, regardless of the order of the fields (isValid)", async () => {
       const wallet = new Wallet(DUMMY_WALLET_SK)
@@ -32,13 +32,13 @@ describe("Salted Vocdoni", () => {
       const jsonBody1 = { "method": "getVisibility", "timestamp": 1582196988554 }
       const jsonBody2 = { "timestamp": 1582196988554, "method": "getVisibility" }
 
-      const signature1 = await JsonSignatureVocdoni.sign(jsonBody1, MAIN_CHAIN_ID, wallet)
-      const signature2 = await JsonSignatureVocdoni.sign(jsonBody2, MAIN_CHAIN_ID, wallet)
+      const signature1 = await JsonSignature.signTransaction(jsonBody1, MAIN_CHAIN_ID, wallet)
+      const signature2 = await JsonSignature.signTransaction(jsonBody2, MAIN_CHAIN_ID, wallet)
 
-      expect(JsonSignatureVocdoni.isValid(signature1, computePublicKey(wallet.publicKey, true), jsonBody1, MAIN_CHAIN_ID)).to.be.true
-      expect(JsonSignatureVocdoni.isValid(signature2, computePublicKey(wallet.publicKey, true), jsonBody2, MAIN_CHAIN_ID)).to.be.true
-      expect(JsonSignatureVocdoni.isValid(signature1, wallet.publicKey, jsonBody1, MAIN_CHAIN_ID)).to.be.true
-      expect(JsonSignatureVocdoni.isValid(signature2, wallet.publicKey, jsonBody2, MAIN_CHAIN_ID)).to.be.true
+      expect(JsonSignature.isValidTransaction(jsonBody1, MAIN_CHAIN_ID, signature1, computePublicKey(wallet.publicKey, true))).to.be.true
+      expect(JsonSignature.isValidTransaction(jsonBody2, MAIN_CHAIN_ID, signature2, computePublicKey(wallet.publicKey, true))).to.be.true
+      expect(JsonSignature.isValidTransaction(jsonBody1, MAIN_CHAIN_ID, signature1, wallet.publicKey)).to.be.true
+      expect(JsonSignature.isValidTransaction(jsonBody2, MAIN_CHAIN_ID, signature2, wallet.publicKey)).to.be.true
     })
     it("Should recover the public key from a JSON and a signature", async () => {
       const wallet = new Wallet(DUMMY_WALLET_SK)
@@ -46,13 +46,13 @@ describe("Salted Vocdoni", () => {
       const jsonBody1 = { a: 1, b: "hi", c: false, d: [1, 2, 3, 4, 5, 6] }
       const jsonBody2 = { d: [1, 2, 3, 4, 5, 6], c: false, b: "hi", a: 1 }
 
-      const signature1 = await JsonSignatureVocdoni.sign(jsonBody1, MAIN_CHAIN_ID, wallet)
-      const signature2 = await JsonSignatureVocdoni.sign(jsonBody2, MAIN_CHAIN_ID, wallet)
+      const signature1 = await JsonSignature.signTransaction(jsonBody1, MAIN_CHAIN_ID, wallet)
+      const signature2 = await JsonSignature.signTransaction(jsonBody2, MAIN_CHAIN_ID, wallet)
 
-      const recoveredPubKeyComp1 = JsonSignatureVocdoni.recoverPublicKey(jsonBody1, signature1, MAIN_CHAIN_ID)
-      const recoveredPubKeyComp2 = JsonSignatureVocdoni.recoverPublicKey(jsonBody2, signature2, MAIN_CHAIN_ID)
-      const recoveredPubKey1 = JsonSignatureVocdoni.recoverPublicKey(jsonBody1, signature1, MAIN_CHAIN_ID, true)
-      const recoveredPubKey2 = JsonSignatureVocdoni.recoverPublicKey(jsonBody2, signature2, MAIN_CHAIN_ID, true)
+      const recoveredPubKeyComp1 = JsonSignature.recoverTransactionPublicKey(jsonBody1, MAIN_CHAIN_ID, signature1)
+      const recoveredPubKeyComp2 = JsonSignature.recoverTransactionPublicKey(jsonBody2, MAIN_CHAIN_ID, signature2)
+      const recoveredPubKey1 = JsonSignature.recoverTransactionPublicKey(jsonBody1, MAIN_CHAIN_ID, signature1, true)
+      const recoveredPubKey2 = JsonSignature.recoverTransactionPublicKey(jsonBody2, MAIN_CHAIN_ID, signature2, true)
 
       expect(recoveredPubKeyComp1).to.equal(recoveredPubKeyComp2)
       expect(recoveredPubKeyComp1).to.equal(computePublicKey(wallet.publicKey, true))
@@ -68,13 +68,13 @@ describe("Salted Vocdoni", () => {
       const jsonBody1 = { a: "àèìòù", b: "áéíóú" }
       const jsonBody2 = { b: "áéíóú", a: "àèìòù" }
 
-      const signature1 = await JsonSignatureVocdoni.sign(jsonBody1, MAIN_CHAIN_ID, wallet)
-      const signature2 = await JsonSignatureVocdoni.sign(jsonBody2, MAIN_CHAIN_ID, wallet)
+      const signature1 = await JsonSignature.signTransaction(jsonBody1, MAIN_CHAIN_ID, wallet)
+      const signature2 = await JsonSignature.signTransaction(jsonBody2, MAIN_CHAIN_ID, wallet)
 
-      const recoveredPubKeyComp1 = JsonSignatureVocdoni.recoverPublicKey(jsonBody1, signature1, MAIN_CHAIN_ID)
-      const recoveredPubKeyComp2 = JsonSignatureVocdoni.recoverPublicKey(jsonBody2, signature2, MAIN_CHAIN_ID)
-      const recoveredPubKey1 = JsonSignatureVocdoni.recoverPublicKey(jsonBody1, signature1, MAIN_CHAIN_ID, true)
-      const recoveredPubKey2 = JsonSignatureVocdoni.recoverPublicKey(jsonBody2, signature2, MAIN_CHAIN_ID, true)
+      const recoveredPubKeyComp1 = JsonSignature.recoverTransactionPublicKey(jsonBody1, MAIN_CHAIN_ID, signature1)
+      const recoveredPubKeyComp2 = JsonSignature.recoverTransactionPublicKey(jsonBody2, MAIN_CHAIN_ID, signature2)
+      const recoveredPubKey1 = JsonSignature.recoverTransactionPublicKey(jsonBody1, MAIN_CHAIN_ID, signature1, true)
+      const recoveredPubKey2 = JsonSignature.recoverTransactionPublicKey(jsonBody2, MAIN_CHAIN_ID, signature2, true)
 
       expect(recoveredPubKeyComp1).to.equal(recoveredPubKeyComp2)
       expect(recoveredPubKeyComp1).to.equal(computePublicKey(wallet.publicKey, true))
@@ -90,14 +90,14 @@ describe("Salted Vocdoni", () => {
     //   const bodyBytes = Uint8Array.from(Buffer.from(bodyHex, 'hex'))
     //   const signature = "8d2945bd594622e73d0d8b9cf536571f4ffbd3f37c911e1dd1e3b59be9872a8c708adb5a0cbe8d658165bcd6ff05a0f91456f248824b02a121dfc98b6524942200"
     //   const publicKey = "026d619ede0fe5db4213acec7a989b46f94b00fdfb28f80532e1182037f36e2ef3"
-    //   expect(BytesSignatureVocdoni.isValid(signature, publicKey, bodyBytes, MAIN_CHAIN_ID)).to.be.true
+    //   expect(BytesSignature.isValidTransaction(signature, publicKey, bodyBytes, MAIN_CHAIN_ID)).to.be.true
     // })
     it("Should create the same signature as go-dvote")
     // it("Should create the same signature as go-dvote", async () => {
     //   const wallet = new Wallet("c6446f24d08a34fdefc2501d6177b25e8a1d0f589b7a06f5a0131e9a8d0307e4")
     //   const jsonBody = '{"a":"1"}'
     //   const bytesBody = new TextEncoder().encode(jsonBody)
-    //   let signature = await BytesSignatureVocdoni.sign(bytesBody, MAIN_CHAIN_ID, wallet)
+    //   let signature = await BytesSignature.signTransaction(bytesBody, MAIN_CHAIN_ID, wallet)
     //   signature = signature.substring(0, signature.length - 2)
     //   let expectedSignature = "0x79fe1148abee08c131853f1c53ea299e357166256cf6f6bfe2531bab84f25a16175b30d7dfaecb68191bf8d6d0389954bbf8748d8942de9d0b502e3f75462cac"
     //   expectedSignature = expectedSignature.substring(0, expectedSignature.length - 2)
@@ -105,7 +105,7 @@ describe("Salted Vocdoni", () => {
     // })
   })
 
-  describe("Bytes signing", () => {
+  describe("Bytes payloads", () => {
     it("Should produce and recognize valid signatures with UTF-8 data", async () => {
       const wallet = new Wallet(DUMMY_WALLET_SK)
       const publicKeyComp = computePublicKey(wallet.publicKey, true)
@@ -119,16 +119,16 @@ describe("Salted Vocdoni", () => {
       const bytesBody2 = new TextEncoder().encode(jsonBody2)
       const bytesBody3 = new TextEncoder().encode(jsonBody3)
 
-      const signature1 = await BytesSignatureVocdoni.sign(bytesBody1, ALT_CHAIN_ID, wallet)
-      const signature2 = await BytesSignatureVocdoni.sign(bytesBody2, ALT_CHAIN_ID, wallet)
-      const signature3 = await BytesSignatureVocdoni.sign(bytesBody3, ALT_CHAIN_ID, wallet)
+      const signature1 = await BytesSignature.signTransaction(bytesBody1, ALT_CHAIN_ID, wallet)
+      const signature2 = await BytesSignature.signTransaction(bytesBody2, ALT_CHAIN_ID, wallet)
+      const signature3 = await BytesSignature.signTransaction(bytesBody3, ALT_CHAIN_ID, wallet)
 
-      expect(BytesSignatureVocdoni.isValid(signature1, publicKeyComp, bytesBody1, ALT_CHAIN_ID)).to.be.true
-      expect(BytesSignatureVocdoni.isValid(signature2, publicKeyComp, bytesBody2, ALT_CHAIN_ID)).to.be.true
-      expect(BytesSignatureVocdoni.isValid(signature3, publicKeyComp, bytesBody3, ALT_CHAIN_ID)).to.be.true
-      expect(BytesSignatureVocdoni.isValid(signature1, publicKey, bytesBody1, ALT_CHAIN_ID)).to.be.true
-      expect(BytesSignatureVocdoni.isValid(signature2, publicKey, bytesBody2, ALT_CHAIN_ID)).to.be.true
-      expect(BytesSignatureVocdoni.isValid(signature3, publicKey, bytesBody3, ALT_CHAIN_ID)).to.be.true
+      expect(BytesSignature.isValidTransaction(bytesBody1, ALT_CHAIN_ID, signature1, publicKeyComp)).to.be.true
+      expect(BytesSignature.isValidTransaction(bytesBody2, ALT_CHAIN_ID, signature2, publicKeyComp)).to.be.true
+      expect(BytesSignature.isValidTransaction(bytesBody3, ALT_CHAIN_ID, signature3, publicKeyComp)).to.be.true
+      expect(BytesSignature.isValidTransaction(bytesBody1, ALT_CHAIN_ID, signature1, publicKey)).to.be.true
+      expect(BytesSignature.isValidTransaction(bytesBody2, ALT_CHAIN_ID, signature2, publicKey)).to.be.true
+      expect(BytesSignature.isValidTransaction(bytesBody3, ALT_CHAIN_ID, signature3, publicKey)).to.be.true
     })
     it("Should produce and recognize valid signatures, regardless of the order of the fields", async () => {
       const wallet = new Wallet(DUMMY_WALLET_SK)
@@ -138,13 +138,13 @@ describe("Salted Vocdoni", () => {
       const jsonBody2 = '{ "timestamp": 1582196988554, "method": "getVisibility" }'
       const bytesBody2 = new TextEncoder().encode(jsonBody2)
 
-      const signature1 = await BytesSignatureVocdoni.sign(bytesBody1, MAIN_CHAIN_ID, wallet)
-      const signature2 = await BytesSignatureVocdoni.sign(bytesBody2, MAIN_CHAIN_ID, wallet)
+      const signature1 = await BytesSignature.signTransaction(bytesBody1, MAIN_CHAIN_ID, wallet)
+      const signature2 = await BytesSignature.signTransaction(bytesBody2, MAIN_CHAIN_ID, wallet)
 
-      expect(BytesSignatureVocdoni.isValid(signature1, computePublicKey(wallet.publicKey, true), bytesBody1, MAIN_CHAIN_ID)).to.be.true
-      expect(BytesSignatureVocdoni.isValid(signature2, computePublicKey(wallet.publicKey, true), bytesBody2, MAIN_CHAIN_ID)).to.be.true
-      expect(BytesSignatureVocdoni.isValid(signature1, wallet.publicKey, bytesBody1, MAIN_CHAIN_ID)).to.be.true
-      expect(BytesSignatureVocdoni.isValid(signature2, wallet.publicKey, bytesBody2, MAIN_CHAIN_ID)).to.be.true
+      expect(BytesSignature.isValidTransaction(bytesBody1, MAIN_CHAIN_ID, signature1, computePublicKey(wallet.publicKey, true))).to.be.true
+      expect(BytesSignature.isValidTransaction(bytesBody2, MAIN_CHAIN_ID, signature2, computePublicKey(wallet.publicKey, true))).to.be.true
+      expect(BytesSignature.isValidTransaction(bytesBody1, MAIN_CHAIN_ID, signature1, wallet.publicKey)).to.be.true
+      expect(BytesSignature.isValidTransaction(bytesBody2, MAIN_CHAIN_ID, signature2, wallet.publicKey)).to.be.true
     })
   })
 })

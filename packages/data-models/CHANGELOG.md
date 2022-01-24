@@ -1,5 +1,9 @@
 # @vocdoni/data-models - Changelog
 
+## 1.15.3
+
+- Minor typedef change
+
 ## 1.15.2
 
 - Adding `wrapRawTransaction`

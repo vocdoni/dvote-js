@@ -1,93 +1,96 @@
-import { Wallet, verifyMessage } from "@ethersproject/wallet"
-import { computeAddress } from "@ethersproject/transactions"
+import { Wallet } from "@ethersproject/wallet"
 import { Signer } from "@ethersproject/abstract-signer"
-import { JsonRpcSigner } from "@ethersproject/providers"
-import { digestVocdoniSignedPayload } from "./common"
-import { ensure0x } from "@vocdoni/common"
+import { digestVocdoniMessage, digestVocdoniTransaction, isValidRaw, recoverPublicKeyRaw, signRaw } from "./common"
 
 export namespace BytesSignature {
-    /**
-     * Sign a binary payload using the given Ethers wallet or signer.
-     * @param request
-     * @param walletOrSigner
-     */
-    export function sign(request: Uint8Array, walletOrSigner: Wallet | Signer): Promise<string> {
-        if (!walletOrSigner) throw new Error("Invalid wallet/signer")
+    // MESSAGES
 
-        if (walletOrSigner instanceof Wallet) {
-            return walletOrSigner.signMessage(request)
-        }
-        else if (walletOrSigner instanceof JsonRpcSigner) {
-            // Some providers will use eth_sign without prepending the Ethereum prefix.
-            // This will break signatures in some cases (Wallet Connect, Ledger, Trezor, etc).
-            // Using personal_sign instead
-            return walletOrSigner.getAddress()
-                .then(address => (
-                    walletOrSigner.provider.send("personal_sign", [
-                        uint8ArrayToArray(request),
-                        address.toLowerCase()
-                    ])
-                ))
-        }
-
-        // Unexpected case, try to sign with eth_sign, even if we would prefer `personal_sign`
-        return walletOrSigner.signMessage(request)
-    }
-
-    /**
-     * Checks whether the given public key signed the given payload
-     * @param signature Hex encoded signature (created with the Ethereum prefix)
-     * @param publicKey
-     * @param messageBytes Uint8Array of the message
-     */
-    export function isValid(signature: string, publicKey: string, messageBytes: Uint8Array): boolean {
-        if (!publicKey) return true
-        else if (!signature) return false
-
-        const actualAddress = verifyMessage(messageBytes, ensure0x(signature))
-        const expectedAddress = computeAddress(ensure0x(publicKey))
-
-        return actualAddress && expectedAddress && (actualAddress == expectedAddress)
-    }
-
-    // Helpers
-
-    function uint8ArrayToArray(buff: Uint8Array): number[] {
-        const result = []
-        for (let i = 0; i < buff.length; ++i) {
-            result.push(buff[i])
-        }
-        return result
-    }
-}
-
-export namespace BytesSignatureVocdoni {
     /**
      * Prefix and Sign a binary payload using the given Ethers wallet or signer.
-     * @param request
+     * @param messageBytes
      * @param chainId The ID of the Vocdoni blockchain deployment for which the message is intended to
      * @param walletOrSigner
      */
-    export function sign(request: Uint8Array, chainId: string, walletOrSigner: Wallet | Signer): Promise<string> {
+    export function signMessage(messageBytes: Uint8Array, walletOrSigner: Wallet | Signer): Promise<string> {
         if (!walletOrSigner) throw new Error("Invalid wallet/signer")
-        const digestedRequest = digestVocdoniSignedPayload(request, chainId)
+        const digestedRequest = digestVocdoniMessage(messageBytes)
 
-        return BytesSignature.sign(digestedRequest, walletOrSigner)
+        return signRaw(digestedRequest, walletOrSigner)
     }
 
     /**
-     * Checks whether the given public key signed the given payload with its fields
-     * sorted alphabetically
+     * Checks whether the given public key signed the given message
+     * @param signature Hex encoded signature (created with the Ethereum prefix)
+     * @param publicKey
+     * @param messageBytes Uint8Array of the message
+     */
+    export function isValidMessage(messageBytes: Uint8Array, signature: string, publicKey: string): boolean {
+        if (!publicKey) return true
+        else if (!signature) return false
+        const digestedMessage = digestVocdoniMessage(messageBytes)
+
+        return isValidRaw(signature, publicKey, digestedMessage)
+    }
+
+    /**
+     * Returns the public key that signed the given message
+     *
+     * @param messageBytes The payload being signed
+     * @param signature Hex encoded signature (created with the Ethereum prefix)
+     * @param expanded Whether the resulting public key should be expanded or not (default: no)
+     */
+    export function recoverMessagePublicKey(messageBytes: Uint8Array, signature: string, expanded: boolean = false): string {
+        if (!signature) throw new Error("Invalid signature")
+        else if (!messageBytes) throw new Error("Invalid body")
+
+        const digestedRequest = digestVocdoniMessage(messageBytes)
+
+        return recoverPublicKeyRaw(digestedRequest, signature, expanded)
+    }
+
+    // TRANSACTIONS
+
+    /**
+     * Prefix and Sign a binary payload using the given Ethers wallet or signer.
+     * @param messageBytes
+     * @param chainId The ID of the Vocdoni blockchain deployment for which the message is intended to
+     * @param walletOrSigner
+     */
+    export function signTransaction(messageBytes: Uint8Array, chainId: string, walletOrSigner: Wallet | Signer): Promise<string> {
+        if (!walletOrSigner) throw new Error("Invalid wallet/signer")
+        const digestedMessage = digestVocdoniTransaction(messageBytes, chainId)
+
+        return signRaw(digestedMessage, walletOrSigner)
+    }
+
+    /**
+     * Checks whether the given public key signed the given transaction
      * @param signature Hex encoded signature (created with the Ethereum prefix)
      * @param publicKey
      * @param messageBytes Uint8Array of the message
      * @param chainId The ID of the Vocdoni blockchain deployment for which the message is intended to
      */
-    export function isValid(signature: string, publicKey: string, messageBytes: Uint8Array, chainId: string): boolean {
+    export function isValidTransaction(messageBytes: Uint8Array, chainId: string, signature: string, publicKey: string): boolean {
         if (!publicKey) return true
         else if (!signature) return false
-        const digestedRequest = digestVocdoniSignedPayload(messageBytes, chainId)
+        const digestedRequest = digestVocdoniTransaction(messageBytes, chainId)
 
-        return BytesSignature.isValid(signature, publicKey, digestedRequest)
+        return isValidRaw(signature, publicKey, digestedRequest)
+    }
+
+    /**
+     * Returns the public key that signed the given transaction
+     *
+     * @param messageBytes The payload being signed
+     * @param signature Hex encoded signature (created with the Ethereum prefix)
+     * @param expanded Whether the resulting public key should be expanded or not (default: no)
+     */
+    export function recoverTransactionPublicKey(messageBytes: Uint8Array, chainId: string, signature: string, expanded: boolean = false): string {
+        if (!signature) throw new Error("Invalid signature")
+        else if (!messageBytes) throw new Error("Invalid body")
+
+        const digestedRequest = digestVocdoniTransaction(messageBytes, chainId)
+
+        return recoverPublicKeyRaw(digestedRequest, signature, expanded)
     }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@vocdoni/data-models",
-  "version": "1.15.2",
+  "version": "1.15.3",
   "description": "Javascript/Typescript models package",
   "main": "dist/index",
   "types": "dist/index",

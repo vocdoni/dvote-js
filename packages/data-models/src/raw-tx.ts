@@ -6,5 +6,5 @@ export function wrapRawTransaction(txBytes: Uint8Array, saltedSignature = new Ui
   const signedTxBytes = signedTx.finish()
 
   const base64Payload = Buffer.from(signedTxBytes).toString("base64")
-  return { method: "submitRawTx", payload: base64Payload }
+  return { method: "submitRawTx" as const, payload: base64Payload }
 }
