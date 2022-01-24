@@ -15,54 +15,131 @@ npm install @vocdoni/signing
 
 #### BytesSignature
 
-(See also [`BytesSignatureVocdoni`](#vocdoni-salted-signing))
-
 ```ts
 import { BytesSignature } from "@vocdoni/signing";
-import { computePublicKey } from "@ethersproject/signing-key";
 import { Wallet } from "@ethersproject/wallet";
 
-const wallet = new Wallet("8d7d56a9efa4158d232edbeaae601021eb3477ad77b5f3c720601fd74e8e04bb");
+const wallet = new Wallet(
+  "8d7d56a9efa4158d232edbeaae601021eb3477ad77b5f3c720601fd74e8e04bb",
+);
 
-const jsonBody = '{ "method": "getVisibility", "timestamp": 1582196988554 }';
-const bytesBody = new TextEncoder().encode(jsonBody);
+const body = "hello world";
+const bodyBytes = new TextEncoder().encode(message);
 
-const signature = await BytesSignature.sign(bytesBody, wallet);
-// returns '0xf59447c1f981a0760c6b74acaef2b54efaeb5f5653cb314349586454ded27d305542b90011eaa3c03e1c66ba3149fe9e17a4c3bcffd4e339e8e1dc5af34a5a941b'
+// Signing messages
 
-BytesSignature.isValid(
-  signature,
-  computePublicKey(wallet.publicKey, true),
-  bytesBody,
+const msgSignature = await BytesSignature.signMessage(bodyBytes, wallet);
+// returns '0x578ef5489a30afafc89ea1e39154140e73b9cf9d23da11e1eeb9358cd1c862382027e46da51c686ddcde3b0e6f13d82b418c691a1267b285f24f99e0669b23951b'
+
+BytesSignature.isValidMessage(bodyBytes, msgSignature, wallet.publicKey);
+// returns 'true'
+
+BytesSignature.recoverMessagePublicKey(bodyBytes, msgSignature);
+// returns '0x02cb3cabb521d84fc998b5649d6b59e27a3e27633d31cc0ca6083a00d68833d5ca'
+
+// Signing transactions
+
+const chainId = "production";
+const txSignature = await BytesSignature.signTransaction(
+  bodyBytes,
+  chainId,
+  wallet,
+);
+// returns '0xaccdc8d0537bad80fde86ddd0c28f0f4fa59f1225da4ae18ad73bfe27860d7bf0fb884f659b82a11e08f5875ca9728c07b0bfd30e7c47a8f9b3874b9e25944751c'
+
+BytesSignature.isValidTransaction(
+  bodyBytes,
+  chainId,
+  txSignature,
+  wallet.publicKey,
 );
 // returns 'true'
-BytesSignature.isValid(signature, wallet.publicKey, bytesBody);
-// returns 'true'
+
+BytesSignature.recoverTransactionPublicKey(
+  bodyBytes,
+  chainId,
+  txSignature,
+);
+// returns '0x02cb3cabb521d84fc998b5649d6b59e27a3e27633d31cc0ca6083a00d68833d5ca'
 ```
 
 #### JsonSignature
-
-(See also [`JsonSignatureVocdoni`](#vocdoni-salted-signing))
 
 ```ts
 import { JsonSignature } from "@vocdoni/signing";
 import { computePublicKey } from "@ethersproject/signing-key";
 import { Wallet } from "@ethersproject/wallet";
 
-const wallet = new Wallet("8d7d56a9efa4158d232edbeaae601021eb3477ad77b5f3c720601fd74e8e04bb");
+const wallet = new Wallet(
+  "8d7d56a9efa4158d232edbeaae601021eb3477ad77b5f3c720601fd74e8e04bb",
+);
 const jsonBody = { a: 1, b: "hi", c: false, d: [1, 2, 3, 4, 5, 6] };
 
-const signature = await JsonSignature.sign(jsonBody, wallet);
-// returns '0xa1fbf799c48f64535a5a20c741f02c25be04127642b6901c4231d9f55d5b6e860fbb0b16d5a9ec6fa029d8b86993d653e0e8573b32a3a19f37945467e7024a231c'
+// Signing messages
 
-const recoveredPubKeyComp = JsonSignature.recoverPublicKey(jsonBody, signature);
+const msgSignature = await JsonSignature.signMessage(jsonBody, wallet);
+// returns '0x40cd233894286b078667361b636e7e961072af579228ef8af3691cd5cdd1e5177984ceb65028a9fa8b0b8230c095cbe1b9dd244d5dee4febba67e01b34242fd41c'
+
+JsonSignature.isValidMessage(jsonBody, msgSignature, wallet.publicKey);
+// returns 'true'
+
+JsonSignature.recoverMessagePublicKey(jsonBody, msgSignature);
 // returns '0x02cb3cabb521d84fc998b5649d6b59e27a3e27633d31cc0ca6083a00d68833d5ca'
-const recoveredPubKey = JsonSignature.recoverPublicKey(
+
+// Signing transactions
+
+const chainId = "production";
+const txSignature = await JsonSignature.signTransaction(
   jsonBody,
-  signature,
-  true,
+  chainId,
+  wallet,
 );
-// returns '0x04cb3cabb521d84fc998b5649d6b59e27a3e27633d31cc0ca6083a00d68833d5caeaeb67fbce49e44f089a28f46a4d815abd51bc5fc122065518ea4adb199ba780'
+// returns '0xb37f025532f7f2efe41a89f9b037fbca02c00e3594305b9654558fc6c600594d3cabfd72acd1c0d0933756485072a77424bfe7f02f6b0472cd136dbd7ee5e9ca1c'
+
+JsonSignature.isValidTransaction(
+  jsonBody,
+  chainId,
+  txSignature,
+  wallet.publicKey,
+);
+// returns 'true'
+
+JsonSignature.recoverTransactionPublicKey(jsonBody, chainId, txSignature);
+// returns '0x02cb3cabb521d84fc998b5649d6b59e27a3e27633d31cc0ca6083a00d68833d5ca'
+```
+
+#### normalizeJsonToString
+
+```ts
+import { JsonSignature } from "@vocdoni/signing";
+
+JsonSignature.normalizedJsonString({ a: 1, b: 2 });
+// '{"a":2,"b":1}'
+
+JsonSignature.normalizedJsonString({ b: 1, a: 2 });
+// '{"a":2,"b":1}'
+
+const strA = JsonSignature.normalizedJsonString({
+  a: 1,
+  b: [{ a: 10, m: 10, z: 10 }, { b: 11, n: 11, y: 11 }, 4, 5],
+});
+const strB = JsonSignature.normalizedJsonString({
+  b: [{ z: 10, m: 10, a: 10 }, { y: 11, n: 11, b: 11 }, 4, 5],
+  a: 1,
+});
+// strA === strB
+```
+
+#### sortJson
+
+```ts
+import { JsonSignature } from "@vocdoni/signing";
+
+JsonSignature.sort({ a: 1, b: 2 });
+// {a: 1, b: 2}
+
+JsonSignature.sort({ b: 1, a: 2 });
+// {b: 1, a: 2}
 
 const strA = JSON.stringify(
   JsonSignature.sort({
@@ -77,67 +154,6 @@ const strB = JSON.stringify(
   }),
 );
 // strA === strB
-
-JsonSignature.isValid(
-  signature,
-  computePublicKey(wallet.publicKey, true),
-  jsonBody,
-);
-// returns 'true'
-JsonSignature.isValid(signature, wallet.publicKey, jsonBody);
-// returns 'true'
-```
-
-#### Vocdoni salted signing
-
-`BytesSignatureVocdoni` and `JsonSignatureVocdoni` do the same job as
-`BytesSignature` and `JsonSignature`, but salting the payload and digesting it
-to reduce its size. These payloads are expected in requests being sent to the
-Vochain.
-
-The only difference is that both require the `chainId` to sign and verify.
-
-#### sortJson
-
-```ts
-import { sortJson } from "@vocdoni/signing";
-
-sortJson({ a: 1, b: 2 });
-// {a: 1, b: 2}
-
-sortJson({ b: 1, a: 2 });
-// {b: 1, a: 2}
-```
-
-#### normalizeJsonToString
-
-```ts
-import { normalizeJsonToString } from "@vocdoni/signing";
-
-normalizeJsonToString({ a: 1, b: 2 });
-// '{"a":2,"b":1}'
-
-normalizeJsonToString({ b: 1, a: 2 });
-// '{"a":2,"b":1}'
-```
-
-#### digestVocdoniSignedPayload
-
-```ts
-import { digestVocdoniSignedPayload } from "@vocdoni/signing";
-
-const payload1 = digestVocdoniSignedPayload("hi", "release-1.3");
-console.log(new TextDecoder().decode(payload1));
-// Vocdoni signed message:
-// release-1.3
-// 7624778dedc75f8b322b9fa1632a610d40b85e106c7d9bf0e743a9ce291b9c6f
-
-const hiBytes = new TextEncoder().encode("hi")
-const payload2 = digestVocdoniSignedPayload(hiBytes, "release-1.3");
-console.log(new TextDecoder().decode(payload2));
-// Vocdoni signed message:
-// release-1.3
-// 7624778dedc75f8b322b9fa1632a610d40b85e106c7d9bf0e743a9ce291b9c6f
 ```
 
 ## Testing

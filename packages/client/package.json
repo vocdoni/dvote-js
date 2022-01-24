@@ -1,7 +1,7 @@
 {
   "name": "@vocdoni/client",
   "version": "1.16.0",
-  "description": "Javascript/Typescript client package",
+  "description": "JavaScript/TypeScript client package",
   "main": "dist/index",
   "types": "dist/index",
   "repository": "https://github.com/vocdoni/dvote-js.git",

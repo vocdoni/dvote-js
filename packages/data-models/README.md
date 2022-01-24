@@ -59,11 +59,11 @@ checkValidProcessMetadata({})
 
 ```ts
 import { Tx, wrapRawTransaction } from "@vocdoni/data-models"
-import { BytesSignatureVocdoni } from "@vocdoni/signing"
+import { BytesSignature } from "@vocdoni/signing"
 
 const tx = Tx.encode(...)
 const txBytes = tx.finish()
-const signature = await BytesSignatureVocdoni.sign(txBytes, chainId, signer)
+const signature = await BytesSignature.signTransaction(txBytes, chainId, signer)
 
 const result = wrapRawTransaction(txBytes, signature)
 // { method: "submitRawTx", payload: "base64..."}

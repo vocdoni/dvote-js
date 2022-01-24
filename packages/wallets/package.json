@@ -1,7 +1,7 @@
 {
   "name": "@vocdoni/wallets",
   "version": "1.16.0",
-  "description": "Javascript/Typescript wallets package",
+  "description": "JavaScript/TypeScript wallets package",
   "main": "dist/index",
   "types": "dist/index",
   "repository": "https://github.com/vocdoni/dvote-js.git",

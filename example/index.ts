@@ -539,7 +539,7 @@ async function useVoteApi() {
     const votes = [1, 2, 1]
 
     // Open vote version:
-    const envelope = await Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet })
+    const envelope = Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet })
 
     // Encrypted vote version:
     // const voteEnvelope = Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
@@ -619,7 +619,7 @@ async function checkSignature() {
     // const expectedAddress = "0xe3A0ba4B2Ec804869d9D78857C5c4c6aA493aD00"
     // const body = { "method": "getVisibility", "timestamp": Date.now()}
     //const message = JSON.stringify(body)
-    //const signature = await JsonSignature.sign(body, wallet)
+    //const signature = await JsonSignature.signMessage(body, wallet)
 
     const expectedAddress = await wallet.getAddress()
     const expectedPublicKey = utils.computePublicKey(wallet.publicKey, true)
@@ -632,7 +632,7 @@ async function checkSignature() {
 
     const message = JSON.stringify(body)
 
-    const computedSignature = await JsonSignature.sign(body, wallet)
+    const computedSignature = await JsonSignature.signMessage(body, wallet)
 
     console.log("Issuing signature\n")
     console.log("- ADDR:        ", expectedAddress)
@@ -642,8 +642,8 @@ async function checkSignature() {
     console.log()
 
     // Approach 1
-    const isValid = JsonSignature.isValid(givenSignature, expectedPublicKey, body)
-    const actualPubKey = JsonSignature.recoverPublicKey(body, givenSignature)
+    const isValid = JsonSignature.isValidMessage(body, givenSignature, expectedPublicKey)
+    const actualPubKey = JsonSignature.recoverMessagePublicKey(body, givenSignature)
 
     console.log("Approach 1")
     console.log("- Expected PUB K:   ", expectedPublicKey)

@@ -1,7 +1,7 @@
 {
   "name": "@vocdoni/voting",
-  "version": "1.15.5",
-  "description": "Javascript/Typescript voting package",
+  "version": "1.16.0",
+  "description": "JavaScript/TypeScript voting package",
   "main": "dist/index",
   "types": "dist/index",
   "repository": "https://github.com/vocdoni/dvote-js.git",
@@ -20,12 +20,12 @@
     "test": "npm run build && ./node_modules/.bin/mocha -r ts-node/register test/**/*.ts"
   },
   "dependencies": {
-    "@vocdoni/client": "^1.15.1",
+    "@vocdoni/client": "^1.16.0",
     "@vocdoni/common": "^1.15.1",
     "@vocdoni/contract-wrappers": "^1.15.0",
-    "@vocdoni/data-models": "^1.15.1",
+    "@vocdoni/data-models": "^1.15.3",
     "@vocdoni/hashing": "^1.15.0",
-    "@vocdoni/signing": "^1.14.0",
+    "@vocdoni/signing": "^1.16.1",
     "buffer": "^6.0.3"
   },
   "devDependencies": {

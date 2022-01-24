@@ -1,7 +1,7 @@
 {
   "name": "@vocdoni/signing",
   "version": "1.16.1",
-  "description": "Javascript/Typescript signing package",
+  "description": "JavaScript/TypeScript signing package",
   "main": "dist/index",
   "types": "dist/index",
   "repository": "https://github.com/vocdoni/dvote-js.git",
