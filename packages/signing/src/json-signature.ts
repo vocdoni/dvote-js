@@ -118,25 +118,25 @@ export namespace JsonSignature {
     * Returns a copy of the JSON data so that fields are ordered alphabetically and signatures are 100% reproduceable
     * @param data Any valid JSON payload
     */
-    export function sort(data: JsonLike): JsonLike {
+    export function sort<T extends JsonLike>(data: T): T {
         switch (typeof data) {
             case "bigint":
             case "function":
             case "symbol":
+            case "undefined":
                 throw new Error("JSON objects with " + typeof data + " values are not supported")
             case "boolean":
             case "number":
             case "string":
-            case "undefined":
                 return data
         }
 
-        if (Array.isArray(data)) return data.map(item => sort(item))
+        if (Array.isArray(data)) return data.map(item => sort(item)) as typeof data
 
         // Ensure ordered key names
         return Object.keys(data).sort().reduce((prev, cur) => {
             prev[cur] = sort(data[cur])
             return prev
-        }, {})
+        }, {}) as typeof data
     }
 }

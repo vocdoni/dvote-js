@@ -1,5 +1,9 @@
 # @vocdoni/signing - Changelog
 
+## 1.16.1
+
+- `JsonSignature.sort` now returns the same type as the input parameter, not `JsonLike`
+
 ## 1.16.0
 
 - `sortJson` is now exported as `JsonSignature.sort`
