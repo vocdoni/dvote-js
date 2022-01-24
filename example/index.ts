@@ -535,14 +535,14 @@ async function useVoteApi() {
     console.log("- Block in 200 seconds:", await VotingApi.estimateBlockAtDateTime(new Date(Date.now() + VOCHAIN_BLOCK_TIME * 20), pool))
 
     const publicKeyDigest = CensusOffChain.Public.encodePublicKey(wallet.publicKey)
-    const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: publicKeyDigest }, true, pool)
+    const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: publicKeyDigest }, pool)
     const votes = [1, 2, 1]
 
     // Open vote version:
-    const envelope = Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet })
+    const envelope = Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId })
 
     // Encrypted vote version:
-    // const voteEnvelope = Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
+    // const voteEnvelope = Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
 
     console.log("- Poll Envelope:", envelope)
 
@@ -596,11 +596,11 @@ async function submitVoteBatch() {
             // const myEntityAddress = await wallet.getAddress()
 
             const publicKeyDigest = CensusOffChain.Public.encodePublicKey(wallet.publicKey)
-            const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: publicKeyDigest }, true, pool)
+            const censusProof = await CensusOffChainApi.generateProof(censusRoot, { key: publicKeyDigest }, pool)
             const votes = [1]
-            const envelope = Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet })
+            const envelope = Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId })
             // Encrypted version:
-            // const voteEnvelope = Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, walletOrSigner: wallet, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
+            // const voteEnvelope = Voting.packageSignedEnvelope({ censusOrigin: processParams.censusOrigin, votes, censusProof, processId, encryptionPubKeys: ["6876524df21d6983724a2b032e41471cc9f1772a9418c4d701fcebb6c306af50"] })
 
             console.log("- Submitting vote envelope")
             await VotingApi.submitEnvelope(envelope, wallet, pool)
@@ -690,7 +690,7 @@ async function fetchMerkleProof() {
     console.log("FETCHING CLAIM", process.env.BASE64_CLAIM_DATA)
     console.log("on Merkle Tree", process.env.CENSUS_MERKLE_ROOT)
 
-    const siblings = await CensusOffChainApi.generateProof(process.env.CENSUS_MERKLE_ROOT, { key: process.env.BASE64_CLAIM_DATA }, true, pool)
+    const siblings = await CensusOffChainApi.generateProof(process.env.CENSUS_MERKLE_ROOT, { key: process.env.BASE64_CLAIM_DATA }, pool)
     console.log("SIBLINGS:", siblings)
 }
 
