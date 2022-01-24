@@ -193,7 +193,7 @@ export class DVoteGateway implements IGatewayDVoteClient {
      *
      * @return The checked response of the Gateway
      */
-    private checkResponse(response: AxiosResponse, requestId: string): Promise<DVoteGatewayResponseBody> {
+    private checkResponse(response: AxiosResponse, requestId: string): DVoteGatewayResponseBody {
         const msgBytes: Uint8Array = extractUint8ArrayJSONValue(new Uint8Array(response.data), "response")
         const msg: DVoteGatewayResponseBody = JSON.parse(new TextDecoder().decode(response.data))
 
