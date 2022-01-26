@@ -137,6 +137,10 @@ export class GatewayDiscovery {
 
         return promiseWithTimeout(prom, this.timeout, GatewayDiscoveryError.BOOTNODE_TIMEOUT_ERROR)
             .then((bootnodeData: JsonBootnodeData) => {
+                if (!bootnodeData[networkId]) throw new Error("There are no gateways for the given network")
+                else if (!bootnodeData[networkId].dvote) throw new Error("There are no Vocdoni gateways for the given network")
+                else if (!bootnodeData[networkId].web3) throw new Error("There are no Web3 gateways for the given network")
+
                 // Check if there are enough gateways
                 if (bootnodeData[networkId].dvote.length < this.minNumberOfGateways) {
                     throw new GatewayDiscoveryError(GatewayDiscoveryError.BOOTNODE_NOT_ENOUGH_GATEWAYS)

@@ -1,5 +1,9 @@
 # @vocdoni/client - Changelog
 
+## 1.16.1
+
+- Adding a check to prevent empty networks from causing an unhandled error
+
 ## 1.16.0
 
 - Adding support to fetch the chainId
