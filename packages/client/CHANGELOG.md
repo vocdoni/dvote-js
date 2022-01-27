@@ -1,5 +1,9 @@
 # @vocdoni/client - Changelog
 
+## 1.16.2
+
+- Preventing an empty timeout value to be passed
+
 ## 1.16.1
 
 - Adding a check to prevent empty networks from causing an unhandled error

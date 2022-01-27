@@ -125,7 +125,7 @@ export class DVoteGateway implements IGatewayDVoteClient {
                 requestId = request.id
                 return promiseWithTimeout(
                     this.client.post('', JsonSignature.sort(request)),
-                    params.timeout,
+                    params.timeout || 15 * 1000,
                 )
             })
             .then((response: AxiosResponse) => {
