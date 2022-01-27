@@ -1043,7 +1043,8 @@ export namespace VotingApi {
 
         let signature = new Uint8Array()
         if (voteEnvelope.proof.payload.$case !== "zkSnark") {
-            const hexSignature = await BytesSignature.signMessage(txBytes, walletOrSigner)
+            const chainId = await gateway.getVocdoniChainId()
+            const hexSignature = await BytesSignature.signTransaction(txBytes, chainId, walletOrSigner)
             signature = new Uint8Array(Buffer.from(strip0x(hexSignature), "hex"))
         }
 

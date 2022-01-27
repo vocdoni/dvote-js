@@ -1,5 +1,9 @@
 # @vocdoni/voting - Changelog
 
+## 1.16.1
+
+- Amending the type of signature applied
+
 ## 1.16.0
 
 - Using salted signatures

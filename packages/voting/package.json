@@ -1,6 +1,6 @@
 {
   "name": "@vocdoni/voting",
-  "version": "1.16.0",
+  "version": "1.16.1",
   "description": "JavaScript/TypeScript voting package",
   "main": "dist/index",
   "types": "dist/index",
