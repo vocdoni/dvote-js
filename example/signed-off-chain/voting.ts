@@ -12,7 +12,7 @@ import {
 import { getConfig } from "./config"
 import { TestAccount } from "./census"
 import { getChoicesForVoter, waitUntilPresent } from "./util"
-import { CensusErc20Api, CensusOffChainApi } from "@vocdoni/census"
+import { CensusOffChainApi } from "@vocdoni/census"
 import { Wallet } from "@ethersproject/wallet"
 import { IGatewayClient } from "@vocdoni/client"
 

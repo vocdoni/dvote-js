@@ -16,7 +16,7 @@ export namespace Erc20TokensApi {
             }).then(results => {
                 return results
                     .filter(item => item.status === "fulfilled")
-                    .map((item: { status: string, value: any }) => item.value)
+                    .map((item: any) => item.value) // { status: string, value: any }
             })
     }
 
