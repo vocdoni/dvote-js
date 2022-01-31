@@ -1,19 +1,17 @@
 import { VocdoniEnvironment } from "@vocdoni/common"
 import { BackendApiName, GatewayApiName } from "../apis/definition"
 
-// const uriPattern = /^([a-z][a-z0-9+.-]+):(\/\/([^@]+@)?([a-z0-9.\-_~]+)(:\d+)?)?((?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])*)*|(?:\/(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@])+)*)?(\?(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?(\#(?:[a-z0-9-._~]|%[a-f0-9]|[!$&'()*+,;=:@]|[/?])+)?$/i
-
-export class GatewayInfo {
-    private dvoteUri: string
-    private supportedApiList: GatewayApiName[] | BackendApiName[]
-    private web3Uri: string
-    private pubKey: string
+export class ClientInfo {
+    private _dvoteUri: string
+    private _supportedApiList: GatewayApiName[] | BackendApiName[]
+    private _web3Uri: string
+    private _pubKey: string
     private _environment: VocdoniEnvironment
 
-    public get dvote() { return this.dvoteUri }
-    public get supportedApis() { return this.supportedApiList }
-    public get web3() { return this.web3Uri }
-    public get publicKey() { return this.pubKey }
+    public get dvote() { return this._dvoteUri }
+    public get supportedApis() { return this._supportedApiList }
+    public get web3() { return this._web3Uri }
+    public get publicKey() { return this._pubKey }
     public get environment() { return this._environment }
 
     /** Bundles the given coordinates into an object containing the details of a Gateway */
@@ -28,10 +26,10 @@ export class GatewayInfo {
             if (typeof web3Uri != "string") throw new Error("Invalid Web3 URI")
         }
 
-        this.dvoteUri = dvoteUri || null
-        this.supportedApiList = supportedApis || []
-        this.web3Uri = web3Uri || null
-        this.pubKey = pubKey || ""
+        this._dvoteUri = dvoteUri || null
+        this._supportedApiList = supportedApis || []
+        this._web3Uri = web3Uri || null
+        this._pubKey = pubKey || ""
         this._environment = environment || "prod"
     }
 }

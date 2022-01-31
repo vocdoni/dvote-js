@@ -9,7 +9,7 @@ import { BaseProvider, JsonRpcProvider, Web3Provider, IpcProvider, InfuraProvide
 import { Contract, ContractFactory, ContractInterface } from "@ethersproject/contracts"
 import { BigNumber } from "@ethersproject/bignumber"
 import { ProviderUtil } from "./net/providers"
-import { GatewayInfo } from "./wrappers/gateway-info"
+import { GatewayInfo } from "./wrappers/client-info"
 import {
     ENTITY_RESOLVER_ENS_SUBDOMAIN,
     ERC20_STORAGE_PROOFS_ENS_SUBDOMAIN,

@@ -1,4 +1,4 @@
-import { FileApi } from "./apis/file"
+import { FileApi } from "./net/file"
 import { GatewayArchiveError } from "./errors/archive"
 import { TextRecordKeys, strip0x } from "@vocdoni/common"
 import { VochainProcessStatus } from "@vocdoni/data-models"

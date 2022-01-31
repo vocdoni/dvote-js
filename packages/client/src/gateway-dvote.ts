@@ -8,7 +8,7 @@ import {
 } from "@vocdoni/common"
 import { extractUint8ArrayJSONValue } from "./util/uint8array"
 import { DVoteGatewayResponseBody, IGatewayDVoteClient, IRequestParameters } from "./interfaces"
-import { GatewayInfo } from "./wrappers/gateway-info"
+import { GatewayInfo } from "./wrappers/client-info"
 import { allApis, ApiMethod, BackendApiName, GatewayApiName, InfoApiMethod, RawApiMethod } from "./apis/definition"
 import { BytesSignature, JsonSignature } from "@vocdoni/signing"
 import axios, { AxiosInstance, AxiosResponse } from "axios"

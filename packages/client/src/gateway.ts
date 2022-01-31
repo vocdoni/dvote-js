@@ -3,7 +3,7 @@
 // It provides a wrapper to use a Vocdoni Gateway, as well as a wrapper a Web3 one
 
 import { Contract, providers, utils, Wallet, Signer, ContractInterface } from "ethers"
-import { GatewayInfo } from "./wrappers/gateway-info"
+import { GatewayInfo } from "./wrappers/client-info"
 import { GatewayApiName, BackendApiName, ApiMethod } from "./apis/definition"
 import { GatewayBootnode } from "./gateway-bootnode"
 import { ContentUri } from "./wrappers/content-uri"

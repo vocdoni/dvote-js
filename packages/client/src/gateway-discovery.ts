@@ -80,8 +80,8 @@ export class GatewayDiscovery {
 
         return this.getWorkingGateways()
             .then((gateways: IGateway[]) => gateways.map(
-                    (gw: IGateway) => new Gateway(gw.dvote, gw.web3)
-                )
+                (gw: IGateway) => new Gateway(gw.dvote, gw.web3)
+            )
             )
             .catch((error: Error | GatewayDiscoveryError) => {
                 if (error instanceof GatewayDiscoveryError) {
@@ -142,7 +142,7 @@ export class GatewayDiscovery {
                 else if (!bootnodeData[networkId].web3) throw new Error("There are no Web3 gateways for the given network")
 
                 // Check if there are enough gateways
-                if (bootnodeData[networkId].dvote.length < this.minNumberOfGateways) {
+                if (bootnodeData[networkId].dvote?.length < this.minNumberOfGateways) {
                     throw new GatewayDiscoveryError(GatewayDiscoveryError.BOOTNODE_NOT_ENOUGH_GATEWAYS)
                 }
 
