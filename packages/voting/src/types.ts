@@ -40,6 +40,13 @@ export interface BlockStatus {
     blockTimes: number[]
 }
 
+/** Contains the flag for knowing if a process has been archived */
+export type ProcessArchive = {
+    archived?: boolean,
+    startDate?: string,
+    endDate?: string
+}
+
 /** Contains the full details of a process, including the human readable metadata and the on-chain flags */
 export type ProcessDetails = {
     id: string
@@ -48,7 +55,7 @@ export type ProcessDetails = {
 }
 
 /** Contains the current state of a process on the Vochain */
-export type ProcessState = {
+export type ProcessState = ProcessArchive & {
     censusOrigin: VochainCensusOrigin,
     censusRoot: string,
     censusURI: string,
@@ -94,7 +101,7 @@ export type ProcessState = {
 
 /** Contains a summary of the most relevant process details */
 export type ProcessSummary =
-    Pick<ProcessState, "entityId" | "status" | "startBlock" | "endBlock" | "envelopeType" | "entityIndex"> & {
+    Pick<ProcessState, "entityId" | "status" | "startBlock" | "endBlock" | "archived" | "startDate" | "endDate" | "envelopeType" | "entityIndex"> & {
         /** The amount of votes registered */
         envelopeHeight: number
         /** The IPFS URI pointing to the JSON metadata file */

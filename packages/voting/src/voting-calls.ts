@@ -91,6 +91,7 @@ export namespace VotingApi {
                     throw error
                 }
                 return GatewayArchiveApi.getProcess(processId, gateway, error.message)
+                    .then(processArchiveData => GatewayArchive.mapToGetProcess(processArchiveData))
             })
             .then((response) => {
                 if (typeof response.process !== 'object') throw new Error()
@@ -125,7 +126,13 @@ export namespace VotingApi {
             .then((response) => {
                 const { processSummary } = response
 
-                return {
+                const archive = !processSummary.archived ? {} : {
+                    archived: true,
+                    startDate: processSummary.startDate ?? 0,
+                    endDate: processSummary.endDate ?? 0
+                }
+
+                const result = {
                     entityId: ensure0x(processSummary.entityId),
                     envelopeHeight: processSummary.envelopeHeight,
                     status: typeof processSummary.status === "number" ? processSummary.status : VochainProcessStatus[processSummary.state as string],
@@ -135,7 +142,10 @@ export namespace VotingApi {
                     entityIndex: processSummary.entityIndex,
                     metadata: processSummary.metadata,
                     sourceNetworkId: processSummary.sourceNetworkID || processSummary.sourceNetworkId,
+
                 } as ProcessSummary
+
+                return {...result, ...archive}
             })
     }
 
@@ -963,7 +973,7 @@ export namespace VotingApi {
             // Encrypted?
             let procKeys: ProcessKeys, retries: number
             const currentBlock = await getBlockHeight(gateway)
-            if (processState.envelopeType.encryptedVotes) {
+            if (processState.envelopeType.encryptedVotes && !processState.archived) {
                 if (currentBlock < processState.startBlock) return emptyResults // not started
                 else if (processState.processMode["interruptible"]) {
                     if (processState.status !== VochainProcessStatus.RESULTS &&

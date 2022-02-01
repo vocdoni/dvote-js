@@ -10,12 +10,27 @@ import { IArchiveResponseBody, IGatewayClient, IGatewayDVoteClient } from "./int
 export namespace GatewayArchive {
 
     /**
+     * Returns the mapped data from archive to `getProcess` Gateway response
+     *
+     * @param processArchiveData
+     */
+    export function mapToGetProcess(processArchiveData: IArchiveResponseBody) {
+        processArchiveData.process.archived = true
+        processArchiveData.process.startDate = processArchiveData.startDate ?? 0
+        processArchiveData.process.endDate = processArchiveData.endDate ?? 0
+        return processArchiveData
+    }
+
+    /**
      * Returns the mapped data from archive to `getProcessSummary` Gateway response
      *
      * @param processArchiveData
      */
     export function mapToGetProcessSummary(processArchiveData: IArchiveResponseBody) {
         processArchiveData.process.envelopeHeight = processArchiveData.results.envelopeHeight
+        processArchiveData.process.archived = true
+        processArchiveData.process.startDate = processArchiveData.startDate ?? 0
+        processArchiveData.process.endDate = processArchiveData.endDate ?? 0
         if (!processArchiveData.process.metadata) delete processArchiveData.process.metadata
         return {
             processSummary: processArchiveData.process
