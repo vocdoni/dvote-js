@@ -1,5 +1,9 @@
 # @vocdoni/voting - Changelog
 
+## 1.16.2
+
+- Fixed archive results not depending on encryption keys and `GatewayArchive` improvements adding `startDate` and `endDate`
+
 ## 1.16.1
 
 - Amending the type of signature applied

@@ -1,5 +1,9 @@
 # @vocdoni/client - Changelog
 
+## 1.16.3
+
+- `GatewayArchive` improvements adding `startDate` and `endDate`
+
 ## 1.16.2
 
 - Preventing an empty timeout value to be passed
