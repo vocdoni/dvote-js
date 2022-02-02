@@ -98,6 +98,6 @@ export interface IArchiveResponseBody {
         final: boolean
         blockHeight: number
     }
-    startDate: number
-    endDate: number
+    startDate: string
+    endDate: string
 }

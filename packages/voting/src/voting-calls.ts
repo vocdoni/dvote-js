@@ -126,12 +126,6 @@ export namespace VotingApi {
             .then((response) => {
                 const { processSummary } = response
 
-                const archive = !processSummary.archived ? {} : {
-                    archived: true,
-                    startDate: processSummary.startDate ?? 0,
-                    endDate: processSummary.endDate ?? 0
-                }
-
                 const result = {
                     entityId: ensure0x(processSummary.entityId),
                     envelopeHeight: processSummary.envelopeHeight,
@@ -142,10 +136,16 @@ export namespace VotingApi {
                     entityIndex: processSummary.entityIndex,
                     metadata: processSummary.metadata,
                     sourceNetworkId: processSummary.sourceNetworkID || processSummary.sourceNetworkId,
-
                 } as ProcessSummary
 
-                return {...result, ...archive}
+                if (!processSummary.archived) return result
+
+                return {
+                    archived: true,
+                    startDate: processSummary.startDate,
+                    endDate: processSummary.endDate,
+                    ...result
+                }
             })
     }
 
