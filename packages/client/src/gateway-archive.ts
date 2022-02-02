@@ -16,8 +16,8 @@ export namespace GatewayArchive {
      */
     export function mapToGetProcess(processArchiveData: IArchiveResponseBody) {
         processArchiveData.process.archived = true
-        processArchiveData.process.startDate = processArchiveData.startDate ?? ""
-        processArchiveData.process.endDate = processArchiveData.endDate ?? ""
+        processArchiveData.process.startDate = processArchiveData.startDate ? new Date(processArchiveData.startDate) : null
+        processArchiveData.process.endDate = processArchiveData.endDate ? new Date(processArchiveData.endDate) : null
         return processArchiveData
     }
 
@@ -29,8 +29,8 @@ export namespace GatewayArchive {
     export function mapToGetProcessSummary(processArchiveData: IArchiveResponseBody) {
         processArchiveData.process.envelopeHeight = processArchiveData.results.envelopeHeight
         processArchiveData.process.archived = true
-        processArchiveData.process.startDate = processArchiveData.startDate ?? ""
-        processArchiveData.process.endDate = processArchiveData.endDate ?? ""
+        processArchiveData.process.startDate = processArchiveData.startDate ? new Date(processArchiveData.startDate) : null
+        processArchiveData.process.endDate = processArchiveData.endDate ? new Date(processArchiveData.endDate) : null
         if (!processArchiveData.process.metadata) delete processArchiveData.process.metadata
         return {
             processSummary: processArchiveData.process

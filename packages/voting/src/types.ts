@@ -43,8 +43,8 @@ export interface BlockStatus {
 /** Contains the flag for knowing if a process has been archived */
 export type ProcessArchive = {
     archived?: boolean,
-    startDate?: string,
-    endDate?: string
+    startDate?: Date,
+    endDate?: Date
 }
 
 /** Contains the full details of a process, including the human readable metadata and the on-chain flags */
