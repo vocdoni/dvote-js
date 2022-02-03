@@ -1,5 +1,9 @@
 # @vocdoni/client - Changelog
 
+## 1.16.4
+
+- Adding support for Polygon mainnet and testnet networks
+
 ## 1.16.3
 
 - `GatewayArchive` improvements adding `startDate` and `endDate`
