@@ -1,5 +1,9 @@
 # @vocdoni/common - Changelog
 
+## 1.15.2
+
+- Adding support for Polygon mainnet and testnet networks
+
 ## 1.15.1
 
 - Fixed zkey file name `ZK_VOTING_ZKEY_FILE_NAME`
