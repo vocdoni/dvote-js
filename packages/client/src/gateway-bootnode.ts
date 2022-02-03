@@ -24,6 +24,9 @@ import {
     MATIC_CHAIN_ID,
     MATIC_ENS_REGISTRY_ADDRESS,
     MATIC_PROVIDER_URI
+    MUMBAI_CHAIN_ID,
+    MUMBAI_ENS_REGISTRY_ADDRESS,
+    MUMBAI_PROVIDER_URI
 } from "@vocdoni/common"
 import { JsonBootnodeData } from "./apis/definition"
 import { TextRecordKeys } from "@vocdoni/common"
@@ -79,6 +82,9 @@ export namespace GatewayBootnode {
                 break
             case "matic":
                 provider = new providers.StaticJsonRpcProvider(MATIC_PROVIDER_URI, { chainId: MATIC_CHAIN_ID, name: "matic", ensAddress: MATIC_ENS_REGISTRY_ADDRESS });
+                break
+            case "mumbai":
+                provider = new providers.StaticJsonRpcProvider(MUMBAI_PROVIDER_URI, { chainId: MUMBAI_CHAIN_ID, name: "mumbai", ensAddress: MUMBAI_ENS_REGISTRY_ADDRESS });
                 break
             default: throw new Error("Invalid Network ID")
         }

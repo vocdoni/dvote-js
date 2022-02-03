@@ -10,6 +10,7 @@ import {
     VocdoniEnvironment,
     VOCDONI_AVAX_FUJI_ENTITY_ID,
     VOCDONI_MATIC_ENTITY_ID,
+    VOCDONI_MUMBAI_ENTITY_ID
 } from "@vocdoni/common"
 import { IGatewayWeb3Client } from "../interfaces"
 
@@ -47,6 +48,9 @@ export function getEnsTextRecord(
                     break
                 case "matic":
                     entityEnsNode = keccak256(VOCDONI_MATIC_ENTITY_ID)
+                    break
+                case "mumbai":
+                    entityEnsNode = keccak256(VOCDONI_MUMBAI_ENTITY_ID)
                     break
             }
             return instance.text(entityEnsNode, recordKey)
