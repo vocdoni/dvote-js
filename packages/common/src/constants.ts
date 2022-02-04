@@ -43,7 +43,7 @@ export const MATIC_ENS_REGISTRY_ADDRESS = "0xffe6ef08Eb7770837b3bBBE04e67eE25cC1
 
 export const MUMBAI_CHAIN_ID = 80001
 export const MUMBAI_PROVIDER_URI = "https://rpc-mumbai.matic.today"
-export const MUMBAI_ENS_REGISTRY_ADDRESS = "0x841d2f05e00813623edac5f514a21c70e8667b04"
+export const MUMBAI_ENS_REGISTRY_ADDRESS = "0x0"
 
 export declare const VOCDONI_AVAX_FUJI_ENTITY_ID= "0xc50820384fbAA3e2E608abb7e49B86e9F09399A8"; // This is a wallet address not to be confused by anything else.
 export declare const AVAX_FUJI_CHAIN_ID = 43113;

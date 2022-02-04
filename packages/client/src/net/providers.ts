@@ -7,10 +7,10 @@ import {
     SOKOL_CHAIN_ID,
     SOKOL_ENS_REGISTRY_ADDRESS,
     XDAI_STG_ENS_REGISTRY_ADDRESS,
-    MUMBAI_CHAIN_ID,
+    // MUMBAI_CHAIN_ID,
     MATIC_CHAIN_ID,
     MATIC_ENS_REGISTRY_ADDRESS,
-    MUMBAI_ENS_REGISTRY_ADDRESS
+    // MUMBAI_ENS_REGISTRY_ADDRESS
 } from "@vocdoni/common"
 
 export class ProviderUtil {
@@ -29,7 +29,8 @@ export class ProviderUtil {
             case "matic":
                 return new StaticJsonRpcProvider(uri, { chainId: MATIC_CHAIN_ID, name: "matic", ensAddress: MATIC_ENS_REGISTRY_ADDRESS })
             case "mumbai":
-                return new StaticJsonRpcProvider(uri, { chainId: MUMBAI_CHAIN_ID, name: "mumbai", ensAddress: MUMBAI_ENS_REGISTRY_ADDRESS })
+                // return new StaticJsonRpcProvider(uri, { chainId: MUMBAI_CHAIN_ID, name: "mumbai", ensAddress: MUMBAI_ENS_REGISTRY_ADDRESS })
+                throw new Error("Unsupported Network ID")
             default:
                 return new StaticJsonRpcProvider(uri)
         }

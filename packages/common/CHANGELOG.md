@@ -1,8 +1,12 @@
 # @vocdoni/common - Changelog
 
+## 1.15.3
+
+- Updating env vars
+
 ## 1.15.2
 
-- Adding support for Polygon mainnet and testnet networks
+- Adding support for Polygon mainnet ~~and testnet networks~~
 
 ## 1.15.1
 
