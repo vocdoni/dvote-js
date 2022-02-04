@@ -28,9 +28,8 @@ export class ProviderUtil {
                 return new StaticJsonRpcProvider(uri, { chainId: SOKOL_CHAIN_ID, name: "sokol", ensAddress: SOKOL_ENS_REGISTRY_ADDRESS })
             case "matic":
                 return new StaticJsonRpcProvider(uri, { chainId: MATIC_CHAIN_ID, name: "matic", ensAddress: MATIC_ENS_REGISTRY_ADDRESS })
-            case "mumbai":
-                // return new StaticJsonRpcProvider(uri, { chainId: MUMBAI_CHAIN_ID, name: "mumbai", ensAddress: MUMBAI_ENS_REGISTRY_ADDRESS })
-                throw new Error("Unsupported Network ID")
+            // case "mumbai":
+            //     return new StaticJsonRpcProvider(uri, { chainId: MUMBAI_CHAIN_ID, name: "mumbai", ensAddress: MUMBAI_ENS_REGISTRY_ADDRESS })
             default:
                 return new StaticJsonRpcProvider(uri)
         }
