@@ -29,7 +29,7 @@ import { ProviderUtil } from "@vocdoni/client"
 
 const provider1 = ProviderUtil.fromUri
   "https://my-web3-endpoint/rpc",
-  "mainnet",  // "homestead" | "mainnet" | "rinkeby" | "goerli" | "xdai" | "sokol"
+  "mainnet",  // "homestead" | "mainnet" | "rinkeby" | "goerli" | "xdai" | "sokol" | "matic"
   "prod"  // "prod" | "stg" | "dev"
 )
 

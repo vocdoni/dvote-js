@@ -1,6 +1,8 @@
 import { parseUnits } from "@ethersproject/units"
 import { BigNumber } from "@ethersproject/bignumber"
 
+// ENS
+
 export const VOCDONI_ENS_ROOT = "voc.eth"
 export const VOCDONI_ENS_ROOT_STAGING = "stg." + VOCDONI_ENS_ROOT
 export const VOCDONI_ENS_ROOT_DEV = "dev." + VOCDONI_ENS_ROOT
@@ -19,6 +21,10 @@ export const VOCDONI_RINKEBY_ENTITY_ID = "0x60E134146338EEce72EF01275Ea4109744e6
 export const VOCDONI_XDAI_ENTITY_ID = "0x01f5cbe42e7D758a5b184Cb96dCbF79aD603C592"
 export const VOCDONI_XDAI_STG_ENTITY_ID = "0x60E134146338EEce72EF01275Ea4109744e6Ca4A"
 export const VOCDONI_SOKOL_ENTITY_ID = "0x60E134146338EEce72EF01275Ea4109744e6Ca4A"
+export const VOCDONI_MATIC_ENTITY_ID = "0x01f5cbe42e7D758a5b184Cb96dCbF79aD603C592"
+export const VOCDONI_MUMBAI_ENTITY_ID = "0x01f5cbe42e7D758a5b184Cb96dCbF79aD603C592"
+
+// L2 CHAINS
 
 export const XDAI_CHAIN_ID = 100
 export const XDAI_PROVIDER_URI = "https://dai.poa.network"
@@ -31,6 +37,25 @@ export const SOKOL_PROVIDER_URI = "https://sokol.poa.network"
 export const SOKOL_GAS_PRICE = parseUnits("1", "gwei") as BigNumber
 export const SOKOL_ENS_REGISTRY_ADDRESS = "0xDb6C74071116D17a47D9c191cbE6d640111Ee5C2"
 
+export const MATIC_CHAIN_ID = 137
+export const MATIC_PROVIDER_URI = "https://polygon-rpc.com"
+export const MATIC_ENS_REGISTRY_ADDRESS = "0xffe6ef08Eb7770837b3bBBE04e67eE25cC19a12a"
+
+export const MUMBAI_CHAIN_ID = 80001
+export const MUMBAI_PROVIDER_URI = "https://rpc-mumbai.matic.today"
+export const MUMBAI_ENS_REGISTRY_ADDRESS = "0x0"
+
+export declare const VOCDONI_AVAX_FUJI_ENTITY_ID= "0xc50820384fbAA3e2E608abb7e49B86e9F09399A8"; // This is a wallet address not to be confused by anything else.
+export declare const AVAX_FUJI_CHAIN_ID = 43113;
+export declare const AVAX_CHAIN_ID = 43114;
+export declare const AVAX_FUJI_PROVIDER = "https://api.avax-test.network/ext/bc/C/rpc"
+export declare const AVAX_PROVIDER = "https://api.avax-test.network/ext/bc/C/rpc"
+// export declare const AVAX_GAS_PRICE: BigNumber;
+export declare const AVAX_FUJI_ENS_REGISTRY_ADDRESS = "0x21a60F4a895769bE78436CC0D83956db83A4297c"
+export declare const AVAX_ENS_REGISTRY_ADDRESS = "" // not yet next round
+
+// VOCHAIN
+
 // export const SIGNATURE_TIMESTAMP_TOLERANCE = 60 * 8 // +/- 8 minutes
 export const VOCHAIN_BLOCK_TIME = 12 // seconds
 export const CENSUS_MAX_BULK_SIZE = 400 // # of claims per addClaimBulk request
@@ -39,17 +64,6 @@ export const GATEWAY_SELECTION_TIMEOUT = 4000  // milliseconds
 export const ZK_VOTING_CIRCUIT_WASM_FILE_NAME = "circuit.wasm"
 export const ZK_VOTING_ZKEY_FILE_NAME = "circuit.zkey"
 export const ZK_VOTING_VERIFICATION_KEY_FILE_NAME = "verification_key.json"
-
-// Const Values for Avax and Fuji
-
-export declare const VOCDONI_AVAX_FUJI_ENTITY_ID= "0xc50820384fbAA3e2E608abb7e49B86e9F09399A8"; // This is a wallet address not to be confused by anything else.
-export declare const AVAX_FUJI_CHAIN_ID = 43113;
-export declare const AVAX_CHAIN_ID = 43114;
-export declare const AVAX_FUJI_PROVIDER = "https://api.avax-test.network/ext/bc/C/rpc"
-export declare const AVAX_PROVIDER = "https://api.avax-test.network/ext/bc/C/rpc"
-export declare const AVAX_GAS_PRICE: BigNumber;
-export declare const AVAX_FUJI_ENS_REGISTRY_ADDRESS = "0x21a60F4a895769bE78436CC0D83956db83A4297c"
-export declare const AVAX_ENS_REGISTRY_ADDRESS = "" // not yet next round
 
 
 /**

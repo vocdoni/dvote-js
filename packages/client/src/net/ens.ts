@@ -8,8 +8,11 @@ import {
     VOCDONI_XDAI_ENTITY_ID,
     VOCDONI_XDAI_STG_ENTITY_ID,
     VocdoniEnvironment,
-    VOCDONI_AVAX_FUJI_ENTITY_ID
+    VOCDONI_AVAX_FUJI_ENTITY_ID,
+    VOCDONI_MATIC_ENTITY_ID,
+    // VOCDONI_MUMBAI_ENTITY_ID
 } from "@vocdoni/common"
+import { IEnsPublicResolverContract } from "@vocdoni/contract-wrappers"
 import { IGatewayWeb3Client } from "../interfaces"
 
 export function getEnsTextRecord(
@@ -18,8 +21,8 @@ export function getEnsTextRecord(
     params: { environment: VocdoniEnvironment, networkId: EthNetworkID } = { environment: "prod", networkId: "mainnet" },
 ): Promise<string> {
     return gateway.getEnsPublicResolverInstance()
-        .then(async instance => {
-            let entityEnsNode: string
+        .then(async (instance: IEnsPublicResolverContract) => {
+            let entityEnsNode = ""
             switch (params.networkId) {
                 case "homestead":
                 case "mainnet":
@@ -44,6 +47,14 @@ export function getEnsTextRecord(
                 case "fuji":
                     entityEnsNode = keccak256(VOCDONI_AVAX_FUJI_ENTITY_ID)
                     break
+                case "matic":
+                    entityEnsNode = keccak256(VOCDONI_MATIC_ENTITY_ID)
+                    break
+                // case "mumbai":
+                //     entityEnsNode = keccak256(VOCDONI_MUMBAI_ENTITY_ID)
+                //     break
+                default:
+                    throw new Error("Unsupported network ID")
             }
             return instance.text(entityEnsNode, recordKey)
         })

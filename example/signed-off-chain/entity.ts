@@ -19,9 +19,9 @@ export async function ensureEntityMetadata(entityWallet: Wallet, gwPool: IGatewa
     metadata.name = { default: "Test Organization Name" }
     metadata.description = { default: "Description of the test organization goes here" }
     metadata.media = {
-        avatar: "",
-        header: "",
-        logo: ""
+        avatar: "0123",
+        header: "1234",
+        logo: "2345"
     }
 
     await EntityApi.setMetadata(entityWallet.address, metadata, entityWallet, gwPool)

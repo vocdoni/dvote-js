@@ -6,7 +6,11 @@ import {
     XDAI_ENS_REGISTRY_ADDRESS,
     SOKOL_CHAIN_ID,
     SOKOL_ENS_REGISTRY_ADDRESS,
-    XDAI_STG_ENS_REGISTRY_ADDRESS
+    XDAI_STG_ENS_REGISTRY_ADDRESS,
+    // MUMBAI_CHAIN_ID,
+    MATIC_CHAIN_ID,
+    MATIC_ENS_REGISTRY_ADDRESS,
+    // MUMBAI_ENS_REGISTRY_ADDRESS
 } from "@vocdoni/common"
 
 export class ProviderUtil {
@@ -22,6 +26,10 @@ export class ProviderUtil {
                 return new StaticJsonRpcProvider(uri, { chainId: XDAI_CHAIN_ID, name: "xdai", ensAddress: XDAI_STG_ENS_REGISTRY_ADDRESS })
             case "sokol":
                 return new StaticJsonRpcProvider(uri, { chainId: SOKOL_CHAIN_ID, name: "sokol", ensAddress: SOKOL_ENS_REGISTRY_ADDRESS })
+            case "matic":
+                return new StaticJsonRpcProvider(uri, { chainId: MATIC_CHAIN_ID, name: "matic", ensAddress: MATIC_ENS_REGISTRY_ADDRESS })
+            // case "mumbai":
+            //     return new StaticJsonRpcProvider(uri, { chainId: MUMBAI_CHAIN_ID, name: "mumbai", ensAddress: MUMBAI_ENS_REGISTRY_ADDRESS })
             default:
                 return new StaticJsonRpcProvider(uri)
         }

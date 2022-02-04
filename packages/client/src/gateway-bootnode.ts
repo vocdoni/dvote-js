@@ -21,6 +21,12 @@ import {
     XDAI_ENS_REGISTRY_ADDRESS,
     XDAI_PROVIDER_URI,
     XDAI_STG_ENS_REGISTRY_ADDRESS,
+    MATIC_CHAIN_ID,
+    MATIC_ENS_REGISTRY_ADDRESS,
+    MATIC_PROVIDER_URI,
+    // MUMBAI_CHAIN_ID,
+    // MUMBAI_ENS_REGISTRY_ADDRESS,
+    // MUMBAI_PROVIDER_URI
 } from "@vocdoni/common"
 import { JsonBootnodeData } from "./apis/definition"
 import { TextRecordKeys } from "@vocdoni/common"
@@ -52,6 +58,7 @@ export namespace GatewayBootnode {
         let provider: providers.BaseProvider
 
         switch (networkId) {
+            case "homestead":
             case "mainnet":
             case "goerli":
             case "rinkeby":
@@ -73,7 +80,13 @@ export namespace GatewayBootnode {
             case "fuji":
                 provider = new providers.StaticJsonRpcProvider(AVAX_FUJI_PROVIDER, { chainId: AVAX_FUJI_CHAIN_ID, name: "avalanche", ensAddress: AVAX_FUJI_ENS_REGISTRY_ADDRESS });
                 break
-            default: throw new Error("Invalid Network ID")
+            case "matic":
+                provider = new providers.StaticJsonRpcProvider(MATIC_PROVIDER_URI, { chainId: MATIC_CHAIN_ID, name: "matic", ensAddress: MATIC_ENS_REGISTRY_ADDRESS });
+                break
+            // case "mumbai":
+            //     provider = new providers.StaticJsonRpcProvider(MUMBAI_PROVIDER_URI, { chainId: MUMBAI_CHAIN_ID, name: "mumbai", ensAddress: MUMBAI_ENS_REGISTRY_ADDRESS });
+            //     break
+            default: throw new Error("Unsupported Network ID")
         }
 
         const gw = new Web3Gateway(provider, networkId, environment)
