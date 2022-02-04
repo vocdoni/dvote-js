@@ -19,8 +19,8 @@
   },
   "dependencies": {
     "@vocdoni/census": "^1.16.0",
-    "@vocdoni/client": "^1.16.0",
-    "@vocdoni/common": "^1.15.1",
+    "@vocdoni/client": "^1.16.4",
+    "@vocdoni/common": "^1.15.3",
     "@vocdoni/contract-wrappers": "^1.15.0",
     "@vocdoni/data-models": "^1.15.3",
     "@vocdoni/encryption": "^1.14.1",
