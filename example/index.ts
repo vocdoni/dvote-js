@@ -18,10 +18,16 @@ import { GatewayPool } from "@vocdoni/client"
 import { GatewayBootnode } from "@vocdoni/client"
 import { GatewayInfo } from "@vocdoni/client"
 import { EntityMetadataTemplate, EntityMetadata } from "@vocdoni/data-models"
-import { TextRecordKeys } from "@vocdoni/common"
+import {
+    XDAI_CHAIN_ID,
+    XDAI_ENS_REGISTRY_ADDRESS,
+    VOCHAIN_BLOCK_TIME,
+    MATIC_CHAIN_ID,
+    MATIC_ENS_REGISTRY_ADDRESS,
+    TextRecordKeys
+} from "@vocdoni/common"
 import { INewProcessParams, ProcessMetadata, ProcessMetadataTemplate } from "@vocdoni/data-models"
-import { XDAI_CHAIN_ID, XDAI_ENS_REGISTRY_ADDRESS, VOCHAIN_BLOCK_TIME } from "../packages/common/src"
-import { JsonSignature } from "../packages/signing/src"
+import { JsonSignature } from "@vocdoni/signing"
 import { GatewayApiMethod, BackendApiMethod, ApiMethod } from "@vocdoni/client"
 import { IGatewayDiscoveryParameters } from "@vocdoni/client"
 import { ProcessEnvelopeType, ProcessMode, ProcessStatus, ProcessCensusOrigin, ensHashAddress } from "@vocdoni/contract-wrappers"
@@ -753,6 +759,7 @@ async function gatewayRawRequest() {
 async function ensResolver() {
     // const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI)
     // const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI, { chainId: SOKOL_CHAIN_ID, name: NETWORK_ID, ensAddress: SOKOL_ENS_REGISTRY_ADDRESS })
+    // const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI, { chainId: MATIC_CHAIN_ID, name: NETWORK_ID, ensAddress: MATIC_ENS_REGISTRY_ADDRESS })
     const provider = new providers.JsonRpcProvider(GATEWAY_WEB3_URI, { chainId: XDAI_CHAIN_ID, name: NETWORK_ID, ensAddress: XDAI_ENS_REGISTRY_ADDRESS })
 
     const resolverAddr = await provider.resolveName("entities.voc.eth")
