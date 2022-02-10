@@ -83,13 +83,8 @@ export namespace GatewayArchive {
      * @param entityId
      * @param entitiesArchiveData
      */
-    export function mapToGetProcessList(entitiesArchiveData: IArchiveEntitiesResponseBody, entityId?: string): string[] {
-        if (entityId) {
-            return entitiesArchiveData.entities[entityId]?.map(processId => processId.processId) ?? []
-        }
-        return Object.values(entitiesArchiveData.entities)
-            .reduce((prev, curr) => prev.concat(curr), [])
-            .map(processId => processId.processId)
+    export function mapToGetProcessList(entitiesArchiveData: IArchiveEntitiesResponseBody, entityId: string): string[] {
+        return entitiesArchiveData.entities[entityId]?.map(entityProcessEntry => entityProcessEntry.processId) ?? []
     }
 }
 
@@ -170,6 +165,5 @@ export namespace GatewayArchiveApi {
     function fetchArchivedIndex(archiveUri: ContentUri, gateway: IGatewayDVoteClient): Promise<IArchiveEntitiesResponseBody> {
         return FileApi.fetchString("ipfs:///ipns/" + archiveUri + "/index.json", gateway)
             .then((result: string) => JSON.parse(result))
-
     }
 }

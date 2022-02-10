@@ -877,13 +877,13 @@ export namespace VotingApi {
      * @param filters Optional criteria to filter the processes ID's given by the gateway
      * @param gateway
      */
-    export async function getProcessList(filters: { fromArchive: true, entityId?: string } | { fromArchive: false, entityId?: string, namespace?: number, status?: VochainProcessStatus, withResults?: boolean, from?: number }, gateway: IGatewayClient): Promise<string[]>
+    export async function getProcessList(filters: { fromArchive: true, entityId: string } | { fromArchive: false, entityId?: string, namespace?: number, status?: VochainProcessStatus, withResults?: boolean, from?: number }, gateway: IGatewayClient): Promise<string[]>
     {
         if (!gateway) throw new Error("Invalid gateway client")
         else if (typeof filters != "object") throw new Error("Invalid filters parameter")
 
         if (filters.fromArchive) {
-            const entityId = filters?.entityId ? strip0x(filters.entityId).toLowerCase() : filters?.entityId
+            const entityId = strip0x(filters.entityId).toLowerCase()
             const entitiesList = await GatewayArchiveApi.getEntities(gateway)
                 .then(entitesArchiveData => GatewayArchive.mapToGetProcessList(entitesArchiveData, entityId))
             return entitiesList.map(id => ensure0x(id))
