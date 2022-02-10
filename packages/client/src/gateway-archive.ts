@@ -5,7 +5,12 @@ import { VochainProcessStatus } from "@vocdoni/data-models"
 import { getEnsTextRecord } from "./net/ens"
 import { ContentUri } from "./wrappers/content-uri"
 import { EthNetworkID } from "@vocdoni/common"
-import { IArchiveResponseBody, IGatewayClient, IGatewayDVoteClient } from "./interfaces"
+import {
+    IArchiveEntitiesResponseBody,
+    IArchiveProcessResponseBody,
+    IGatewayClient,
+    IGatewayDVoteClient
+} from "./interfaces"
 
 export namespace GatewayArchive {
 
@@ -14,7 +19,7 @@ export namespace GatewayArchive {
      *
      * @param processArchiveData
      */
-    export function mapToGetProcess(processArchiveData: IArchiveResponseBody) {
+    export function mapToGetProcess(processArchiveData: IArchiveProcessResponseBody) {
         processArchiveData.process.archived = true
         processArchiveData.process.startDate = processArchiveData.startDate ? new Date(processArchiveData.startDate) : null
         processArchiveData.process.endDate = processArchiveData.endDate ? new Date(processArchiveData.endDate) : null
@@ -26,7 +31,7 @@ export namespace GatewayArchive {
      *
      * @param processArchiveData
      */
-    export function mapToGetProcessSummary(processArchiveData: IArchiveResponseBody) {
+    export function mapToGetProcessSummary(processArchiveData: IArchiveProcessResponseBody) {
         processArchiveData.process.envelopeHeight = processArchiveData.results.envelopeHeight
         processArchiveData.process.archived = true
         processArchiveData.process.startDate = processArchiveData.startDate ? new Date(processArchiveData.startDate) : null
@@ -42,7 +47,7 @@ export namespace GatewayArchive {
      *
      * @param processArchiveData
      */
-    export function mapToGetResultsWeight(processArchiveData: IArchiveResponseBody) {
+    export function mapToGetResultsWeight(processArchiveData: IArchiveProcessResponseBody) {
         return {
             weight: processArchiveData.results.weight
         }
@@ -53,7 +58,7 @@ export namespace GatewayArchive {
      *
      * @param processArchiveData
      */
-    export function mapToGetEnvelopeHeight(processArchiveData: IArchiveResponseBody) {
+    export function mapToGetEnvelopeHeight(processArchiveData: IArchiveProcessResponseBody) {
         return {
             height: processArchiveData.results.envelopeHeight
         }
@@ -64,19 +69,34 @@ export namespace GatewayArchive {
      *
      * @param processArchiveData
      */
-    export function mapToGetResults(processArchiveData: IArchiveResponseBody) {
+    export function mapToGetResults(processArchiveData: IArchiveProcessResponseBody) {
         return {
             results: processArchiveData.results.votes,
             state: VochainProcessStatus[processArchiveData.process.status] || "",
             height: processArchiveData.results.envelopeHeight,
         }
     }
+
+    /**
+     * Returns the mapped data from archive to `getResults` Gateway response
+     *
+     * @param entityId
+     * @param entitiesArchiveData
+     */
+    export function mapToGetProcessList(entitiesArchiveData: IArchiveEntitiesResponseBody, entityId?: string): string[] {
+        if (entityId) {
+            return entitiesArchiveData.entities[entityId]?.map(processId => processId.processId) ?? []
+        }
+        return Object.values(entitiesArchiveData.entities)
+            .reduce((prev, curr) => prev.concat(curr), [])
+            .map(processId => processId.processId)
+    }
 }
 
 export namespace GatewayArchiveApi {
 
     /**
-     * Fetch the process data on the IPFS archive
+     * Fetch the process data from the IPFS archive
      *
      * @param processId
      * @param gateway
@@ -93,12 +113,27 @@ export namespace GatewayArchiveApi {
     }
 
     /**
+     * Fetch the entities data with processes from the IPFS archive
+     *
+     * @param gateway
+     */
+    export function getEntities(gateway: IGatewayClient) {
+        return resolveArchiveUri(gateway)
+            .then((archiveUri: ContentUri) => {
+                return fetchArchivedIndex(archiveUri, gateway)
+            })
+            .catch((error) => {
+                throw new GatewayArchiveError()
+            })
+    }
+
+    /**
      * Resolves the archive Uri from the given network id
      *
      * @param gateway
      * @param errorMessage
      */
-    function resolveArchiveUri(gateway: IGatewayClient, errorMessage: string): Promise<ContentUri> {
+    function resolveArchiveUri(gateway: IGatewayClient, errorMessage?: string): Promise<ContentUri> {
         if (gateway.archiveIpnsId) {
             return Promise.resolve(new ContentUri(gateway.archiveIpnsId))
         }
@@ -115,14 +150,26 @@ export namespace GatewayArchiveApi {
     }
 
     /**
-     * Fetch the archive file from IPFS
+     * Fetch the archived file from IPFS
      *
      * @param archiveUri
      * @param processId
      * @param gateway
      */
-    function fetchArchivedProcess(archiveUri: ContentUri, processId: string, gateway: IGatewayDVoteClient): Promise<IArchiveResponseBody> {
+    function fetchArchivedProcess(archiveUri: ContentUri, processId: string, gateway: IGatewayDVoteClient): Promise<IArchiveProcessResponseBody> {
         return FileApi.fetchString("ipfs:///ipns/" + archiveUri + "/" + strip0x(processId), gateway)
             .then((result: string) => JSON.parse(result))
+    }
+
+    /**
+     * Fetch the archived index from IPFS
+     *
+     * @param archiveUri
+     * @param gateway
+     */
+    function fetchArchivedIndex(archiveUri: ContentUri, gateway: IGatewayDVoteClient): Promise<IArchiveEntitiesResponseBody> {
+        return FileApi.fetchString("ipfs:///ipns/" + archiveUri + "/index.json", gateway)
+            .then((result: string) => JSON.parse(result))
+
     }
 }

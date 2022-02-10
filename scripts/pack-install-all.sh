@@ -9,6 +9,8 @@ npm install
 npm run build
 npm pack
 
+cd ../signing
+npm install ../common/vocdoni-common*.tgz
 cd ../census
 npm install ../common/vocdoni-common*.tgz
 cd ../client

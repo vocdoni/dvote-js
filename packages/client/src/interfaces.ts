@@ -76,7 +76,7 @@ export interface IGatewayDiscoveryParameters {
     resolveEnsDomains?: boolean
 }
 
-export interface IArchiveResponseBody {
+export interface IArchiveProcessResponseBody {
     // process: ProcessSummary
     process: any
     results: {
@@ -100,4 +100,16 @@ export interface IArchiveResponseBody {
     }
     startDate: string
     endDate: string
+}
+
+interface IArchiveEntityProcessResponseBody {
+    processId: string
+}
+
+interface IArchiveEntityResponseBody extends Array<IArchiveEntityProcessResponseBody> {}
+
+export interface IArchiveEntitiesResponseBody {
+    entities: {
+        [key: string]: IArchiveEntityResponseBody
+    }
 }
