@@ -1,5 +1,9 @@
 # @vocdoni/client - Changelog
 
+## 1.16.5
+
+- Added archive support for process listing
+
 ## 1.16.4
 
 - Adding support for Polygon mainnet and testnet networks

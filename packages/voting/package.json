@@ -1,6 +1,6 @@
 {
   "name": "@vocdoni/voting",
-  "version": "1.16.2",
+  "version": "1.16.3",
   "description": "JavaScript/TypeScript voting package",
   "main": "dist/index",
   "types": "dist/index",
@@ -20,7 +20,7 @@
     "test": "npm run build && ./node_modules/.bin/mocha -r ts-node/register test/**/*.ts"
   },
   "dependencies": {
-    "@vocdoni/client": "^1.16.3",
+    "@vocdoni/client": "^1.16.5",
     "@vocdoni/common": "^1.15.1",
     "@vocdoni/contract-wrappers": "^1.15.0",
     "@vocdoni/data-models": "^1.15.3",
