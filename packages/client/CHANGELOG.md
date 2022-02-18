@@ -1,5 +1,9 @@
 # @vocdoni/client - Changelog
 
+## 1.16.6
+
+- Updated GWs methods: `getEntityCount`, `getProcessCount` and `sendContactMsg`
+
 ## 1.16.5
 
 - Added archive support for process listing
