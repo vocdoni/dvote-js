@@ -1,5 +1,9 @@
 # @vocdoni/signing - Changelog
 
+## 1.16.2
+
+- `JsonSignature.sort` changed for accepting `undefined` values
+
 ## 1.16.1
 
 - `JsonSignature.sort` now returns the same type as the input parameter, not `JsonLike`
