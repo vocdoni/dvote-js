@@ -10,9 +10,9 @@ export const rawApiMethods = ["submitRawTx"] as const
 export const fileApiMethods = ["fetchFile", "addFile", "pinList", "pinFile", "unpinFile"] as const
 export const voteApiMethods = ["submitEnvelope", "getEnvelopeStatus", "getEnvelope", "getEnvelopeHeight", "getProcessKeys", "getProcessList", "getEnvelopeList", "getBlockHeight", "getBlockStatus", "getProcessInfo", "getProcessSummary", "getProcessCircuitConfig"] as const
 export const censusApiMethods = ["addCensus", "addClaim", "addClaimBulk", "getRoot", "genProof", "getSize", "checkProof", "dump", "dumpPlain", "importDump", "publish", "importRemote", "getCensusList"] as const
-export const resultsApiMethods = ["getResults", "getResultsWeight", "getEntityList"] as const
+export const resultsApiMethods = ["getResults", "getResultsWeight", "getEntityList", "getEntityCount", "getProcessCount"] as const
 
-export const registryApiMethods = ["signUp", "getEntity", "updateEntity", "countMembers", "listMembers", "getMember", "updateMember", "deleteMembers", "generateTokens", "exportTokens", "importMembers", "countTargets", "listTargets", "getTarget", "dumpTarget", "dumpCensus", "addCensus", "updateCensus", "getCensus", "countCensus", "listCensus", "deleteCensus", "sendValidationLinks", "sendVotingLinks", "createTag", "listTags", "deleteTag", "addTag", "removeTag"] as const
+export const registryApiMethods = ["signUp", "getEntity", "updateEntity", "countMembers", "listMembers", "getMember", "updateMember", "deleteMembers", "generateTokens", "exportTokens", "importMembers", "countTargets", "listTargets", "getTarget", "dumpTarget", "dumpCensus", "addCensus", "updateCensus", "getCensus", "countCensus", "listCensus", "deleteCensus", "sendValidationLinks", "sendVotingLinks", "createTag", "listTags", "deleteTag", "addTag", "removeTag", "sendContactMsg"] as const
 export const oracleApiMethods = ["newERC20process"] as const
 
 export const gatewayApiMethods: GatewayApiMethod[] = [].concat(infoApiMethods).concat(rawApiMethods).concat(fileApiMethods).concat(voteApiMethods).concat(censusApiMethods).concat(resultsApiMethods)
