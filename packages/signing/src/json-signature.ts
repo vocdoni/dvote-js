@@ -123,8 +123,8 @@ export namespace JsonSignature {
             case "bigint":
             case "function":
             case "symbol":
-            case "undefined":
                 throw new Error("JSON objects with " + typeof data + " values are not supported")
+            case "undefined":
             case "boolean":
             case "number":
             case "string":
