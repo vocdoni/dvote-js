@@ -28,7 +28,7 @@
     "@ethersproject/providers": "^5.5.0",
     "@vocdoni/common": "^1.15.3",
     "@vocdoni/data-models": "^1.15.3",
-    "@vocdoni/signing": "^1.16.1",
+    "@vocdoni/signing": "^1.16.2",
     "axios": "^0.24.0",
     "buffer": "^6.0.3",
     "universal-parse-url": "^1.0.2"

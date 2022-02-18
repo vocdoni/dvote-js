@@ -19,13 +19,13 @@
   },
   "dependencies": {
     "@vocdoni/census": "^1.16.0",
-    "@vocdoni/client": "^1.16.4",
+    "@vocdoni/client": "^1.16.6",
     "@vocdoni/common": "^1.15.3",
     "@vocdoni/contract-wrappers": "^1.15.0",
     "@vocdoni/data-models": "^1.15.3",
     "@vocdoni/encryption": "^1.14.1",
     "@vocdoni/hashing": "^1.15.0",
-    "@vocdoni/signing": "^1.16.0",
+    "@vocdoni/signing": "^1.16.2",
     "@vocdoni/voting": "^1.16.1",
     "@vocdoni/wallets": "^1.16.0"
   },
