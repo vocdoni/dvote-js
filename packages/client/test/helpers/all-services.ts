@@ -1,6 +1,6 @@
 import { DevGatewayService, TestResponseBody } from "./dvote-service"
 import { DevWeb3Service } from "./web3-service"
-import { GatewayInfo, Gateway, Web3Gateway } from "../../src"
+import { Client } from "../../src"
 
 export { DevGatewayService, TestResponse, TestResponseBody, MockedInteraction } from "./dvote-service"
 export { TestAccount } from "./web3-service"
@@ -25,22 +25,9 @@ export default class DevServices {
     }
 
     // GETTERS
-    get dvoteGateway() { return this.dvote.client }
-
-    getWeb3Gateway(entityResolverAddress: string = "", namespaceAddress: string = "", storageProofAddress: string = "", processAddress: string = ""): Promise<Web3Gateway> {
-        return this.web3.getClient(entityResolverAddress, namespaceAddress, storageProofAddress, processAddress)
-    }
-
-    get gatewayInfo() {
-        return new GatewayInfo(this.dvote.uri, ["file", "vote", "census", "results"], this.web3.uri, this.dvote.publicKey)
-    }
-
-    /** Returns a Gateway client for the dvote and Web3 local services. The Web3 gateway uses the given addresses as the resolved ones for the contracts */
-    getGateway(entityResolverAddress: string = "", namespaceAddress: string = "", storageProofAddress: string = "", processAddress: string = ""): Promise<Gateway> {
-        const dvoteGw = this.dvote.client
-
-        return this.web3.getClient(entityResolverAddress, namespaceAddress, storageProofAddress, processAddress)
-            .then(web3Gw => new Gateway(dvoteGw, web3Gw))
+    get bootnodeUri() { return `http://localhost:${this.dvote.port}/gateways.json` } // DVote
+    get client() {
+        return new Client(this.dvote.uri, this.web3.uri)
     }
 
     /** Returns accounts with funds on the in-memory ganacle blockchain */

@@ -6,7 +6,6 @@ import { Wallet } from "@ethersproject/wallet"
 import { computePublicKey } from "@ethersproject/signing-key"
 import { TextEncoder } from "util"
 import { BytesSignature } from "@vocdoni/signing"
-import { DVoteGateway, GatewayInfo } from "../../src"
 import { getWallets } from "./web3-service"
 import { BackendApiName, GatewayApiName } from "../../src/apis/definition"
 
@@ -30,14 +29,14 @@ export type MockedInteraction = {
 const defaultPort = 8500
 const defaultConnectResponse: TestResponseBody = { ok: true, apiList: ["file", "vote", "census", "results"], health: 100 } as { ok: boolean, apiList: (GatewayApiName | BackendApiName)[], health: number }
 
-// THE GATEWAY SERVER MOCK
+// THE GATEWAY SERVICE MOCK
 
 /**
- * Starts a web socket server that mimicks the bevahour of a DVote Gateway.
+ * Starts a server that mocks the bevahour of a DVote Node.
  * It allows to predefine the responses to send and it signs the messages sent back.
  */
 export class DevGatewayService {
-    private port: number
+    private _port: number
     private server: Server
     public interactionList: MockedInteraction[] = []
     public interactionCount: number = 0
@@ -46,7 +45,7 @@ export class DevGatewayService {
     constructor(params: { port?: number, responses?: TestResponseBody[] } = {}) {
         if (params.responses && params.responses.some(res => typeof res != "object")) throw new Error("Invalid response provided")
 
-        this.port = params.port || defaultPort
+        this._port = params.port || defaultPort
         this.interactionList = (params.responses || [defaultConnectResponse]).map(response => ({
             requested: null,             // no requests received yet
             responseData: response
@@ -61,6 +60,9 @@ export class DevGatewayService {
     public start(): Promise<void> {
         return this.stop().then(() => {
             const app = express()
+            app.get("/gateways.json", (_, res: Response) => {
+                res.send({ mainnet: { dvote: [{ uri: this.uri, apis: ["file", "vote", "census", "results"] }], web3: [] } })
+            })
             app.use(json())
             app.post("/dvote", (req, res, next) => this.handleRequest(req, res, next))
 
@@ -102,6 +104,14 @@ export class DevGatewayService {
         }
         catch (err) {
             console.error("DVOTE DEV SERVICE ERROR", err)
+            res.send({
+                id: this.interactionList[this.interactionCount].requested.id,
+                response: {
+                    error: true,
+                    message: err.message
+                },
+                signature: ""
+            })
         }
     }
 
@@ -116,12 +126,7 @@ export class DevGatewayService {
 
     // GETTERS
     get uri() { return `http://localhost:${this.port}/dvote` }
+    get port() { return this._port }
     get privateKey() { return this.wallet.privateKey }
     get publicKey() { return computePublicKey(this.wallet.publicKey, true) }
-    get client() {
-        return new DVoteGateway({ uri: this.uri, supportedApis: ["file", "census", "vote", "results"], publicKey: this.publicKey })
-    }
-    get gatewayInfo() {
-        return new GatewayInfo(this.uri, ["file", "vote", "census", "results"], "http://dummy", this.publicKey)
-    }
 }

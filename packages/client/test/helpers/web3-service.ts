@@ -1,7 +1,7 @@
 import { Wallet } from "@ethersproject/wallet"
 import { BaseProvider, JsonRpcProvider } from "@ethersproject/providers"
 import * as ganache from "ganache-core"
-import { ProviderUtil, Web3Gateway } from "../../src"
+import { ProviderUtil } from "@vocdoni/client"
 
 // TYPES
 
@@ -15,7 +15,8 @@ export type TestAccount = {
 const defaultPort = 8600
 const defaultMnemonic = "myth like bonus scare over problem client lizard pioneer submit female collect"
 
-const wallets = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(idx => Wallet.fromMnemonic(defaultMnemonic, `m/44'/60'/0'/0/${idx}`))
+const walletIndexes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+const wallets = walletIndexes.map(idx => Wallet.fromMnemonic(defaultMnemonic, `m/44'/60'/0'/0/${idx}`))
 
 export function getWallets() { return wallets }
 
@@ -31,7 +32,7 @@ export class DevWeb3Service {
     constructor(params: { port?: number, mnemonic?: string } = {}) {
         this.port = params.port || defaultPort
         this.provider = ProviderUtil.fromUri(this.uri)
-        this.accounts = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(idx => {
+        this.accounts = walletIndexes.map(idx => {
             const wallet = Wallet.fromMnemonic(params.mnemonic || defaultMnemonic, `m/44'/60'/0'/0/${idx}`).connect(this.provider)
             return {
                 privateKey: wallet.privateKey,
@@ -43,24 +44,6 @@ export class DevWeb3Service {
     }
 
     get uri() { return `http://localhost:${this.port}` }
-
-    /** Returns a gateway client that will skip the network checks and will use the given contract addresses as the official ones */
-    async getClient(entityResolverAddress: string = "", namespaceAddress: string = "", storageProofAddress: string = "", processAddress: string = ""): Promise<Web3Gateway> {
-        const gw = new Web3Gateway(this.uri)
-        // await gw.initEns()
-
-        // Bypass health checks
-        gw.checkStatus = () => Promise.resolve()
-        gw.isSyncing = () => Promise.resolve()
-
-        // Bypass contract address resolution
-        gw.ensPublicResolverContractAddress = entityResolverAddress
-        gw.namespacesContractAddress = namespaceAddress
-        gw.processesContractAddress = processAddress
-        gw.tokenStorageProofContractAddress = storageProofAddress
-
-        return gw
-    }
 
     start(): Promise<any> {
         this.stop()

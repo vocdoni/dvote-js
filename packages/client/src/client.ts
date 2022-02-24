@@ -1,7 +1,10 @@
 import { Signer } from "@ethersproject/abstract-signer";
 import { Wallet } from "@ethersproject/wallet";
+import { JsonRpcProvider } from "@ethersproject/providers";
+
 import {
   EntityMetadata,
+  INewProcessErc20Params,
   INewProcessParams,
   IProofArbo,
   IProofCA,
@@ -14,38 +17,38 @@ import { BytesSignature, JsonLike, JsonSignature } from "@vocdoni/signing";
 import {
   EnvelopeFull,
   EnvelopeMeta,
+  ProcessCircuitInfo,
   ProcessDetails,
   ProcessKeys,
   ProcessState,
   RawResults,
   Voting,
 } from "@vocdoni/voting";
-import { ClientInfo } from "./wrappers/client-info";
 import { ClientNoWalletSignerError } from "./errors/client";
 
 export class Client {
-  private _vocdoniClients: string[] = [];
-  private _web3Clients: string[] = [];
+  private _vocdoniEndpoints: string[] = [];
+  private _web3Endpoints: (string | JsonRpcProvider)[] = [];
   private _signer: Signer | Wallet;
 
   constructor(
     endpoints: string | string[],
-    web3Endpoints?: string | string[],
+    web3Endpoints?: (string | JsonRpcProvider) | (string | JsonRpcProvider)[],
     signer?: Signer | Wallet,
   ) {
     if (Array.isArray(endpoints)) {
-      this._vocdoniClients = endpoints;
+      this._vocdoniEndpoints = endpoints;
     } else if (typeof endpoints === "string") {
-      this._vocdoniClients = [endpoints];
+      this._vocdoniEndpoints = [endpoints];
     } else {
       throw new Error("Invalid endpoint or endpoints");
     }
 
     if (web3Endpoints) {
       if (Array.isArray(web3Endpoints)) {
-        this._web3Clients = web3Endpoints;
+        this._web3Endpoints = web3Endpoints;
       } else if (typeof web3Endpoints === "string") {
-        this._web3Clients = [web3Endpoints];
+        this._web3Endpoints = [web3Endpoints];
       } else {
         throw new Error("Invalid web endpoint or endpoints");
       }
@@ -60,38 +63,38 @@ export class Client {
     // TODO:
   }
 
-  static fromInfo(info: ClientInfo): Promise<Client> {
-    // TODO:
-  }
+  // static fromInfo(info: ClientInfo): Promise<Client> {
+  //   // TODO:
+  // }
 
   entity = {
-    setMetadata(id: string, metadata: EntityMetadata): Promise<void> {},
-    getMetadata(id: string): Promise<EntityMetadata> {},
+    setMetadata: (id: string, metadata: EntityMetadata): Promise<void> => { },
+    getMetadata: (id: string): Promise<EntityMetadata> => { },
   };
 
   voting = {
-    getProcess(processId: string): Promise<ProcessDetails> {},
-    getProcessState(processId: string): Promise<ProcessState> {},
+    getProcess: (processId: string): Promise<ProcessDetails> => { },
+    getProcessState: (processId: string): Promise<ProcessState> => { },
     // getProcessSummary(processId: string) {},
-    getProcessList(filters: {
+    getProcessList: (filters: {
       entityId?: string;
       status?: VochainProcessStatus;
       withResults?: boolean;
       from?: number;
-    }): Promise<string> {},
-    newProcess(params: INewProcessParams): Promise<string> {},
+    }): Promise<string> => { },
+    newProcess: (params: INewProcessParams): Promise<string> => { },
     signaling: {
-      newProcess() {},
+      newProcess: (params: INewProcessErc20Params): Promise<string> => { },
     },
-    getMetadata(processId: string): Promise<ProcessMetadata> {},
+    getMetadata: (processId: string): Promise<ProcessMetadata> => { },
     /** Applies to elections that use off-chain censuses, CSP signed proofs or Token based voting */
     signed: {
-      async submitBallot(
+      submitBallot: async (
         processId: string,
         choices: number[],
         proof: IProofArbo | IProofCA | IProofEVM,
         censusOrigin: VochainCensusOrigin,
-      ): Promise<string> {
+      ): Promise<string> => {
         // TODO:
 
         const { encryptionPubKeys } = await this.voting.getEncryptionKeys(
@@ -105,90 +108,108 @@ export class Client {
     },
     /** Applies to anonymous voting using ZK Snarks */
     anonymous: {
-      submitBallot() {},
-      getCircuitInfo() {},
-      fetchVKey() {},
-      fetchZKey() {},
-      fetchWitnessGenerator() {},
+      submitBallot: (
+        processId: string,
+        choices: number[],
+        secretKey: bigint,
+      ): Promise<bigint> => { },
+      getCircuitInfo: (processId: string): Promise<ProcessCircuitInfo> => { },
+      fetchVKey: () => { },
+      fetchZKey: () => { },
+      fetchWitnessGenerator: () => { },
     },
 
-    getBallot(processId: string, nullifier: string): Promise<EnvelopeFull> {},
-    getBallotStatus(
+    getBallot: (processId: string, nullifier: string | bigint): Promise<EnvelopeFull> => { },
+    getBallotStatus: (
       processId: string,
-      nullifier: string,
-    ): Promise<{ registered: boolean; date: Date; block: number }> {
+      nullifier: string | bigint,
+    ): Promise<{ registered: boolean; date: Date; block: number }> => {
       // const { registered, date, block } = await VotingApi.getEnvelopeStatus(processId, nullifier, gwPool)
     },
-    getBallotCount(processId: string): Promise<number> {},
-    getBallotList(entityId: string): Promise<EnvelopeMeta[]> {},
-    getEncryptionKeys(processId: string): Promise<ProcessKeys> {},
+    getBallotCount: (processId: string): Promise<number> => { },
+    getBallotList: (entityId: string): Promise<EnvelopeMeta[]> => { },
+    getEncryptionKeys: (processId: string): Promise<ProcessKeys> => { },
     results: {
-      getRaw(processId: string): Promise<RawResults> {},
-      getWeight(processId: string): Promise<bigint> {},
+      getRaw: (processId: string): Promise<RawResults> => { },
+      getWeight: (processId: string): Promise<bigint> => { },
       // Deprecated
-      put() {},
+      put: () => { },
     },
     // Contract deprecated methods
-    setStatus(
+    setStatus: (
       processId: string,
       newStatus: VochainProcessStatus,
-    ): Promise<void> {},
-    incrementQuestionIndex(processId: string): Promise<void> {},
+    ): Promise<void> => { },
+    incrementQuestionIndex: (processId: string): Promise<void> => { },
 
     // waiters
-    waitProcess(processId: string): Promise<void> {},
-    waitBallot(processId: string, nullifier: string): Promise<void> {},
+    waitProcess: (processId: string): Promise<void> => { },
+    waitBallot: (processId: string, nullifier: string | bigint): Promise<void> => { },
   };
 
   census = {
     offChain: {
-      put(
+      put: (
         items: { pubKey: string; value?: Uint8Array }[],
-      ): Promise<{ censusUri: string; censusRoot: string }> {
+      ): Promise<{ censusUri: string; censusRoot: string }> => {
         // TODO: CensusOffChain.Public.encodePublicKey(pubKey)
         // TODO: value => base64
       },
-      getProof(censusRoot: string, { pubKey, value }: {
-        pubKey: string;
-        value?: Uint8Array;
-      }): Promise<IProofArbo> {
+      getProof: (censusRoot: string, pubKey: string, value?: Uint8Array): Promise<IProofArbo> => {
         // TODO: CensusOffChain.Public.encodePublicKey(pubKey)
         // TODO: value => base64
       },
-      verifyProof() {},
+      verifyProof: () => { },
+    },
+    onChain: {
+      registerVoterKey: (processId: string, secretKey: bigint) => {
+
+        // // Get a census proof to be able to register the new key
+        // const censusProof = await Census.getProof(processParams.censusRoot, { pubKey: account.publicKeyEncoded })
+        // const requestedWeight = censusProof.weight
+
+        // const proof = Voting.packageSignedProof(processId, processParams.censusOrigin, censusProof)
+
+        // return CensusOnChainApi.registerVoterKey(processId, proof, secretKey, requestedWeight)
+      },
+      getProof: (rollingCensusRoot: string, secretKey: bigint, value?: Uint8Array): Promise<{ index: bigint; siblings: bigint[]; }> => {
+        // TODO: CensusOffChain.Public.encodePublicKey(pubKey)
+        // TODO: value => base64
+      },
     },
     erc20: {
-      getProof(
+      getProof: (
         tokenAddress: string,
         holderAddress: string,
-        balanceMapSlot: number,
+        // balanceMapSlot: number,
         targetEvmBlock: number,
-      ): Promise<IProofEVM> {},
-      getStorageHash(
+      ): Promise<IProofEVM> => { },
+      getStorageHash: (
         tokenAddress: string,
-        balanceMapSlot: number,
+        // balanceMapSlot: number,
         targetEvmBlock: number,
-      ): Promise<string> {},
-      verifyProof() {},
-      getTokenInfo(tokenAddress: string): Promise<{
+      ): Promise<string> => { },
+      verifyProof: () => { },
+      getTokenInfo: (tokenAddress: string): Promise<{
         isRegistered: boolean;
         isVerified: boolean;
         balanceMapSlot: number;
-      }> {},
-      registerToken() {},
-      verifyMapSlot() {},
+      }> => { },
+      registerToken: () => { },
+      verifyMapSlot: () => { },
     },
   };
 
   blockchain = {
-    getBlockStatus() {},
-    getBlockHeight() {},
-    estimateBlockAtDateTime() {},
-    estimateDateAtBlock() {},
+    getBlockStatus: () => { },
+    getBlockHeight: () => { },
+    estimateBlockAtDateTime: () => { },
+    estimateDateAtBlock: () => { },
+    waitTransaction: (txHash: string): Promise<void> => { }
   };
 
   web3 = {
-    getBlockNumber(): Promise<number> {},
+    getBlockNumber: (): Promise<number> => { },
   };
 
   // PUBLIC METHODS

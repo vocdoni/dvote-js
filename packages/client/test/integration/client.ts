@@ -1,10 +1,7 @@
 import "mocha"; // using @types/mocha
 import { expect } from "chai";
 import { addCompletionHooks } from "../mocha-hooks";
-import DevServices, {
-  DevGatewayService,
-  TestAccount,
-} from "../helpers/all-services";
+import DevServices, { TestAccount } from "../helpers/all-services";
 import { BackendApiName, Client, GatewayApiName } from "../../src";
 import {
   INewProcessParams,
@@ -12,20 +9,19 @@ import {
   ProofCaSignatureTypes,
   VochainCensusOrigin,
   VochainProcessStatus,
-  Wallet,
 } from "@vocdoni/data-models";
-import { CensusOffChain } from "@vocdoni/census";
 import { ProcessEnvelopeType, ProcessMode } from "@vocdoni/contract-wrappers";
+import { Random } from "@vocdoni/common";
+import { Poseidon } from "@vocdoni/hashing";
 
-const BOOTNODE_URI = "https://bootnodes.vocdoni.net/gateways.stg.json";
 
 let server: DevServices;
 
 let accounts: TestAccount[];
 // let baseAccount: TestAccount
 let entityAccount: TestAccount;
-let randomAccount1: TestAccount;
-let randomAccount2: TestAccount;
+let voterAccount1: TestAccount;
+let voterAccount2: TestAccount;
 
 addCompletionHooks();
 
@@ -57,8 +53,8 @@ describe("DVote gateway client", () => {
   beforeEach(async () => {
     accounts = server.accounts;
     entityAccount = accounts[1];
-    randomAccount1 = accounts[2];
-    randomAccount2 = accounts[3];
+    voterAccount1 = accounts[2];
+    voterAccount2 = accounts[3];
 
     await server.start();
   });
@@ -67,7 +63,7 @@ describe("DVote gateway client", () => {
   describe("Network requests", () => {
     it("Should support global network requests", async () => {
       // Entity
-      const client = await Client.fromBootnode(BOOTNODE_URI);
+      const client = await Client.fromBootnode(server.bootnodeUri);
       // client.useSigner(new providers.JsonRpcSigner());
       client.useSigner(entityAccount.wallet);
       const entityId = await client.getAddress();
@@ -77,7 +73,7 @@ describe("DVote gateway client", () => {
   describe("Lifecycle", () => {
     it("Should support an off-chain census voting flow", async () => {
       // Entity
-      const client = await Client.fromBootnode(BOOTNODE_URI);
+      const client = await Client.fromBootnode(server.bootnodeUri);
       // client.useSigner(new providers.JsonRpcSigner());
       client.useSigner(entityAccount.wallet);
       const entityId = await client.getAddress();
@@ -87,10 +83,10 @@ describe("DVote gateway client", () => {
 
       // Census
       const { censusUri, censusRoot } = await client.census.offChain.put([{
-        pubKey: randomAccount1.wallet.publicKey,
+        pubKey: voterAccount1.wallet.publicKey,
         value: new Uint8Array([1, 2, 3]),
       }, {
-        pubKey: randomAccount2.wallet.publicKey,
+        pubKey: voterAccount2.wallet.publicKey,
         value: new Uint8Array([2, 3, 4]),
       }]);
 
@@ -130,7 +126,7 @@ describe("DVote gateway client", () => {
       const processId = await client.voting.newProcess(processParams);
       await client.voting.waitProcess(processId);
 
-      const processState = await client.voting.getProcess(processId);
+      const processDetails = await client.voting.getProcess(processId);
       const fetchedMetadata = await client.voting.getMetadata(processId);
       await client.voting.getProcessList({ entityId });
 
@@ -139,13 +135,10 @@ describe("DVote gateway client", () => {
       //   processId,
       // );
 
-      client.useSigner(randomAccount1.wallet);
+      client.useSigner(voterAccount1.wallet);
 
       // Voter proof
-      const proof = await client.census.offChain.getProof(censusRoot, {
-        pubKey: randomAccount1.wallet.publicKey,
-        value: new Uint8Array([1, 2, 3]),
-      });
+      const proof = await client.census.offChain.getProof(censusRoot, voterAccount1.wallet.publicKey);
 
       // Submit vote
       const choices = [0, 1, 2, 3, 4];
@@ -153,7 +146,7 @@ describe("DVote gateway client", () => {
         processId,
         choices,
         proof,
-        processState.state.censusOrigin,
+        processDetails.state.censusOrigin,
       );
       await client.voting.waitBallot(processId, nullifier);
 
@@ -178,7 +171,7 @@ describe("DVote gateway client", () => {
 
     it("Should support a CSP based voting flow", async () => {
       // Entity
-      const client = await Client.fromBootnode(BOOTNODE_URI);
+      const client = await Client.fromBootnode(server.bootnodeUri);
       // client.useSigner(new providers.JsonRpcSigner());
       client.useSigner(entityAccount.wallet);
       const entityId = await client.getAddress();
@@ -188,10 +181,10 @@ describe("DVote gateway client", () => {
 
       // Census
       const { censusUri, censusRoot } = await client.census.offChain.put([{
-        pubKey: randomAccount1.wallet.publicKey,
+        pubKey: voterAccount1.wallet.publicKey,
         value: new Uint8Array([1, 2, 3]),
       }, {
-        pubKey: randomAccount2.wallet.publicKey,
+        pubKey: voterAccount2.wallet.publicKey,
         value: new Uint8Array([2, 3, 4]),
       }]);
 
@@ -231,7 +224,7 @@ describe("DVote gateway client", () => {
       const processId = await client.voting.newProcess(processParams);
       await client.voting.waitProcess(processId);
 
-      const processState = await client.voting.getProcess(processId);
+      const processDetails = await client.voting.getProcess(processId);
       const fetchedMetadata = await client.voting.getMetadata(processId);
       await client.voting.getProcessList({ entityId });
 
@@ -240,14 +233,14 @@ describe("DVote gateway client", () => {
       //   processId,
       // );
 
-      client.useSigner(randomAccount1.wallet);
+      client.useSigner(voterAccount1.wallet);
 
       // Voter proof
       const proof: IProofCA = {
         type: ProofCaSignatureTypes.ECDSA_BLIND_PIDSALTED,
         signature:
           "0x1234567890123456789012345678901234567890123456789012345678901234",
-        voterAddress: randomAccount2.wallet.address,
+        voterAddress: voterAccount2.wallet.address,
       };
 
       // Submit vote
@@ -256,7 +249,7 @@ describe("DVote gateway client", () => {
         processId,
         choices,
         proof,
-        processState.state.censusOrigin,
+        processDetails.state.censusOrigin,
       );
       await client.voting.waitBallot(processId, nullifier);
 
@@ -283,22 +276,9 @@ describe("DVote gateway client", () => {
       const tokenAddress = "0x1234567890123456789012345678901234567890";
 
       // Entity
-      const client = await Client.fromBootnode(BOOTNODE_URI);
+      const client = await Client.fromBootnode(server.bootnodeUri);
       // client.useSigner(new providers.JsonRpcSigner());
-      client.useSigner(entityAccount.wallet);
-      const entityId = await client.getAddress();
-
-      await client.entity.setMetadata(entityId, {} as any);
-      await client.entity.getMetadata(entityId);
-
-      // Census
-      const { censusUri, censusRoot } = await client.census.offChain.put([{
-        pubKey: randomAccount1.wallet.publicKey,
-        value: new Uint8Array([1, 2, 3]),
-      }, {
-        pubKey: randomAccount2.wallet.publicKey,
-        value: new Uint8Array([2, 3, 4]),
-      }]);
+      client.useSigner(voterAccount1.wallet);
 
       // Holder proof
       const targetEvmBlock = await client.web3.getBlockNumber();
@@ -315,6 +295,7 @@ describe("DVote gateway client", () => {
         envelopeType: ProcessEnvelopeType.make({}),
         censusRoot: storageHash,
         censusOrigin: VochainCensusOrigin.ERC20,
+        tokenAddress,
         blockCount: 100,
         startBlock: 50,
         costExponent: 1,
@@ -344,21 +325,19 @@ describe("DVote gateway client", () => {
       const processId = await client.voting.newProcess(processParams);
       await client.voting.waitProcess(processId);
 
-      const processState = await client.voting.getProcess(processId);
-      const fetchedMetadata = await client.voting.getMetadata(processId);
-      await client.voting.getProcessList({ entityId });
+      const processDetails = await client.voting.getProcess(processId);
+      // const fetchedMetadata = await client.voting.getMetadata(processId);
+      await client.voting.getProcessList({ entityId: tokenAddress });
 
       // Encryption keys
       // const { encryptionPubKeys } = await client.voting.getEncryptionKeys(
       //   processId,
       // );
 
-      client.useSigner(randomAccount1.wallet);
-
-      // Voter proof
+      // Voter EVM proof
       const proof2 = await client.census.erc20.getProof(
         tokenAddress,
-        randomAccount1.address,
+        voterAccount1.address,
         tokenInfo.balanceMapSlot,
         targetEvmBlock,
       );
@@ -369,7 +348,7 @@ describe("DVote gateway client", () => {
         processId,
         choices,
         proof2,
-        processState.state.censusOrigin,
+        processDetails.state.censusOrigin,
       );
       await client.voting.waitBallot(processId, nullifier);
 
@@ -380,10 +359,192 @@ describe("DVote gateway client", () => {
       );
       const vote = await client.voting.getBallot(processId, nullifier);
 
-      client.useSigner(entityAccount.wallet);
+      // Read results
+      const results = await client.voting.results.getRaw(processId);
+      const resultsWeight = await client.voting.results.getWeight(processId);
+      const voteCount = await client.voting.getBallotCount(processId);
+      const votes = await client.voting.getBallotList(processId);
+    });
 
-      // End election
-      await client.voting.setStatus(processId, VochainProcessStatus.ENDED);
+    it("Should support an ERC20 token-based voting flow (signaling via Oracle)", async () => {
+      const tokenAddress = "0x1234567890123456789012345678901234567890";
+
+      // Entity
+      const client = await Client.fromBootnode(server.bootnodeUri);
+      // client.useSigner(new providers.JsonRpcSigner());
+      client.useSigner(voterAccount1.wallet);
+
+      // Holder proof
+      const targetEvmBlock = await client.web3.getBlockNumber();
+      const tokenInfo = await client.census.erc20.getTokenInfo(tokenAddress);
+      const storageHash = await client.census.erc20.getStorageHash(
+        tokenAddress,
+        tokenInfo.balanceMapSlot,
+        targetEvmBlock,
+      );
+
+      // Election
+      const processParams: INewProcessParams = {
+        mode: ProcessMode.AUTO_START,
+        envelopeType: ProcessEnvelopeType.make({}),
+        censusRoot: storageHash,
+        censusOrigin: VochainCensusOrigin.ERC20,
+        tokenAddress,
+        blockCount: 100,
+        startBlock: 50,
+        costExponent: 1,
+        maxCount: 1,
+        metadata: {
+          version: "1.1",
+          title: { default: "hi" },
+          description: { default: "ho" },
+          media: { header: "https://" },
+          questions: [
+            {
+              title: { default: "Q" },
+              choices: [{ title: { default: "A" }, value: 0 }],
+            },
+          ],
+          results: {
+            aggregation: "discrete-counting",
+            display: "linear-weighted",
+          },
+        },
+        maxTotalCost: 0,
+        maxValue: 5,
+        maxVoteOverwrites: 0,
+        paramsSignature:
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+      };
+      const oracleClient = new Client(server.dvote.uri, [server.web3.uri], voterAccount1.wallet);
+      const processId = await oracleClient.voting.signaling.newProcess(processParams);
+
+      await client.voting.waitProcess(processId);
+      const processDetails = await client.voting.getProcess(processId);
+      // const fetchedMetadata = await client.voting.getMetadata(processId);
+      await client.voting.getProcessList({ entityId: tokenAddress });
+
+      // Encryption keys
+      const { encryptionPubKeys } = await client.voting.getEncryptionKeys(
+        processId,
+      );
+
+      // Voter EVM proof
+      const proof2 = await client.census.erc20.getProof(
+        tokenAddress,
+        voterAccount1.address,
+        tokenInfo.balanceMapSlot,
+        targetEvmBlock,
+      );
+
+      // Submit vote
+      const choices = [0, 1, 2, 3, 4];
+      const nullifier = await client.voting.signed.submitBallot(
+        processId,
+        choices,
+        proof2,
+        processDetails.state.censusOrigin,
+      );
+      await client.voting.waitBallot(processId, nullifier);
+
+      // Read vote
+      const voteStatus = await client.voting.getBallotStatus(
+        processId,
+        nullifier,
+      );
+      const vote = await client.voting.getBallot(processId, nullifier);
+
+      // Read results
+      const results = await client.voting.results.getRaw(processId);
+      const resultsWeight = await client.voting.results.getWeight(processId);
+      const voteCount = await client.voting.getBallotCount(processId);
+      const votes = await client.voting.getBallotList(processId);
+    });
+
+    it("Should support an anonymous zkSnarks voting flow", async () => {
+      const tokenAddress = "0x1234567890123456789012345678901234567890";
+
+      // Entity
+      const client = await Client.fromBootnode(server.bootnodeUri);
+      // client.useSigner(new providers.JsonRpcSigner());
+      client.useSigner(voterAccount1.wallet);
+
+      // Census
+      const { censusUri, censusRoot } = await client.census.offChain.put([{
+        pubKey: voterAccount1.wallet.publicKey,
+        value: new Uint8Array([1, 2, 3]),
+      }, {
+        pubKey: voterAccount2.wallet.publicKey,
+        value: new Uint8Array([2, 3, 4]),
+      }]);
+
+      // Election
+      const processParams: INewProcessParams = {
+        mode: ProcessMode.make({ autoStart: true, interruptible: true, preregister: true }),
+        envelopeType: ProcessEnvelopeType.make({ encryptedVotes: false, anonymousVoters: true }),
+        censusOrigin: VochainCensusOrigin.OFF_CHAIN_TREE,
+        censusRoot,
+        censusUri,
+        startBlock: 50,
+        blockCount: 100,
+        costExponent: 1,
+        maxCount: 1,
+        metadata: {
+          version: "1.1",
+          title: { default: "hi" },
+          description: { default: "ho" },
+          media: { header: "https://" },
+          questions: [
+            {
+              title: { default: "Q" },
+              choices: [{ title: { default: "A" }, value: 0 }],
+            },
+          ],
+          results: {
+            aggregation: "discrete-counting",
+            display: "linear-weighted",
+          },
+        },
+        maxTotalCost: 0,
+        maxValue: 5,
+        maxVoteOverwrites: 0,
+        paramsSignature:
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+      };
+      const processId = await client.voting.newProcess(processParams);
+
+      await client.voting.waitProcess(processId);
+      const processDetails = await client.voting.getProcess(processId);
+      // const fetchedMetadata = await client.voting.getMetadata(processId);
+      await client.voting.getProcessList({ entityId: tokenAddress });
+
+      // Encryption keys
+      // const { encryptionPubKeys } = await client.voting.getEncryptionKeys(
+      //   processId,
+      // );
+
+      // Register anonymous key
+      // Generate the random secret key that will be used for voting
+      const secretKey = Random.getBigInt(Poseidon.Q)
+
+      const txHash = await client.census.onChain.registerVoterKey(processId, secretKey)
+      await client.blockchain.waitTransaction(txHash)
+
+      // Submit vote
+      const choices = [0, 1, 2, 3, 4];
+      const nullifier = await client.voting.anonymous.submitBallot(
+        processId,
+        choices,
+        secretKey
+      );
+      await client.voting.waitBallot(processId, nullifier);
+
+      // Read vote
+      const voteStatus = await client.voting.getBallotStatus(
+        processId,
+        nullifier,
+      );
+      const vote = await client.voting.getBallot(processId, nullifier);
 
       // Read results
       const results = await client.voting.results.getRaw(processId);
@@ -393,9 +554,6 @@ describe("DVote gateway client", () => {
     });
   });
 
-  it("Should support an ERC20 token-based voting flow (signaling via Oracle)");
-  it("Should support an anonymous zkSnarks voting flow");
-
   it("Should use and change signer", async () => {
     const client = new Client("https://gateway/dvote");
     expect(await client.getAddress()).to.throw;
@@ -403,7 +561,7 @@ describe("DVote gateway client", () => {
     client.useSigner(entityAccount.wallet);
     expect(await client.getAddress()).to.eq(entityAccount.address);
 
-    client.useSigner(randomAccount1.wallet);
-    expect(await client.getAddress()).to.eq(randomAccount1.address);
+    client.useSigner(voterAccount1.wallet);
+    expect(await client.getAddress()).to.eq(voterAccount1.address);
   });
 });
