@@ -1,7 +1,3 @@
-import { Signer } from "@ethersproject/abstract-signer";
-import { Wallet } from "@ethersproject/wallet";
-import { JsonRpcProvider } from "@ethersproject/providers";
-
 import {
   EntityMetadata,
   INewProcessErc20Params,
@@ -13,7 +9,6 @@ import {
   VochainCensusOrigin,
   VochainProcessStatus,
 } from "@vocdoni/data-models";
-import { BytesSignature, JsonLike, JsonSignature } from "@vocdoni/signing";
 import {
   EnvelopeFull,
   EnvelopeMeta,
@@ -24,48 +19,10 @@ import {
   RawResults,
   Voting,
 } from "@vocdoni/voting";
-import { ClientNoWalletSignerError } from "./errors/client";
+import { ClientBase } from "./client-base";
 
-export class Client {
-  private _vocdoniEndpoints: string[] = [];
-  private _web3Endpoints: (string | JsonRpcProvider)[] = [];
-  private _signer: Signer | Wallet;
-
-  constructor(
-    endpoints: string | string[],
-    web3Endpoints?: (string | JsonRpcProvider) | (string | JsonRpcProvider)[],
-    signer?: Signer | Wallet,
-  ) {
-    if (Array.isArray(endpoints)) {
-      this._vocdoniEndpoints = endpoints;
-    } else if (typeof endpoints === "string") {
-      this._vocdoniEndpoints = [endpoints];
-    } else {
-      throw new Error("Invalid endpoint or endpoints");
-    }
-
-    if (web3Endpoints) {
-      if (Array.isArray(web3Endpoints)) {
-        this._web3Endpoints = web3Endpoints;
-      } else if (typeof web3Endpoints === "string") {
-        this._web3Endpoints = [web3Endpoints];
-      } else {
-        throw new Error("Invalid web endpoint or endpoints");
-      }
-    }
-
-    if (signer) {
-      this.useSigner(signer);
-    }
-  }
-
-  static fromBootnode(bootnodeUri: string): Promise<Client> {
-    // TODO:
-  }
-
-  // static fromInfo(info: ClientInfo): Promise<Client> {
-  //   // TODO:
-  // }
+export class Client extends ClientBase {
+  // CLIENT IMPLEMENTATION
 
   entity = {
     setMetadata: (id: string, metadata: EntityMetadata): Promise<void> => { },
@@ -211,59 +168,6 @@ export class Client {
   web3 = {
     getBlockNumber: (): Promise<number> => { },
   };
-
-  // PUBLIC METHODS
-
-  useSigner(walletOrSigner: Signer | Wallet) {
-    if (!this._signer) throw new Error("Empty wallet or signer");
-
-    this._signer = walletOrSigner;
-  }
-
-  signMessage(payload: Uint8Array | string | JsonLike): Promise<string> {
-    if (!this._signer) {
-      throw new ClientNoWalletSignerError();
-    }
-
-    if (payload instanceof Uint8Array) {
-      return BytesSignature.signMessage(payload, this._signer);
-    } else if (typeof payload === "string") {
-      const bytes = new TextEncoder().encode(payload);
-      return BytesSignature.signMessage(bytes, this._signer);
-    }
-    return JsonSignature.signMessage(payload as JsonLike, this._signer);
-  }
-
-  signTransaction(
-    payload: Uint8Array | string | JsonLike,
-    chainId: string,
-  ): Promise<string> {
-    if (!this._signer) {
-      throw new ClientNoWalletSignerError();
-    }
-
-    if (payload instanceof Uint8Array) {
-      return BytesSignature.signTransaction(payload, chainId, this._signer);
-    } else if (typeof payload === "string") {
-      const bytes = new TextEncoder().encode(payload);
-      return BytesSignature.signTransaction(bytes, chainId, this._signer);
-    }
-    return JsonSignature.signTransaction(
-      payload as JsonLike,
-      chainId,
-      this._signer,
-    );
-  }
-
-  getAddress() {
-    if (!this._signer) {
-      return Promise.reject(
-        new ClientNoWalletSignerError(),
-      );
-    }
-
-    return this._signer.getAddress();
-  }
 
   // PRIVATE IMPLEMENTATION
 }

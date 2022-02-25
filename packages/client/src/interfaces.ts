@@ -17,7 +17,7 @@ export interface IGatewayDVoteClient {
     get dvoteUri(): string
     get environment(): VocdoniEnvironment
 
-    sendRequest(requestBody: IRequestParameters, walletOrSigner?: Wallet | Signer, params?: { timeout: number }): Promise<DVoteGatewayResponseBody>
+    sendRequest(requestBody: IRequestParameters, walletOrSigner?: Wallet | Signer, params?: { timeout: number }): Promise<IVocdoniNodeResponse>
     getVocdoniInfo(timeout?: number): Promise<{ apiList: Array<GatewayApiName | BackendApiName>, health: number, chainId: string }>
     getVocdoniChainId(): Promise<string>
 }
@@ -54,15 +54,12 @@ export interface IRequestParameters {
     [k: string]: any
 }
 
-export type DVoteGatewayResponseBody = {
+export interface IVocdoniNodeResponse {
     ok: boolean,
     request: string,
     message?: string,
     timestamp?: number,
     signature?: string,
-
-    // the rest of fields
-    [k: string]: any
 }
 
 export interface IGatewayDiscoveryParameters {

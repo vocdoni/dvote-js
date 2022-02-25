@@ -28,8 +28,8 @@
     "@vocdoni/common": "^1.15.3",
     "@vocdoni/data-models": "^1.15.3",
     "@vocdoni/signing": "^1.16.2",
-    "axios": "^0.24.0",
     "buffer": "^6.0.3",
+    "fetch-ponyfill": "^7.1.0",
     "universal-parse-url": "^1.0.2"
   },
   "devDependencies": {
