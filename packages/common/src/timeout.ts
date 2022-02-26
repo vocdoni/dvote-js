@@ -1,3 +1,5 @@
+import { TimeoutError } from "./errors"
+
 /**
  * @param func The promise-returning function to invoke
  * @param timeout Timeout (in seconds) to wait before failing
@@ -8,7 +10,7 @@ export function promiseFuncWithTimeout<T>(func: () => Promise<T>, timeout: numbe
     else if (isNaN(timeout) || timeout < 0) throw new Error("Invalid timeout")
 
     return new Promise((resolve, reject) => {
-        setTimeout(() => reject(new Error(timeoutMessage || "Time out")), timeout)
+        setTimeout(() => reject(new TimeoutError(timeoutMessage || "Time out")), timeout)
 
         return func()
             .then(result => resolve(result))
@@ -26,7 +28,7 @@ export function promiseWithTimeout<T>(prom: Promise<T>, timeout: number, timeout
     else if (isNaN(timeout) || timeout < 0) throw new Error("Invalid timeout")
 
     return new Promise((resolve, reject) => {
-        setTimeout(() => reject(new Error(timeoutMessage || "Time out")), timeout)
+        setTimeout(() => reject(new TimeoutError(timeoutMessage || "Time out")), timeout)
 
         return prom
             .then(result => resolve(result))

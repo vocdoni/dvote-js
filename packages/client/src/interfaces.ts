@@ -8,42 +8,49 @@ import { IEnsPublicResolverContract, IGenesisContract, INamespacesContract, IPro
 import { ApiMethod, BackendApiName, GatewayApiName } from "./apis/definition"
 import { ContentUri } from "./wrappers/content-uri"
 
-export interface IGatewayDVoteClient {
-    get supportedApis(): (GatewayApiName | BackendApiName)[]
+export type VocdoniNodeInfo = {
+    uri: string;
+    apis?: (GatewayApiName | BackendApiName)[];
+    publicKey?: string;
+};
+  
 
-    init(): Promise<any>
+// export interface IGatewayDVoteClient {
+//     get supportedApis(): (GatewayApiName | BackendApiName)[]
 
-    get isReady(): boolean
-    get dvoteUri(): string
-    get environment(): VocdoniEnvironment
+//     init(): Promise<any>
 
-    sendRequest(requestBody: IRequestParameters, walletOrSigner?: Wallet | Signer, params?: { timeout: number }): Promise<IVocdoniNodeResponse>
-    getVocdoniInfo(timeout?: number): Promise<{ apiList: Array<GatewayApiName | BackendApiName>, health: number, chainId: string }>
-    getVocdoniChainId(): Promise<string>
-}
+//     get isReady(): boolean
+//     get dvoteUri(): string
+//     get environment(): VocdoniEnvironment
 
-export interface IGatewayWeb3Client {
-    get provider(): BaseProvider
-    get web3Uri(): string
-    get archiveIpnsId(): string
-    set archiveIpnsId(ipnsId: string)
-    disconnect(): void
-    getEthChainId(): Promise<number>
-    getEthNetworkId(): Promise<string>
+//     sendRequest(requestBody: IRequestParameters, walletOrSigner?: Wallet | Signer, params?: { timeout: number }): Promise<IVocdoniNodeResponse>
+//     getVocdoniInfo(timeout?: number): Promise<{ apiList: Array<GatewayApiName | BackendApiName>, health: number, chainId: string }>
+//     getVocdoniChainId(): Promise<string>
+// }
 
-    deploy<CustomContractMethods>(abi: string | (string | ParamType)[] | Interface, bytecode: string,
-                                  signParams: { signer?: Signer, wallet?: Wallet }, deployArguments: any[]): Promise<(Contract & CustomContractMethods)>
-    attach<CustomContractMethods>(address: string, abi: ContractInterface): (Contract & CustomContractMethods)
+// export interface IGatewayWeb3Client {
+//     get provider(): BaseProvider
+//     get web3Uri(): string
+//     get archiveIpnsId(): string
+//     set archiveIpnsId(ipnsId: string)
+//     disconnect(): void
+//     getEthChainId(): Promise<number>
+//     getEthNetworkId(): Promise<string>
 
-    getEnsPublicResolverInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IEnsPublicResolverContract>
-    getProcessesInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IProcessesContract>
-    getGenesisInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IGenesisContract>
-    getNamespacesInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<INamespacesContract>
-    getResultsInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IResultsContract>
-    getTokenStorageProofInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<ITokenStorageProofContract>
-}
+//     deploy<CustomContractMethods>(abi: string | (string | ParamType)[] | Interface, bytecode: string,
+//                                   signParams: { signer?: Signer, wallet?: Wallet }, deployArguments: any[]): Promise<(Contract & CustomContractMethods)>
+//     attach<CustomContractMethods>(address: string, abi: ContractInterface): (Contract & CustomContractMethods)
 
-export interface IGatewayClient extends IGatewayDVoteClient, IGatewayWeb3Client { }
+//     getEnsPublicResolverInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IEnsPublicResolverContract>
+//     getProcessesInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IProcessesContract>
+//     getGenesisInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IGenesisContract>
+//     getNamespacesInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<INamespacesContract>
+//     getResultsInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IResultsContract>
+//     getTokenStorageProofInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<ITokenStorageProofContract>
+// }
+
+// export interface IGatewayClient extends IGatewayDVoteClient, IGatewayWeb3Client { }
 
 /** Parameters sent by the function caller */
 export interface IRequestParameters {

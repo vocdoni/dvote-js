@@ -1,3 +1,4 @@
+import { EthNetworkID, VocdoniEnvironment } from "@vocdoni/common";
 import {
   EntityMetadata,
   INewProcessErc20Params,
@@ -19,31 +20,63 @@ import {
   RawResults,
   Voting,
 } from "@vocdoni/voting";
-import { ClientBase } from "./client-base";
+import { ClientCore } from "./client-core";
+import * as fetchPonyfill from "fetch-ponyfill";
+import { JsonBootnodeData } from "./apis/definition";
 
-export class Client extends ClientBase {
+const { fetch } = fetchPonyfill();
+
+export class Client extends ClientCore {
+  // HELPERS
+  static fromBootnode(
+    uri: string,
+    networkId: EthNetworkID,
+    environment: VocdoniEnvironment = "prod",
+  ): Promise<Client> {
+    if (!uri) return Promise.reject(new Error("Empty URI"));
+
+    return fetch(uri)
+      .then((res) => res.json())
+      .then((res: JsonBootnodeData) => {
+        if (!res[networkId]) {
+          throw new Error(
+            "There are no gateways for the given Ethereum Network ID",
+          );
+        }
+
+        const client = new Client(
+          res[networkId].dvote,
+          res[networkId].web3.map((v) => v.uri),
+          null, // no signer by default
+          environment,
+        );
+        return client.init()
+          .then(() => client);
+      });
+  }
+
   // CLIENT IMPLEMENTATION
 
   entity = {
-    setMetadata: (id: string, metadata: EntityMetadata): Promise<void> => { },
-    getMetadata: (id: string): Promise<EntityMetadata> => { },
+    setMetadata: (id: string, metadata: EntityMetadata): Promise<void> => {},
+    getMetadata: (id: string): Promise<EntityMetadata> => {},
   };
 
   voting = {
-    getProcess: (processId: string): Promise<ProcessDetails> => { },
-    getProcessState: (processId: string): Promise<ProcessState> => { },
+    getProcess: (processId: string): Promise<ProcessDetails> => {},
+    getProcessState: (processId: string): Promise<ProcessState> => {},
     // getProcessSummary(processId: string) {},
     getProcessList: (filters: {
       entityId?: string;
       status?: VochainProcessStatus;
       withResults?: boolean;
       from?: number;
-    }): Promise<string> => { },
-    newProcess: (params: INewProcessParams): Promise<string> => { },
+    }): Promise<string> => {},
+    newProcess: (params: INewProcessParams): Promise<string> => {},
     signaling: {
-      newProcess: (params: INewProcessErc20Params): Promise<string> => { },
+      newProcess: (params: INewProcessErc20Params): Promise<string> => {},
     },
-    getMetadata: (processId: string): Promise<ProcessMetadata> => { },
+    getMetadata: (processId: string): Promise<ProcessMetadata> => {},
     /** Applies to elections that use off-chain censuses, CSP signed proofs or Token based voting */
     signed: {
       submitBallot: async (
@@ -69,39 +102,45 @@ export class Client extends ClientBase {
         processId: string,
         choices: number[],
         secretKey: bigint,
-      ): Promise<bigint> => { },
-      getCircuitInfo: (processId: string): Promise<ProcessCircuitInfo> => { },
-      fetchVKey: () => { },
-      fetchZKey: () => { },
-      fetchWitnessGenerator: () => { },
+      ): Promise<bigint> => {},
+      getCircuitInfo: (processId: string): Promise<ProcessCircuitInfo> => {},
+      fetchVKey: () => {},
+      fetchZKey: () => {},
+      fetchWitnessGenerator: () => {},
     },
 
-    getBallot: (processId: string, nullifier: string | bigint): Promise<EnvelopeFull> => { },
+    getBallot: (
+      processId: string,
+      nullifier: string | bigint,
+    ): Promise<EnvelopeFull> => {},
     getBallotStatus: (
       processId: string,
       nullifier: string | bigint,
     ): Promise<{ registered: boolean; date: Date; block: number }> => {
       // const { registered, date, block } = await VotingApi.getEnvelopeStatus(processId, nullifier, gwPool)
     },
-    getBallotCount: (processId: string): Promise<number> => { },
-    getBallotList: (entityId: string): Promise<EnvelopeMeta[]> => { },
-    getEncryptionKeys: (processId: string): Promise<ProcessKeys> => { },
+    getBallotCount: (processId: string): Promise<number> => {},
+    getBallotList: (entityId: string): Promise<EnvelopeMeta[]> => {},
+    getEncryptionKeys: (processId: string): Promise<ProcessKeys> => {},
     results: {
-      getRaw: (processId: string): Promise<RawResults> => { },
-      getWeight: (processId: string): Promise<bigint> => { },
+      getRaw: (processId: string): Promise<RawResults> => {},
+      getWeight: (processId: string): Promise<bigint> => {},
       // Deprecated
-      put: () => { },
+      put: () => {},
     },
     // Contract deprecated methods
     setStatus: (
       processId: string,
       newStatus: VochainProcessStatus,
-    ): Promise<void> => { },
-    incrementQuestionIndex: (processId: string): Promise<void> => { },
+    ): Promise<void> => {},
+    incrementQuestionIndex: (processId: string): Promise<void> => {},
 
     // waiters
-    waitProcess: (processId: string): Promise<void> => { },
-    waitBallot: (processId: string, nullifier: string | bigint): Promise<void> => { },
+    waitProcess: (processId: string): Promise<void> => {},
+    waitBallot: (
+      processId: string,
+      nullifier: string | bigint,
+    ): Promise<void> => {},
   };
 
   census = {
@@ -112,15 +151,18 @@ export class Client extends ClientBase {
         // TODO: CensusOffChain.Public.encodePublicKey(pubKey)
         // TODO: value => base64
       },
-      getProof: (censusRoot: string, pubKey: string, value?: Uint8Array): Promise<IProofArbo> => {
+      getProof: (
+        censusRoot: string,
+        pubKey: string,
+        value?: Uint8Array,
+      ): Promise<IProofArbo> => {
         // TODO: CensusOffChain.Public.encodePublicKey(pubKey)
         // TODO: value => base64
       },
-      verifyProof: () => { },
+      verifyProof: () => {},
     },
     onChain: {
       registerVoterKey: (processId: string, secretKey: bigint) => {
-
         // // Get a census proof to be able to register the new key
         // const censusProof = await Census.getProof(processParams.censusRoot, { pubKey: account.publicKeyEncoded })
         // const requestedWeight = censusProof.weight
@@ -129,7 +171,11 @@ export class Client extends ClientBase {
 
         // return CensusOnChainApi.registerVoterKey(processId, proof, secretKey, requestedWeight)
       },
-      getProof: (rollingCensusRoot: string, secretKey: bigint, value?: Uint8Array): Promise<{ index: bigint; siblings: bigint[]; }> => {
+      getProof: (
+        rollingCensusRoot: string,
+        secretKey: bigint,
+        value?: Uint8Array,
+      ): Promise<{ index: bigint; siblings: bigint[] }> => {
         // TODO: CensusOffChain.Public.encodePublicKey(pubKey)
         // TODO: value => base64
       },
@@ -140,33 +186,33 @@ export class Client extends ClientBase {
         holderAddress: string,
         // balanceMapSlot: number,
         targetEvmBlock: number,
-      ): Promise<IProofEVM> => { },
+      ): Promise<IProofEVM> => {},
       getStorageHash: (
         tokenAddress: string,
         // balanceMapSlot: number,
         targetEvmBlock: number,
-      ): Promise<string> => { },
-      verifyProof: () => { },
+      ): Promise<string> => {},
+      verifyProof: () => {},
       getTokenInfo: (tokenAddress: string): Promise<{
         isRegistered: boolean;
         isVerified: boolean;
         balanceMapSlot: number;
-      }> => { },
-      registerToken: () => { },
-      verifyMapSlot: () => { },
+      }> => {},
+      registerToken: () => {},
+      verifyMapSlot: () => {},
     },
   };
 
   blockchain = {
-    getBlockStatus: () => { },
-    getBlockHeight: () => { },
-    estimateBlockAtDateTime: () => { },
-    estimateDateAtBlock: () => { },
-    waitTransaction: (txHash: string): Promise<void> => { }
+    getBlockStatus: () => {},
+    getBlockHeight: () => {},
+    estimateBlockAtDateTime: () => {},
+    estimateDateAtBlock: () => {},
+    waitTransaction: (txHash: string): Promise<void> => {},
   };
 
   web3 = {
-    getBlockNumber: (): Promise<number> => { },
+    getBlockNumber: (): Promise<number> => {},
   };
 
   // PRIVATE IMPLEMENTATION

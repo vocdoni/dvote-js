@@ -29,8 +29,7 @@
     "@vocdoni/data-models": "^1.15.3",
     "@vocdoni/signing": "^1.16.2",
     "buffer": "^6.0.3",
-    "fetch-ponyfill": "^7.1.0",
-    "universal-parse-url": "^1.0.2"
+    "fetch-ponyfill": "^7.1.0"
   },
   "devDependencies": {
     "@ethersproject/signing-key": "^5.5.0",
