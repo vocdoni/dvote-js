@@ -1,7 +1,6 @@
 import "mocha"; // using @types/mocha
 import { expect } from "chai";
 import { addCompletionHooks } from "../../../common/test/mocha-hooks";
-import { Buffer } from "buffer/";
 
 import { ClientBase } from "../../src/client-base";
 import { Wallet } from "@ethersproject/wallet";

@@ -3,7 +3,14 @@ import { Wallet } from "@ethersproject/wallet";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { BytesSignature, JsonLike, JsonSignature } from "@vocdoni/signing";
 import { ClientNoWalletSignerError } from "./errors/client";
-import { BackendApiName, GatewayApiName } from "./apis";
+import {
+  allApis,
+  ApiMethod,
+  BackendApiName,
+  GatewayApiName,
+  InfoApiMethod,
+  RawApiMethod,
+} from "./apis";
 import { ProviderUtil } from "./net/providers";
 import * as fetchPonyfill from "fetch-ponyfill";
 import {
@@ -229,7 +236,7 @@ export abstract class ClientBase {
     return this.handleResponse(responsePayloadBytes, payload.id);
   }
 
-  private async makeRequest(
+  protected async makeRequest(
     body: IRequestParameters,
     { skipSigning }: { skipSigning?: boolean } = {},
   ): Promise<MessageRequestContent> {
@@ -254,7 +261,7 @@ export abstract class ClientBase {
     };
   }
 
-  private handleResponse(bytes: Uint8Array, expectedId: string) {
+  protected handleResponse(bytes: Uint8Array, expectedId: string) {
     const msgResponseBytes = extractJsonFieldBytes(bytes, "response");
     const msg: IVocdoniNodeResponse = JSON.parse(
       new TextDecoder().decode(bytes),
@@ -293,6 +300,22 @@ export abstract class ClientBase {
       }
     }
     return msg.response;
+  }
+
+  /**
+   * Determines whether the current DVote Gateway supports the API set that includes the given method.
+   * NOTE: `updateStatus()` must have been called on the GW instnace previously.
+   */
+  public supportsMethod(method: ApiMethod): boolean {
+    if (allApis.info.includes(method as InfoApiMethod)) return true;
+    else if (allApis.raw.includes(method as RawApiMethod)) return true;
+
+    for (const api of this.supportedApis) {
+      if (api in allApis && allApis[api].includes(method as never)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   // WEB3
