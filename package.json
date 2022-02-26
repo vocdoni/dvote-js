@@ -12,10 +12,15 @@
     "prepublishOnly": "npm run build",
     "clean": "rimraf dist",
     "prebuild": "git submodule init && git submodule update",
-    "build": "npm run clean && ./node_modules/.bin/tsc",
-    "watch": "./node_modules/.bin/tsc -w -p .",
-    "ts-node": "./node_modules/.bin/ts-node",
-    "postinstall": "./scripts/post-install.sh"
+    "build": "npm run clean && tsc",
+    "watch": "tsc -w -p .",
+    "test": "./scripts/test-all.sh"
+  },
+  "workspaces": {
+    "packages": [
+      "packages/*"
+    ],
+    "nohoist": []
   },
   "dependencies": {
     "@vocdoni/census": "^1.16.0",

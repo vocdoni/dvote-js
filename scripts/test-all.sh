@@ -2,119 +2,40 @@
 
 set -e
 
-npm install
-npm run build
+PRE_BUILD_PACKAGES_ORDERED=('common' 'contract-wrappers' 'encryption' 'signing' 'hashing' 'data-models')
+PACKAGES=$(find ./packages -type d -maxdepth 1 -mindepth 1)
 
-cd packages/common
-npm install
-npm run test
-npm pack
+###############################################################################
 
-cd ../census
-npm install ../common/vocdoni-common*.tgz
-cd ../client
-npm install ../common/vocdoni-common*.tgz
-cd ../data-models
-npm install ../common/vocdoni-common*.tgz
-cd ../encryption
-npm install ../common/vocdoni-common*.tgz
-cd ../voting
-npm install ../common/vocdoni-common*.tgz
-cd ../wallets
-npm install ../common/vocdoni-common*.tgz
-cd ..
+function install_deps {
+  echo "Installing packages"
+  npm install
+}
 
-cd signing
-npm install
-npm run test
-npm pack
+function build_all {
+  echo "Building subpackages"
+  for d in ${PRE_BUILD_PACKAGES_ORDERED[@]}
+  do
+    echo "Prebuilding $d"
+    cd ./packages/$d
+    npm run build
+    cd -
+  done
+}
 
-cd ../census
-npm install ../signing/vocdoni-signing*.tgz
-cd ../client
-npm install ../signing/vocdoni-signing*.tgz
-cd ../voting
-npm install ../signing/vocdoni-signing*.tgz
-cd ../wallets
-npm install ../signing/vocdoni-signing*.tgz
-cd ..
+function test_all {
+  echo "Testing subpackages"
+  for d in $PACKAGES
+  do
+    echo "Testing $d"
+    cd $d
+    npm run test
+    cd -
+  done
+}
 
-cd hashing
-npm install
-npm run test
-npm pack
+###############################################################################
 
-cd ../census
-npm install ../hashing/vocdoni-hashing*.tgz
-cd ../voting
-npm install ../hashing/vocdoni-hashing*.tgz
-cd ..
-
-cd encryption
-npm install
-npm run test
-npm pack
-
-cd ../data-models
-npm install ../encryption/vocdoni-encryption*.tgz
-cd ../voting
-npm install ../encryption/vocdoni-encryption*.tgz
-cd ..
-
-cd contract-wrappers
-npm install
-npm run test
-npm pack
-
-cd ../data-models
-npm install ../contract-wrappers/vocdoni-contract-wrappers*.tgz
-cd ../census
-npm install ../contract-wrappers/vocdoni-contract-wrappers*.tgz
-cd ../voting
-npm install ../contract-wrappers/vocdoni-contract-wrappers*.tgz
-cd ..
-
-cd data-models
-npm install
-npm run test
-npm pack
-
-cd ../client
-npm install ../data-models/vocdoni-data-models*.tgz
-cd ../census
-npm install ../data-models/vocdoni-data-models*.tgz
-cd ../voting
-npm install ../data-models/vocdoni-data-models*.tgz
-cd ..
-
-cd wallets
-npm install
-npm run test
-npm pack
-
-cd ..
-
-cd client
-npm install
-npm run test
-npm pack
-
-cd ../census
-npm install ../client/vocdoni-client*.tgz
-cd ../voting
-npm install ../client/vocdoni-client*.tgz
-cd ..
-
-cd census
-npm install
-npm run test
-npm pack
-
-cd ..
-
-cd voting
-npm install
-npm run test
-npm pack
-
-cd ..
+install_deps
+build_all
+test_all
