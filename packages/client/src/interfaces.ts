@@ -55,13 +55,18 @@ export interface IRequestParameters {
 }
 
 export interface IVocdoniNodeResponse {
-    ok: boolean,
-    request: string,
-    message?: string,
-    timestamp?: number,
-    signature?: string,
-}
+    request: string;
+    timestamp?: number;
+    signature?: string;
 
+    response: {
+        ok: boolean;
+        message?: string;
+
+        [k: string]: any;
+    };
+}
+  
 export interface IGatewayDiscoveryParameters {
     networkId: EthNetworkID,
     environment?: VocdoniEnvironment

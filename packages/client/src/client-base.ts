@@ -6,8 +6,13 @@ import { ClientNoWalletSignerError } from "./errors/client";
 import { BackendApiName, GatewayApiName } from "./apis";
 import { ProviderUtil } from "./net/providers";
 import * as fetchPonyfill from "fetch-ponyfill";
-import { VocdoniEnvironment } from "@vocdoni/common";
+import {
+  promiseWithTimeout,
+  Random,
+  VocdoniEnvironment,
+} from "@vocdoni/common";
 import { IRequestParameters, IVocdoniNodeResponse } from "./interfaces";
+import { extractJsonFieldBytes } from "./util/uint8array";
 
 const { fetch, Request, Response, Headers } = fetchPonyfill();
 
@@ -94,6 +99,11 @@ export abstract class ClientBase {
     if (!walletOrSigner) throw new Error("Empty wallet or signer");
 
     this._signer = walletOrSigner;
+  }
+
+  /** Clears the current signer */
+  clearSigner() {
+    this._signer = null;
   }
 
   /** Sets a new environment to target the right smart contracts */
@@ -191,12 +201,98 @@ export abstract class ClientBase {
 
   // VOCDONI
 
-  request(body: IRequestParameters) {
+  async request(
+    body: IRequestParameters,
+    { skipSigning, timeout }: { skipSigning?: boolean; timeout?: number } = {},
+  ) {
     if (!this._vocdoniEndpoints[this._vocdoniIdx]?.uri) {
-      return Promise.reject(new Error("No endpoints"));
+      throw new Error("No endpoints");
     }
 
-    // TODO:
+    const payload = await this.makeRequest(body, { skipSigning });
+
+    const responsePayload = await promiseWithTimeout(
+      fetch("", {
+        method: "POST",
+        body: JSON.stringify(payload),
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      }),
+      timeout || 12 * 1000,
+    );
+    const responsePayloadBytes = new Uint8Array(
+      await responsePayload.arrayBuffer(),
+    );
+
+    return this.handleResponse(responsePayloadBytes, payload.id);
+  }
+
+  private async makeRequest(
+    body: IRequestParameters,
+    { skipSigning }: { skipSigning?: boolean } = {},
+  ): Promise<MessageRequestContent> {
+    if (typeof body !== "object") {
+      throw new Error("The payload should be a javascript object");
+    } else if (!this.supportsMethod(body.method)) {
+      throw new Error(
+        `The method is not available in the Gateway's supported API's (${body.method})`,
+      );
+    }
+
+    if (typeof body.timestamp !== "number") {
+      body.timestamp = Math.floor(Date.now() / 1000);
+    }
+
+    return {
+      id: Random.getHex().substring(2, 12),
+      request: JsonSignature.sort(body),
+      signature: (this._signer && !skipSigning)
+        ? await JsonSignature.signMessage(body, this._signer)
+        : "",
+    };
+  }
+
+  private handleResponse(bytes: Uint8Array, expectedId: string) {
+    const msgResponseBytes = extractJsonFieldBytes(bytes, "response");
+    const msg: IVocdoniNodeResponse = JSON.parse(
+      new TextDecoder().decode(bytes),
+    );
+
+    if (!msg.response) {
+      throw new Error("Invalid response message");
+    }
+
+    const incomingReqId = msg.response.request || null;
+    if (incomingReqId !== expectedId) {
+      throw new Error("The signed request ID does not match the expected one");
+    }
+
+    // Check the signature of the response
+    if (this.publicKey) {
+      const valid = BytesSignature.isValidMessage(
+        msgResponseBytes,
+        msg.signature,
+        this.publicKey,
+      );
+      if (!valid) {
+        throw new Error(
+          "The signature of the response does not match the expected one",
+        );
+      }
+    }
+
+    if (!msg.response.ok) {
+      if (msg.response.message) {
+        throw new Error(msg.response.message);
+      } else {
+        throw new Error(
+          "There was an error while handling the request at the gateway",
+        );
+      }
+    }
+    return msg.response;
   }
 
   // WEB3

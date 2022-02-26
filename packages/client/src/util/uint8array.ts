@@ -3,12 +3,12 @@
  * @param array Uint8Array 
  * @param regex RegExp that defines the begining of the JSON value to be extracted (that must bey a unique JSON key)
  */
-export function extractUint8ArrayJSONValue(array: Uint8Array, field: string): Uint8Array {
+export function extractJsonFieldBytes(array: Uint8Array, fieldName: string): Uint8Array {
     let c: number, char2: number, char3: number, lastChar: string
     let countEmbJSON = 0
     let responseStartByte = 0
     let responseEndByte = 0
-    const responseStart = '"' + field + '":'
+    const responseStart = '"' + fieldName + '":'
     let out = ""
     let i = 0;
 
