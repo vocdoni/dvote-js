@@ -1,4 +1,9 @@
-import { EthNetworkID, VocdoniEnvironment } from "@vocdoni/common";
+import {
+  EthNetworkID,
+  TextRecordKeys,
+  TimeoutError,
+  VocdoniEnvironment,
+} from "@vocdoni/common";
 import {
   EntityMetadata,
   INewProcessErc20Params,
@@ -23,6 +28,12 @@ import {
 import { ClientCore } from "./client-core";
 import * as fetchPonyfill from "fetch-ponyfill";
 import { JsonBootnodeData } from "./apis/definition";
+import { ensHashAddress } from "@vocdoni/contract-wrappers";
+import { ContentHashedUri } from "./wrappers/content-hashed-uri";
+import { ContentUri } from "./wrappers/content-uri";
+import { FileApi } from "./net/file";
+import { Buffer } from "buffer/";
+import { IRequestParameters } from "./interfaces";
 
 const { fetch } = fetchPonyfill();
 
@@ -58,8 +69,31 @@ export class Client extends ClientCore {
   // CLIENT IMPLEMENTATION
 
   entity = {
-    setMetadata: (id: string, metadata: EntityMetadata): Promise<void> => {},
-    getMetadata: (id: string): Promise<EntityMetadata> => {},
+    setMetadata: (
+      address: string,
+      metadata: EntityMetadata,
+    ): Promise<void> => {},
+    getMetadata: (address: string): Promise<EntityMetadata> => {
+      if (!address) return Promise.reject(new Error("Invalid address"));
+
+      return this.attachEnsPublicResolver()
+        .then((resolverInstance) => {
+          return resolverInstance.text(
+            ensHashAddress(address),
+            TextRecordKeys.JSON_METADATA_CONTENT_URI,
+          );
+        })
+        .then((metadataContentUri) => {
+          if (!metadataContentUri) {
+            throw new Error("The given entity has no metadata");
+          }
+
+          return this.file.fetchString(metadataContentUri);
+        }).then((jsonData) => {
+          if (!jsonData) throw new Error("The given entity has no metadata");
+          return JSON.parse(jsonData);
+        });
+    },
   };
 
   voting = {
@@ -162,7 +196,10 @@ export class Client extends ClientCore {
       verifyProof: () => {},
     },
     onChain: {
-      registerVoterKey: (processId: string, secretKey: bigint) => {
+      registerVoterKey: (
+        processId: string,
+        secretKey: bigint,
+      ): Promise<string> => {
         // // Get a census proof to be able to register the new key
         // const censusProof = await Census.getProof(processParams.censusRoot, { pubKey: account.publicKeyEncoded })
         // const requestedWeight = censusProof.weight
@@ -213,6 +250,74 @@ export class Client extends ClientCore {
 
   web3 = {
     getBlockNumber: (): Promise<number> => {},
+  };
+
+  file = {
+    fetchBytes: async (
+      contentUri: ContentUri | ContentHashedUri | string,
+    ): Promise<Buffer> => {
+      if (!contentUri) throw new Error("Invalid contentUri");
+
+      const cUri = ContentHashedUri.resolve(contentUri);
+
+      // Attempt 1: fetch from the given gateway
+      if (this.vocdoniUri) {
+        try {
+          const response = await this.request({
+            method: "fetchFile",
+            uri: "ipfs://" + cUri.ipfsHash,
+          });
+
+          if (!response?.content) {
+            throw new Error("Invalid response received from the gateway");
+          }
+
+          const result = Buffer.from(response.content, "base64");
+          if (cUri.hash && !cUri.verify(result)) {
+            throw new Error(
+              "The fetched artifact doesn't match the expected hash",
+            );
+          }
+          return result;
+        } catch (err) {
+          if (!(err instanceof TimeoutError)) throw err;
+
+          // otherwise, continue below
+        }
+      }
+
+      // Try using alternative methods
+      return FileApi.fetchBytesFallback(contentUri);
+    },
+    fetchString: (contentUri: ContentUri | ContentHashedUri | string) => {
+      return this.file.fetchBytes(contentUri)
+        .then((bytes: Buffer) => bytes.toString());
+    },
+    add: (data: Uint8Array | string, name: string): Promise<string> => {
+      if (!data) return Promise.reject(new Error("Empty payload"));
+
+      const buffer = Buffer.from(data as any);
+
+      const requestBody: IRequestParameters = {
+        method: "addFile",
+        type: "ipfs",
+        name,
+        content: buffer.toString("base64"),
+      };
+
+      return this.request(requestBody)
+        .then((response) => {
+          if (!response?.uri) throw new Error();
+
+          return response.uri;
+        })
+        .catch((error) => {
+          const message = (error.message)
+            ? "The data could not be uploaded: " + error.message
+            : "The data could not be uploaded";
+          throw new Error(message);
+        });
+    },
   };
 
   // PRIVATE IMPLEMENTATION

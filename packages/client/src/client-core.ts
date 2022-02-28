@@ -154,17 +154,28 @@ export abstract class ClientCore {
 
   // GLOBAL
 
-  /** Checks that at least one of the defined endpoints is functional for each type */
-  init() {
+  /** Ensures that at least one of the defined endpoints is functional for each type */
+  initAll() {
+    return this.initVocdoni().then(() => this.initWeb3());
+  }
+  /** Ensures that at least one Vocdoni node is functional */
+  initVocdoni() {
     // TODO: Check API's
     // Get info
-
+    return Promise.reject();
+  }
+  /** Ensures that at least one Web3 gateway is functional */
+  initWeb3() {
+    // TODO:
     // Iterate web3 nodes
     // Find the first where ENS + Check isSyncing is ok
 
-    return Promise.reject();
+    return this.isSyncing()
+      .then((syncing) => {
+        if (syncing) throw new Error("The web3 node is syncing");
 
-    return this.initEns()
+        return this.initEns();
+      })
       .then(() => this.initArchive());
   }
 
@@ -390,7 +401,7 @@ export abstract class ClientCore {
 
   // WEB3
 
-  /** Initialize the contract addresses */
+  /** Initialize the contract addresses using the currently active web3 gateway */
   public initEns() {
     if (this._initializingEns) return this._initializingEns;
     else if (!this.web3Provider) {
@@ -437,6 +448,7 @@ export abstract class ClientCore {
     return this._initializingEns;
   }
 
+  /** Initialize the archive IPNS ID using the currently active web3 gateway */
   public initArchive() {
     if (this.archiveIpnsId) {
       return Promise.resolve();

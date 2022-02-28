@@ -26,6 +26,12 @@ describe("Wrappers", () => {
                 throw new Error("The function should have thrown an error but didn't")
             }).to.throw
         })
+
+        it("Should resolve cURI's", () => {
+            const newCuri = new ContentUri("https://host/path,ipfs://1234")
+            expect(ContentUri.resolve("https://host/path,ipfs://1234").toString()).to.eq("https://host/path,ipfs://1234")
+            expect(ContentUri.resolve(newCuri).toString()).to.eq("https://host/path,ipfs://1234")
+        })
     })
 
     describe("Content Hashed URI", () => {
@@ -90,6 +96,13 @@ describe("Wrappers", () => {
             // Buffer
             expect(ContentHashedUri.hash(Buffer.from(str1))).to.equal(hash1)
             expect(ContentHashedUri.hash(Buffer.from(str2))).to.equal(hash2)
+        })
+
+        it("Should resolve chURI's", () => {
+            const newCuri = new ContentUri("https://host/path,ipfs://1234")
+            const newChuri = new ContentHashedUri("https://host/path,ipfs://1234!2345")
+            expect(ContentHashedUri.resolve("https://host/path,ipfs://1234!2345").toString()).to.eq("https://host/path,ipfs://1234!2345")
+            expect(ContentHashedUri.resolve(newCuri).toString()).to.eq("https://host/path,ipfs://1234")
         })
     })
 
