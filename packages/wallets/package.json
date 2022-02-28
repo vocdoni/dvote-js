@@ -14,10 +14,9 @@
   "scripts": {
     "prepublishOnly": "npm run build",
     "clean": "rimraf dist",
-    "build": "npm run clean && ./node_modules/.bin/tsc",
-    "watch": "./node_modules/.bin/tsc -w -p .",
-    "ts-node": "./node_modules/.bin/ts-node",
-    "test": "npm run build && ./node_modules/.bin/mocha -r ts-node/register test/**/*.ts"
+    "build": "npm run clean && tsc",
+    "watch": "tsc -w -p .",
+    "test": "npm run build && mocha -r ts-node/register test/**/*.ts"
   },
   "dependencies": {
     "@ethersproject/bytes": "^5.5.0",
