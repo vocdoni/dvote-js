@@ -166,7 +166,7 @@ export class DVoteGateway implements IGatewayDVoteClient {
 
         // Append the current timestamp to the body
         if (typeof requestBody.timestamp === "undefined") {
-            requestBody.timestamp = Math.floor(Date.now() / 1000)
+            requestBody.timestamp = Math.floor(Date.now() / 1000).toString()
         }
 
         const request: MessageRequestContent = JsonSignature.sort({

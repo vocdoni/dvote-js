@@ -19,7 +19,7 @@ export type TestResponse = {
 export type TestResponseBody = {
     ok: boolean
     message?: string
-    timestamp?: number
+    timestamp?: string
     [key: string]: any
 }
 export type MockedInteraction = {
@@ -89,7 +89,7 @@ export class DevGatewayService {
 
             const response = this.interactionList[idx].responseData
             response.request = this.interactionList[idx].requested.id
-            response.timestamp = Math.floor(Date.now() / 1000)
+            response.timestamp = Math.floor(Date.now() / 1000).toString()
             const responseData: TestResponse = {
                 id: this.interactionList[idx].requested.id,
                 response,

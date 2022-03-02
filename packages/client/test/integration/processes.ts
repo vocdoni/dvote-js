@@ -78,8 +78,8 @@ describe("Process", () => {
     //     const gatewayServer = new GatewayMock({
     //         port,
     //         responses: [
-    //             { ok: true, request: "123", timestamp: 123, result: "OK 1" },
-    //             { ok: true, request: "234", timestamp: 234, result: "OK 2" },
+    //             { ok: true, request: "123", timestamp: "123", result: "OK 1" },
+    //             { ok: true, request: "234", timestamp: "234", result: "OK 2" },
     //         ]
     //     })
     //     const gatewayInfo = new GatewayInfo(gatewayUri, ["file", "vote", "census"], "https://server/path", "")

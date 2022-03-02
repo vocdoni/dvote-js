@@ -52,7 +52,7 @@ describe("DVote gateway client", () => {
 
             // DVoteGateway (server)
             dvoteServer.addResponse({ ok: true, uri: "ipfs://2345" })
-            dvoteServer.addResponse({ ok: true, request: "234", timestamp: 234, content: buffData.toString("base64") })
+            dvoteServer.addResponse({ ok: true, request: "234", timestamp: "234", content: buffData.toString("base64") })
 
             // Client
             const gatewayInfo = dvoteServer.gatewayInfo

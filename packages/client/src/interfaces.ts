@@ -49,7 +49,7 @@ export interface IGatewayClient extends IGatewayDVoteClient, IGatewayWeb3Client 
 export interface IRequestParameters {
     // Common
     method: ApiMethod,
-    timestamp?: number,
+    timestamp?: string,
 
     [k: string]: any
 }
@@ -58,7 +58,7 @@ export type DVoteGatewayResponseBody = {
     ok: boolean,
     request: string,
     message?: string,
-    timestamp?: number,
+    timestamp?: string,
     signature?: string,
 
     // the rest of fields

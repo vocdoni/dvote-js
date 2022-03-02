@@ -8,7 +8,7 @@ import { BackendApiName, GatewayApiName } from "../../src/apis/definition"
 
 let port: number = 9200
 
-const defaultConnectResponse = { timestamp: 123, ok: true, apiList: ["file", "vote", "census", "results"], health: 100 } as { ok: boolean, apiList: (GatewayApiName | BackendApiName)[], health: number }
+const defaultConnectResponse = { timestamp: "123", ok: true, apiList: ["file", "vote", "census", "results"], health: 100 } as { ok: boolean, apiList: (GatewayApiName | BackendApiName)[], health: number }
 const defaultDummyResponse = { ok: true }
 
 addCompletionHooks()
