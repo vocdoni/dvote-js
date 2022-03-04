@@ -553,7 +553,7 @@ export abstract class ClientCore {
    * Returns a Process contract instance, bound to the current Web3 gateway
    * @param customAddress (optional) Overrides the address of the contract instance, instead of the value from `*.voc.eth`
    */
-  public async getProcessesInstance(
+  public async attachProcessesInstance(
     customAddress?: string,
   ): Promise<IProcessesContract> {
     const abi = ProcessesContractDefinition.abi as ContractInterface;
@@ -564,14 +564,14 @@ export abstract class ClientCore {
       address = this._contractAddresses.processes;
     }
 
-    return this.attachContract<ProcessesContractMethods>(address, abi);
+    return this.attachContract<ProcessesContractMethods>(address, abi)
   }
 
   /**
    * Returns a Token Storage Proof contract instance, bound to the current Web3 gateway
    * @param customAddress (optional) Overrides the address of the contract instance, instead of the address defined within `processes.voc.eth`
    */
-  public async getTokenStorageProofInstance(
+  public async attachTokenStorageProofInstance(
     customAddress?: string,
   ): Promise<ITokenStorageProofContract> {
     const abi = Erc20StorageProofContractDefinition.abi as ContractInterface;
