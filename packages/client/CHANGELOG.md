@@ -1,5 +1,9 @@
 # @vocdoni/client - Changelog
 
+## 1.16.7
+
+- Fixed `ethers` dependencies
+
 ## 1.16.6
 
 - Updated GWs methods: `getEntityCount`, `getProcessCount` and `sendContactMsg`

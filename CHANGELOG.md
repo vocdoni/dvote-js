@@ -1,5 +1,9 @@
 # DVote JS changelog
 
+## 1.16.2
+
+- Version bump for `client` package
+
 ## 1.16.0
 
 - Adding support for Vocdoni salted signatures
