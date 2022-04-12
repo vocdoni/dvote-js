@@ -25,6 +25,8 @@
     "@ethersproject/contracts": "^5.5.0",
     "@ethersproject/keccak256": "^5.5.0",
     "@ethersproject/providers": "^5.5.0",
+    "@ethersproject/contract": "^5.5.0",
+    "@ethersproject/wallet": "^5.5.0",
     "@vocdoni/common": "^1.15.3",
     "@vocdoni/data-models": "^1.15.3",
     "@vocdoni/signing": "^1.16.2",
@@ -34,7 +36,6 @@
   },
   "devDependencies": {
     "@ethersproject/signing-key": "^5.5.0",
-    "@ethersproject/wallet": "^5.5.0",
     "@types/chai": "^4.1.7",
     "@types/mocha": "^9.0.0",
     "body-parser": "^1.19.0",

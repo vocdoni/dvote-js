@@ -2,7 +2,11 @@
 // This component is meant to be a simple communication wrapper.
 // It provides a wrapper to use a Vocdoni Gateway, as well as a wrapper a Web3 one
 
-import { Contract, providers, utils, Wallet, Signer, ContractInterface } from "ethers"
+import { Wallet } from "@ethersproject/wallet"
+import { Contract, ContractInterface } from "@ethersproject/contracts"
+import { BaseProvider } from "@ethersproject/providers"
+import { Signer } from "@ethersproject/abstract-signer"
+import { ParamType, Interface } from "@ethersproject/abi"
 import { GatewayInfo } from "./wrappers/gateway-info"
 import { GatewayApiName, BackendApiName, ApiMethod } from "./apis/definition"
 import { GatewayBootnode } from "./gateway-bootnode"
@@ -198,7 +202,7 @@ export class Gateway implements IGatewayClient {
             .catch(() => false)
     }
 
-    public get provider(): providers.BaseProvider { return this.web3.provider }
+    public get provider(): BaseProvider { return this.web3.provider }
     public get web3Uri(): string { return this.web3.web3Uri }
 
     public getEthChainId(): Promise<number> {
@@ -209,7 +213,7 @@ export class Gateway implements IGatewayClient {
         return this.provider.getNetwork().then(network => network.name)
     }
 
-    public deploy<CustomContractMethods>(abi: string | (string | utils.ParamType)[] | utils.Interface, bytecode: string,
+    public deploy<CustomContractMethods>(abi: string | (string | ParamType)[] | Interface, bytecode: string,
         signParams: { signer?: Signer, wallet?: Wallet } = {}, deployArguments: any[] = []): Promise<(Contract & CustomContractMethods)> {
 
         return this.web3.deploy<CustomContractMethods>(abi, bytecode, signParams, deployArguments)
