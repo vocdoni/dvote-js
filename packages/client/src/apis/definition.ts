@@ -1,12 +1,13 @@
 // API NAMES
 
-export type GatewayApiName = "file" | "vote" | "census" | "results"
+export type GatewayApiName = "file" | "vote" | "census" | "results" | "account"
 export type BackendApiName = "registry" | "oracle"
 export type ApiName = GatewayApiName | BackendApiName | "info" | "raw"
 
 // API METHOD ENUM'S
 export const infoApiMethods = ["getInfo", "getStats", "getBlockList"] as const
 export const rawApiMethods = ["submitRawTx"] as const
+export const accountApiMethods = ["getAccount"] as const
 export const fileApiMethods = ["fetchFile", "addFile", "pinList", "pinFile", "unpinFile"] as const
 export const voteApiMethods = ["submitEnvelope", "getEnvelopeStatus", "getEnvelope", "getEnvelopeHeight", "getProcessKeys", "getProcessList", "getEnvelopeList", "getBlockHeight", "getBlockStatus", "getProcessInfo", "getProcessSummary", "getProcessCircuitConfig"] as const
 export const censusApiMethods = ["addCensus", "addClaim", "addClaimBulk", "getRoot", "genProof", "getSize", "checkProof", "dump", "dumpPlain", "importDump", "publish", "importRemote", "getCensusList"] as const
@@ -15,13 +16,14 @@ export const resultsApiMethods = ["getResults", "getResultsWeight", "getEntityLi
 export const registryApiMethods = ["signUp", "getEntity", "updateEntity", "countMembers", "listMembers", "getMember", "updateMember", "deleteMembers", "generateTokens", "exportTokens", "importMembers", "countTargets", "listTargets", "getTarget", "dumpTarget", "dumpCensus", "addCensus", "updateCensus", "getCensus", "countCensus", "listCensus", "deleteCensus", "sendValidationLinks", "sendVotingLinks", "createTag", "listTags", "deleteTag", "addTag", "removeTag", "sendContactMsg"] as const
 export const oracleApiMethods = ["newERC20process"] as const
 
-export const gatewayApiMethods: GatewayApiMethod[] = [].concat(infoApiMethods).concat(rawApiMethods).concat(fileApiMethods).concat(voteApiMethods).concat(censusApiMethods).concat(resultsApiMethods)
+export const gatewayApiMethods: GatewayApiMethod[] = [].concat(infoApiMethods).concat(rawApiMethods).concat(fileApiMethods).concat(voteApiMethods).concat(censusApiMethods).concat(resultsApiMethods).concat(accountApiMethods)
 export const backendApiMethods: RegistryApiMethod[] = [].concat(registryApiMethods)
 
 // API METHOD FAMILIES
 
 export type InfoApiMethod = typeof infoApiMethods[number]
 export type RawApiMethod = typeof rawApiMethods[number]
+export type AccountApiMethod = typeof accountApiMethods[number]
 export type FileApiMethod = typeof fileApiMethods[number]
 export type VoteApiMethod = typeof voteApiMethods[number]
 export type CensusApiMethod = typeof censusApiMethods[number]
@@ -42,6 +44,7 @@ export const allApis = {
     vote: voteApiMethods,
     census: censusApiMethods,
     results: resultsApiMethods,
+    account: accountApiMethods,
 
     // Backend
     registry: registryApiMethods,

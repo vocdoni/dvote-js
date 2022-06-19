@@ -32,7 +32,7 @@ export interface IGatewayWeb3Client {
     getEthNetworkId(): Promise<string>
 
     deploy<CustomContractMethods>(abi: string | (string | ParamType)[] | Interface, bytecode: string,
-                                  signParams: { signer?: Signer, wallet?: Wallet }, deployArguments: any[]): Promise<(Contract & CustomContractMethods)>
+        signParams: { signer?: Signer, wallet?: Wallet }, deployArguments: any[]): Promise<(Contract & CustomContractMethods)>
     attach<CustomContractMethods>(address: string, abi: ContractInterface): (Contract & CustomContractMethods)
 
     getEnsPublicResolverInstance(walletOrSigner?: Wallet | Signer, customAddress?: string): Promise<IEnsPublicResolverContract>
@@ -106,10 +106,17 @@ interface IArchiveEntityProcessResponseBody {
     processId: string
 }
 
-interface IArchiveEntityResponseBody extends Array<IArchiveEntityProcessResponseBody> {}
+interface IArchiveEntityResponseBody extends Array<IArchiveEntityProcessResponseBody> { }
 
 export interface IArchiveEntitiesResponseBody {
     entities: {
         [key: string]: IArchiveEntityResponseBody
     }
+}
+
+export interface IVochainAccount {
+    balance: number;
+    nonce: number;
+    infoURI: string;
+    delegateAddrs: Uint8Array[];
 }
