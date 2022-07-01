@@ -113,3 +113,44 @@ export interface IArchiveEntitiesResponseBody {
         [key: string]: IArchiveEntityResponseBody
     }
 }
+
+export interface ICsp {
+    sendRequest(
+        uriPAth: string,
+        requestBody: ICspRequestParameters,
+        params: { timeout?: number}
+    ): Promise<ICspResponseBody>
+
+ }
+
+export interface ICspRequestParameters {
+    authData?: string[]
+    authToken?: string
+    token?: string
+    payload?: string
+
+}
+
+const CspAuthenticationTypes =  ["blind","ecdsa","sharedkey"] as const
+
+export type CspAuthenticationType = typeof CspAuthenticationTypes[number]
+
+export type CspAuthenticationStep =  {
+    fields: [{
+            title: string,
+            type : string,
+        }]}
+
+
+export interface ICspResponseBody {
+    title?: string  // Authentication title
+    authType: CspAuthenticationType
+    authSteps: CspAuthenticationStep[]
+    authToken?:  string // Authentication token
+    response?: string | string[] // Help message for authentication steps
+    token?: string  //Token to be used to request the blind signature
+    signature?: string //signature to be used for voting
+    sharedkey?: string //sharedkey to be used for voting
+    elections?: Object[] // list of election ids
+    error?: string
+}
