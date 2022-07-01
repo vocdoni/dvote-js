@@ -1,0 +1,37 @@
+{
+  "name": "@vocdoni/csp",
+  "version": "0.0.2",
+  "description": "JavaScript/TypeScript certificate service provider (CSP) package",
+  "main": "dist/index",
+  "types": "dist/index",
+  "repository": "https://github.com/vocdoni/dvote-js.git",
+  "author": "Vocdoni <root@vocdoni.io>",
+  "license": "GPL-3.0-or-later",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "prepublishOnly": "npm run build",
+    "clean": "rimraf dist",
+    "build": "npm run clean && tsc",
+    "watch": "tsc -w -p .",
+    "test": "npm run build && mocha -r ts-node/register test/**/*.ts"
+  },
+  "dependencies": {
+    "@vocdoni/census": "^1.16.0",
+    "@vocdoni/client": "^1.16.8-csp",
+    "@vocdoni/common": "^1.15.3",
+    "@vocdoni/hashing": "^1.15.0"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.1.7",
+    "@types/mocha": "^9.0.0",
+    "chai": "^4.2.0",
+    "mocha": "^9.1.1",
+    "rimraf": "^3.0.2",
+    "ts-node": "^10.2.1",
+    "tslint": "^6.1.3",
+    "typescript": "^4.4.3"
+  }
+}
