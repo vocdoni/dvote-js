@@ -8,6 +8,8 @@ export * from "./gateway-dvote"
 export * from "./gateway-web3"
 export * from "./gateway-pool"
 
+export * from "./csp"
+
 export * from "./wrappers/content-hashed-uri"
 export * from "./wrappers/content-uri"
 export * from "./wrappers/gateway-info"
