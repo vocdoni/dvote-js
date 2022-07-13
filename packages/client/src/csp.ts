@@ -71,7 +71,6 @@ export class CSP implements ICsp {
             params.timeout || this._timeout,
         )
             .then((response: AxiosResponse) => {
-                console.log(response);
                 return this.checkResponse(response)
             })
             .catch((error) => {
