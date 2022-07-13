@@ -3,7 +3,7 @@ import { CspAuthentication } from "./authentication-calls"
 import { Keccak256 } from "@vocdoni/hashing"
 import { CspIndexer } from "./indexer-calls"
 import { strip0x } from "@vocdoni/common"
-import { CspSignatures } from "."
+import { CspSignatures } from "./singature-calls"
 import { Wallet } from "@ethersproject/wallet"
 import { IProofCA } from "@vocdoni/data-models";
 
