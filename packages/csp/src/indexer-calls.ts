@@ -6,6 +6,7 @@ export namespace CspIndexer {
             electionId: string
             remainingAttempts: number
             consumed: boolean
+            extra: [string]
         }]
 
     /**
