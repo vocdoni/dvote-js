@@ -68,7 +68,7 @@ export type DVoteGatewayResponseBody = {
 export interface IGatewayDiscoveryParameters {
     networkId: EthNetworkID,
     environment?: VocdoniEnvironment
-    bootnodesContentUri: string | ContentUri
+    bootnodesContentUri: string | ContentUri | string[] | ContentUri[]
     archiveIpnsId?: string
     numberOfGateways?: number
     /** Timeout in milliseconds */
