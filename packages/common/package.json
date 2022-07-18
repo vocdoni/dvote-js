@@ -1,6 +1,6 @@
 {
   "name": "@vocdoni/common",
-  "version": "1.15.3",
+  "version": "1.15.4",
   "description": "JavaScript/TypeScript common package",
   "main": "dist/index",
   "types": "dist/index",
