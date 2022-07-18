@@ -43,7 +43,7 @@ export class GatewayDiscovery {
      */
     public static networkId: EthNetworkID
     public static environment: VocdoniEnvironment
-    public static bootnodesContentUri: string | ContentUri
+    public static bootnodesContentUri: string | ContentUri | string[] | ContentUri[]
     public static minNumberOfGateways: number
     public static timeout: number
     public static resolveEnsDomains: boolean

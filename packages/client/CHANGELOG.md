@@ -1,5 +1,9 @@
 # @vocdoni/client - Changelog
 
+## 1.16.8
+
+- Accepting multiple bootnodes URLs in discovery process
+
 ## 1.16.7
 
 - Fixed `ethers` dependencies

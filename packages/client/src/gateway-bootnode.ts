@@ -105,10 +105,12 @@ export namespace GatewayBootnode {
      * @param bootnodesContentUri The Content URI from which the list of gateways will be extracted
      * @returns A JsonBootnodeData object that represents the ata derrived from a Bootnode Content URI.
      */
-    export function getGatewaysFromUri(bootnodesContentUri: string | ContentUri): Promise<JsonBootnodeData> {
+    export function getGatewaysFromUri(bootnodesContentUri: string | ContentUri | string[] | ContentUri[]): Promise<JsonBootnodeData> {
         if (!bootnodesContentUri) return Promise.reject(new Error("Invalid bootNodeUri"))
 
-        return FileApi.fetchString(bootnodesContentUri)
+        const bootnodesResult = Array.isArray(bootnodesContentUri) ? bootnodesContentUri.map(uri => FileApi.fetchString(uri)) : [FileApi.fetchString(bootnodesContentUri)]
+
+        return Promise.race(bootnodesResult)
             .then(strResult => JSON.parse(strResult))
             .catch(err => {
                 throw new Error(err && err.message || "Unable to fetch the boot node(s) data")
