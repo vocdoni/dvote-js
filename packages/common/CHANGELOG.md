@@ -1,5 +1,9 @@
 # @vocdoni/common - Changelog
 
+## 1.15.4
+
+- Added `Promise.any` polyfill as `promiseAny` function
+
 ## 1.15.3
 
 - Updating env vars

@@ -29,7 +29,7 @@ import {
     // MUMBAI_PROVIDER_URI
 } from "@vocdoni/common"
 import { JsonBootnodeData } from "./apis/definition"
-import { TextRecordKeys } from "@vocdoni/common"
+import { TextRecordKeys, promiseAny } from "@vocdoni/common"
 import { DVoteGateway } from "./gateway-dvote"
 import { Web3Gateway } from "./gateway-web3"
 import { getDefaultProvider, providers } from "ethers"
@@ -110,7 +110,7 @@ export namespace GatewayBootnode {
 
         const bootnodesResult = Array.isArray(bootnodesContentUri) ? bootnodesContentUri.map(uri => FileApi.fetchString(uri)) : [FileApi.fetchString(bootnodesContentUri)]
 
-        return Promise.race(bootnodesResult)
+        return promiseAny(bootnodesResult)
             .then(strResult => JSON.parse(strResult))
             .catch(err => {
                 throw new Error(err && err.message || "Unable to fetch the boot node(s) data")
