@@ -23,8 +23,6 @@ export namespace CspIndexer {
                 `/auth/elections/indexer/${userId}`,
                 {},{})
                 .then((response) => {
-                    console.log("indexer: "+response)
-                    console.log("indexer: "+JSON.stringify(response,null,2))
                     if (!('elections' in response)) throw new Error('Invalid csp response')
                     return response.elections as IndexerResponse
                 })

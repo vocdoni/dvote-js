@@ -6,7 +6,7 @@ import { hexlify } from "@ethersproject/bytes"
 import { Keccak256 } from "@vocdoni/hashing"
 import { Wallet } from "@ethersproject/wallet"
 import { keccak256 } from "@ethersproject/keccak256"
-import { UserSecretData } from "blindsecp256k1";
+import { UserSecretData } from "blindsecp256k1"
 
 
 
@@ -37,7 +37,7 @@ export namespace CspSignatures {
             },
             {})
             .then((response) => {
-                if (!('signature' in response)) throw new Error('Invalid csp response')
+                if (!('signature' in response)) throw new Error(response['message'])
                 return response['signature']
             })
             .catch((error) => {

@@ -24,7 +24,7 @@ export class CSP implements ICsp {
         const parsedUri = parseURL(uri)
         this._uri = `${parsedUri.protocol}//${parsedUri.host}/${this._apiVersion}`
         this._pubKey = publicKey
-        this.client = axios.create({ baseURL: uri, method: "post", responseType: "json", headers: {'access-control-allow-origin': '*'} })
+        this.client = axios.create({ baseURL: uri, responseType: "json"})
         this._timeout = timeout * 1000 || 3 * 1000
     }
 
@@ -75,13 +75,13 @@ export class CSP implements ICsp {
                 return this.checkResponse(response)
             })
             .catch((error) => {
-                // console.log(JSON.stringify(error, null, 2))
+                console.log("Recibido en client/csp", JSON.stringify(error, null, 2))
                 // TODO refactor errors
                 if (error && error.message == "Time out") {
                     this._hasTimeOutLastRequest = true
                 }
                 if (error.reponse) return Promise.reject(new Error(error.response))
-                return Promise.reject(error.response)
+                return Promise.reject(error)
             })
     }
 
@@ -94,6 +94,7 @@ export class CSP implements ICsp {
      * @return The checked response of the Gateway
      */
     private checkResponse(response: AxiosResponse): ICspResponseBody {
+        console.log("Recibido en client/csp/checkResponse", JSON.stringify(response, null, 2))
         const responseBody: ICspResponseBody = response.data
         if (response.status != 200 || responseBody.error != null) {
             throw new Error(responseBody.error || "")

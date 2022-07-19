@@ -40,7 +40,7 @@ export namespace CspAuthentication {
     * if a next authentication step is needed, or the result of a succesfull authentication.
     * For more info see: https://github.com/vocdoni/blind-csp/blob/master/README.md
     */
-    export async function authenticate(authType: CspAuthenticationType, authData: string[], authToken: string, authStep: number, processId: string, csp: ICsp) : Promise<ICspResponseBody> {
+    export async function authenticate(authType: CspAuthenticationType, authData: string[], authToken: string, authStep: number, processId: string, csp: ICsp): Promise<ICspResponseBody> {
         if (!processId) return Promise.reject(new Error("Invalid process ID"))
         processId = strip0x(processId)
         if (processId.length != 64) return Promise.reject(new Error("Invalid process ID"))
@@ -72,7 +72,16 @@ export namespace CspAuthentication {
                 return response
             })
             .catch((error) => {
-                const message = ("message" in error) ? "Authentication error: " + error.message : "Authentication error"
+                console.log("Recibido en csp/authenticate", JSON.stringify(error, null, 2))
+
+                let message: string
+                if ("response" in error) {
+                    message = "Authentication error: " + JSON.stringify(error["response"], null, 2)
+                } else if ("message" in error) {
+                    message = "Authentication error: " + error.message
+                } else {
+                    message = "Authentication error"
+                }
                 throw new Error(message)
             })
     }
