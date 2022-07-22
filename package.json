@@ -12,13 +12,22 @@
     "prepublishOnly": "npm run build",
     "clean": "rimraf dist",
     "prebuild": "git submodule init && git submodule update",
-    "build": "./scripts/build-all.sh",
+    "build": "npm run clean && npm run build --ws && tsc -b",
     "watch": "tsc -w -p .",
-    "test": "./scripts/test-all.sh"
+    "test": "npm test --ws"
   },
   "workspaces": {
     "packages": [
-      "packages/*"
+      "packages/common",
+      "packages/contract-wrappers",
+      "packages/encryption",
+      "packages/signing",
+      "packages/hashing",
+      "packages/data-models",
+      "packages/client",
+      "packages/census",
+      "packages/voting",
+      "packages/wallets"
     ],
     "nohoist": []
   },
