@@ -13,7 +13,7 @@
   },
   "scripts": {
     "prepublishOnly": "npm run build",
-    "clean": "rimraf ./dist",
+    "clean": "rimraf dist",
     "build": "npm run clean && tsc",
     "watch": "tsc -w -p .",
     "test": "npm run build && mocha -r ts-node/register test/**/*.ts"
