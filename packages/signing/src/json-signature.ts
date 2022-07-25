@@ -8,8 +8,9 @@ export namespace JsonSignature {
     // MESSAGES
 
     /**
-     * Sign a JSON message using the given Ethers wallet or signer.
-     * Ensures that the object keys are alphabetically sorted.
+     * Sign a JSON message with using the given Ethers wallet or signer. Ensures
+     * that the object keys are alphabetically sorted, then prefixes "Vocdoni
+     * signed message:\n" to the message before signing.
      * @param message JSON object of the `response` or `error` fields
      * @param walletOrSigner
      */
@@ -23,7 +24,7 @@ export namespace JsonSignature {
     }
 
     /**
-     * Checks whether the given public key signed the given JSON message with its fields
+     * Checks whether the given public key signed the given Vocdoni-prefixed JSON message with its fields
      * sorted alphabetically
      * @param message JSON object of the `response` or `error` fields
      * @param signature Hex encoded signature (created with the Ethereum prefix)
@@ -40,7 +41,7 @@ export namespace JsonSignature {
     }
 
     /**
-     * Returns the public key that signed the given JSON message, having its fields sorted alphabetically
+     * Returns the public key that signed the given Vocdoni-prefixed JSON message, having its fields sorted alphabetically
      *
      * @param message JSON object of the `response` or `error` fields
      * @param signature Hex encoded signature (created with the Ethereum prefix)
@@ -59,8 +60,9 @@ export namespace JsonSignature {
     // TRANSACTIONS
 
     /**
-     * Sign a JSON transaction using the given Ethers wallet or signer.
-     * Ensures that the object keys are alphabetically sorted.
+     * Sign a JSON transaction using the given Ethers wallet or signer. Ensures
+     * that the object keys are alphabetically sorted,  then prefixes "Vocdoni
+     * signed transaction:\nchainID\n" before signing.
      * @param message JSON object
      * @param walletOrSigner
      */
@@ -74,7 +76,7 @@ export namespace JsonSignature {
     }
 
     /**
-     * Checks whether the given public key signed the given JSON transaction with its fields
+     * Checks whether the given public key signed the given Vocdoni-prefixed JSON transaction with its fields
      * sorted alphabetically
      * @param message JSON object
      * @param signature Hex encoded signature (created with the Ethereum prefix)
@@ -91,7 +93,7 @@ export namespace JsonSignature {
     }
 
     /**
-     * Returns the public key that signed the given JSON transaction, having its fields sorted alphabetically
+     * Returns the public key that signed the given Vocdoni-prefixed JSON transaction, having its fields sorted alphabetically
      *
      * @param message JSON object
      * @param signature Hex encoded signature (created with the Ethereum prefix)
