@@ -12,7 +12,7 @@
     "prepublishOnly": "npm run build",
     "clean": "rimraf dist",
     "prebuild": "git submodule init && git submodule update",
-    "build": "npm run clean && npm run build --ws && tsc -b",
+    "build": "npm run clean && npm install --ws && npm run build --ws && tsc -b",
     "watch": "tsc -w -p .",
     "test": "npm test --ws"
   },
