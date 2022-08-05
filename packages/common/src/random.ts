@@ -54,6 +54,16 @@ export namespace Random {
             result = nextValue
         }
     }
+    /**
+     * Generates a random integer, which is limited by the range of Javascript's number type.
+     * @returns number
+     */
+    export function Int(min, max) {
+        function getRndInteger(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+        return getRndInteger(min, max)
+    }
 
     /**
      * Helper function that shuffles the elements of an array
