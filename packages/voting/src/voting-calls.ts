@@ -596,13 +596,9 @@ export namespace VotingApi {
             let tx: ContractTransaction
             switch (ethChainId) {
                 case XDAI_CHAIN_ID:
-                    let gasPrice = XDAI_GAS_PRICE
-                    try {
-                        gasPrice = await walletOrSigner.provider.getGasPrice()
-                    } catch (error) {
-                        console.log("Could not estimate gas price with 'getGasPrice, using default value: '", gasPrice.toString())
-                    }
-                    options.gasPrice = gasPrice
+                    // let block = await walletOrSigner.provider.getBlock("latest")
+                    // options.maxPriorityFeePerGas = BigNumber.from("10000000000");
+                    // options.maxFeePerGas = block.baseFeePerGas.mul(2).add(options.maxPriorityFeePerGas)
                     tx = await processInstance.newProcessStd(...contractParameters.toContractParamsStd(options))
                     break
                 case SOKOL_CHAIN_ID:
@@ -673,13 +669,9 @@ export namespace VotingApi {
             let tx: ContractTransaction
             switch (ethChainId) {
                 case XDAI_CHAIN_ID:
-                    let gasPrice = XDAI_GAS_PRICE
-                    try {
-                        gasPrice = await walletOrSigner.connect(gateway.provider).provider.getGasPrice()
-                    } catch (error) {
-                        console.log("Could not estimate gas price with 'getGasPrice, using default value: '", gasPrice.toString())
-                    }
-                    options.gasPrice = gasPrice
+                    // let block = await walletOrSigner.provider.getBlock("latest")
+                    // options.maxPriorityFeePerGas = BigNumber.from("100000000000");
+                    // options.maxFeePerGas = block.baseFeePerGas.mul(2).add(options.maxPriorityFeePerGas)
                     tx = await processInstance.newProcessEvm(...contractParameters.toContractParamsEvm(options))
                     break
                 case SOKOL_CHAIN_ID:

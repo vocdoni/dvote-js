@@ -1,4 +1,4 @@
-import { ContractTransaction, Signer, Wallet } from "ethers"
+import { ContractTransaction, Signer, Wallet, BigNumber } from "ethers"
 import { checkValidEntityMetadata, EntityMetadata } from "@vocdoni/data-models"
 import { SOKOL_CHAIN_ID, SOKOL_GAS_PRICE, XDAI_CHAIN_ID, XDAI_GAS_PRICE, TextRecordKeys } from "@vocdoni/common"
 import { FileApi, IGatewayClient } from "@vocdoni/client"
@@ -55,13 +55,11 @@ export namespace EntityApi {
         let tx: ContractTransaction
         switch (chainId) {
             case XDAI_CHAIN_ID:
-                let gasPrice = XDAI_GAS_PRICE
-                try {
-                    gasPrice = await walletOrSigner.provider.getGasPrice()
-                } catch (error) {
-                    console.log("Could not estimate gas price with 'getGasPrice, using default value: '", gasPrice.toString())
-                }
-                options = { gasPrice }
+                // let block = await walletOrSigner.provider.getBlock("latest")
+                // let maxPriorityFeePerGas = BigNumber.from("100000000000");
+                // let maxFeePerGas = block.baseFeePerGas.mul(2).add(maxPriorityFeePerGas)
+                // options = { maxPriorityFeePerGas, maxFeePerGas }
+                options = {}
                 tx = await resolverInstance.setText(entityAddrHash, TextRecordKeys.JSON_METADATA_CONTENT_URI, ipfsUri, options)
                 break
             case SOKOL_CHAIN_ID:
