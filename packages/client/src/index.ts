@@ -21,3 +21,5 @@ export * from "./net/providers"
 export * from "./interfaces"
 
 export * from "./errors"
+
+export * from "./account"
