@@ -1,0 +1,34 @@
+readExistingAccounts: false
+readExistingProcess: false        # if set, will read the voteMetadata from the JSON instead of creating a new one
+stopOnError: false
+
+processInfoFilePath: "./cached-process-info.json"
+
+cspUri: "https://csp-dev.vocdoni.net"                                  # If set, overrides bootnodesUrlRw
+cspPublicKey: "03e349c2a4622bd56238616f8160bfeb6b053f260f1a541f72015e0e261ac68d5c"                           # If set, overrides bootnodesUrlRw
+cspApiVersion: "v1"
+
+
+# Either the private key or the wallet/hdPath of the entity
+# privateKey: "0x0735f7bc73bab5338988c34ebccfd083dab92645d667c59b5617c8d6fb4063da" # xdai prod
+# privateKey: "0x918a8eca0ff1592401bc666cd62149a52f8980b7f73879c8e7c214d5637c6f34" # rinkeby dev
+privateKey: "0xc17ed6350a00f7200cb6416492be44adffc30e9d8cf220d883f221c5a9e49c46" # rinkeby dev fcb
+
+mnemonic: ""
+hdPath: "m/44'/60'/0'/0/1"
+ethNetworkId: "rinkeby"
+
+vocdoniEnvironment: "dev" # "stg" or "prod"
+bootnodesUrlRw: "https://bootnodes.vocdoni.net/gateways.dev.json"     # Bootnode used by default
+dvoteGatewayUri:                                   # If set, overrides bootnodesUrlRw
+dvoteGatewayPublicKey:                             # If set, overrides bootnodesUrlRw
+
+numAccounts: 1
+maxConcurrency: 1
+
+encryptedVote: true
+votesPattern: "all-0"   #  Vote the first option on all questions
+#votesPattern: "all-1"  #  Vote the second option on all questions
+#votesPattern: "all-2"  #  Vote the third option on all questions
+#votesPattern: "all-even"      #  Vote 0 on even voters and 1 on odd voters
+#votesPattern: "incremental"   #  Vote 0 on question 0, 1 on question 1, 2 on question 2, etc

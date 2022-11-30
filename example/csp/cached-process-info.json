@@ -1,0 +1,45 @@
+{
+  "electionId": "0x41a4331ada2399b41664314ec5ab1047f16510bd74f208d59d3fa01315751f83",
+  "processMetadata": {
+    "version": "1.1",
+    "title": {
+      "default": "E2E process"
+    },
+    "description": {
+      "default": "E2E process"
+    },
+    "media": {
+      "header": "https://source.unsplash.com/random/800x600",
+      "streamUri": ""
+    },
+    "meta": {},
+    "questions": [
+      {
+        "title": {
+          "default": "The title of the first question"
+        },
+        "description": {
+          "default": "The description of the first question"
+        },
+        "choices": [
+          {
+            "title": {
+              "default": "Yes"
+            },
+            "value": 0
+          },
+          {
+            "title": {
+              "default": "No"
+            },
+            "value": 1
+          }
+        ]
+      }
+    ],
+    "results": {
+      "aggregation": "discrete-counting",
+      "display": "multiple-question"
+    }
+  }
+}
