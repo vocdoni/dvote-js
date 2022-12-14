@@ -60,6 +60,9 @@ export namespace EntityApi {
                 // let maxFeePerGas = block.baseFeePerGas.mul(2).add(maxPriorityFeePerGas)
                 // options = { maxPriorityFeePerGas, maxFeePerGas }
                 options = {}
+                const feeData = await walletOrSigner.provider.getFeeData()
+                options.maxFeePerGas = feeData.maxFeePerGas
+                options.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas
                 tx = await resolverInstance.setText(entityAddrHash, TextRecordKeys.JSON_METADATA_CONTENT_URI, ipfsUri, options)
                 break
             case SOKOL_CHAIN_ID:

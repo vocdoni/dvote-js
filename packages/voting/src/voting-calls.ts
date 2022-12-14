@@ -599,6 +599,9 @@ export namespace VotingApi {
                     // let block = await walletOrSigner.provider.getBlock("latest")
                     // options.maxPriorityFeePerGas = BigNumber.from("10000000000");
                     // options.maxFeePerGas = block.baseFeePerGas.mul(2).add(options.maxPriorityFeePerGas)
+                    const feeData = await walletOrSigner.provider.getFeeData()
+                    options.maxFeePerGas = feeData.maxFeePerGas
+                    options.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas
                     tx = await processInstance.newProcessStd(...contractParameters.toContractParamsStd(options))
                     break
                 case SOKOL_CHAIN_ID:
@@ -672,6 +675,9 @@ export namespace VotingApi {
                     // let block = await walletOrSigner.provider.getBlock("latest")
                     // options.maxPriorityFeePerGas = BigNumber.from("100000000000");
                     // options.maxFeePerGas = block.baseFeePerGas.mul(2).add(options.maxPriorityFeePerGas)
+                    const feeData = await walletOrSigner.provider.getFeeData()
+                    options.maxFeePerGas = feeData.maxFeePerGas
+                    options.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas
                     tx = await processInstance.newProcessEvm(...contractParameters.toContractParamsEvm(options))
                     break
                 case SOKOL_CHAIN_ID:
@@ -720,8 +726,19 @@ export namespace VotingApi {
             if (creationInstanceAddr != processInstance.address) {
                 processInstance = await gateway.getProcessesInstance(walletOrSigner, creationInstanceAddr)
             }
-
-            const tx = await processInstance.setStatus(processId, newStatus)
+            const ethChainId = await gateway.getEthChainId()
+            const options: IMethodOverrides = {}
+            let tx: ContractTransaction
+            switch (ethChainId) {
+                case XDAI_CHAIN_ID:
+                    const feeData = await walletOrSigner.provider.getFeeData()
+                    options.maxFeePerGas = feeData.maxFeePerGas
+                    options.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas
+                    tx = await processInstance.setStatus(processId, newStatus,options)
+                    break
+                default:
+                    tx = await processInstance.setStatus(processId, newStatus)
+            }
             if (!tx) throw new Error("Could not start the blockchain transaction")
             await tx.wait()
         }
